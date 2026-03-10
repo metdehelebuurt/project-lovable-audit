@@ -16,7 +16,11 @@ import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
 import Schouwen from "@/pages/Schouwen";
 import Offertes from "@/pages/Offertes";
-import PlaceholderPage from "@/pages/PlaceholderPage";
+import Installaties from "@/pages/Installaties";
+import Planning from "@/pages/Planning";
+import Analytics from "@/pages/Analytics";
+import Berichten from "@/pages/Berichten";
+import Instellingen from "@/pages/Instellingen";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
