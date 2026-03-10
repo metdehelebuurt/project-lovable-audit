@@ -96,9 +96,9 @@ const Navbar = () => {
               </Button>
               <Button
                 className="rounded-pill"
-                onClick={() => scrollTo("#cta")}
+                asChild
               >
-                Gratis proberen
+                <Link to="/signup">Gratis proberen</Link>
               </Button>
             </div>
           </div>
