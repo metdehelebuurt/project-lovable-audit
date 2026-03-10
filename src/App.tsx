@@ -21,6 +21,7 @@ import Planning from "@/pages/Planning";
 import Analytics from "@/pages/Analytics";
 import Berichten from "@/pages/Berichten";
 import Instellingen from "@/pages/Instellingen";
+import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,9 +34,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
