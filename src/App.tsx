@@ -56,8 +56,8 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/producten" element={<Producten />} />
-              <Route path="/schouwen" element={<PlaceholderPage title="Schouwen" description="Woninginspecties beheren." />} />
-              <Route path="/offertes" element={<PlaceholderPage title="Offertes" description="Offertes beheren." />} />
+              <Route path="/schouwen" element={<Schouwen />} />
+              <Route path="/offertes" element={<Offertes />} />
               <Route path="/installaties" element={<PlaceholderPage title="Installaties" description="Installaties beheren." />} />
               <Route path="/planning" element={<PlaceholderPage title="Planning" description="Kalenderweergave." />} />
               <Route path="/analytics" element={<PlaceholderPage title="Analytics" description="Rapportages en analyses." />} />
