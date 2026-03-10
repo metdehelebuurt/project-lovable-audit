@@ -14,6 +14,8 @@ import Gebruikers from "@/pages/Gebruikers";
 import Adviseurs from "@/pages/Adviseurs";
 import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
+import Schouwen from "@/pages/Schouwen";
+import Offertes from "@/pages/Offertes";
 import PlaceholderPage from "@/pages/PlaceholderPage";
 import NotFound from "@/pages/NotFound";
 
