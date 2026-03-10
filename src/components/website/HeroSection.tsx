@@ -46,7 +46,7 @@ const HeroSection = () => {
             <Button
               size="lg"
               className="rounded-pill px-8 text-base h-12 shadow-lg shadow-primary/25"
-              onClick={() => scrollTo("#cta")}
+              onClick={() => navigate("/signup")}
             >
               Start gratis proefperiode
               <ArrowRight size={18} />
