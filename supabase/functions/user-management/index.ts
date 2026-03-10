@@ -61,7 +61,6 @@ serve(async (req) => {
       });
     }
 
-    const { action, ...payload } = await req.json();
 
     switch (action) {
       case "create_user": {
