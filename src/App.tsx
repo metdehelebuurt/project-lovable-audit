@@ -60,12 +60,36 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/producten" element={<Producten />} />
-              <Route path="/schouwen" element={<Schouwen />} />
-              <Route path="/offertes" element={<Offertes />} />
-              <Route path="/installaties" element={<Installaties />} />
-              <Route path="/planning" element={<Planning />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/berichten" element={<Berichten />} />
+              <Route path="/schouwen" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}>
+                  <Schouwen />
+                </ProtectedRoute>
+              } />
+              <Route path="/offertes" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"]}>
+                  <Offertes />
+                </ProtectedRoute>
+              } />
+              <Route path="/installaties" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "installateur"]}>
+                  <Installaties />
+                </ProtectedRoute>
+              } />
+              <Route path="/planning" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}>
+                  <Planning />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}>
+                  <Analytics />
+                </ProtectedRoute>
+              } />
+              <Route path="/berichten" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "consument"]}>
+                  <Berichten />
+                </ProtectedRoute>
+              } />
               <Route path="/instellingen" element={<Instellingen />} />
             </Route>
 
