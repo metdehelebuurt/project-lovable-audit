@@ -12,6 +12,8 @@ import Dashboard from "@/pages/Dashboard";
 import Partners from "@/pages/Partners";
 import Gebruikers from "@/pages/Gebruikers";
 import Adviseurs from "@/pages/Adviseurs";
+import Leads from "@/pages/Leads";
+import Producten from "@/pages/Producten";
 import PlaceholderPage from "@/pages/PlaceholderPage";
 import NotFound from "@/pages/NotFound";
 
@@ -46,10 +48,14 @@ const App = () => (
                   <Gebruikers />
                 </ProtectedRoute>
               } />
-              <Route path="/producten" element={<PlaceholderPage title="Producten" description="Productcatalogus beheren." />} />
+              <Route path="/leads" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}>
+                  <Leads />
+                </ProtectedRoute>
+              } />
+              <Route path="/producten" element={<Producten />} />
               <Route path="/schouwen" element={<PlaceholderPage title="Schouwen" description="Woninginspecties beheren." />} />
               <Route path="/offertes" element={<PlaceholderPage title="Offertes" description="Offertes beheren." />} />
-              <Route path="/leads" element={<PlaceholderPage title="Leads" description="Leads beheren." />} />
               <Route path="/installaties" element={<PlaceholderPage title="Installaties" description="Installaties beheren." />} />
               <Route path="/planning" element={<PlaceholderPage title="Planning" description="Kalenderweergave." />} />
               <Route path="/analytics" element={<PlaceholderPage title="Analytics" description="Rapportages en analyses." />} />
