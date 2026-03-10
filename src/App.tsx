@@ -16,7 +16,11 @@ import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
 import Schouwen from "@/pages/Schouwen";
 import Offertes from "@/pages/Offertes";
-import PlaceholderPage from "@/pages/PlaceholderPage";
+import Installaties from "@/pages/Installaties";
+import Planning from "@/pages/Planning";
+import Analytics from "@/pages/Analytics";
+import Berichten from "@/pages/Berichten";
+import Instellingen from "@/pages/Instellingen";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,11 +62,11 @@ const App = () => (
               <Route path="/producten" element={<Producten />} />
               <Route path="/schouwen" element={<Schouwen />} />
               <Route path="/offertes" element={<Offertes />} />
-              <Route path="/installaties" element={<PlaceholderPage title="Installaties" description="Installaties beheren." />} />
-              <Route path="/planning" element={<PlaceholderPage title="Planning" description="Kalenderweergave." />} />
-              <Route path="/analytics" element={<PlaceholderPage title="Analytics" description="Rapportages en analyses." />} />
-              <Route path="/berichten" element={<PlaceholderPage title="Berichten" description="Support berichten." />} />
-              <Route path="/instellingen" element={<PlaceholderPage title="Instellingen" description="Profiel en instellingen." />} />
+              <Route path="/installaties" element={<Installaties />} />
+              <Route path="/planning" element={<Planning />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/berichten" element={<Berichten />} />
+              <Route path="/instellingen" element={<Instellingen />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
