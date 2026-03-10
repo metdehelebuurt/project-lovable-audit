@@ -22,6 +22,7 @@ import Analytics from "@/pages/Analytics";
 import Berichten from "@/pages/Berichten";
 import Instellingen from "@/pages/Instellingen";
 import Home from "@/pages/Home";
+import Signup from "@/pages/Signup";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
