@@ -189,60 +189,6 @@ serve(async (req) => {
         });
       }
 
-      case "setup_superadmin": {
-        // Check if any superadmin exists
-        const { data: existing } = await supabaseAdmin
-          .from("users")
-          .select("id")
-          .eq("rol", "superadmin")
-          .limit(1);
-
-        if (existing && existing.length > 0) {
-          return new Response(JSON.stringify({ error: "Superadmin bestaat al" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        const email = "admin@mijnhuis.nu";
-        const password = "AdminMijnhuis2024!";
-
-        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-        });
-
-        if (authError) {
-          return new Response(JSON.stringify({ error: authError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        const { error: profileError } = await supabaseAdmin.from("users").insert({
-          id: authUser.user.id,
-          email,
-          voornaam: "Admin",
-          achternaam: "Mijnhuis",
-          rol: "superadmin",
-          partner_id: null,
-          status: "actief",
-        });
-
-        if (profileError) {
-          await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
-          return new Response(JSON.stringify({ error: profileError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        return new Response(
-          JSON.stringify({ success: true, email, message: "Superadmin aangemaakt" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
 
       default:
         return new Response(JSON.stringify({ error: "Onbekende actie" }), {
