@@ -2,21 +2,21 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    name: "Familie De Vries",
-    location: "Utrecht",
-    text: "Binnen twee weken hadden we zonnepanelen op het dak. Het hele proces was soepel en transparant. Aanrader!",
+    name: "Mark van den Berg",
+    role: "Eigenaar, SolarTech Installaties",
+    text: "Sinds we mijnhuis.nu gebruiken maken we offertes in de helft van de tijd. De digitale schouwen besparen ons enorm veel administratie.",
     rating: 5,
   },
   {
-    name: "Jan Bakker",
-    location: "Amsterdam",
-    text: "De adviseur nam uitgebreid de tijd voor de schouw. De warmtepomp draait nu een jaar en we zijn supertevreden.",
+    name: "Lisa Jansen",
+    role: "Adviseur, GreenHome Advies",
+    text: "Het platform is intuïtief en mijn klanten zijn onder de indruk van de professionele offertes. Mijn conversie is met 40% gestegen.",
     rating: 5,
   },
   {
-    name: "Sandra & Pieter",
-    location: "Eindhoven",
-    text: "Fijn dat ze ook de subsidieaanvraag regelden. Scheelde ons ruim €2.000. Top service van begin tot eind.",
+    name: "Peter & Ko Installatietechniek",
+    role: "Installatiebedrijf, Rotterdam",
+    text: "Planning, klantbeheer en offertes — alles op één plek. We kunnen ons eindelijk focussen op waar we goed in zijn: installeren.",
     rating: 5,
   },
 ];
@@ -29,7 +29,7 @@ const TestimonialsSection = () => (
           Ervaringen
         </p>
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-          Wat onze klanten zeggen
+          Wat professionals zeggen
         </h2>
       </div>
 
@@ -53,7 +53,7 @@ const TestimonialsSection = () => (
             </p>
             <div className="mt-5 pt-4 border-t border-border">
               <p className="font-semibold text-foreground text-sm">{t.name}</p>
-              <p className="text-xs text-muted-foreground">{t.location}</p>
+              <p className="text-xs text-muted-foreground">{t.role}</p>
             </div>
           </div>
         ))}

@@ -1,26 +1,26 @@
-import { FileText, Search, Wrench } from "lucide-react";
+import { UserPlus, Settings, Rocket } from "lucide-react";
 
 const steps = [
   {
-    icon: FileText,
+    icon: UserPlus,
     step: "01",
-    title: "Aanvraag",
+    title: "Account aanmaken",
     description:
-      "Vul je gegevens in en geef aan welke verduurzaming je interesseert. Binnen 24 uur nemen we contact op.",
+      "Maak in een paar minuten je account aan. Kies je abonnement en krijg direct toegang tot het platform.",
   },
   {
-    icon: Search,
+    icon: Settings,
     step: "02",
-    title: "Schouw & Advies",
+    title: "Team & producten instellen",
     description:
-      "Een gecertificeerde adviseur komt langs voor een gratis schouw en stelt een persoonlijk plan op.",
+      "Voeg je teamleden toe, configureer je productcatalogus en stel je offerte-templates in.",
   },
   {
-    icon: Wrench,
+    icon: Rocket,
     step: "03",
-    title: "Installatie",
+    title: "Direct aan de slag",
     description:
-      "Onze vakmensen installeren alles vakkundig. Na oplevering krijg je een compleet certificaat.",
+      "Ga op locatie aan de slag met digitale schouwen, offertes en planning. Alles vanuit je tablet of laptop.",
   },
 ];
 
@@ -32,14 +32,13 @@ const HowItWorksSection = () => (
           Hoe het werkt
         </p>
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-          In 3 stappen verduurzaamd
+          In 3 stappen operationeel
         </h2>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
         {steps.map((s, i) => (
           <div key={s.step} className="relative text-center group">
-            {/* Connector line */}
             {i < steps.length - 1 && (
               <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-px bg-border" />
             )}

@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 
 const navLinks = [
-  { label: "Home", href: "#hero" },
-  { label: "Diensten", href: "#diensten" },
+  { label: "Features", href: "#features" },
   { label: "Hoe het werkt", href: "#hoe-het-werkt" },
   { label: "Voordelen", href: "#voordelen" },
 ];
@@ -23,8 +22,7 @@ const Navbar = () => {
 
   const scrollTo = (href: string) => {
     setIsOpen(false);
-    const el = document.querySelector(href);
-    el?.scrollIntoView({ behavior: "smooth" });
+    document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -39,13 +37,16 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           <Logo />
 
-          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <button
                 key={link.href}
                 onClick={() => scrollTo(link.href)}
-                className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
+                className={`text-sm font-medium transition-colors ${
+                  scrolled
+                    ? "text-foreground/70 hover:text-primary"
+                    : "text-background/70 hover:text-background"
+                }`}
               >
                 {link.label}
               </button>
@@ -53,20 +54,23 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" asChild>
+            <Button
+              variant="ghost"
+              asChild
+              className={scrolled ? "" : "text-background hover:text-background hover:bg-background/10"}
+            >
               <Link to="/login">Inloggen</Link>
             </Button>
             <Button
               className="rounded-pill px-6"
               onClick={() => scrollTo("#cta")}
             >
-              Offerte aanvragen
+              Gratis proberen
             </Button>
           </div>
 
-          {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 text-foreground"
+            className={`md:hidden p-2 ${scrolled ? "text-foreground" : "text-background"}`}
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -74,7 +78,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isOpen && (
         <div className="md:hidden bg-card/95 backdrop-blur-md border-b border-border animate-fade-in">
           <div className="px-4 py-4 space-y-2">
@@ -95,7 +98,7 @@ const Navbar = () => {
                 className="rounded-pill"
                 onClick={() => scrollTo("#cta")}
               >
-                Offerte aanvragen
+                Gratis proberen
               </Button>
             </div>
           </div>

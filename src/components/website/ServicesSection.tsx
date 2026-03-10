@@ -1,64 +1,64 @@
-import { Sun, Thermometer, Home, BatteryCharging } from "lucide-react";
+import { FileText, Search, CalendarDays, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-const services = [
+const features = [
   {
-    icon: Sun,
-    title: "Zonnepanelen",
+    icon: FileText,
+    title: "Offertes op locatie",
     description:
-      "Bespaar op je energierekening met hoogwaardige zonnepanelen. Wij regelen alles van schouw tot installatie.",
+      "Genereer direct professionele offertes bij de klant thuis. Producten selecteren, prijzen berekenen en versturen — ter plekke.",
   },
   {
-    icon: Thermometer,
-    title: "Warmtepompen",
+    icon: Search,
+    title: "Digitale schouwen",
     description:
-      "Verwarm je huis efficiënt en duurzaam met een warmtepomp. Geschikt voor nieuwbouw én bestaande woningen.",
+      "Voer schouwen uit met digitale formulieren, maak foto's en genereer automatisch rapportages. Geen papierwerk meer.",
   },
   {
-    icon: Home,
-    title: "Isolatie",
+    icon: CalendarDays,
+    title: "Planning & agenda",
     description:
-      "Dak-, muur- en vloerisolatie voor optimaal comfort en lagere stookkosten. Direct merkbaar verschil.",
+      "Beheer installaties, schouwen en afspraken in één overzichtelijke planning. Wijs taken toe aan je team.",
   },
   {
-    icon: BatteryCharging,
-    title: "Thuisbatterij & Laadpaal",
+    icon: Users,
+    title: "Klant- & leadbeheer",
     description:
-      "Sla je eigen energie op of laad je auto thuis. Slimme oplossingen voor maximaal rendement.",
+      "Volg je leads van eerste contact tot installatie. Complete CRM-pipeline speciaal voor de verduurzamingsbranche.",
   },
 ];
 
 const ServicesSection = () => (
-  <section id="diensten" className="py-20 lg:py-28 bg-card">
+  <section id="features" className="py-20 lg:py-28 bg-card">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center max-w-2xl mx-auto mb-14">
         <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
-          Onze diensten
+          Platform features
         </p>
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-          Alles voor een duurzaam huis
+          Alles wat je nodig hebt, in één platform
         </h2>
         <p className="mt-4 text-muted-foreground text-lg">
-          Van advies tot installatie — wij bieden een compleet pakket aan
-          verduurzamingsoplossingen.
+          Van het eerste klantcontact tot de oplevering — mijnhuis.nu
+          stroomlijnt je hele werkproces.
         </p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {services.map((service) => (
+        {features.map((feature) => (
           <Card
-            key={service.title}
+            key={feature.title}
             className="group border-border/50 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 cursor-default"
           >
             <CardContent className="p-6 pt-8">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
-                <service.icon className="text-primary" size={24} />
+                <feature.icon className="text-primary" size={24} />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                {service.title}
+                {feature.title}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {service.description}
+                {feature.description}
               </p>
             </CardContent>
           </Card>

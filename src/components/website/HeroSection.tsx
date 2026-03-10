@@ -1,4 +1,4 @@
-import { ArrowRight, Zap } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
@@ -10,66 +10,71 @@ const HeroSection = () => {
     <section
       id="hero"
       className="relative min-h-[90vh] flex items-center overflow-hidden"
+      style={{
+        backgroundImage:
+          "url('https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&w=1920&q=80')",
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/30" />
-      <div className="absolute top-20 right-0 w-[500px] h-[500px] rounded-full bg-primary/5 blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-accent/40 blur-3xl" />
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-foreground/80" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-primary/10" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-pill px-4 py-1.5 text-sm font-medium mb-6 animate-fade-in">
-            <Zap size={14} />
-            Duurzaam wonen begint hier
+          <div className="inline-flex items-center gap-2 bg-primary/20 text-primary-foreground border border-primary/30 rounded-pill px-4 py-1.5 text-sm font-medium mb-6 backdrop-blur-sm">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            Nu beschikbaar voor installateurs & adviseurs
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight animate-fade-in">
-            Jouw huis,{" "}
-            <span className="text-primary">toekomstbestendig</span>
-            <br />
-            verduurzaamd
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-background leading-tight tracking-tight">
+            Software die je verduurzamings­bedrijf{" "}
+            <span className="text-primary">laat groeien</span>
           </h1>
 
-          <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed animate-fade-in">
-            Van zonnepanelen tot warmtepompen — wij begeleiden je van advies tot
-            installatie. Persoonlijk, transparant en met gecertificeerde
-            vakmensen.
+          <p className="mt-6 text-lg sm:text-xl text-background/70 max-w-2xl leading-relaxed">
+            Maak offertes op locatie, voer digitale schouwen uit, beheer je
+            planning en klanten — alles vanuit één platform. Gebouwd voor
+            installateurs en adviseurs.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 animate-fade-in">
+          <div className="mt-10 flex flex-col sm:flex-row gap-4">
             <Button
               size="lg"
               className="rounded-pill px-8 text-base h-12 shadow-lg shadow-primary/25"
               onClick={() => scrollTo("#cta")}
             >
-              Start je verduurzaming
+              Start gratis proefperiode
               <ArrowRight size={18} />
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="rounded-pill px-8 text-base h-12"
-              onClick={() => scrollTo("#hoe-het-werkt")}
+              className="rounded-pill px-8 text-base h-12 border-background/30 text-background hover:bg-background/10 hover:text-background"
+              onClick={() => scrollTo("#features")}
             >
-              Hoe het werkt
+              <Play size={16} />
+              Bekijk demo
             </Button>
           </div>
 
-          {/* Social proof strip */}
-          <div className="mt-14 flex items-center gap-6 text-sm text-muted-foreground animate-fade-in">
+          {/* Social proof */}
+          <div className="mt-14 flex items-center gap-6 text-sm text-background/60">
             <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="w-8 h-8 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center text-xs font-medium text-primary"
+                  className="w-8 h-8 rounded-full bg-primary/40 border-2 border-background/20 flex items-center justify-center text-xs font-medium text-background backdrop-blur-sm"
                 >
                   {String.fromCharCode(64 + i)}
                 </div>
               ))}
             </div>
             <span>
-              <strong className="text-foreground">2.500+</strong> huishoudens
-              verduurzaamd
+              <strong className="text-background">500+</strong> professionals
+              gebruiken mijnhuis.nu
             </span>
           </div>
         </div>

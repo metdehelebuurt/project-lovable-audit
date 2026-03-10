@@ -1,25 +1,29 @@
-import { ShieldCheck, Users, PiggyBank, HeartHandshake } from "lucide-react";
+import { TrendingUp, Clock, Award, Cloud } from "lucide-react";
 
 const benefits = [
   {
-    icon: ShieldCheck,
-    title: "Gecertificeerde installateurs",
-    description: "Al onze vakmensen zijn erkend en gecertificeerd. Kwaliteit en veiligheid gegarandeerd.",
+    icon: TrendingUp,
+    title: "Meer omzet genereren",
+    description:
+      "Maak sneller offertes, volg leads beter op en verhoog je conversie. Gemiddeld 30% meer omzet binnen 6 maanden.",
   },
   {
-    icon: Users,
-    title: "Persoonlijk advies",
-    description: "Een vaste adviseur die je kent, begeleidt je door het hele traject. Geen callcenter.",
+    icon: Clock,
+    title: "Minder administratie",
+    description:
+      "Automatiseer je papierwerk. Digitale schouwen, automatische rapportages en gestroomlijnde facturatie.",
   },
   {
-    icon: PiggyBank,
-    title: "Scherpe prijzen",
-    description: "Dankzij ons netwerk van partners bieden wij scherpe, eerlijke prijzen zonder verborgen kosten.",
+    icon: Award,
+    title: "Professionele uitstraling",
+    description:
+      "Verstuur branded offertes en rapporten. Laat je klanten zien dat je een professional bent met moderne tools.",
   },
   {
-    icon: HeartHandshake,
-    title: "Subsidie-hulp",
-    description: "We helpen je alle beschikbare subsidies en regelingen aan te vragen. Maximaal voordeel.",
+    icon: Cloud,
+    title: "Altijd en overal toegang",
+    description:
+      "Cloudgebaseerd platform. Werk op locatie, thuis of op kantoor. Altijd actuele data, op elk apparaat.",
   },
 ];
 
@@ -37,13 +41,20 @@ const BenefitsSection = () => (
 
       <div className="grid sm:grid-cols-2 gap-8">
         {benefits.map((b) => (
-          <div key={b.title} className="flex gap-5 p-6 rounded-2xl bg-background border border-border/50 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+          <div
+            key={b.title}
+            className="flex gap-5 p-6 rounded-2xl bg-background border border-border/50 hover:border-primary/20 hover:shadow-lg transition-all duration-300"
+          >
             <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <b.icon className="text-primary" size={22} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">{b.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{b.description}</p>
+              <h3 className="text-lg font-semibold text-foreground mb-1">
+                {b.title}
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {b.description}
+              </p>
             </div>
           </div>
         ))}
