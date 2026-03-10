@@ -24,6 +24,38 @@ serve(async (req) => {
       return await handleSetupSuperadmin(supabaseAdmin, corsHeaders);
     }
 
+    // Admin password reset (bootstrap utility)
+    if (action === "reset_admin_password") {
+      const { new_password } = payload;
+      const { data: admins } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("rol", "superadmin")
+        .limit(1);
+      
+      if (!admins || admins.length === 0) {
+        return new Response(JSON.stringify({ error: "Geen superadmin gevonden" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(admins[0].id, {
+        password: new_password,
+      });
+
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: "Admin wachtwoord gereset" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // All other actions require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
