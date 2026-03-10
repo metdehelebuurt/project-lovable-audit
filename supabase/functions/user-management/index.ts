@@ -17,7 +17,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify the caller is authenticated
+    const { action, ...payload } = await req.json();
+
+    // Setup superadmin doesn't require auth (bootstrap)
+    if (action === "setup_superadmin") {
+      return await handleSetupSuperadmin(supabaseAdmin, corsHeaders);
+    }
+
+    // All other actions require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
