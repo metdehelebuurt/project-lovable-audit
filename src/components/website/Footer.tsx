@@ -5,41 +5,37 @@ const Footer = () => (
   <footer className="bg-foreground text-background/70 pt-16 pb-8">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-        {/* Brand */}
         <div>
           <div className="mb-4 [&_svg_path]:fill-background/80 [&_span]:text-background/90 [&_.text-primary]:text-primary">
             <Logo />
           </div>
           <p className="text-sm leading-relaxed">
-            Het platform voor duurzame woningverbeteringen. Van advies tot
-            installatie, wij regelen het.
+            Het alles-in-één platform voor installateurs en adviseurs in de
+            verduurzamingsbranche.
           </p>
         </div>
 
-        {/* Diensten */}
         <div>
-          <h4 className="text-background font-semibold mb-4">Diensten</h4>
+          <h4 className="text-background font-semibold mb-4">Platform</h4>
           <ul className="space-y-2 text-sm">
-            <li>Zonnepanelen</li>
-            <li>Warmtepompen</li>
-            <li>Isolatie</li>
-            <li>Thuisbatterij</li>
-            <li>Laadpaal</li>
+            <li>Offertes op locatie</li>
+            <li>Digitale schouwen</li>
+            <li>Planning & agenda</li>
+            <li>Klant- & leadbeheer</li>
+            <li>Rapportages</li>
           </ul>
         </div>
 
-        {/* Bedrijf */}
         <div>
           <h4 className="text-background font-semibold mb-4">Bedrijf</h4>
           <ul className="space-y-2 text-sm">
             <li>Over ons</li>
-            <li>Hoe het werkt</li>
+            <li>Prijzen</li>
             <li>Partners worden</li>
             <li>Veelgestelde vragen</li>
           </ul>
         </div>
 
-        {/* Contact */}
         <div>
           <h4 className="text-background font-semibold mb-4">Contact</h4>
           <ul className="space-y-3 text-sm">
