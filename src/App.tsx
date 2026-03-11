@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
+import { CookieConsent } from "@/components/CookieConsent";
+import { SessionTimeout } from "@/components/SessionTimeout";
 import Login from "@/pages/Login";
 import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
@@ -20,6 +22,7 @@ import Installaties from "@/pages/Installaties";
 import Planning from "@/pages/Planning";
 import Analytics from "@/pages/Analytics";
 import Berichten from "@/pages/Berichten";
+import Documenten from "@/pages/Documenten";
 import Instellingen from "@/pages/Instellingen";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
@@ -34,71 +37,55 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <SessionTimeout />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/partners" element={
-                <ProtectedRoute allowedRoles={["superadmin"]}>
-                  <Partners />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin"]}><Partners /></ProtectedRoute>
               } />
               <Route path="/adviseurs" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}>
-                  <Adviseurs />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Adviseurs /></ProtectedRoute>
               } />
               <Route path="/gebruikers" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}>
-                  <Gebruikers />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><Gebruikers /></ProtectedRoute>
               } />
               <Route path="/leads" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}>
-                  <Leads />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Leads /></ProtectedRoute>
               } />
               <Route path="/producten" element={<Producten />} />
               <Route path="/schouwen" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}>
-                  <Schouwen />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><Schouwen /></ProtectedRoute>
               } />
               <Route path="/offertes" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"]}>
-                  <Offertes />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"]}><Offertes /></ProtectedRoute>
               } />
               <Route path="/installaties" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "installateur"]}>
-                  <Installaties />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "installateur"]}><Installaties /></ProtectedRoute>
               } />
               <Route path="/planning" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}>
-                  <Planning />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><Planning /></ProtectedRoute>
               } />
               <Route path="/analytics" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}>
-                  <Analytics />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Analytics /></ProtectedRoute>
               } />
               <Route path="/berichten" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "consument"]}>
-                  <Berichten />
-                </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "consument"]}><Berichten /></ProtectedRoute>
+              } />
+              <Route path="/documenten" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Documenten /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <CookieConsent />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
