@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,36 +22,21 @@ type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
 
 const statusLabels: Record<LeadStatus, string> = {
-  nieuw: "Nieuw",
-  gekwalificeerd: "Gekwalificeerd",
-  offerte_verzonden: "Offerte verzonden",
-  klant: "Klant",
-  verloren: "Verloren",
+  nieuw: "Nieuw", gekwalificeerd: "Gekwalificeerd", offerte_verzonden: "Offerte verzonden",
+  klant: "Klant", verloren: "Verloren",
 };
-
 const statusColors: Record<LeadStatus, string> = {
-  nieuw: "bg-primary/10 text-primary",
-  gekwalificeerd: "bg-success-light text-success",
-  offerte_verzonden: "bg-warning-light text-warning-foreground",
-  klant: "bg-success text-success-foreground",
+  nieuw: "bg-primary/10 text-primary", gekwalificeerd: "bg-success-light text-success",
+  offerte_verzonden: "bg-warning-light text-warning-foreground", klant: "bg-success text-success-foreground",
   verloren: "bg-error-light text-error",
 };
-
 const bronOptions = ["website", "telefoon", "referral", "advertentie", "beurs", "overig"];
 
 interface LeadFormData {
-  voornaam: string;
-  achternaam: string;
-  email: string;
-  telefoon: string;
-  bedrijfsnaam: string;
-  adres: string;
-  postcode: string;
-  plaats: string;
-  bron: string;
-  notities: string;
+  voornaam: string; achternaam: string; email: string; telefoon: string;
+  bedrijfsnaam: string; adres: string; postcode: string; plaats: string;
+  bron: string; notities: string;
 }
-
 const emptyForm: LeadFormData = {
   voornaam: "", achternaam: "", email: "", telefoon: "",
   bedrijfsnaam: "", adres: "", postcode: "", plaats: "",
@@ -64,6 +50,8 @@ const Leads = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [form, setForm] = useState<LeadFormData>(emptyForm);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
@@ -78,39 +66,22 @@ const Leads = () => {
     },
   });
 
-  const { data: adviseurs = [] } = useQuery({
-    queryKey: ["adviseurs-list"],
-    queryFn: async () => {
-      let query = supabase.from("users").select("id, voornaam, achternaam").eq("rol", "adviseur");
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & LeadFormData) => {
       const { id, ...rest } = data;
       const record: any = {
         ...rest,
-        telefoon: rest.telefoon || null,
-        bedrijfsnaam: rest.bedrijfsnaam || null,
-        adres: rest.adres || null,
-        postcode: rest.postcode || null,
-        plaats: rest.plaats || null,
-        bron: rest.bron || null,
-        notities: rest.notities || null,
+        telefoon: rest.telefoon || null, bedrijfsnaam: rest.bedrijfsnaam || null,
+        adres: rest.adres || null, postcode: rest.postcode || null,
+        plaats: rest.plaats || null, bron: rest.bron || null, notities: rest.notities || null,
       };
-
       if (id) {
         const { error } = await supabase.from("leads").update(record).eq("id", id);
         if (error) throw error;
       } else {
         record.partner_id = profile?.partner_id;
         record.owner_user_id = profile?.id;
-        if (!record.partner_id && isSuperadmin) {
-          throw new Error("Superadmin moet een partner selecteren om leads aan te maken");
-        }
+        if (!record.partner_id && isSuperadmin) throw new Error("Superadmin moet een partner selecteren");
         const { error } = await supabase.from("leads").insert(record as LeadInsert);
         if (error) throw error;
       }
@@ -131,6 +102,20 @@ const Leads = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast.success("Status bijgewerkt");
+    },
+    onError: (err: Error) => toast.error("Fout", { description: err.message }),
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: LeadStatus }) => {
+      const { error } = await supabase.from("leads").update({ lead_status: status }).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success(`${selected.size} leads bijgewerkt`);
+      setSelected(new Set());
+      setBulkStatus("");
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
@@ -163,6 +148,24 @@ const Leads = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     saveMutation.mutate(editingLead ? { ...form, id: editingLead.id } : form);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(l => l.id)));
+  };
+
+  const handleBulkUpdate = () => {
+    if (!bulkStatus || selected.size === 0) return;
+    bulkStatusMutation.mutate({ ids: Array.from(selected), status: bulkStatus as LeadStatus });
   };
 
   const filtered = leads.filter(l => {
@@ -202,6 +205,24 @@ const Leads = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 mt-3 p-3 bg-muted rounded-xl">
+              <span className="text-sm font-medium">{selected.size} geselecteerd</span>
+              <Select value={bulkStatus} onValueChange={v => setBulkStatus(v as LeadStatus)}>
+                <SelectTrigger className="w-44 h-8 rounded-lg"><SelectValue placeholder="Nieuwe status..." /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
+                    <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" onClick={handleBulkUpdate} disabled={!bulkStatus || bulkStatusMutation.isPending} className="rounded-pill">
+                {bulkStatusMutation.isPending ? "Bijwerken..." : "Status wijzigen"}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="rounded-pill">Deselecteer</Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -216,6 +237,9 @@ const Leads = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox checked={selected.size === filtered.length && filtered.length > 0} onCheckedChange={toggleAll} />
+                    </TableHead>
                     <TableHead>Naam</TableHead>
                     <TableHead>E-mail</TableHead>
                     <TableHead>Telefoon</TableHead>
@@ -227,7 +251,10 @@ const Leads = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(lead => (
-                    <TableRow key={lead.id}>
+                    <TableRow key={lead.id} className={selected.has(lead.id) ? "bg-muted/50" : ""}>
+                      <TableCell>
+                        <Checkbox checked={selected.has(lead.id)} onCheckedChange={() => toggleSelect(lead.id)} />
+                      </TableCell>
                       <TableCell className="font-medium">{lead.voornaam} {lead.achternaam}</TableCell>
                       <TableCell>{lead.email}</TableCell>
                       <TableCell>{lead.telefoon || "—"}</TableCell>

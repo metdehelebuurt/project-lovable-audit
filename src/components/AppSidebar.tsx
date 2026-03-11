@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
-  MessageSquare, Home
+  MessageSquare, Home, FolderOpen
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +32,7 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Producten", url: "/producten", icon: Package },
         { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Offertes", url: "/offertes", icon: FileText },
+        { title: "Documenten", url: "/documenten", icon: FolderOpen },
         { title: "Instellingen", url: "/instellingen", icon: Settings },
       ];
     case "partner_admin":
@@ -46,6 +47,7 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Installaties", url: "/installaties", icon: Wrench },
         { title: "Planning", url: "/planning", icon: Calendar },
         { title: "Analytics", url: "/analytics", icon: BarChart3 },
+        { title: "Documenten", url: "/documenten", icon: FolderOpen },
         { title: "Instellingen", url: "/instellingen", icon: Settings },
       ];
     case "partner_staff":
@@ -59,6 +61,7 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Installaties", url: "/installaties", icon: Wrench },
         { title: "Planning", url: "/planning", icon: Calendar },
         { title: "Analytics", url: "/analytics", icon: BarChart3 },
+        { title: "Documenten", url: "/documenten", icon: FolderOpen },
         { title: "Instellingen", url: "/instellingen", icon: Settings },
       ];
     case "adviseur":
