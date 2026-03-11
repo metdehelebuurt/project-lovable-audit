@@ -97,6 +97,7 @@ const generateOfferteNummer = () => {
 const Offertes = () => {
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialog, setViewDialog] = useState<Offerte | null>(null);
