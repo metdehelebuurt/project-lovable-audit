@@ -1,4 +1,4 @@
-import { Bell, LogOut, User, Menu } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "sonner";
+import { NotificatieCenter } from "@/components/NotificatieCenter";
 
 const rolLabels: Record<string, string> = {
   superadmin: "Platformbeheerder",
