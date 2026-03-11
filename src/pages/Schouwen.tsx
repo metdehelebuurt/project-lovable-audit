@@ -517,6 +517,18 @@ const Schouwen = () => {
                   <p className="whitespace-pre-wrap">{viewDialog.notities}</p>
                 </div>
               )}
+              {canCreate && viewDialog.status === "uitgevoerd" && (
+                <div className="border-t pt-4">
+                  <Button
+                    className="rounded-pill gap-2"
+                    onClick={() => {
+                      navigate(`/offertes?schouw_id=${viewDialog.id}&lead_id=${viewDialog.lead_id}&klant_naam=${encodeURIComponent(viewDialog.consument_naam || "")}&klant_email=${encodeURIComponent(viewDialog.klant_email || "")}`);
+                    }}
+                  >
+                    <FileText className="h-4 w-4" /> Genereer offerte
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
