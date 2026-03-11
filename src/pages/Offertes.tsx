@@ -111,8 +111,26 @@ const Offertes = () => {
   const isConsument = profile?.rol === "consument";
   const canDelete = isSuperadmin || isAdmin;
   const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
+  // Auto-open create dialog from Schouw link
+  useEffect(() => {
+    const schouwId = searchParams.get("schouw_id");
+    const leadId = searchParams.get("lead_id");
+    if (schouwId && canCreate) {
+      const geldigTot = new Date();
+      geldigTot.setDate(geldigTot.getDate() + 30);
+      setForm({
+        ...emptyForm,
+        schouw_id: schouwId,
+        lead_id: leadId || "",
+        klant_naam: decodeURIComponent(searchParams.get("klant_naam") || ""),
+        klant_email: decodeURIComponent(searchParams.get("klant_email") || ""),
+        geldig_tot: geldigTot.toISOString().split("T")[0],
+      });
+      setDialogOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, canCreate]);
 
-  const { data: offertes = [], isLoading } = useQuery({
     queryKey: ["offertes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("offertes").select("*").order("created_at", { ascending: false });
