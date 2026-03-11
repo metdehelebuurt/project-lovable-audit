@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, FileText, Eye, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
