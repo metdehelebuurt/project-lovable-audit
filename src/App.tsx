@@ -26,6 +26,7 @@ import Documenten from "@/pages/Documenten";
 import Instellingen from "@/pages/Instellingen";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
+import Energieadvies from "@/pages/Energieadvies";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
