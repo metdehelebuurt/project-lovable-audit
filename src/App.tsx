@@ -26,6 +26,7 @@ import Documenten from "@/pages/Documenten";
 import Instellingen from "@/pages/Instellingen";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
+import Energieadvies from "@/pages/Energieadvies";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,9 @@ const App = () => (
               } />
               <Route path="/documenten" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Documenten /></ProtectedRoute>
+              } />
+              <Route path="/energieadvies" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
             </Route>
