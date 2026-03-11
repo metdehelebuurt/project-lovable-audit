@@ -602,6 +602,80 @@ const Offertes = () => {
                   <p className="whitespace-pre-wrap">{viewDialog.notities}</p>
                 </div>
               )}
+
+              {/* Consument: accept/reject/feedback */}
+              {isConsument && viewDialog.status === "verzonden" && (
+                <div className="border-t pt-4 space-y-4">
+                  <h3 className="font-medium text-foreground">Reageren op deze offerte</h3>
+                  <div className="flex gap-3">
+                    <Button
+                      className="rounded-pill gap-2 bg-success hover:bg-success/90 text-white"
+                      onClick={() => {
+                        statusMutation.mutate({ id: viewDialog.id, status: "geaccepteerd" });
+                        setViewDialog({ ...viewDialog, status: "geaccepteerd" });
+                      }}
+                    >
+                      <Check className="h-4 w-4" /> Accepteren
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="rounded-pill gap-2"
+                      onClick={() => {
+                        statusMutation.mutate({ id: viewDialog.id, status: "afgewezen" });
+                        setViewDialog({ ...viewDialog, status: "afgewezen" });
+                      }}
+                    >
+                      <XCircle className="h-4 w-4" /> Afwijzen
+                    </Button>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label>Feedback / vraag</Label>
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={feedbackText}
+                        onChange={e => setFeedbackText(e.target.value)}
+                        placeholder="Stel een vraag of geef feedback..."
+                        className="rounded-xl flex-1"
+                        rows={2}
+                      />
+                      <Button
+                        variant="outline"
+                        className="rounded-pill self-end gap-1"
+                        disabled={!feedbackText.trim()}
+                        onClick={async () => {
+                          const existing = Array.isArray(viewDialog.feedback_berichten) ? viewDialog.feedback_berichten : [];
+                          const newMsg = { auteur: profile?.voornaam + " " + profile?.achternaam, bericht: feedbackText.trim(), datum: new Date().toISOString(), rol: "consument" };
+                          const updated = [...existing, newMsg];
+                          await supabase.from("offertes").update({ feedback_berichten: updated as unknown as Json }).eq("id", viewDialog.id);
+                          setViewDialog({ ...viewDialog, feedback_berichten: updated as unknown as Json });
+                          setFeedbackText("");
+                          toast.success("Feedback verzonden");
+                          queryClient.invalidateQueries({ queryKey: ["offertes"] });
+                        }}
+                      >
+                        <MessageSquare className="h-4 w-4" /> Verstuur
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Show existing feedback */}
+              {viewDialog.feedback_berichten && Array.isArray(viewDialog.feedback_berichten) && (viewDialog.feedback_berichten as any[]).length > 0 && (
+                <div className="border-t pt-4 space-y-3">
+                  <h3 className="font-medium text-foreground">Feedback berichten</h3>
+                  {(viewDialog.feedback_berichten as any[]).map((fb: any, i: number) => (
+                    <div key={i} className="bg-muted/30 rounded-xl p-3">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span className="font-medium">{fb.auteur}</span>
+                        <span>{new Date(fb.datum).toLocaleString("nl-NL")}</span>
+                      </div>
+                      <p className="text-sm">{fb.bericht}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
