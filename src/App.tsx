@@ -81,6 +81,9 @@ const App = () => (
               <Route path="/documenten" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Documenten /></ProtectedRoute>
               } />
+              <Route path="/energieadvies" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
+              } />
               <Route path="/instellingen" element={<Instellingen />} />
             </Route>
 

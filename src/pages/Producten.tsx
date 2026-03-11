@@ -204,9 +204,6 @@ const Producten = () => {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(price);
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(price);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
