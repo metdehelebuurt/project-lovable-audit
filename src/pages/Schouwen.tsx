@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ClipboardList, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Schouw = Database["public"]["Tables"]["schouwen"]["Row"];
@@ -133,7 +133,10 @@ const generateSchouwNummer = () => {
   return `SCH-${year}-${rand}`;
 };
 
+import { useNavigate } from "react-router-dom";
+
 const Schouwen = () => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
@@ -512,6 +515,18 @@ const Schouwen = () => {
                 <div className="border-t pt-4">
                   <Label className="text-muted-foreground">Notities</Label>
                   <p className="whitespace-pre-wrap">{viewDialog.notities}</p>
+                </div>
+              )}
+              {canCreate && viewDialog.status === "uitgevoerd" && (
+                <div className="border-t pt-4">
+                  <Button
+                    className="rounded-pill gap-2"
+                    onClick={() => {
+                      navigate(`/offertes?schouw_id=${viewDialog.id}&lead_id=${viewDialog.lead_id}&klant_naam=${encodeURIComponent(viewDialog.consument_naam || "")}&klant_email=${encodeURIComponent(viewDialog.klant_email || "")}`);
+                    }}
+                  >
+                    <FileText className="h-4 w-4" /> Genereer offerte
+                  </Button>
                 </div>
               )}
             </div>

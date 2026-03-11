@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, FileText, Eye, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
@@ -94,18 +96,40 @@ const generateOfferteNummer = () => {
 
 const Offertes = () => {
   const { profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialog, setViewDialog] = useState<Offerte | null>(null);
   const [editingOfferte, setEditingOfferte] = useState<Offerte | null>(null);
   const [form, setForm] = useState<OfferteFormData>(emptyForm);
+  const [feedbackText, setFeedbackText] = useState("");
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const isConsument = profile?.rol === "consument";
   const canDelete = isSuperadmin || isAdmin;
   const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
+  // Auto-open create dialog from Schouw link
+  useEffect(() => {
+    const schouwId = searchParams.get("schouw_id");
+    const leadId = searchParams.get("lead_id");
+    if (schouwId && canCreate) {
+      const geldigTot = new Date();
+      geldigTot.setDate(geldigTot.getDate() + 30);
+      setForm({
+        ...emptyForm,
+        schouw_id: schouwId,
+        lead_id: leadId || "",
+        klant_naam: decodeURIComponent(searchParams.get("klant_naam") || ""),
+        klant_email: decodeURIComponent(searchParams.get("klant_email") || ""),
+        geldig_tot: geldigTot.toISOString().split("T")[0],
+      });
+      setDialogOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, canCreate]);
 
   const { data: offertes = [], isLoading } = useQuery({
     queryKey: ["offertes"],
@@ -597,6 +621,80 @@ const Offertes = () => {
                 <div className="border-t pt-4">
                   <Label className="text-muted-foreground">Notities</Label>
                   <p className="whitespace-pre-wrap">{viewDialog.notities}</p>
+                </div>
+              )}
+
+              {/* Consument: accept/reject/feedback */}
+              {isConsument && viewDialog.status === "verzonden" && (
+                <div className="border-t pt-4 space-y-4">
+                  <h3 className="font-medium text-foreground">Reageren op deze offerte</h3>
+                  <div className="flex gap-3">
+                    <Button
+                      className="rounded-pill gap-2 bg-success hover:bg-success/90 text-white"
+                      onClick={() => {
+                        statusMutation.mutate({ id: viewDialog.id, status: "geaccepteerd" });
+                        setViewDialog({ ...viewDialog, status: "geaccepteerd" });
+                      }}
+                    >
+                      <Check className="h-4 w-4" /> Accepteren
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="rounded-pill gap-2"
+                      onClick={() => {
+                        statusMutation.mutate({ id: viewDialog.id, status: "afgewezen" });
+                        setViewDialog({ ...viewDialog, status: "afgewezen" });
+                      }}
+                    >
+                      <XCircle className="h-4 w-4" /> Afwijzen
+                    </Button>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label>Feedback / vraag</Label>
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={feedbackText}
+                        onChange={e => setFeedbackText(e.target.value)}
+                        placeholder="Stel een vraag of geef feedback..."
+                        className="rounded-xl flex-1"
+                        rows={2}
+                      />
+                      <Button
+                        variant="outline"
+                        className="rounded-pill self-end gap-1"
+                        disabled={!feedbackText.trim()}
+                        onClick={async () => {
+                          const existing = Array.isArray(viewDialog.feedback_berichten) ? viewDialog.feedback_berichten : [];
+                          const newMsg = { auteur: profile?.voornaam + " " + profile?.achternaam, bericht: feedbackText.trim(), datum: new Date().toISOString(), rol: "consument" };
+                          const updated = [...existing, newMsg];
+                          await supabase.from("offertes").update({ feedback_berichten: updated as unknown as Json }).eq("id", viewDialog.id);
+                          setViewDialog({ ...viewDialog, feedback_berichten: updated as unknown as Json });
+                          setFeedbackText("");
+                          toast.success("Feedback verzonden");
+                          queryClient.invalidateQueries({ queryKey: ["offertes"] });
+                        }}
+                      >
+                        <MessageSquare className="h-4 w-4" /> Verstuur
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Show existing feedback */}
+              {viewDialog.feedback_berichten && Array.isArray(viewDialog.feedback_berichten) && (viewDialog.feedback_berichten as any[]).length > 0 && (
+                <div className="border-t pt-4 space-y-3">
+                  <h3 className="font-medium text-foreground">Feedback berichten</h3>
+                  {(viewDialog.feedback_berichten as any[]).map((fb: any, i: number) => (
+                    <div key={i} className="bg-muted/30 rounded-xl p-3">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span className="font-medium">{fb.auteur}</span>
+                        <span>{new Date(fb.datum).toLocaleString("nl-NL")}</span>
+                      </div>
+                      <p className="text-sm">{fb.bericht}</p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
