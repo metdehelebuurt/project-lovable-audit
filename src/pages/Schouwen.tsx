@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Schouw = Database["public"]["Tables"]["schouwen"]["Row"];
@@ -43,7 +44,6 @@ const statusColors: Record<SchouwStatus, string> = {
   geannuleerd: "bg-error-light text-error",
 };
 
-// Category-specific field definitions
 const categoryFields: Record<SchouwCategorie, { key: string; label: string; type: "text" | "number" | "select"; options?: string[] }[]> = {
   zonnepanelen: [
     { key: "daktype", label: "Daktype", type: "select", options: ["schuin", "plat", "combinatie"] },
@@ -133,6 +133,12 @@ const generateSchouwNummer = () => {
   return `SCH-${year}-${rand}`;
 };
 
+const WIZARD_STEPS = [
+  { label: "Basisgegevens", description: "Lead, categorie & datum" },
+  { label: "Inspectie", description: "Categorie-specifieke velden" },
+  { label: "Samenvatting", description: "Controleren & opslaan" },
+];
+
 import { useNavigate } from "react-router-dom";
 
 const Schouwen = () => {
@@ -145,6 +151,7 @@ const Schouwen = () => {
   const [viewDialog, setViewDialog] = useState<Schouw | null>(null);
   const [editingSchouw, setEditingSchouw] = useState<Schouw | null>(null);
   const [form, setForm] = useState<SchouwFormData>(emptyForm);
+  const [wizardStep, setWizardStep] = useState(0);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
@@ -229,7 +236,7 @@ const Schouwen = () => {
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
 
-  const openCreate = () => { setEditingSchouw(null); setForm(emptyForm); setDialogOpen(true); };
+  const openCreate = () => { setEditingSchouw(null); setForm(emptyForm); setWizardStep(0); setDialogOpen(true); };
   const openEdit = (s: Schouw) => {
     setEditingSchouw(s);
     setForm({
@@ -241,9 +248,10 @@ const Schouwen = () => {
       notities: s.notities || "",
       gegevens: (s.gegevens as Record<string, string>) || {},
     });
+    setWizardStep(0);
     setDialogOpen(true);
   };
-  const closeDialog = () => { setDialogOpen(false); setEditingSchouw(null); setForm(emptyForm); };
+  const closeDialog = () => { setDialogOpen(false); setEditingSchouw(null); setForm(emptyForm); setWizardStep(0); };
 
   const handleLeadSelect = (leadId: string) => {
     const lead = leads.find(l => l.id === leadId);
@@ -259,9 +267,13 @@ const Schouwen = () => {
     setForm(p => ({ ...p, gegevens: { ...p.gegevens, [key]: value } }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     saveMutation.mutate(editingSchouw ? { ...form, id: editingSchouw.id } : form);
+  };
+
+  const canGoNext = () => {
+    if (wizardStep === 0) return !!form.lead_id && !!form.geplande_datum;
+    return true;
   };
 
   const filtered = schouwen.filter(s => {
@@ -272,6 +284,7 @@ const Schouwen = () => {
   });
 
   const fields = categoryFields[form.categorie] || [];
+  const selectedLead = leads.find(l => l.id === form.lead_id);
 
   return (
     <div className="space-y-6">
@@ -390,16 +403,36 @@ const Schouwen = () => {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Dialog */}
+      {/* Wizard Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingSchouw ? "Schouw bewerken" : "Nieuwe schouw inplannen"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Step 1: Lead & Category */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-foreground">Basisgegevens</h3>
+
+          {/* Progress indicator */}
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              {WIZARD_STEPS.map((step, i) => (
+                <div key={i} className={`flex items-center gap-1.5 ${i <= wizardStep ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs border-2 ${
+                    i < wizardStep ? "bg-primary text-primary-foreground border-primary" :
+                    i === wizardStep ? "border-primary text-primary" :
+                    "border-muted-foreground/30"
+                  }`}>
+                    {i < wizardStep ? <Check className="h-3 w-3" /> : i + 1}
+                  </div>
+                  <span className="hidden sm:inline">{step.label}</span>
+                </div>
+              ))}
+            </div>
+            <Progress value={((wizardStep + 1) / WIZARD_STEPS.length) * 100} className="h-1.5" />
+          </div>
+
+          {/* Step 1: Basisgegevens */}
+          {wizardStep === 0 && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Selecteer de lead, categorie en plandatum.</p>
               <div>
                 <Label>Lead *</Label>
                 <Select value={form.lead_id || "none"} onValueChange={v => v !== "none" && handleLeadSelect(v)}>
@@ -434,11 +467,13 @@ const Schouwen = () => {
                 <div><Label>Klant e-mail</Label><Input type="email" value={form.klant_email} onChange={e => setForm(p => ({ ...p, klant_email: e.target.value }))} className="rounded-xl" /></div>
               </div>
             </div>
+          )}
 
-            {/* Step 2: Category-specific fields */}
-            {fields.length > 0 && (
-              <div className="space-y-4 border-t pt-4">
-                <h3 className="font-medium text-foreground">Inspectiegegevens — {categorieLabels[form.categorie]}</h3>
+          {/* Step 2: Inspectiegegevens */}
+          {wizardStep === 1 && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Vul de inspectiegegevens in voor <strong>{categorieLabels[form.categorie]}</strong>.</p>
+              {fields.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4">
                   {fields.map(f => (
                     <div key={f.key}>
@@ -462,21 +497,79 @@ const Schouwen = () => {
                     </div>
                   ))}
                 </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Geen specifieke velden voor deze categorie.</p>
+              )}
+              <div>
+                <Label>Notities</Label>
+                <Textarea value={form.notities} onChange={e => setForm(p => ({ ...p, notities: e.target.value }))} className="rounded-xl" rows={3} />
               </div>
-            )}
-
-            <div>
-              <Label>Notities</Label>
-              <Textarea value={form.notities} onChange={e => setForm(p => ({ ...p, notities: e.target.value }))} className="rounded-xl" rows={3} />
             </div>
+          )}
 
-            <DialogFooter>
+          {/* Step 3: Samenvatting */}
+          {wizardStep === 2 && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Controleer de gegevens en sla de schouw op.</p>
+              <Card className="border">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-muted-foreground">Lead:</span> <span className="font-medium">{selectedLead ? `${selectedLead.voornaam} ${selectedLead.achternaam}` : "—"}</span></div>
+                    <div><span className="text-muted-foreground">Categorie:</span> <span className="font-medium">{categorieLabels[form.categorie]}</span></div>
+                    <div><span className="text-muted-foreground">Datum:</span> <span className="font-medium">{form.geplande_datum ? new Date(form.geplande_datum).toLocaleDateString("nl-NL") : "—"}</span></div>
+                    <div><span className="text-muted-foreground">Klant:</span> <span className="font-medium">{form.consument_naam || "—"}</span></div>
+                    <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{form.klant_email || "—"}</span></div>
+                  </div>
+                  {Object.keys(form.gegevens).filter(k => form.gegevens[k]).length > 0 && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Inspectiegegevens</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {Object.entries(form.gegevens).filter(([, v]) => v).map(([key, val]) => {
+                          const fieldDef = fields.find(f => f.key === key);
+                          return (
+                            <div key={key}>
+                              <span className="text-muted-foreground">{fieldDef?.label || key}:</span>{" "}
+                              <span className="font-medium capitalize">{String(val).replace(/_/g, " ")}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {form.notities && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Notities</p>
+                      <p className="text-sm whitespace-pre-wrap">{form.notities}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Navigation buttons */}
+          <DialogFooter className="flex justify-between sm:justify-between gap-2">
+            <div>
+              {wizardStep > 0 && (
+                <Button type="button" variant="outline" onClick={() => setWizardStep(s => s - 1)} className="rounded-pill gap-1">
+                  <ChevronLeft className="h-4 w-4" /> Vorige
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={closeDialog} className="rounded-pill">Annuleren</Button>
-              <Button type="submit" className="rounded-pill" disabled={saveMutation.isPending || !form.lead_id || !form.geplande_datum}>
-                {saveMutation.isPending ? "Opslaan..." : editingSchouw ? "Bijwerken" : "Inplannen"}
-              </Button>
-            </DialogFooter>
-          </form>
+              {wizardStep < 2 ? (
+                <Button type="button" onClick={() => setWizardStep(s => s + 1)} className="rounded-pill gap-1" disabled={!canGoNext()}>
+                  Volgende <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="button" onClick={handleSubmit} className="rounded-pill gap-1" disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Opslaan..." : editingSchouw ? "Bijwerken" : "Inplannen"}
+                  <Check className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

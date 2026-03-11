@@ -204,6 +204,9 @@ const Producten = () => {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(price);
 
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(price);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -217,6 +220,49 @@ const Producten = () => {
           </Button>
         )}
       </div>
+
+      {/* Statistieken */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">Totaal</p>
+            <p className="text-2xl font-bold text-foreground">{producten.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">Actief</p>
+            <p className="text-2xl font-bold text-foreground">{actief}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">Uitgefaseerd</p>
+            <p className="text-2xl font-bold text-foreground">{uitgefaseerd}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">Cataloguswaarde</p>
+            <p className="text-2xl font-bold text-foreground">{formatPrice(totaalWaarde)}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {topProducten.length > 0 && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm font-medium text-muted-foreground mb-2">Meest verkochte producten</p>
+            <div className="flex flex-wrap gap-3">
+              {topProducten.map((tp, i) => (
+                <Badge key={i} variant="outline" className="text-sm py-1 px-3">
+                  {tp.naam} <span className="ml-1 text-muted-foreground">({tp.aantal}×)</span>
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="pb-4">
