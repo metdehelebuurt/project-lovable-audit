@@ -101,10 +101,12 @@ const Offertes = () => {
   const [viewDialog, setViewDialog] = useState<Offerte | null>(null);
   const [editingOfferte, setEditingOfferte] = useState<Offerte | null>(null);
   const [form, setForm] = useState<OfferteFormData>(emptyForm);
+  const [feedbackText, setFeedbackText] = useState("");
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const isConsument = profile?.rol === "consument";
   const canDelete = isSuperadmin || isAdmin;
   const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
 
