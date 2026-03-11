@@ -35,6 +35,19 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Instellingen", url: "/instellingen", icon: Settings },
       ];
     case "partner_admin":
+      return [
+        ...common,
+        { title: "Adviseurs", url: "/adviseurs", icon: UserCheck },
+        { title: "Gebruikers", url: "/gebruikers", icon: Users },
+        { title: "Producten", url: "/producten", icon: Package },
+        { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
+        { title: "Offertes", url: "/offertes", icon: FileText },
+        { title: "Leads", url: "/leads", icon: Users },
+        { title: "Installaties", url: "/installaties", icon: Wrench },
+        { title: "Planning", url: "/planning", icon: Calendar },
+        { title: "Analytics", url: "/analytics", icon: BarChart3 },
+        { title: "Instellingen", url: "/instellingen", icon: Settings },
+      ];
     case "partner_staff":
       return [
         ...common,

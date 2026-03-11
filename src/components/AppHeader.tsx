@@ -36,9 +36,7 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-        </Button>
+        <NotificatieCenter />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

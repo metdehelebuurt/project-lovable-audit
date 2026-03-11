@@ -1,8 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, ClipboardList, FileText, Wrench, TrendingUp } from "lucide-react";
 
-const StatCard = ({ title, value, icon: Icon, color }: { title: string; value: string; icon: React.ElementType; color: string }) => (
+const StatCard = ({ title, value, icon: Icon, color }: { title: string; value: number | string; icon: React.ElementType; color: string }) => (
   <Card className="rounded-2xl border-0 shadow-sm">
     <CardContent className="p-6 flex items-center gap-4">
       <div className={`h-12 w-12 rounded-full flex items-center justify-center ${color}`}>
@@ -30,6 +32,59 @@ const Dashboard = () => {
   const rol = profile?.rol ?? "consument";
   const dash = rolDashboards[rol] ?? rolDashboards.consument;
 
+  const { data: stats } = useQuery({
+    queryKey: ["dashboard-stats", rol, profile?.id],
+    queryFn: async () => {
+      const counts: Record<string, number> = {};
+
+      // Queries depend on role — RLS handles scoping automatically
+      if (["superadmin", "partner_admin", "partner_staff"].includes(rol)) {
+        const [partners, users, leads, schouwen, offertes, installaties] = await Promise.all([
+          rol === "superadmin" ? supabase.from("partners").select("id", { count: "exact", head: true }) : Promise.resolve({ count: 0 }),
+          supabase.from("users").select("id", { count: "exact", head: true }),
+          supabase.from("leads").select("id", { count: "exact", head: true }),
+          supabase.from("schouwen").select("id", { count: "exact", head: true }),
+          supabase.from("offertes").select("id", { count: "exact", head: true }),
+          supabase.from("installaties").select("id", { count: "exact", head: true }),
+        ]);
+        counts.partners = partners.count ?? 0;
+        counts.users = users.count ?? 0;
+        counts.leads = leads.count ?? 0;
+        counts.schouwen = schouwen.count ?? 0;
+        counts.offertes = offertes.count ?? 0;
+        counts.installaties = installaties.count ?? 0;
+      } else if (rol === "adviseur") {
+        const [leads, schouwen, offertes] = await Promise.all([
+          supabase.from("leads").select("id", { count: "exact", head: true }),
+          supabase.from("schouwen").select("id", { count: "exact", head: true }),
+          supabase.from("offertes").select("id", { count: "exact", head: true }),
+        ]);
+        counts.leads = leads.count ?? 0;
+        counts.schouwen = schouwen.count ?? 0;
+        counts.offertes = offertes.count ?? 0;
+      } else if (rol === "installateur") {
+        const [installaties, gepland] = await Promise.all([
+          supabase.from("installaties").select("id", { count: "exact", head: true }),
+          supabase.from("installaties").select("id", { count: "exact", head: true }).eq("status", "gepland"),
+        ]);
+        counts.installaties = installaties.count ?? 0;
+        counts.gepland = gepland.count ?? 0;
+      } else {
+        // consument
+        const [offertes, schouwen] = await Promise.all([
+          supabase.from("offertes").select("id", { count: "exact", head: true }),
+          supabase.from("schouwen").select("id", { count: "exact", head: true }),
+        ]);
+        counts.offertes = offertes.count ?? 0;
+        counts.schouwen = schouwen.count ?? 0;
+      }
+      return counts;
+    },
+    enabled: !!profile,
+  });
+
+  const s = stats ?? {};
+
   return (
     <div className="space-y-6">
       <div>
@@ -40,37 +95,37 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {rol === "superadmin" && (
           <>
-            <StatCard title="Partners" value="—" icon={Building2} color="bg-primary/10 text-primary" />
-            <StatCard title="Gebruikers" value="—" icon={Users} color="bg-success-light text-success" />
-            <StatCard title="Leads" value="—" icon={TrendingUp} color="bg-warning-light text-warning" />
-            <StatCard title="Offertes" value="—" icon={FileText} color="bg-accent text-accent-foreground" />
+            <StatCard title="Partners" value={s.partners ?? 0} icon={Building2} color="bg-primary/10 text-primary" />
+            <StatCard title="Gebruikers" value={s.users ?? 0} icon={Users} color="bg-success-light text-success" />
+            <StatCard title="Leads" value={s.leads ?? 0} icon={TrendingUp} color="bg-warning-light text-warning" />
+            <StatCard title="Offertes" value={s.offertes ?? 0} icon={FileText} color="bg-accent text-accent-foreground" />
           </>
         )}
         {(rol === "partner_admin" || rol === "partner_staff") && (
           <>
-            <StatCard title="Leads" value="—" icon={Users} color="bg-primary/10 text-primary" />
-            <StatCard title="Schouwen" value="—" icon={ClipboardList} color="bg-success-light text-success" />
-            <StatCard title="Offertes" value="—" icon={FileText} color="bg-warning-light text-warning" />
-            <StatCard title="Installaties" value="—" icon={Wrench} color="bg-accent text-accent-foreground" />
+            <StatCard title="Leads" value={s.leads ?? 0} icon={Users} color="bg-primary/10 text-primary" />
+            <StatCard title="Schouwen" value={s.schouwen ?? 0} icon={ClipboardList} color="bg-success-light text-success" />
+            <StatCard title="Offertes" value={s.offertes ?? 0} icon={FileText} color="bg-warning-light text-warning" />
+            <StatCard title="Installaties" value={s.installaties ?? 0} icon={Wrench} color="bg-accent text-accent-foreground" />
           </>
         )}
         {rol === "adviseur" && (
           <>
-            <StatCard title="Mijn Leads" value="—" icon={Users} color="bg-primary/10 text-primary" />
-            <StatCard title="Schouwen" value="—" icon={ClipboardList} color="bg-success-light text-success" />
-            <StatCard title="Offertes" value="—" icon={FileText} color="bg-warning-light text-warning" />
+            <StatCard title="Mijn Leads" value={s.leads ?? 0} icon={Users} color="bg-primary/10 text-primary" />
+            <StatCard title="Schouwen" value={s.schouwen ?? 0} icon={ClipboardList} color="bg-success-light text-success" />
+            <StatCard title="Offertes" value={s.offertes ?? 0} icon={FileText} color="bg-warning-light text-warning" />
           </>
         )}
         {rol === "installateur" && (
           <>
-            <StatCard title="Opdrachten" value="—" icon={Wrench} color="bg-primary/10 text-primary" />
-            <StatCard title="Gepland" value="—" icon={ClipboardList} color="bg-success-light text-success" />
+            <StatCard title="Opdrachten" value={s.installaties ?? 0} icon={Wrench} color="bg-primary/10 text-primary" />
+            <StatCard title="Gepland" value={s.gepland ?? 0} icon={ClipboardList} color="bg-success-light text-success" />
           </>
         )}
         {rol === "consument" && (
           <>
-            <StatCard title="Offertes" value="—" icon={FileText} color="bg-primary/10 text-primary" />
-            <StatCard title="Schouwen" value="—" icon={ClipboardList} color="bg-success-light text-success" />
+            <StatCard title="Offertes" value={s.offertes ?? 0} icon={FileText} color="bg-primary/10 text-primary" />
+            <StatCard title="Schouwen" value={s.schouwen ?? 0} icon={ClipboardList} color="bg-success-light text-success" />
           </>
         )}
       </div>
