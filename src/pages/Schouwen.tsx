@@ -133,7 +133,10 @@ const generateSchouwNummer = () => {
   return `SCH-${year}-${rand}`;
 };
 
+import { useNavigate } from "react-router-dom";
+
 const Schouwen = () => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
