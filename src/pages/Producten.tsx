@@ -97,6 +97,33 @@ const Producten = () => {
     },
   });
 
+  // Product statistieken
+  const actief = producten.filter(p => p.status === "actief").length;
+  const uitgefaseerd = producten.filter(p => p.status === "uitgefaseerd").length;
+  const totaalWaarde = producten.reduce((sum, p) => sum + Number(p.prijs_excl_btw), 0);
+
+  const { data: topProducten = [] } = useQuery({
+    queryKey: ["top-producten", producten],
+    enabled: producten.length > 0,
+    queryFn: async () => {
+      const { data: offertes } = await supabase.from("offertes").select("regels");
+      if (!offertes) return [];
+      const counts: Record<string, number> = {};
+      offertes.forEach(o => {
+        const regels = o.regels as any[];
+        if (Array.isArray(regels)) {
+          regels.forEach((r: any) => {
+            if (r.product_naam) counts[r.product_naam] = (counts[r.product_naam] || 0) + (r.aantal || 1);
+          });
+        }
+      });
+      return Object.entries(counts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([naam, aantal]) => ({ naam, aantal }));
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & ProductFormData) => {
       const { id, ...rest } = data;
