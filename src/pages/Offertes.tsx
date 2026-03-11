@@ -131,6 +131,7 @@ const Offertes = () => {
     }
   }, [searchParams, canCreate]);
 
+  const { data: offertes = [], isLoading } = useQuery({
     queryKey: ["offertes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("offertes").select("*").order("created_at", { ascending: false });
