@@ -477,6 +477,7 @@ export type Database = {
         Row: {
           abonnement_type: string | null
           adres: string | null
+          adviseurs_delen_schouwen: boolean
           bedrijfsslogan: string | null
           btw: string | null
           commissie_percentage: number | null
@@ -510,6 +511,7 @@ export type Database = {
         Insert: {
           abonnement_type?: string | null
           adres?: string | null
+          adviseurs_delen_schouwen?: boolean
           bedrijfsslogan?: string | null
           btw?: string | null
           commissie_percentage?: number | null
@@ -543,6 +545,7 @@ export type Database = {
         Update: {
           abonnement_type?: string | null
           adres?: string | null
+          adviseurs_delen_schouwen?: boolean
           bedrijfsslogan?: string | null
           btw?: string | null
           commissie_percentage?: number | null
@@ -681,10 +684,13 @@ export type Database = {
       }
       schouwen: {
         Row: {
+          aandachtspunten: string | null
           adviseur_id: string
           categorie: Database["public"]["Enums"]["schouw_categorie"]
+          checklist: Json | null
           consument_naam: string | null
           created_at: string
+          fotos: Json | null
           gegevens: Json | null
           geplande_datum: string
           id: string
@@ -698,10 +704,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aandachtspunten?: string | null
           adviseur_id: string
           categorie: Database["public"]["Enums"]["schouw_categorie"]
+          checklist?: Json | null
           consument_naam?: string | null
           created_at?: string
+          fotos?: Json | null
           gegevens?: Json | null
           geplande_datum: string
           id?: string
@@ -715,10 +724,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aandachtspunten?: string | null
           adviseur_id?: string
           categorie?: Database["public"]["Enums"]["schouw_categorie"]
+          checklist?: Json | null
           consument_naam?: string | null
           created_at?: string
+          fotos?: Json | null
           gegevens?: Json | null
           geplande_datum?: string
           id?: string

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import SchouwInstellingen from "@/components/instellingen/SchouwInstellingen";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -324,6 +325,11 @@ const Instellingen = () => {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Schouw instellingen — alleen partner_admin */}
+      {isPartnerAdmin && profile?.partner_id && (
+        <SchouwInstellingen partnerId={profile.partner_id} />
       )}
 
       {(profile?.rol === "partner_admin" || profile?.rol === "superadmin") && (

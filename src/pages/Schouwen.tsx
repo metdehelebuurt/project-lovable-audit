@@ -12,30 +12,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText, ChevronLeft, ChevronRight, Check, PlayCircle, CalendarPlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
+import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
 
 type Schouw = Database["public"]["Tables"]["schouwen"]["Row"];
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 type SchouwStatus = Database["public"]["Enums"]["schouw_status"];
 
 const categorieLabels: Record<SchouwCategorie, string> = {
-  zonnepanelen: "Zonnepanelen",
-  warmtepomp: "Warmtepomp",
-  isolatie_dak: "Isolatie dak",
-  isolatie_muur: "Isolatie muur",
-  isolatie_vloer: "Isolatie vloer",
-  hr_glas: "HR++ glas",
-  ventilatie: "Ventilatie",
-  thuisbatterij: "Thuisbatterij",
+  zonnepanelen: "Zonnepanelen", warmtepomp: "Warmtepomp",
+  isolatie_dak: "Isolatie dak", isolatie_muur: "Isolatie muur",
+  isolatie_vloer: "Isolatie vloer", hr_glas: "HR++ glas",
+  ventilatie: "Ventilatie", thuisbatterij: "Thuisbatterij",
 };
 
 const statusLabels: Record<SchouwStatus, string> = {
-  gepland: "Gepland",
-  uitgevoerd: "Uitgevoerd",
-  geannuleerd: "Geannuleerd",
+  gepland: "Gepland", uitgevoerd: "Uitgevoerd", geannuleerd: "Geannuleerd",
 };
 
 const statusColors: Record<SchouwStatus, string> = {
@@ -54,6 +52,8 @@ const categoryFields: Record<SchouwCategorie, { key: string; label: string; type
     { key: "schaduw", label: "Schaduw", type: "select", options: ["geen", "licht", "matig", "veel"] },
     { key: "meterkast_geschikt", label: "Meterkast geschikt", type: "select", options: ["ja", "nee", "aanpassing_nodig"] },
     { key: "kabelroute_lengte_m", label: "Kabelroute lengte (m)", type: "number" },
+    { key: "dakconstructie_materiaal", label: "Dakconstructie materiaal", type: "text" },
+    { key: "aantal_groepen_vrij", label: "Aantal vrije groepen meterkast", type: "number" },
   ],
   warmtepomp: [
     { key: "huidig_verwarmingssysteem", label: "Huidig verwarmingssysteem", type: "select", options: ["cv_ketel", "stadsverwarming", "elektrisch", "anders"] },
@@ -63,6 +63,7 @@ const categoryFields: Record<SchouwCategorie, { key: string; label: string; type
     { key: "isolatieniveau", label: "Isolatieniveau", type: "select", options: ["goed", "matig", "slecht"] },
     { key: "radiatoren_type", label: "Radiatoren type", type: "select", options: ["regulier", "laagtemperatuur", "vloerverwarming", "combinatie"] },
     { key: "buitenruimte_geschikt", label: "Buitenruimte geschikt", type: "select", options: ["ja", "nee", "beperkt"] },
+    { key: "elektrische_aansluiting", label: "Elektrische aansluiting (A)", type: "number" },
   ],
   isolatie_dak: [
     { key: "daktype", label: "Daktype", type: "select", options: ["schuin", "plat"] },
@@ -115,16 +116,15 @@ interface SchouwFormData {
   klant_email: string;
   notities: string;
   gegevens: Record<string, string>;
+  fotos: SchouwFoto[];
+  checklist: Record<string, boolean>;
+  aandachtspunten: string;
 }
 
 const emptyForm: SchouwFormData = {
-  lead_id: "",
-  categorie: "zonnepanelen",
-  geplande_datum: "",
-  consument_naam: "",
-  klant_email: "",
-  notities: "",
-  gegevens: {},
+  lead_id: "", categorie: "zonnepanelen", geplande_datum: "",
+  consument_naam: "", klant_email: "", notities: "", gegevens: {},
+  fotos: [], checklist: {}, aandachtspunten: "",
 };
 
 const generateSchouwNummer = () => {
@@ -133,13 +133,20 @@ const generateSchouwNummer = () => {
   return `SCH-${year}-${rand}`;
 };
 
-const WIZARD_STEPS = [
+type WizardMode = "plan" | "execute";
+
+const PLAN_STEPS = [
   { label: "Basisgegevens", description: "Lead, categorie & datum" },
-  { label: "Inspectie", description: "Categorie-specifieke velden" },
-  { label: "Samenvatting", description: "Controleren & opslaan" },
+  { label: "Samenvatting", description: "Controleren & inplannen" },
 ];
 
-import { useNavigate } from "react-router-dom";
+const EXECUTE_STEPS = [
+  { label: "Basisgegevens", description: "Lead, categorie & datum" },
+  { label: "Technische inspectie", description: "Categorie-specifieke velden" },
+  { label: "Foto's & Video's", description: "Situatiefoto's uploaden" },
+  { label: "Checklist", description: "Controles afvinken" },
+  { label: "Samenvatting", description: "Controleren & afsluiten" },
+];
 
 const Schouwen = () => {
   const navigate = useNavigate();
@@ -152,6 +159,7 @@ const Schouwen = () => {
   const [editingSchouw, setEditingSchouw] = useState<Schouw | null>(null);
   const [form, setForm] = useState<SchouwFormData>(emptyForm);
   const [wizardStep, setWizardStep] = useState(0);
+  const [wizardMode, setWizardMode] = useState<WizardMode>("plan");
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
@@ -178,8 +186,8 @@ const Schouwen = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { id?: string } & SchouwFormData) => {
-      const { id, ...rest } = data;
+    mutationFn: async (data: { id?: string; markUitgevoerd?: boolean } & SchouwFormData) => {
+      const { id, markUitgevoerd, ...rest } = data;
       const record: any = {
         categorie: rest.categorie,
         geplande_datum: rest.geplande_datum,
@@ -188,7 +196,12 @@ const Schouwen = () => {
         notities: rest.notities || null,
         gegevens: Object.keys(rest.gegevens).length > 0 ? rest.gegevens : null,
         lead_id: rest.lead_id,
+        fotos: rest.fotos.length > 0 ? rest.fotos : [],
+        checklist: Object.keys(rest.checklist).length > 0 ? rest.checklist : {},
+        aandachtspunten: rest.aandachtspunten || null,
       };
+
+      if (markUitgevoerd) record.status = "uitgevoerd";
 
       if (id) {
         const { error } = await supabase.from("schouwen").update(record).eq("id", id);
@@ -206,7 +219,8 @@ const Schouwen = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schouwen"] });
-      toast.success(editingSchouw ? "Schouw bijgewerkt" : "Schouw ingepland");
+      const msg = wizardMode === "execute" ? "Schouw afgerond" : editingSchouw ? "Schouw bijgewerkt" : "Schouw ingepland";
+      toast.success(msg);
       closeDialog();
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
@@ -236,7 +250,29 @@ const Schouwen = () => {
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
 
-  const openCreate = () => { setEditingSchouw(null); setForm(emptyForm); setWizardStep(0); setDialogOpen(true); };
+  const openPlan = () => {
+    setEditingSchouw(null); setForm(emptyForm); setWizardStep(0); setWizardMode("plan"); setDialogOpen(true);
+  };
+
+  const openExecute = (s: Schouw) => {
+    setEditingSchouw(s);
+    setForm({
+      lead_id: s.lead_id,
+      categorie: s.categorie,
+      geplande_datum: s.geplande_datum,
+      consument_naam: s.consument_naam || "",
+      klant_email: s.klant_email || "",
+      notities: s.notities || "",
+      gegevens: (s.gegevens as Record<string, string>) || {},
+      fotos: (s.fotos as unknown as SchouwFoto[]) || [],
+      checklist: (s.checklist as Record<string, boolean>) || {},
+      aandachtspunten: (s as any).aandachtspunten || "",
+    });
+    setWizardStep(0);
+    setWizardMode("execute");
+    setDialogOpen(true);
+  };
+
   const openEdit = (s: Schouw) => {
     setEditingSchouw(s);
     setForm({
@@ -247,17 +283,21 @@ const Schouwen = () => {
       klant_email: s.klant_email || "",
       notities: s.notities || "",
       gegevens: (s.gegevens as Record<string, string>) || {},
+      fotos: (s.fotos as unknown as SchouwFoto[]) || [],
+      checklist: (s.checklist as Record<string, boolean>) || {},
+      aandachtspunten: (s as any).aandachtspunten || "",
     });
     setWizardStep(0);
+    setWizardMode("plan");
     setDialogOpen(true);
   };
+
   const closeDialog = () => { setDialogOpen(false); setEditingSchouw(null); setForm(emptyForm); setWizardStep(0); };
 
   const handleLeadSelect = (leadId: string) => {
     const lead = leads.find(l => l.id === leadId);
     setForm(p => ({
-      ...p,
-      lead_id: leadId,
+      ...p, lead_id: leadId,
       consument_naam: lead ? `${lead.voornaam} ${lead.achternaam}` : "",
       klant_email: lead?.email || "",
     }));
@@ -267,10 +307,19 @@ const Schouwen = () => {
     setForm(p => ({ ...p, gegevens: { ...p.gegevens, [key]: value } }));
   };
 
-  const handleSubmit = () => {
-    saveMutation.mutate(editingSchouw ? { ...form, id: editingSchouw.id } : form);
+  const toggleChecklist = (key: string) => {
+    setForm(p => ({ ...p, checklist: { ...p.checklist, [key]: !p.checklist[key] } }));
   };
 
+  const handleSubmit = () => {
+    saveMutation.mutate({
+      ...form,
+      id: editingSchouw?.id,
+      markUitgevoerd: wizardMode === "execute",
+    });
+  };
+
+  const steps = wizardMode === "plan" ? PLAN_STEPS : EXECUTE_STEPS;
   const canGoNext = () => {
     if (wizardStep === 0) return !!form.lead_id && !!form.geplande_datum;
     return true;
@@ -285,17 +334,28 @@ const Schouwen = () => {
 
   const fields = categoryFields[form.categorie] || [];
   const selectedLead = leads.find(l => l.id === form.lead_id);
+  const checklistItems = categoryChecklists[form.categorie] || [];
+
+  // Determine actual wizard content step index
+  const getStepContent = () => {
+    if (wizardMode === "plan") {
+      return wizardStep === 0 ? "basis" : "samenvatting";
+    }
+    const map = ["basis", "inspectie", "fotos", "checklist", "samenvatting"];
+    return map[wizardStep] || "basis";
+  };
+  const stepContent = getStepContent();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Schouwen</h1>
-          <p className="text-muted-foreground mt-1">Woninginspecties beheren</p>
+          <p className="text-muted-foreground mt-1">Woninginspecties inplannen en uitvoeren</p>
         </div>
         {canCreate && (
-          <Button onClick={openCreate} className="rounded-pill gap-2">
-            <Plus className="h-4 w-4" /> Nieuwe Schouw
+          <Button onClick={openPlan} className="rounded-pill gap-2">
+            <CalendarPlus className="h-4 w-4" /> Schouw inplannen
           </Button>
         )}
       </div>
@@ -356,19 +416,15 @@ const Schouwen = () => {
                       <TableCell><Badge variant="outline">{categorieLabels[s.categorie]}</Badge></TableCell>
                       <TableCell>{new Date(s.geplande_datum).toLocaleDateString("nl-NL")}</TableCell>
                       <TableCell>
-                        <Select value={s.status} onValueChange={v => statusMutation.mutate({ id: s.id, status: v as SchouwStatus })}>
-                          <SelectTrigger className="w-36 h-8">
-                            <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.keys(statusLabels) as SchouwStatus[]).map(st => (
-                              <SelectItem key={st} value={st}>{statusLabels[st]}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          {s.status === "gepland" && canCreate && (
+                            <Button variant="default" size="sm" className="rounded-pill gap-1 h-8" onClick={() => openExecute(s)}>
+                              <PlayCircle className="h-3.5 w-3.5" /> Starten
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" onClick={() => setViewDialog(s)}>
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -407,13 +463,17 @@ const Schouwen = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingSchouw ? "Schouw bewerken" : "Nieuwe schouw inplannen"}</DialogTitle>
+            <DialogTitle>
+              {wizardMode === "execute"
+                ? `Schouw uitvoeren — ${editingSchouw?.schouw_nummer || ""}`
+                : editingSchouw ? "Schouw bewerken" : "Schouw inplannen"}
+            </DialogTitle>
           </DialogHeader>
 
           {/* Progress indicator */}
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              {WIZARD_STEPS.map((step, i) => (
+              {steps.map((step, i) => (
                 <div key={i} className={`flex items-center gap-1.5 ${i <= wizardStep ? "text-primary font-medium" : "text-muted-foreground"}`}>
                   <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs border-2 ${
                     i < wizardStep ? "bg-primary text-primary-foreground border-primary" :
@@ -426,11 +486,11 @@ const Schouwen = () => {
                 </div>
               ))}
             </div>
-            <Progress value={((wizardStep + 1) / WIZARD_STEPS.length) * 100} className="h-1.5" />
+            <Progress value={((wizardStep + 1) / steps.length) * 100} className="h-1.5" />
           </div>
 
-          {/* Step 1: Basisgegevens */}
-          {wizardStep === 0 && (
+          {/* Step: Basisgegevens */}
+          {stepContent === "basis" && (
             <div className="space-y-4 pt-2">
               <p className="text-sm text-muted-foreground">Selecteer de lead, categorie en plandatum.</p>
               <div>
@@ -448,7 +508,7 @@ const Schouwen = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Categorie *</Label>
-                  <Select value={form.categorie} onValueChange={v => setForm(p => ({ ...p, categorie: v as SchouwCategorie, gegevens: {} }))}>
+                  <Select value={form.categorie} onValueChange={v => setForm(p => ({ ...p, categorie: v as SchouwCategorie, gegevens: {}, checklist: {} }))}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(Object.keys(categorieLabels) as SchouwCategorie[]).map(c => (
@@ -469,8 +529,8 @@ const Schouwen = () => {
             </div>
           )}
 
-          {/* Step 2: Inspectiegegevens */}
-          {wizardStep === 1 && (
+          {/* Step: Technische inspectie */}
+          {stepContent === "inspectie" && (
             <div className="space-y-4 pt-2">
               <p className="text-sm text-muted-foreground">Vul de inspectiegegevens in voor <strong>{categorieLabels[form.categorie]}</strong>.</p>
               {fields.length > 0 ? (
@@ -487,12 +547,7 @@ const Schouwen = () => {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Input
-                          type={f.type}
-                          value={form.gegevens[f.key] || ""}
-                          onChange={e => updateGegevens(f.key, e.target.value)}
-                          className="rounded-xl"
-                        />
+                        <Input type={f.type} value={form.gegevens[f.key] || ""} onChange={e => updateGegevens(f.key, e.target.value)} className="rounded-xl" />
                       )}
                     </div>
                   ))}
@@ -507,10 +562,55 @@ const Schouwen = () => {
             </div>
           )}
 
-          {/* Step 3: Samenvatting */}
-          {wizardStep === 2 && (
+          {/* Step: Foto's & Video's */}
+          {stepContent === "fotos" && (
             <div className="space-y-4 pt-2">
-              <p className="text-sm text-muted-foreground">Controleer de gegevens en sla de schouw op.</p>
+              <p className="text-sm text-muted-foreground">Upload foto's en video's van de situatie ter plaatse.</p>
+              <SchouwMediaUpload
+                schouwId={editingSchouw?.id || "new"}
+                fotos={form.fotos}
+                onFotosChange={fotos => setForm(p => ({ ...p, fotos }))}
+              />
+            </div>
+          )}
+
+          {/* Step: Checklist */}
+          {stepContent === "checklist" && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Vink de uitgevoerde controles af voor <strong>{categorieLabels[form.categorie]}</strong>.</p>
+              <div className="space-y-3">
+                {checklistItems.map(item => (
+                  <div key={item.key} className="flex items-start gap-3 p-3 rounded-xl border hover:bg-accent/50 transition-colors">
+                    <Checkbox
+                      id={item.key}
+                      checked={!!form.checklist[item.key]}
+                      onCheckedChange={() => toggleChecklist(item.key)}
+                    />
+                    <div className="flex-1">
+                      <label htmlFor={item.key} className="text-sm font-medium cursor-pointer">
+                        {item.label}
+                      </label>
+                      {item.required && <span className="text-xs text-destructive ml-1">*</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <Label>Aandachtspunten</Label>
+                <Textarea
+                  value={form.aandachtspunten}
+                  onChange={e => setForm(p => ({ ...p, aandachtspunten: e.target.value }))}
+                  placeholder="Noteer bijzonderheden of aandachtspunten..."
+                  className="rounded-xl" rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step: Samenvatting */}
+          {stepContent === "samenvatting" && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Controleer de gegevens{wizardMode === "execute" ? " en sluit de schouw af" : " en plan de schouw in"}.</p>
               <Card className="border">
                 <CardContent className="pt-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3 text-sm">
@@ -518,9 +618,10 @@ const Schouwen = () => {
                     <div><span className="text-muted-foreground">Categorie:</span> <span className="font-medium">{categorieLabels[form.categorie]}</span></div>
                     <div><span className="text-muted-foreground">Datum:</span> <span className="font-medium">{form.geplande_datum ? new Date(form.geplande_datum).toLocaleDateString("nl-NL") : "—"}</span></div>
                     <div><span className="text-muted-foreground">Klant:</span> <span className="font-medium">{form.consument_naam || "—"}</span></div>
-                    <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{form.klant_email || "—"}</span></div>
                   </div>
-                  {Object.keys(form.gegevens).filter(k => form.gegevens[k]).length > 0 && (
+
+                  {/* Inspectie data (execute mode) */}
+                  {wizardMode === "execute" && Object.keys(form.gegevens).filter(k => form.gegevens[k]).length > 0 && (
                     <div className="border-t pt-3">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Inspectiegegevens</p>
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -536,6 +637,44 @@ const Schouwen = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Photos summary */}
+                  {form.fotos.length > 0 && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Foto's ({form.fotos.length})</p>
+                      <div className="flex gap-2 overflow-x-auto">
+                        {form.fotos.slice(0, 6).map((f, i) => (
+                          <img key={i} src={f.url} alt={f.label} className="h-16 w-16 rounded-lg object-cover border" />
+                        ))}
+                        {form.fotos.length > 6 && <div className="h-16 w-16 rounded-lg border flex items-center justify-center text-xs text-muted-foreground">+{form.fotos.length - 6}</div>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Checklist summary */}
+                  {wizardMode === "execute" && checklistItems.length > 0 && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                        Checklist ({Object.values(form.checklist).filter(Boolean).length}/{checklistItems.length})
+                      </p>
+                      <div className="grid grid-cols-2 gap-1 text-sm">
+                        {checklistItems.map(item => (
+                          <div key={item.key} className="flex items-center gap-1.5">
+                            {form.checklist[item.key] ? <Check className="h-3.5 w-3.5 text-primary" /> : <span className="h-3.5 w-3.5 rounded-sm border border-muted-foreground/30 inline-block" />}
+                            <span className={form.checklist[item.key] ? "" : "text-muted-foreground"}>{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {form.aandachtspunten && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Aandachtspunten</p>
+                      <p className="text-sm whitespace-pre-wrap">{form.aandachtspunten}</p>
+                    </div>
+                  )}
+
                   {form.notities && (
                     <div className="border-t pt-3">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Notities</p>
@@ -558,13 +697,13 @@ const Schouwen = () => {
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={closeDialog} className="rounded-pill">Annuleren</Button>
-              {wizardStep < 2 ? (
+              {wizardStep < steps.length - 1 ? (
                 <Button type="button" onClick={() => setWizardStep(s => s + 1)} className="rounded-pill gap-1" disabled={!canGoNext()}>
                   Volgende <ChevronRight className="h-4 w-4" />
                 </Button>
               ) : (
                 <Button type="button" onClick={handleSubmit} className="rounded-pill gap-1" disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? "Opslaan..." : editingSchouw ? "Bijwerken" : "Inplannen"}
+                  {saveMutation.isPending ? "Opslaan..." : wizardMode === "execute" ? "Schouw afronden" : editingSchouw ? "Bijwerken" : "Inplannen"}
                   <Check className="h-4 w-4" />
                 </Button>
               )}
@@ -604,6 +743,49 @@ const Schouwen = () => {
                   </div>
                 </div>
               )}
+
+              {/* Foto's in view */}
+              {viewDialog.fotos && (viewDialog.fotos as unknown as SchouwFoto[]).length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="font-medium text-foreground mb-3">Foto's</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {(viewDialog.fotos as unknown as SchouwFoto[]).map((foto, i) => (
+                      <div key={i} className="relative rounded-xl overflow-hidden border">
+                        <img src={foto.url} alt={foto.label} className="w-full h-24 object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1">
+                          <p className="text-xs text-white truncate">{foto.label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Checklist in view */}
+              {viewDialog.checklist && Object.keys(viewDialog.checklist as object).length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="font-medium text-foreground mb-3">Checklist</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {categoryChecklists[viewDialog.categorie]?.map(item => {
+                      const checked = (viewDialog.checklist as Record<string, boolean>)?.[item.key];
+                      return (
+                        <div key={item.key} className="flex items-center gap-1.5 text-sm">
+                          {checked ? <Check className="h-3.5 w-3.5 text-primary" /> : <span className="h-3.5 w-3.5 rounded-sm border border-muted-foreground/30 inline-block" />}
+                          <span className={checked ? "" : "text-muted-foreground"}>{item.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {(viewDialog as any).aandachtspunten && (
+                <div className="border-t pt-4">
+                  <Label className="text-muted-foreground">Aandachtspunten</Label>
+                  <p className="whitespace-pre-wrap">{(viewDialog as any).aandachtspunten}</p>
+                </div>
+              )}
+
               {viewDialog.notities && (
                 <div className="border-t pt-4">
                   <Label className="text-muted-foreground">Notities</Label>
