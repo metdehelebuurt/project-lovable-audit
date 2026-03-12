@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -75,6 +76,18 @@ const emptyForm: ProductFormData = {
   certificeringen: "", status: "actief",
 };
 
+interface AIProduct {
+  naam: string;
+  model: string;
+  merk: string;
+  omschrijving: string;
+  prijs_excl_btw: number;
+  garantie_jaren?: number;
+  certificeringen?: string;
+  specs?: Record<string, string>;
+  categorie: ProductCategorie;
+}
+
 const Producten = () => {
   const { profile } = useAuth();
   const [search, setSearch] = useState("");
@@ -84,9 +97,20 @@ const Producten = () => {
   const [form, setForm] = useState<ProductFormData>(emptyForm);
   const queryClient = useQueryClient();
 
+  // AI Import state
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiMerk, setAiMerk] = useState("");
+  const [aiCategorie, setAiCategorie] = useState<ProductCategorie>("zonnepanelen");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiProducts, setAiProducts] = useState<AIProduct[]>([]);
+  const [aiSelected, setAiSelected] = useState<Set<number>>(new Set());
+  const [aiStep, setAiStep] = useState<"input" | "preview">("input");
+
   const isSuperadmin = profile?.rol === "superadmin";
   const isPartnerAdmin = profile?.rol === "partner_admin";
-  const canEdit = isSuperadmin || isPartnerAdmin;
+  const isPartnerStaff = profile?.rol === "partner_staff";
+  const isInstallateur = profile?.rol === "installateur";
+  const canEdit = isSuperadmin || isPartnerAdmin || isPartnerStaff || isInstallateur;
 
   const { data: producten = [], isLoading } = useQuery({
     queryKey: ["producten"],
@@ -97,7 +121,6 @@ const Producten = () => {
     },
   });
 
-  // Product statistieken
   const actief = producten.filter(p => p.status === "actief").length;
   const uitgefaseerd = producten.filter(p => p.status === "uitgefaseerd").length;
   const totaalWaarde = producten.reduce((sum, p) => sum + Number(p.prijs_excl_btw), 0);
@@ -144,7 +167,6 @@ const Producten = () => {
         const { error } = await supabase.from("producten").update(record).eq("id", id);
         if (error) throw error;
       } else {
-        // Superadmin: partner_id = null (globaal), partner_admin: eigen partner_id
         record.partner_id = isSuperadmin ? null : profile?.partner_id;
         const { error } = await supabase.from("producten").insert(record as ProductInsert);
         if (error) throw error;
@@ -195,6 +217,81 @@ const Producten = () => {
     saveMutation.mutate(editingProduct ? { ...form, id: editingProduct.id } : form);
   };
 
+  // AI Import handlers
+  const handleAiSearch = async () => {
+    if (!aiMerk.trim()) { toast.error("Voer een merknaam in"); return; }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-product-import", {
+        body: { merk: aiMerk.trim(), categorie: aiCategorie },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      const products = data?.products || [];
+      if (products.length === 0) {
+        toast.info("Geen producten gevonden voor dit merk en deze categorie");
+        return;
+      }
+      setAiProducts(products);
+      setAiSelected(new Set(products.map((_: any, i: number) => i)));
+      setAiStep("preview");
+    } catch (err: any) {
+      toast.error("Fout bij ophalen producten", { description: err.message });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAiImport = async () => {
+    const selected = aiProducts.filter((_, i) => aiSelected.has(i));
+    if (selected.length === 0) { toast.error("Selecteer minimaal één product"); return; }
+    setAiLoading(true);
+    try {
+      const records: ProductInsert[] = selected.map(p => ({
+        naam: p.naam,
+        model: p.model || null,
+        merk: p.merk || null,
+        omschrijving: p.omschrijving || null,
+        prijs_excl_btw: p.prijs_excl_btw || 0,
+        garantie_jaren: p.garantie_jaren || null,
+        certificeringen: p.certificeringen || null,
+        specs: p.specs ? (p.specs as any) : null,
+        categorie: p.categorie,
+        partner_id: isSuperadmin ? null : profile?.partner_id!,
+        status: "actief" as const,
+      }));
+      const { error } = await supabase.from("producten").insert(records);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["producten"] });
+      toast.success(`${selected.length} producten geïmporteerd`);
+      closeAiDialog();
+    } catch (err: any) {
+      toast.error("Fout bij importeren", { description: err.message });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const closeAiDialog = () => {
+    setAiDialogOpen(false);
+    setAiMerk("");
+    setAiCategorie("zonnepanelen");
+    setAiProducts([]);
+    setAiSelected(new Set());
+    setAiStep("input");
+  };
+
+  const toggleAiSelect = (idx: number) => {
+    setAiSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  };
+
   const filtered = producten.filter(p => {
     const matchSearch = `${p.naam} ${p.merk ?? ""} ${p.model ?? ""}`.toLowerCase().includes(search.toLowerCase());
     const matchCat = catFilter === "alle" || p.categorie === catFilter;
@@ -212,9 +309,14 @@ const Producten = () => {
           <p className="text-muted-foreground mt-1">Productcatalogus beheren</p>
         </div>
         {canEdit && (
-          <Button onClick={openCreate} className="rounded-pill gap-2">
-            <Plus className="h-4 w-4" /> Nieuw Product
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="rounded-pill gap-2">
+              <Sparkles className="h-4 w-4" /> AI Import
+            </Button>
+            <Button onClick={openCreate} className="rounded-pill gap-2">
+              <Plus className="h-4 w-4" /> Nieuw Product
+            </Button>
+          </div>
         )}
       </div>
 
@@ -352,6 +454,7 @@ const Producten = () => {
         </CardContent>
       </Card>
 
+      {/* Product create/edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -431,6 +534,128 @@ const Producten = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Import Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={(open) => { if (!open) closeAiDialog(); else setAiDialogOpen(true); }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Product Import
+            </DialogTitle>
+          </DialogHeader>
+
+          {aiStep === "input" && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Voer een merknaam en categorie in. AI zoekt automatisch het productassortiment op met alle technische specificaties.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Merknaam *</Label>
+                  <Input
+                    placeholder="bijv. SolarEdge, Enphase, Daikin..."
+                    value={aiMerk}
+                    onChange={e => setAiMerk(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div>
+                  <Label>Categorie *</Label>
+                  <Select value={aiCategorie} onValueChange={v => setAiCategorie(v as ProductCategorie)}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(categorieLabels) as ProductCategorie[]).map(c => (
+                        <SelectItem key={c} value={c}>{categorieLabels[c]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeAiDialog} className="rounded-pill">Annuleren</Button>
+                <Button onClick={handleAiSearch} disabled={aiLoading} className="rounded-pill gap-2">
+                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {aiLoading ? "Zoeken..." : "Producten ophalen"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {aiStep === "preview" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {aiProducts.length} producten gevonden voor <strong>{aiMerk}</strong>. Selecteer welke je wilt importeren.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}>
+                    Alles selecteren
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set())}>
+                    Niets selecteren
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {aiProducts.map((product, idx) => (
+                  <Card key={idx} className={`rounded-xl border cursor-pointer transition-colors ${aiSelected.has(idx) ? "border-primary bg-primary/5" : "border-border"}`}
+                    onClick={() => toggleAiSelect(idx)}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={aiSelected.has(idx)}
+                          onCheckedChange={() => toggleAiSelect(idx)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-foreground">{product.naam}</p>
+                            <p className="text-sm font-semibold text-primary whitespace-nowrap">
+                              {formatPrice(product.prijs_excl_btw)}
+                            </p>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-0.5">{product.model} · {product.merk}</p>
+                          {product.omschrijving && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.omschrijving}</p>
+                          )}
+                          {product.specs && Object.keys(product.specs).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {Object.entries(product.specs).slice(0, 6).map(([key, val]) => (
+                                <Badge key={key} variant="outline" className="text-xs font-normal">
+                                  {key}: {val}
+                                </Badge>
+                              ))}
+                              {Object.keys(product.specs).length > 6 && (
+                                <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+                                  +{Object.keys(product.specs).length - 6} meer
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                            {product.garantie_jaren && <span>Garantie: {product.garantie_jaren} jaar</span>}
+                            {product.certificeringen && <span>{product.certificeringen}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setAiStep("input")} className="rounded-pill">Terug</Button>
+                <Button onClick={handleAiImport} disabled={aiLoading || aiSelected.size === 0} className="rounded-pill gap-2">
+                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {aiLoading ? "Importeren..." : `${aiSelected.size} producten importeren`}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
