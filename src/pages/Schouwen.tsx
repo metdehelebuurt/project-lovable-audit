@@ -264,7 +264,7 @@ const Schouwen = () => {
       klant_email: s.klant_email || "",
       notities: s.notities || "",
       gegevens: (s.gegevens as Record<string, string>) || {},
-      fotos: (s.fotos as SchouwFoto[]) || [],
+      fotos: (s.fotos as unknown as SchouwFoto[]) || [],
       checklist: (s.checklist as Record<string, boolean>) || {},
       aandachtspunten: (s as any).aandachtspunten || "",
     });
