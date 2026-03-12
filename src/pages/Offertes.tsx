@@ -14,7 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare, FileDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import type { Database, Json } from "@/integrations/supabase/types";
 
@@ -60,6 +62,8 @@ interface OfferteFormData {
   betalingsvoorwaarden: string;
   notities: string;
   regels: OfferteRegel[];
+  include_schouw: boolean;
+  include_energieadvies: boolean;
 }
 
 const emptyRegel: OfferteRegel = {
@@ -83,6 +87,8 @@ const emptyForm: OfferteFormData = {
   betalingsvoorwaarden: "30 dagen netto",
   notities: "",
   regels: [{ ...emptyRegel }],
+  include_schouw: false,
+  include_energieadvies: false,
 };
 
 const generateOfferteNummer = () => {
@@ -96,6 +102,7 @@ const generateOfferteNummer = () => {
 
 const Offertes = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
@@ -198,6 +205,8 @@ const Offertes = () => {
         subtotaal: totals.subtotaal,
         btw_bedrag: totals.btwBedrag,
         totaal_bedrag: totals.totaal,
+        include_schouw: rest.include_schouw,
+        include_energieadvies: rest.include_energieadvies,
       };
 
       if (id) {
@@ -270,6 +279,8 @@ const Offertes = () => {
       betalingsvoorwaarden: o.betalingsvoorwaarden || "",
       notities: o.notities || "",
       regels,
+      include_schouw: (o as any).include_schouw ?? false,
+      include_energieadvies: (o as any).include_energieadvies ?? false,
     });
     setDialogOpen(true);
   };
@@ -404,6 +415,9 @@ const Offertes = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${o.id}/pdf`)} title="PDF">
+                            <FileDown className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => setViewDialog(o)}>
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -550,6 +564,29 @@ const Offertes = () => {
               </div>
             </div>
 
+            {/* Opties */}
+            {form.schouw_id && (
+              <div className="space-y-3 border-t pt-4">
+                <h3 className="font-medium text-foreground">PDF-opties</h3>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="include_schouw"
+                    checked={form.include_schouw}
+                    onCheckedChange={(c) => setForm(p => ({ ...p, include_schouw: !!c }))}
+                  />
+                  <Label htmlFor="include_schouw" className="cursor-pointer">Schouwgegevens opnemen in offerte PDF</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="include_energieadvies"
+                    checked={form.include_energieadvies}
+                    onCheckedChange={(c) => setForm(p => ({ ...p, include_energieadvies: !!c }))}
+                  />
+                  <Label htmlFor="include_energieadvies" className="cursor-pointer">Energieadvies opnemen in offerte PDF</Label>
+                </div>
+              </div>
+            )}
+
             <div>
               <Label>Notities</Label>
               <Textarea value={form.notities} onChange={e => setForm(p => ({ ...p, notities: e.target.value }))} className="rounded-xl" rows={3} />
@@ -576,6 +613,9 @@ const Offertes = () => {
               <div className="flex items-center gap-3">
                 <Badge className={statusColors[viewDialog.status]}>{statusLabels[viewDialog.status]}</Badge>
                 <span className="text-sm text-muted-foreground">Geldig tot {new Date(viewDialog.geldig_tot).toLocaleDateString("nl-NL")}</span>
+                <Button variant="outline" size="sm" className="ml-auto rounded-pill gap-1" onClick={() => navigate(`/offertes/${viewDialog.id}/pdf`)}>
+                  <FileDown className="h-4 w-4" /> PDF
+                </Button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label className="text-muted-foreground">Klant</Label><p className="font-medium">{viewDialog.klant_naam}</p></div>

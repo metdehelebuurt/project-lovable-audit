@@ -24,6 +24,7 @@ import Analytics from "@/pages/Analytics";
 import Berichten from "@/pages/Berichten";
 import Documenten from "@/pages/Documenten";
 import Instellingen from "@/pages/Instellingen";
+import OffertePDF from "@/pages/OffertePDF";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Energieadvies from "@/pages/Energieadvies";
@@ -117,6 +118,7 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
+              <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

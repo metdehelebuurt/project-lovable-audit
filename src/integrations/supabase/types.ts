@@ -369,6 +369,8 @@ export type Database = {
           feedback_berichten: Json | null
           geldig_tot: string
           id: string
+          include_energieadvies: boolean | null
+          include_schouw: boolean | null
           klant_adres: string | null
           klant_email: string
           klant_naam: string
@@ -394,6 +396,8 @@ export type Database = {
           feedback_berichten?: Json | null
           geldig_tot?: string
           id?: string
+          include_energieadvies?: boolean | null
+          include_schouw?: boolean | null
           klant_adres?: string | null
           klant_email: string
           klant_naam: string
@@ -419,6 +423,8 @@ export type Database = {
           feedback_berichten?: Json | null
           geldig_tot?: string
           id?: string
+          include_energieadvies?: boolean | null
+          include_schouw?: boolean | null
           klant_adres?: string | null
           klant_email?: string
           klant_naam?: string
@@ -471,6 +477,7 @@ export type Database = {
         Row: {
           abonnement_type: string | null
           adres: string | null
+          bedrijfsslogan: string | null
           btw: string | null
           commissie_percentage: number | null
           contactpersoon_achternaam: string | null
@@ -492,6 +499,8 @@ export type Database = {
           notities: string | null
           plaats: string | null
           postcode: string | null
+          primaire_kleur: string | null
+          secundaire_kleur: string | null
           status: Database["public"]["Enums"]["partner_status"]
           telefoonnummer: string | null
           trial_einddatum: string | null
@@ -501,6 +510,7 @@ export type Database = {
         Insert: {
           abonnement_type?: string | null
           adres?: string | null
+          bedrijfsslogan?: string | null
           btw?: string | null
           commissie_percentage?: number | null
           contactpersoon_achternaam?: string | null
@@ -522,6 +532,8 @@ export type Database = {
           notities?: string | null
           plaats?: string | null
           postcode?: string | null
+          primaire_kleur?: string | null
+          secundaire_kleur?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
           trial_einddatum?: string | null
@@ -531,6 +543,7 @@ export type Database = {
         Update: {
           abonnement_type?: string | null
           adres?: string | null
+          bedrijfsslogan?: string | null
           btw?: string | null
           commissie_percentage?: number | null
           contactpersoon_achternaam?: string | null
@@ -552,6 +565,8 @@ export type Database = {
           notities?: string | null
           plaats?: string | null
           postcode?: string | null
+          primaire_kleur?: string | null
+          secundaire_kleur?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
           trial_einddatum?: string | null
