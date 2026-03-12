@@ -7,8 +7,8 @@ const Footer = () => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
         <div>
-          <div className="mb-4 [&_svg_path]:fill-background/80 [&_span]:text-background/90 [&_.text-primary]:text-primary">
-            <Logo />
+          <div className="mb-4">
+            <Logo variant="white" />
           </div>
           <p className="text-sm leading-relaxed">
             Het alles-in-één platform voor installateurs en adviseurs in de

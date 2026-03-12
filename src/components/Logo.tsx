@@ -1,19 +1,25 @@
-const Logo = ({ className = "", showText = true }: {className?: string;showText?: boolean;}) => {
+import logoWhite from "@/assets/logo.png";
+import logoColored from "@/assets/logo-colored.png";
+
+interface LogoProps {
+  className?: string;
+  showText?: boolean;
+  variant?: "colored" | "white";
+}
+
+const Logo = ({ className = "", showText = true, variant = "colored" }: LogoProps) => {
+  const logoSrc = variant === "white" ? logoWhite : logoColored;
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 4L4 18H10V34H18V26H22V34H30V18H36L20 4Z" fill="hsl(242, 67%, 62%)" />
-        <path d="M14 18H26V22H14V18Z" fill="white" opacity="0.6" />
-        <path d="M18 22H22V26H18V22Z" fill="white" opacity="0.4" />
-        <path d="M20 4L4 18H10L20 9L30 18H36L20 4Z" fill="hsl(242, 67%, 55%)" />
-      </svg>
-      {showText &&
-      <span className="text-lg font-semibold text-primary-foreground">
+      <img src={logoSrc} alt="mijnhuis.nu logo" className="h-8 w-8 object-contain" />
+      {showText && (
+        <span className={`text-lg font-semibold ${variant === "white" ? "text-white" : "text-foreground"}`}>
           mijnhuis<span className="text-primary">.nu</span>
         </span>
-      }
-    </div>);
-
+      )}
+    </div>
+  );
 };
 
 export default Logo;
