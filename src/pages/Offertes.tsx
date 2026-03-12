@@ -87,6 +87,8 @@ const emptyForm: OfferteFormData = {
   betalingsvoorwaarden: "30 dagen netto",
   notities: "",
   regels: [{ ...emptyRegel }],
+  include_schouw: false,
+  include_energieadvies: false,
 };
 
 const generateOfferteNummer = () => {
