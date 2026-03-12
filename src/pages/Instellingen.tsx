@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Lock, Shield, Download, Trash2 } from "lucide-react";
+import { User, Lock, Shield, Download, Trash2, Sparkles } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const rolLabels: Record<string, string> = {
@@ -25,6 +25,22 @@ const Instellingen = () => {
   const [confirmPw, setConfirmPw] = useState("");
   const [changingPw, setChangingPw] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [clearingDemo, setClearingDemo] = useState(false);
+
+  const handleClearDemoData = async () => {
+    setClearingDemo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("clear-demo-data");
+      if (error || data?.error) {
+        toast.error("Fout bij verwijderen demogegevens", { description: data?.error || error?.message });
+      } else {
+        toast.success("Demogegevens verwijderd", { description: "Alle voorbeelddata is succesvol verwijderd." });
+      }
+    } catch {
+      toast.error("Fout bij verwijderen demogegevens");
+    }
+    setClearingDemo(false);
+  };
 
   const handleProfileSave = async () => {
     if (!voornaam.trim() || !achternaam.trim()) {
@@ -132,6 +148,44 @@ const Instellingen = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {(profile?.rol === "partner_admin" || profile?.rol === "superadmin") && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-accent-foreground" />
+            </div>
+            <CardTitle className="text-lg">Demogegevens</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Uw account bevat voorbeelddata (gemarkeerd met ⚡ Demo). U kunt deze verwijderen zodra u klaar bent met verkennen.
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="gap-2 rounded-pill" disabled={clearingDemo}>
+                  <Trash2 className="h-4 w-4" />
+                  {clearingDemo ? "Verwijderen..." : "Demogegevens verwijderen"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Demogegevens verwijderen</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Alle voorbeelddata (leads, schouwen, offertes, installaties en producten gemarkeerd met ⚡ Demo) wordt permanent verwijderd.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearDemoData}>
+                    Verwijderen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center gap-3">

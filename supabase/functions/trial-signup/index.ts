@@ -51,8 +51,7 @@ serve(async (req) => {
       );
     }
 
-    // 2. Create partner (trial)
-    // Calculate 30-day trial end date
+    // 2. Create partner (trial) with 30-day trial
     const trialStart = new Date();
     const trialEnd = new Date(trialStart);
     trialEnd.setDate(trialEnd.getDate() + 30);
@@ -106,6 +105,14 @@ serve(async (req) => {
       );
     }
 
+    // 4. Seed demo data
+    try {
+      await seedDemoData(supabaseAdmin, partner.id, authUser.user.id);
+    } catch (seedErr) {
+      console.error("Demo seed error (non-fatal):", seedErr);
+      // Non-fatal: account is created, demo data just failed
+    }
+
     return new Response(
       JSON.stringify({ success: true, email, partner_id: partner.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -117,3 +124,167 @@ serve(async (req) => {
     );
   }
 });
+
+async function seedDemoData(supabase: any, partnerId: string, userId: string) {
+  const today = new Date();
+  const fmt = (d: Date) => d.toISOString().split("T")[0];
+  const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+
+  // --- Demo Leads ---
+  const leadsData = [
+    {
+      voornaam: "Anna", achternaam: "de Boer", email: "anna.deboer@voorbeeld.nl",
+      telefoon: "06-12345678", adres: "Kerkstraat 12", postcode: "1234 AB", plaats: "Amsterdam",
+      bron: "Website", lead_status: "nieuw", notities: "⚡ Demo: Geïnteresseerd in zonnepanelen op schuin dak. Woning bj. 2005.",
+      partner_id: partnerId, owner_user_id: userId,
+    },
+    {
+      voornaam: "Pieter", achternaam: "Jansen", email: "pieter.jansen@voorbeeld.nl",
+      telefoon: "06-98765432", adres: "Dorpsweg 45", postcode: "5678 CD", plaats: "Utrecht",
+      bron: "Verwijzing", lead_status: "gekwalificeerd", notities: "⚡ Demo: Wil warmtepomp + vloerverwarming. Huidige ketel is 15 jaar oud.",
+      partner_id: partnerId, owner_user_id: userId,
+    },
+    {
+      voornaam: "Sophie", achternaam: "van Dijk", email: "sophie.vandijk@voorbeeld.nl",
+      telefoon: "06-55544433", adres: "Laan van Meerdervoort 88", postcode: "2517 AX", plaats: "Den Haag",
+      bron: "Google Ads", lead_status: "offerte_verzonden", notities: "⚡ Demo: Thuisbatterij + laadpaal voor elektrische auto.",
+      partner_id: partnerId, owner_user_id: userId,
+    },
+    {
+      voornaam: "Mark", achternaam: "Bakker", email: "mark.bakker@voorbeeld.nl",
+      telefoon: "06-11122233", adres: "Hoofdstraat 3", postcode: "3011 GH", plaats: "Rotterdam",
+      bron: "Beurs", lead_status: "klant", notities: "⚡ Demo: Bestaande klant, 16 zonnepanelen geïnstalleerd.",
+      partner_id: partnerId, owner_user_id: userId,
+    },
+  ];
+
+  const { data: leads } = await supabase.from("leads").insert(leadsData).select("id, voornaam, achternaam, email");
+
+  if (!leads || leads.length === 0) return;
+
+  // --- Demo Producten ---
+  const productenData = [
+    {
+      naam: "SolarEdge SE6000H Omvormer", merk: "SolarEdge", model: "SE6000H",
+      categorie: "omvormer", omschrijving: "⚡ Demo: Hoog-rendement omvormer 6kW met geïntegreerde monitoring.",
+      prijs_excl_btw: 1450, kostprijs: 980, garantie_jaren: 12, status: "actief",
+      specs: { vermogen_w: 6000, gewicht_kg: 17.2, afmetingen: "370x370x174mm", rendement: "99.2%" },
+      partner_id: partnerId,
+    },
+    {
+      naam: "JA Solar JAM60S20 375W", merk: "JA Solar", model: "JAM60S20-375",
+      categorie: "zonnepanelen", omschrijving: "⚡ Demo: Mono-kristallijn zonnepaneel 375Wp, Tier 1.",
+      prijs_excl_btw: 145, kostprijs: 92, garantie_jaren: 25, status: "actief",
+      specs: { vermogen_wp: 375, gewicht_kg: 20.7, afmetingen: "1769x1052x35mm", rendement: "20.4%", cellen: 120 },
+      partner_id: partnerId,
+    },
+    {
+      naam: "Daikin Altherma 3 H HT", merk: "Daikin", model: "ETBH16E9W",
+      categorie: "warmtepomp", omschrijving: "⚡ Demo: Lucht-water warmtepomp voor verwarming en warm water.",
+      prijs_excl_btw: 4800, kostprijs: 3200, garantie_jaren: 5, status: "actief",
+      specs: { vermogen_kw: 16, cop: 4.56, geluidsniveau_db: 37, koelmiddel: "R32" },
+      partner_id: partnerId,
+    },
+    {
+      naam: "Alfen Eve Single S-line", merk: "Alfen", model: "904460034",
+      categorie: "laadpaal", omschrijving: "⚡ Demo: Slimme laadpaal 1 fase/3 fase, 22kW.",
+      prijs_excl_btw: 1150, kostprijs: 780, garantie_jaren: 3, status: "actief",
+      specs: { max_vermogen_kw: 22, connector: "Type 2", smart_charging: true, rfid: true },
+      partner_id: partnerId,
+    },
+    {
+      naam: "BYD Battery-Box HVS 10.2", merk: "BYD", model: "HVS 10.2",
+      categorie: "thuisbatterij", omschrijving: "⚡ Demo: Modulaire thuisbatterij 10.2 kWh.",
+      prijs_excl_btw: 5200, kostprijs: 3600, garantie_jaren: 10, status: "actief",
+      specs: { capaciteit_kwh: 10.2, gewicht_kg: 164, afmetingen: "585x298x1020mm", cycli: 6000 },
+      partner_id: partnerId,
+    },
+  ];
+
+  await supabase.from("producten").insert(productenData);
+
+  // --- Demo Schouwen ---
+  const schouwenData = [
+    {
+      schouw_nummer: "SCH-DEMO-001", adviseur_id: userId, lead_id: leads[0].id,
+      partner_id: partnerId, categorie: "zonnepanelen", status: "uitgevoerd",
+      geplande_datum: fmt(addDays(today, -5)), consument_naam: `${leads[0].voornaam} ${leads[0].achternaam}`,
+      klant_email: leads[0].email,
+      notities: "⚡ Demo: Schuin dak op het zuiden, geen schaduw. 40m² beschikbaar.",
+      gegevens: {
+        daktype: "Schuin dak", orientatie: "Zuid", hellingshoek: 35,
+        beschikbaar_oppervlak_m2: 40, schaduw: "Geen", meterkast: "3x25A",
+      },
+    },
+    {
+      schouw_nummer: "SCH-DEMO-002", adviseur_id: userId, lead_id: leads[1].id,
+      partner_id: partnerId, categorie: "warmtepomp", status: "gepland",
+      geplande_datum: fmt(addDays(today, 3)), consument_naam: `${leads[1].voornaam} ${leads[1].achternaam}`,
+      klant_email: leads[1].email,
+      notities: "⚡ Demo: Tussenwoning, vloerverwarming aanwezig beneden.",
+      gegevens: {
+        woningtype: "Tussenwoning", bouwjaar: 2008, oppervlakte_m2: 125,
+        huidige_verwarming: "HR-ketel", isolatie_label: "C",
+      },
+    },
+  ];
+
+  const { data: schouwen } = await supabase.from("schouwen").insert(schouwenData).select("id");
+
+  // --- Demo Offertes ---
+  const offertesData = [
+    {
+      offertenummer: "OFF-DEMO-001", adviseur_id: userId, partner_id: partnerId,
+      lead_id: leads[0].id, schouw_id: schouwen?.[0]?.id || null,
+      klant_naam: `${leads[0].voornaam} ${leads[0].achternaam}`,
+      klant_email: leads[0].email, klant_adres: "Kerkstraat 12", klant_postcode: "1234 AB", klant_plaats: "Amsterdam",
+      status: "verzonden", subtotaal: 5370, btw_bedrag: 0, totaal_bedrag: 5370,
+      geldig_tot: fmt(addDays(today, 25)),
+      notities: "⚡ Demo: 16x JA Solar panelen + SolarEdge omvormer",
+      regels: [
+        { omschrijving: "JA Solar JAM60S20 375W", aantal: 16, prijs: 145, totaal: 2320 },
+        { omschrijving: "SolarEdge SE6000H Omvormer", aantal: 1, prijs: 1450, totaal: 1450 },
+        { omschrijving: "Installatie zonnepanelen (arbeid)", aantal: 1, prijs: 1200, totaal: 1200 },
+        { omschrijving: "Montagesysteem schuin dak", aantal: 1, prijs: 400, totaal: 400 },
+      ],
+    },
+    {
+      offertenummer: "OFF-DEMO-002", adviseur_id: userId, partner_id: partnerId,
+      lead_id: leads[2].id,
+      klant_naam: `${leads[2].voornaam} ${leads[2].achternaam}`,
+      klant_email: leads[2].email, klant_adres: "Laan van Meerdervoort 88", klant_postcode: "2517 AX", klant_plaats: "Den Haag",
+      status: "geaccepteerd", subtotaal: 7550, btw_bedrag: 1585.50, totaal_bedrag: 9135.50,
+      geldig_tot: fmt(addDays(today, 10)),
+      notities: "⚡ Demo: Thuisbatterij + laadpaal combinatie",
+      regels: [
+        { omschrijving: "BYD Battery-Box HVS 10.2", aantal: 1, prijs: 5200, totaal: 5200 },
+        { omschrijving: "Alfen Eve Single S-line", aantal: 1, prijs: 1150, totaal: 1150 },
+        { omschrijving: "Installatie en aansluiting", aantal: 1, prijs: 1200, totaal: 1200 },
+      ],
+    },
+  ];
+
+  await supabase.from("offertes").insert(offertesData);
+
+  // --- Demo Installaties ---
+  const installatiesData = [
+    {
+      partner_id: partnerId, consument_naam: `${leads[3].voornaam} ${leads[3].achternaam}`,
+      consument_id: null, lead_id: leads[3].id,
+      status: "afgerond",
+      geplande_startdatum: fmt(addDays(today, -14)),
+      geplande_einddatum: fmt(addDays(today, -12)),
+      notities: "⚡ Demo: 16 zonnepanelen geïnstalleerd. Klant zeer tevreden.",
+    },
+    {
+      partner_id: partnerId, consument_naam: `${leads[2].voornaam} ${leads[2].achternaam}`,
+      consument_id: null, lead_id: leads[2].id,
+      status: "gepland",
+      geplande_startdatum: fmt(addDays(today, 7)),
+      geplande_einddatum: fmt(addDays(today, 8)),
+      notities: "⚡ Demo: Thuisbatterij + laadpaal installatie gepland.",
+    },
+  ];
+
+  await supabase.from("installaties").insert(installatiesData);
+}
