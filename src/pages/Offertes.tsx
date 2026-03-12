@@ -205,6 +205,8 @@ const Offertes = () => {
         subtotaal: totals.subtotaal,
         btw_bedrag: totals.btwBedrag,
         totaal_bedrag: totals.totaal,
+        include_schouw: rest.include_schouw,
+        include_energieadvies: rest.include_energieadvies,
       };
 
       if (id) {
