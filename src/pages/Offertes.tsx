@@ -613,6 +613,9 @@ const Offertes = () => {
               <div className="flex items-center gap-3">
                 <Badge className={statusColors[viewDialog.status]}>{statusLabels[viewDialog.status]}</Badge>
                 <span className="text-sm text-muted-foreground">Geldig tot {new Date(viewDialog.geldig_tot).toLocaleDateString("nl-NL")}</span>
+                <Button variant="outline" size="sm" className="ml-auto rounded-pill gap-1" onClick={() => navigate(`/offertes/${viewDialog.id}/pdf`)}>
+                  <FileDown className="h-4 w-4" /> PDF
+                </Button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label className="text-muted-foreground">Klant</Label><p className="font-medium">{viewDialog.klant_naam}</p></div>

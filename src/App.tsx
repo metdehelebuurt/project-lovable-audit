@@ -118,6 +118,7 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
+              <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
