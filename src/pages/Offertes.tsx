@@ -256,11 +256,7 @@ const Offertes = () => {
   });
 
   const openCreate = () => {
-    setEditingOfferte(null);
-    const geldigTot = new Date();
-    geldigTot.setDate(geldigTot.getDate() + 30);
-    setForm({ ...emptyForm, geldig_tot: geldigTot.toISOString().split("T")[0] });
-    setDialogOpen(true);
+    navigate("/offertes/nieuw");
   };
 
   const openEdit = (o: Offerte) => {
