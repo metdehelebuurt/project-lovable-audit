@@ -8,6 +8,7 @@ const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Hoe het werkt", href: "#hoe-het-werkt" },
   { label: "Voordelen", href: "#voordelen" },
+  { label: "Prijzen", href: "/prijzen", isRoute: true },
 ];
 
 const Navbar = () => {
