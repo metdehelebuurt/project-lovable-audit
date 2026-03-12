@@ -250,8 +250,8 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
     });
   }
 
-  const email = "admin@mijnhuis.nu";
-  const password = "AdminMijnhuis2024!";
+  const email = "info@cenora.nl";
+  const password = "AdminCenora2024!";
 
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
