@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, ClipboardList, FileText, Wrench, TrendingUp } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { nl } from "date-fns/locale";
 
 const StatCard = ({ title, value, icon: Icon, color }: { title: string; value: number | string; icon: React.ElementType; color: string }) => (
   <Card className="rounded-2xl border-0 shadow-sm">
@@ -17,6 +19,21 @@ const StatCard = ({ title, value, icon: Icon, color }: { title: string; value: n
     </CardContent>
   </Card>
 );
+
+interface ActivityItem {
+  id: string;
+  type: "lead" | "offerte" | "schouw" | "installatie";
+  label: string;
+  status: string;
+  date: string;
+}
+
+const typeIcons: Record<string, React.ElementType> = {
+  lead: TrendingUp, offerte: FileText, schouw: ClipboardList, installatie: Wrench,
+};
+const typeColors: Record<string, string> = {
+  lead: "text-primary", offerte: "text-warning", schouw: "text-success", installatie: "text-accent-foreground",
+};
 
 const rolDashboards: Record<string, { title: string; description: string }> = {
   superadmin: { title: "Platform Overzicht", description: "Welkom bij het mijnhuis.nu beheerpaneel." },
@@ -36,8 +53,6 @@ const Dashboard = () => {
     queryKey: ["dashboard-stats", rol, profile?.id],
     queryFn: async () => {
       const counts: Record<string, number> = {};
-
-      // Queries depend on role — RLS handles scoping automatically
       if (["superadmin", "partner_admin", "partner_staff"].includes(rol)) {
         const [partners, users, leads, schouwen, offertes, installaties] = await Promise.all([
           rol === "superadmin" ? supabase.from("partners").select("id", { count: "exact", head: true }) : Promise.resolve({ count: 0 }),
@@ -70,7 +85,6 @@ const Dashboard = () => {
         counts.installaties = installaties.count ?? 0;
         counts.gepland = gepland.count ?? 0;
       } else {
-        // consument
         const [offertes, schouwen] = await Promise.all([
           supabase.from("offertes").select("id", { count: "exact", head: true }),
           supabase.from("schouwen").select("id", { count: "exact", head: true }),
@@ -79,6 +93,28 @@ const Dashboard = () => {
         counts.schouwen = schouwen.count ?? 0;
       }
       return counts;
+    },
+    enabled: !!profile,
+  });
+
+  const { data: activity } = useQuery({
+    queryKey: ["dashboard-activity", rol, profile?.id],
+    queryFn: async () => {
+      const items: ActivityItem[] = [];
+
+      const [leads, offertes, schouwen, installaties] = await Promise.all([
+        supabase.from("leads").select("id, voornaam, achternaam, lead_status, updated_at").order("updated_at", { ascending: false }).limit(5),
+        supabase.from("offertes").select("id, offertenummer, status, updated_at").order("updated_at", { ascending: false }).limit(5),
+        supabase.from("schouwen").select("id, schouw_nummer, consument_naam, status, updated_at").order("updated_at", { ascending: false }).limit(5),
+        supabase.from("installaties").select("id, consument_naam, status, updated_at").order("updated_at", { ascending: false }).limit(5),
+      ]);
+
+      (leads.data ?? []).forEach((l) => items.push({ id: l.id, type: "lead", label: `${l.voornaam} ${l.achternaam}`, status: l.lead_status, date: l.updated_at }));
+      (offertes.data ?? []).forEach((o) => items.push({ id: o.id, type: "offerte", label: o.offertenummer, status: o.status, date: o.updated_at }));
+      (schouwen.data ?? []).forEach((s) => items.push({ id: s.id, type: "schouw", label: s.consument_naam ?? s.schouw_nummer, status: s.status, date: s.updated_at }));
+      (installaties.data ?? []).forEach((i) => items.push({ id: i.id, type: "installatie", label: i.consument_naam ?? "Installatie", status: i.status, date: i.updated_at }));
+
+      return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
     },
     enabled: !!profile,
   });
@@ -135,7 +171,31 @@ const Dashboard = () => {
           <CardTitle className="text-lg">Recente Activiteit</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">Nog geen activiteiten om weer te geven.</p>
+          {!activity || activity.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Nog geen activiteiten om weer te geven.</p>
+          ) : (
+            <div className="space-y-3">
+              {activity.map((item) => {
+                const Icon = typeIcons[item.type];
+                return (
+                  <div key={`${item.type}-${item.id}`} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <div className={`h-8 w-8 rounded-full bg-muted flex items-center justify-center ${typeColors[item.type]}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        <span className="capitalize">{item.type}</span>: {item.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Status: {item.status}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDistanceToNow(new Date(item.date), { addSuffix: true, locale: nl })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
