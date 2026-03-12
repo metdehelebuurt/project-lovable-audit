@@ -279,6 +279,8 @@ const Offertes = () => {
       betalingsvoorwaarden: o.betalingsvoorwaarden || "",
       notities: o.notities || "",
       regels,
+      include_schouw: (o as any).include_schouw ?? false,
+      include_energieadvies: (o as any).include_energieadvies ?? false,
     });
     setDialogOpen(true);
   };
