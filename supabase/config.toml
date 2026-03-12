@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ai-product-import]
 verify_jwt = false
+
+[functions.clear-demo-data]
+verify_jwt = false
