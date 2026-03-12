@@ -112,7 +112,7 @@ const Berichten = () => {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !activeTicket) return;
-    const existing = (Array.isArray(activeTicket.berichten_json) ? activeTicket.berichten_json : []) as ChatMessage[];
+    const existing = (Array.isArray(activeTicket.berichten_json) ? activeTicket.berichten_json : []) as unknown as ChatMessage[];
     const msg: ChatMessage = {
       id: crypto.randomUUID(), sender_id: user!.id,
       sender_naam: `${profile!.voornaam} ${profile!.achternaam}`,
