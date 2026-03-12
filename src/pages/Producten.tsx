@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -86,6 +86,32 @@ interface AIProduct {
   certificeringen?: string;
   specs?: Record<string, string>;
   categorie: ProductCategorie;
+  warnings?: string[];
+}
+
+// Simple fuzzy match: checks if two strings are similar enough
+function isSimilar(a: string, b: string): boolean {
+  const normalize = (s: string) => s.toLowerCase().replace(/[\s\-_\/\\().]+/g, "").trim();
+  const na = normalize(a);
+  const nb = normalize(b);
+  if (na === nb) return true;
+  if (na.includes(nb) || nb.includes(na)) return true;
+  // Check if >80% of characters match
+  const longer = na.length > nb.length ? na : nb;
+  const shorter = na.length > nb.length ? nb : na;
+  if (shorter.length < 3) return false;
+  let matches = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    if (longer.includes(shorter[i])) matches++;
+  }
+  return matches / shorter.length > 0.85 && Math.abs(na.length - nb.length) < 5;
+}
+
+function isDuplicate(product: AIProduct, existingNames: string[]): boolean {
+  return existingNames.some(existing => {
+    const existingNorm = existing.replace(/\s*\(.*\)\s*$/, ""); // Strip "(model)" suffix
+    return isSimilar(product.naam, existingNorm) || isSimilar(product.naam, existing);
+  });
 }
 
 const Producten = () => {
@@ -105,6 +131,7 @@ const Producten = () => {
   const [aiProducts, setAiProducts] = useState<AIProduct[]>([]);
   const [aiSelected, setAiSelected] = useState<Set<number>>(new Set());
   const [aiStep, setAiStep] = useState<"input" | "preview">("input");
+  const [aiExistingNames, setAiExistingNames] = useState<string[]>([]);
 
   const isSuperadmin = profile?.rol === "superadmin";
   const isPartnerAdmin = profile?.rol === "partner_admin";
@@ -230,13 +257,26 @@ const Producten = () => {
         toast.error(data.error);
         return;
       }
-      const products = data?.products || [];
+      const products: AIProduct[] = data?.products || [];
+      const existingNames: string[] = data?.bestaande_producten || [];
+      setAiExistingNames(existingNames);
+
       if (products.length === 0) {
         toast.info("Geen producten gevonden voor dit merk en deze categorie");
         return;
       }
       setAiProducts(products);
-      setAiSelected(new Set(products.map((_: any, i: number) => i)));
+
+      // Smart pre-selection: deselect duplicates and products with warnings
+      const preSelected = new Set<number>();
+      products.forEach((p, i) => {
+        const duplicate = isDuplicate(p, existingNames);
+        const hasWarnings = p.warnings && p.warnings.length > 0;
+        if (!duplicate && !hasWarnings) {
+          preSelected.add(i);
+        }
+      });
+      setAiSelected(preSelected);
       setAiStep("preview");
     } catch (err: any) {
       toast.error("Fout bij ophalen producten", { description: err.message });
@@ -282,6 +322,7 @@ const Producten = () => {
     setAiProducts([]);
     setAiSelected(new Set());
     setAiStep("input");
+    setAiExistingNames([]);
   };
 
   const toggleAiSelect = (idx: number) => {
@@ -300,6 +341,10 @@ const Producten = () => {
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(price);
+
+  // Count duplicates and warnings in AI results
+  const aiDuplicateCount = aiProducts.filter(p => isDuplicate(p, aiExistingNames)).length;
+  const aiWarningCount = aiProducts.filter(p => p.warnings && p.warnings.length > 0).length;
 
   return (
     <div className="space-y-6">
@@ -550,7 +595,7 @@ const Producten = () => {
           {aiStep === "input" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Voer een merknaam en categorie in. AI zoekt automatisch het productassortiment op met alle technische specificaties.
+                Voer een merknaam en categorie in. AI zoekt automatisch het volledige productassortiment op met alle varianten en technische specificaties (tot 50 producten per keer).
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -586,65 +631,122 @@ const Producten = () => {
 
           {aiStep === "preview" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {aiProducts.length} producten gevonden voor <strong>{aiMerk}</strong>. Selecteer welke je wilt importeren.
-                </p>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>{aiProducts.length}</strong> producten gevonden voor <strong>{aiMerk}</strong> · <strong>{aiSelected.size}</strong> geselecteerd
+                  </p>
+                  {(aiDuplicateCount > 0 || aiWarningCount > 0) && (
+                    <div className="flex gap-2 text-xs">
+                      {aiDuplicateCount > 0 && (
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <Copy className="h-3 w-3" /> {aiDuplicateCount} duplica{aiDuplicateCount === 1 ? "at" : "ten"}
+                        </span>
+                      )}
+                      {aiWarningCount > 0 && (
+                        <span className="flex items-center gap-1 text-warning-foreground">
+                          <AlertTriangle className="h-3 w-3" /> {aiWarningCount} waarschuwing{aiWarningCount === 1 ? "" : "en"}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    const all = new Set<number>();
+                    aiProducts.forEach((p, i) => {
+                      if (!isDuplicate(p, aiExistingNames)) all.add(i);
+                    });
+                    setAiSelected(all);
+                  }}>
+                    Selecteer nieuw
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}>
-                    Alles selecteren
+                    Alles
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set())}>
-                    Niets selecteren
+                    Niets
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                {aiProducts.map((product, idx) => (
-                  <Card key={idx} className={`rounded-xl border cursor-pointer transition-colors ${aiSelected.has(idx) ? "border-primary bg-primary/5" : "border-border"}`}
-                    onClick={() => toggleAiSelect(idx)}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={aiSelected.has(idx)}
-                          onCheckedChange={() => toggleAiSelect(idx)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-medium text-foreground">{product.naam}</p>
-                            <p className="text-sm font-semibold text-primary whitespace-nowrap">
-                              {formatPrice(product.prijs_excl_btw)}
-                            </p>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-0.5">{product.model} · {product.merk}</p>
-                          {product.omschrijving && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.omschrijving}</p>
-                          )}
-                          {product.specs && Object.keys(product.specs).length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {Object.entries(product.specs).slice(0, 6).map(([key, val]) => (
-                                <Badge key={key} variant="outline" className="text-xs font-normal">
-                                  {key}: {val}
-                                </Badge>
-                              ))}
-                              {Object.keys(product.specs).length > 6 && (
-                                <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
-                                  +{Object.keys(product.specs).length - 6} meer
-                                </Badge>
-                              )}
+                {aiProducts.map((product, idx) => {
+                  const duplicate = isDuplicate(product, aiExistingNames);
+                  const hasWarnings = product.warnings && product.warnings.length > 0;
+
+                  return (
+                    <Card key={idx} className={`rounded-xl border cursor-pointer transition-colors ${
+                      aiSelected.has(idx)
+                        ? "border-primary bg-primary/5"
+                        : duplicate
+                          ? "border-muted bg-muted/30 opacity-60"
+                          : "border-border"
+                    }`}
+                      onClick={() => toggleAiSelect(idx)}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={aiSelected.has(idx)}
+                            onCheckedChange={() => toggleAiSelect(idx)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <p className="font-medium text-foreground truncate">{product.naam}</p>
+                                {duplicate && (
+                                  <Badge variant="outline" className="text-xs shrink-0 border-warning-foreground text-warning-foreground">
+                                    <Copy className="h-3 w-3 mr-1" /> Bestaat al
+                                  </Badge>
+                                )}
+                                {hasWarnings && (
+                                  <Badge variant="outline" className="text-xs shrink-0 border-destructive text-destructive">
+                                    <AlertTriangle className="h-3 w-3 mr-1" /> Let op
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm font-semibold text-primary whitespace-nowrap">
+                                {formatPrice(product.prijs_excl_btw)}
+                              </p>
                             </div>
-                          )}
-                          <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                            {product.garantie_jaren && <span>Garantie: {product.garantie_jaren} jaar</span>}
-                            {product.certificeringen && <span>{product.certificeringen}</span>}
+                            <p className="text-sm text-muted-foreground mt-0.5">{product.model} · {product.merk}</p>
+                            {product.omschrijving && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.omschrijving}</p>
+                            )}
+                            {hasWarnings && (
+                              <div className="mt-1.5 space-y-0.5">
+                                {product.warnings!.map((w, wi) => (
+                                  <p key={wi} className="text-xs text-destructive flex items-center gap-1">
+                                    <AlertTriangle className="h-3 w-3 shrink-0" /> {w}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                            {product.specs && Object.keys(product.specs).length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {Object.entries(product.specs).slice(0, 6).map(([key, val]) => (
+                                  <Badge key={key} variant="outline" className="text-xs font-normal">
+                                    {key}: {val}
+                                  </Badge>
+                                ))}
+                                {Object.keys(product.specs).length > 6 && (
+                                  <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+                                    +{Object.keys(product.specs).length - 6} meer
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                              {product.garantie_jaren && <span>Garantie: {product.garantie_jaren} jaar</span>}
+                              {product.certificeringen && <span>{product.certificeringen}</span>}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
 
               <DialogFooter>
