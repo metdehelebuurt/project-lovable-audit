@@ -28,6 +28,9 @@ import OffertePDF from "@/pages/OffertePDF";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Energieadvies from "@/pages/Energieadvies";
+import OfferteNieuw from "@/pages/OfferteNieuw";
+import Tools from "@/pages/Tools";
+import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import NotFound from "@/pages/NotFound";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
