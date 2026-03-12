@@ -25,6 +25,22 @@ const Instellingen = () => {
   const [confirmPw, setConfirmPw] = useState("");
   const [changingPw, setChangingPw] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [clearingDemo, setClearingDemo] = useState(false);
+
+  const handleClearDemoData = async () => {
+    setClearingDemo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("clear-demo-data");
+      if (error || data?.error) {
+        toast.error("Fout bij verwijderen demogegevens", { description: data?.error || error?.message });
+      } else {
+        toast.success("Demogegevens verwijderd", { description: "Alle voorbeelddata is succesvol verwijderd." });
+      }
+    } catch {
+      toast.error("Fout bij verwijderen demogegevens");
+    }
+    setClearingDemo(false);
+  };
 
   const handleProfileSave = async () => {
     if (!voornaam.trim() || !achternaam.trim()) {
