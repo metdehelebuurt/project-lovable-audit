@@ -98,6 +98,7 @@ const generateOfferteNummer = () => {
 
 const Offertes = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
