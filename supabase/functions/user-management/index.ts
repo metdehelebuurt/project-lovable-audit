@@ -26,10 +26,10 @@ serve(async (req) => {
 
     // Admin password reset (bootstrap utility)
     if (action === "reset_admin_password") {
-      const { new_password } = payload;
+      const { new_password, new_email } = payload;
       const { data: admins } = await supabaseAdmin
         .from("users")
-        .select("id")
+        .select("id, email")
         .eq("rol", "superadmin")
         .limit(1);
       
@@ -40,9 +40,14 @@ serve(async (req) => {
         });
       }
 
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(admins[0].id, {
-        password: new_password,
-      });
+      const updateData: any = {};
+      if (new_password) updateData.password = new_password;
+      if (new_email) {
+        updateData.email = new_email;
+        updateData.email_confirm = true;
+      }
+
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(admins[0].id, updateData);
 
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {
@@ -51,7 +56,12 @@ serve(async (req) => {
         });
       }
 
-      return new Response(JSON.stringify({ success: true, message: "Admin wachtwoord gereset" }), {
+      // Also update email in users table if changed
+      if (new_email) {
+        await supabaseAdmin.from("users").update({ email: new_email }).eq("id", admins[0].id);
+      }
+
+      return new Response(JSON.stringify({ success: true, message: "Admin account bijgewerkt", old_email: admins[0].email }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
