@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Lock, Shield, Download, Trash2, Sparkles } from "lucide-react";
+import { User, Lock, Shield, Download, Trash2, Sparkles, Palette } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const rolLabels: Record<string, string> = {
@@ -26,6 +26,74 @@ const Instellingen = () => {
   const [changingPw, setChangingPw] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [clearingDemo, setClearingDemo] = useState(false);
+
+  // Branding state
+  const isPartnerAdmin = profile?.rol === "partner_admin";
+  const [brandLoading, setBrandLoading] = useState(false);
+  const [brandSaving, setBrandSaving] = useState(false);
+  const [primaireKleur, setPrimaireKleur] = useState("#5B58E1");
+  const [secundaireKleur, setSecundaireKleur] = useState("#1a1a2e");
+  const [bedrijfsslogan, setBedrijfsslogan] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [partnerNaam, setPartnerNaam] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  // Fetch partner branding
+  useEffect(() => {
+    if (!isPartnerAdmin || !profile?.partner_id) return;
+    setBrandLoading(true);
+    supabase
+      .from("partners")
+      .select("naam, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan")
+      .eq("id", profile.partner_id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setPartnerNaam(data.naam);
+          setPrimaireKleur(data.primaire_kleur || "#5B58E1");
+          setSecundaireKleur(data.secundaire_kleur || "#1a1a2e");
+          setBedrijfsslogan(data.bedrijfsslogan || "");
+          setLogoUrl(data.logo_url);
+        }
+        setBrandLoading(false);
+      });
+  }, [isPartnerAdmin, profile?.partner_id]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.partner_id) return;
+    if (!file.type.startsWith("image/")) { toast.error("Selecteer een afbeelding"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error("Maximaal 2MB"); return; }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${profile.partner_id}/logo.${ext}`;
+
+    const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
+    if (error) { toast.error("Upload mislukt: " + error.message); setUploading(false); return; }
+
+    const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
+    
+    const { error: updateError } = await supabase.from("partners").update({ logo_url: publicUrl }).eq("id", profile.partner_id);
+    if (updateError) { toast.error(updateError.message); } else {
+      setLogoUrl(publicUrl);
+      toast.success("Logo geüpload");
+    }
+    setUploading(false);
+  };
+
+  const handleBrandingSave = async () => {
+    if (!profile?.partner_id) return;
+    setBrandSaving(true);
+    const { error } = await supabase.from("partners").update({
+      primaire_kleur: primaireKleur,
+      secundaire_kleur: secundaireKleur,
+      bedrijfsslogan: bedrijfsslogan.trim() || null,
+    }).eq("id", profile.partner_id);
+    setBrandSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Huisstijl opgeslagen");
+  };
 
   const handleClearDemoData = async () => {
     setClearingDemo(true);
@@ -98,7 +166,6 @@ const Instellingen = () => {
   };
 
   const handleDeleteAccount = async () => {
-    // Delete user profile (cascade will handle related data via RLS)
     const { error } = await supabase.from("users").delete().eq("id", user!.id);
     if (error) { toast.error("Fout bij verwijderen: " + error.message); return; }
     await signOut();
@@ -148,6 +215,116 @@ const Instellingen = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Huisstijl / Branding — alleen partner_admin */}
+      {isPartnerAdmin && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Palette className="h-5 w-5 text-primary" />
+            </div>
+            <CardTitle className="text-lg">Huisstijl organisatie</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {brandLoading ? (
+              <p className="text-sm text-muted-foreground">Laden...</p>
+            ) : (
+              <>
+                {/* Logo */}
+                <div>
+                  <Label>Logo</Label>
+                  <div className="flex items-center gap-4 mt-1">
+                    {logoUrl && (
+                      <img src={logoUrl} alt="Logo" className="h-12 w-auto object-contain rounded-lg border p-1" />
+                    )}
+                    <div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={uploading}
+                        className="text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Max 2MB, wordt getoond op offertes</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kleuren */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Primaire kleur</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="color"
+                        value={primaireKleur}
+                        onChange={e => setPrimaireKleur(e.target.value)}
+                        className="h-10 w-10 rounded-lg border cursor-pointer"
+                      />
+                      <Input
+                        value={primaireKleur}
+                        onChange={e => setPrimaireKleur(e.target.value)}
+                        className="font-mono text-sm"
+                        maxLength={7}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Secundaire kleur</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="color"
+                        value={secundaireKleur}
+                        onChange={e => setSecundaireKleur(e.target.value)}
+                        className="h-10 w-10 rounded-lg border cursor-pointer"
+                      />
+                      <Input
+                        value={secundaireKleur}
+                        onChange={e => setSecundaireKleur(e.target.value)}
+                        className="font-mono text-sm"
+                        maxLength={7}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slogan */}
+                <div>
+                  <Label>Bedrijfsslogan</Label>
+                  <Input
+                    value={bedrijfsslogan}
+                    onChange={e => setBedrijfsslogan(e.target.value)}
+                    placeholder="bijv. Duurzame energie, dichtbij huis"
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* Live preview */}
+                <div>
+                  <Label className="text-muted-foreground text-xs">Preview offerte-header</Label>
+                  <div className="mt-2 rounded-xl border p-4" style={{ borderBottom: `3px solid ${primaireKleur}` }}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        {logoUrl && <img src={logoUrl} alt="Logo" className="h-8 mb-1 object-contain" />}
+                        <p className="font-bold" style={{ color: secundaireKleur }}>{partnerNaam}</p>
+                        {bedrijfsslogan && <p className="text-xs" style={{ color: primaireKleur }}>{bedrijfsslogan}</p>}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold" style={{ color: secundaireKleur }}>OFFERTE</p>
+                        <p className="text-xs text-muted-foreground">OF-250312-0001</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button onClick={handleBrandingSave} disabled={brandSaving}>
+                  {brandSaving ? "Opslaan..." : "Huisstijl opslaan"}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {(profile?.rol === "partner_admin" || profile?.rol === "superadmin") && (
         <Card className="rounded-2xl border-0 shadow-sm">
