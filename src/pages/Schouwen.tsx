@@ -749,7 +749,7 @@ const Schouwen = () => {
                 <div className="border-t pt-4">
                   <h3 className="font-medium text-foreground mb-3">Foto's</h3>
                   <div className="grid grid-cols-3 gap-3">
-                    {(viewDialog.fotos as SchouwFoto[]).map((foto, i) => (
+                    {(viewDialog.fotos as unknown as SchouwFoto[]).map((foto, i) => (
                       <div key={i} className="relative rounded-xl overflow-hidden border">
                         <img src={foto.url} alt={foto.label} className="w-full h-24 object-cover" />
                         <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1">
