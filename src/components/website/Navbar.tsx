@@ -8,6 +8,7 @@ const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Hoe het werkt", href: "#hoe-het-werkt" },
   { label: "Voordelen", href: "#voordelen" },
+  { label: "Prijzen", href: "/prijzen", isRoute: true },
 ];
 
 const Navbar = () => {
@@ -38,19 +39,33 @@ const Navbar = () => {
           <Logo />
 
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <button
-                key={link.href}
-                onClick={() => scrollTo(link.href)}
-                className={`text-sm font-medium transition-colors ${
-                  scrolled
-                    ? "text-foreground/70 hover:text-primary"
-                    : "text-background/70 hover:text-background"
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link) =>
+              (link as any).isRoute ? (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={`text-sm font-medium transition-colors ${
+                    scrolled
+                      ? "text-foreground/70 hover:text-primary"
+                      : "text-background/70 hover:text-background"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <button
+                  key={link.href}
+                  onClick={() => scrollTo(link.href)}
+                  className={`text-sm font-medium transition-colors ${
+                    scrolled
+                      ? "text-foreground/70 hover:text-primary"
+                      : "text-background/70 hover:text-background"
+                  }`}
+                >
+                  {link.label}
+                </button>
+              )
+            )}
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -81,15 +96,26 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-card/95 backdrop-blur-md border-b border-border animate-fade-in">
           <div className="px-4 py-4 space-y-2">
-            {navLinks.map((link) => (
-              <button
-                key={link.href}
-                onClick={() => scrollTo(link.href)}
-                className="block w-full text-left py-2 px-3 rounded-lg text-foreground/70 hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link) =>
+              (link as any).isRoute ? (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-left py-2 px-3 rounded-lg text-foreground/70 hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <button
+                  key={link.href}
+                  onClick={() => scrollTo(link.href)}
+                  className="block w-full text-left py-2 px-3 rounded-lg text-foreground/70 hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  {link.label}
+                </button>
+              )
+            )}
             <div className="pt-3 border-t border-border flex flex-col gap-2">
               <Button variant="ghost" asChild className="justify-start">
                 <Link to="/login">Inloggen</Link>
@@ -103,7 +129,7 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-      )}
+            )}
     </nav>
   );
 };
