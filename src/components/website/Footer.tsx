@@ -1,5 +1,6 @@
 import Logo from "@/components/Logo";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => (
   <footer className="bg-foreground text-background/70 pt-16 pb-8">
@@ -18,21 +19,21 @@ const Footer = () => (
         <div>
           <h4 className="text-background font-semibold mb-4">Platform</h4>
           <ul className="space-y-2 text-sm">
-            <li>Offertes op locatie</li>
-            <li>Digitale schouwen</li>
-            <li>Planning & agenda</li>
-            <li>Klant- & leadbeheer</li>
-            <li>Rapportages</li>
+            <li><Link to="/features/offertes" className="hover:text-background transition-colors">Offertes op locatie</Link></li>
+            <li><Link to="/features/digitale-schouwen" className="hover:text-background transition-colors">Digitale schouwen</Link></li>
+            <li><Link to="/features/planning" className="hover:text-background transition-colors">Planning & agenda</Link></li>
+            <li><Link to="/features/leadbeheer" className="hover:text-background transition-colors">Klant- & leadbeheer</Link></li>
+            <li><Link to="/features/rapportages" className="hover:text-background transition-colors">Rapportages</Link></li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-background font-semibold mb-4">Bedrijf</h4>
           <ul className="space-y-2 text-sm">
-            <li>Over ons</li>
-            <li>Prijzen</li>
-            <li>Partners worden</li>
-            <li>Veelgestelde vragen</li>
+            <li><Link to="/over-ons" className="hover:text-background transition-colors">Over ons</Link></li>
+            <li><Link to="/prijzen" className="hover:text-background transition-colors">Prijzen</Link></li>
+            <li><Link to="/partners-worden" className="hover:text-background transition-colors">Partners worden</Link></li>
+            <li><Link to="/veelgestelde-vragen" className="hover:text-background transition-colors">Veelgestelde vragen</Link></li>
           </ul>
         </div>
 
@@ -55,9 +56,9 @@ const Footer = () => (
       <div className="border-t border-background/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
         <p>© {new Date().getFullYear()} mijnhuis.nu — Alle rechten voorbehouden</p>
         <div className="flex gap-4">
-          <span className="hover:text-background cursor-pointer">Privacy</span>
-          <span className="hover:text-background cursor-pointer">Voorwaarden</span>
-          <span className="hover:text-background cursor-pointer">Cookies</span>
+          <Link to="/privacy" className="hover:text-background transition-colors">Privacy</Link>
+          <Link to="/voorwaarden" className="hover:text-background transition-colors">Voorwaarden</Link>
+          <Link to="/cookies" className="hover:text-background transition-colors">Cookies</Link>
         </div>
       </div>
     </div>

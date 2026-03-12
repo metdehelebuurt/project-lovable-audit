@@ -39,19 +39,33 @@ const Navbar = () => {
           <Logo />
 
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <button
-                key={link.href}
-                onClick={() => scrollTo(link.href)}
-                className={`text-sm font-medium transition-colors ${
-                  scrolled
-                    ? "text-foreground/70 hover:text-primary"
-                    : "text-background/70 hover:text-background"
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link) =>
+              (link as any).isRoute ? (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={`text-sm font-medium transition-colors ${
+                    scrolled
+                      ? "text-foreground/70 hover:text-primary"
+                      : "text-background/70 hover:text-background"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <button
+                  key={link.href}
+                  onClick={() => scrollTo(link.href)}
+                  className={`text-sm font-medium transition-colors ${
+                    scrolled
+                      ? "text-foreground/70 hover:text-primary"
+                      : "text-background/70 hover:text-background"
+                  }`}
+                >
+                  {link.label}
+                </button>
+              )
+            )}
           </div>
 
           <div className="hidden md:flex items-center gap-3">
