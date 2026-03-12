@@ -1,14 +1,14 @@
-import logoWhite from "@/assets/logo.png";
-import logoColored from "@/assets/logo-colored.png";
+import logoWhite from "@/assets/logo-white.png";
+import logoPurple from "@/assets/logo-purple.png";
 
 interface LogoProps {
   className?: string;
   showText?: boolean;
-  variant?: "colored" | "white";
+  variant?: "purple" | "white";
 }
 
-const Logo = ({ className = "", showText = true, variant = "colored" }: LogoProps) => {
-  const logoSrc = variant === "white" ? logoWhite : logoColored;
+const Logo = ({ className = "", showText = true, variant = "purple" }: LogoProps) => {
+  const logoSrc = variant === "white" ? logoWhite : logoPurple;
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
