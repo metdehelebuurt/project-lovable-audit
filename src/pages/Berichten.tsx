@@ -131,7 +131,7 @@ const Berichten = () => {
     t.onderwerp.toLowerCase().includes(search.toLowerCase()) || t.ticketnummer.toLowerCase().includes(search.toLowerCase())
   );
 
-  const messages = activeTicket ? ((Array.isArray(activeTicket.berichten_json) ? activeTicket.berichten_json : []) as ChatMessage[]) : [];
+  const messages = activeTicket ? ((Array.isArray(activeTicket.berichten_json) ? activeTicket.berichten_json : []) as unknown as ChatMessage[]) : [];
 
   // Chat detail view
   if (activeTicket) {
