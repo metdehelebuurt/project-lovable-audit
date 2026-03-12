@@ -118,10 +118,12 @@ const Offertes = () => {
   const isConsument = profile?.rol === "consument";
   const canDelete = isSuperadmin || isAdmin;
   const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
-  // Auto-open create dialog from Schouw link
+  // Auto-open create dialog from Schouw link or Energieadvies prefill
   useEffect(() => {
     const schouwId = searchParams.get("schouw_id");
     const leadId = searchParams.get("lead_id");
+    const isNieuw = searchParams.get("nieuw") === "1";
+
     if (schouwId && canCreate) {
       const geldigTot = new Date();
       geldigTot.setDate(geldigTot.getDate() + 30);
@@ -132,6 +134,27 @@ const Offertes = () => {
         klant_naam: decodeURIComponent(searchParams.get("klant_naam") || ""),
         klant_email: decodeURIComponent(searchParams.get("klant_email") || ""),
         geldig_tot: geldigTot.toISOString().split("T")[0],
+      });
+      setDialogOpen(true);
+      setSearchParams({}, { replace: true });
+    } else if (isNieuw && canCreate) {
+      const geldigTot = new Date();
+      geldigTot.setDate(geldigTot.getDate() + 30);
+      const prefillRaw = sessionStorage.getItem("offerte-prefill");
+      let prefillRegels: OfferteRegel[] = [{ ...emptyRegel }];
+      if (prefillRaw) {
+        try {
+          const parsed = JSON.parse(prefillRaw);
+          if (Array.isArray(parsed.regels) && parsed.regels.length > 0) {
+            prefillRegels = parsed.regels;
+          }
+        } catch {}
+        sessionStorage.removeItem("offerte-prefill");
+      }
+      setForm({
+        ...emptyForm,
+        geldig_tot: geldigTot.toISOString().split("T")[0],
+        regels: prefillRegels,
       });
       setDialogOpen(true);
       setSearchParams({}, { replace: true });
