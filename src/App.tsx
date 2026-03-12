@@ -28,6 +28,9 @@ import OffertePDF from "@/pages/OffertePDF";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Energieadvies from "@/pages/Energieadvies";
+import OfferteNieuw from "@/pages/OfferteNieuw";
+import Tools from "@/pages/Tools";
+import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import NotFound from "@/pages/NotFound";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
@@ -116,6 +119,18 @@ const App = () => (
               } />
               <Route path="/energieadvies" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
+              } />
+              <Route path="/tools" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Tools /></ProtectedRoute>
+              } />
+              <Route path="/tools/energieadvies" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
+              } />
+              <Route path="/tools/thuisbatterij" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><ThuisbatterijSelector /></ProtectedRoute>
+              } />
+              <Route path="/offertes/nieuw" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />

@@ -118,45 +118,22 @@ const Offertes = () => {
   const isConsument = profile?.rol === "consument";
   const canDelete = isSuperadmin || isAdmin;
   const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
-  // Auto-open create dialog from Schouw link or Energieadvies prefill
+  // Auto-open edit dialog from Schouw link or redirect new to dedicated page
   useEffect(() => {
     const schouwId = searchParams.get("schouw_id");
     const leadId = searchParams.get("lead_id");
     const isNieuw = searchParams.get("nieuw") === "1";
 
-    if (schouwId && canCreate) {
-      const geldigTot = new Date();
-      geldigTot.setDate(geldigTot.getDate() + 30);
-      setForm({
-        ...emptyForm,
-        schouw_id: schouwId,
-        lead_id: leadId || "",
-        klant_naam: decodeURIComponent(searchParams.get("klant_naam") || ""),
-        klant_email: decodeURIComponent(searchParams.get("klant_email") || ""),
-        geldig_tot: geldigTot.toISOString().split("T")[0],
-      });
-      setDialogOpen(true);
-      setSearchParams({}, { replace: true });
-    } else if (isNieuw && canCreate) {
-      const geldigTot = new Date();
-      geldigTot.setDate(geldigTot.getDate() + 30);
-      const prefillRaw = sessionStorage.getItem("offerte-prefill");
-      let prefillRegels: OfferteRegel[] = [{ ...emptyRegel }];
-      if (prefillRaw) {
-        try {
-          const parsed = JSON.parse(prefillRaw);
-          if (Array.isArray(parsed.regels) && parsed.regels.length > 0) {
-            prefillRegels = parsed.regels;
-          }
-        } catch {}
-        sessionStorage.removeItem("offerte-prefill");
-      }
-      setForm({
-        ...emptyForm,
-        geldig_tot: geldigTot.toISOString().split("T")[0],
-        regels: prefillRegels,
-      });
-      setDialogOpen(true);
+    if ((schouwId || isNieuw) && canCreate) {
+      // Redirect to dedicated new offerte page
+      const params = new URLSearchParams();
+      if (schouwId) params.set("schouw_id", schouwId);
+      if (leadId) params.set("lead_id", leadId);
+      const klantNaam = searchParams.get("klant_naam");
+      const klantEmail = searchParams.get("klant_email");
+      if (klantNaam) params.set("klant_naam", klantNaam);
+      if (klantEmail) params.set("klant_email", klantEmail);
+      navigate(`/offertes/nieuw?${params.toString()}`);
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, canCreate]);
@@ -279,11 +256,7 @@ const Offertes = () => {
   });
 
   const openCreate = () => {
-    setEditingOfferte(null);
-    const geldigTot = new Date();
-    geldigTot.setDate(geldigTot.getDate() + 30);
-    setForm({ ...emptyForm, geldig_tot: geldigTot.toISOString().split("T")[0] });
-    setDialogOpen(true);
+    navigate("/offertes/nieuw");
   };
 
   const openEdit = (o: Offerte) => {
