@@ -149,6 +149,44 @@ const Instellingen = () => {
         </CardContent>
       </Card>
 
+      {(profile?.rol === "partner_admin" || profile?.rol === "superadmin") && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-accent-foreground" />
+            </div>
+            <CardTitle className="text-lg">Demogegevens</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Uw account bevat voorbeelddata (gemarkeerd met ⚡ Demo). U kunt deze verwijderen zodra u klaar bent met verkennen.
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="gap-2 rounded-pill" disabled={clearingDemo}>
+                  <Trash2 className="h-4 w-4" />
+                  {clearingDemo ? "Verwijderen..." : "Demogegevens verwijderen"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Demogegevens verwijderen</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Alle voorbeelddata (leads, schouwen, offertes, installaties en producten gemarkeerd met ⚡ Demo) wordt permanent verwijderd.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearDemoData}>
+                    Verwijderen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
