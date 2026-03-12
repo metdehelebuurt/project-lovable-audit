@@ -115,7 +115,7 @@ const Navbar = () => {
                   {link.label}
                 </button>
               )
-            ))}
+            )}
             <div className="pt-3 border-t border-border flex flex-col gap-2">
               <Button variant="ghost" asChild className="justify-start">
                 <Link to="/login">Inloggen</Link>
