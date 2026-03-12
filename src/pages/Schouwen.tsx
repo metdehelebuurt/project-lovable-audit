@@ -660,7 +660,7 @@ const Schouwen = () => {
                       <div className="grid grid-cols-2 gap-1 text-sm">
                         {checklistItems.map(item => (
                           <div key={item.key} className="flex items-center gap-1.5">
-                            {form.checklist[item.key] ? <Check className="h-3.5 w-3.5 text-green-600" /> : <span className="h-3.5 w-3.5 rounded-sm border border-muted-foreground/30 inline-block" />}
+                            {form.checklist[item.key] ? <Check className="h-3.5 w-3.5 text-primary" /> : <span className="h-3.5 w-3.5 rounded-sm border border-muted-foreground/30 inline-block" />}
                             <span className={form.checklist[item.key] ? "" : "text-muted-foreground"}>{item.label}</span>
                           </div>
                         ))}
