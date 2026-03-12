@@ -62,6 +62,8 @@ interface OfferteFormData {
   betalingsvoorwaarden: string;
   notities: string;
   regels: OfferteRegel[];
+  include_schouw: boolean;
+  include_energieadvies: boolean;
 }
 
 const emptyRegel: OfferteRegel = {
