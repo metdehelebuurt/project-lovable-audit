@@ -120,6 +120,18 @@ const App = () => (
               <Route path="/energieadvies" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
               } />
+              <Route path="/tools" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Tools /></ProtectedRoute>
+              } />
+              <Route path="/tools/energieadvies" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
+              } />
+              <Route path="/tools/thuisbatterij" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><ThuisbatterijSelector /></ProtectedRoute>
+              } />
+              <Route path="/offertes/nieuw" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
+              } />
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
             </Route>
