@@ -52,6 +52,11 @@ serve(async (req) => {
     }
 
     // 2. Create partner (trial)
+    // Calculate 30-day trial end date
+    const trialStart = new Date();
+    const trialEnd = new Date(trialStart);
+    trialEnd.setDate(trialEnd.getDate() + 30);
+
     const { data: partner, error: partnerError } = await supabaseAdmin
       .from("partners")
       .insert({
@@ -60,7 +65,8 @@ serve(async (req) => {
         telefoonnummer: telefoon || null,
         status: "actief",
         abonnement_type: "trial",
-        contract_startdatum: new Date().toISOString().split("T")[0],
+        contract_startdatum: trialStart.toISOString().split("T")[0],
+        trial_einddatum: trialEnd.toISOString().split("T")[0],
         contactpersoon_voornaam: voornaam,
         contactpersoon_achternaam: achternaam,
         contactpersoon_email: email,

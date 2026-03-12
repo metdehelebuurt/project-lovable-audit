@@ -24,7 +24,7 @@ const CTASection = () => {
             Klaar om je bedrijf te laten groeien?
           </h2>
           <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto mb-8">
-            Start vandaag nog met mijnhuis.nu. 14 dagen gratis proberen, geen
+            Start vandaag nog met mijnhuis.nu. 30 dagen gratis proberen, geen
             creditcard nodig.
           </p>
           <Button

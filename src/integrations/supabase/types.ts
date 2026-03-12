@@ -494,6 +494,7 @@ export type Database = {
           postcode: string | null
           status: Database["public"]["Enums"]["partner_status"]
           telefoonnummer: string | null
+          trial_einddatum: string | null
           updated_at: string
           website: string | null
         }
@@ -523,6 +524,7 @@ export type Database = {
           postcode?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
+          trial_einddatum?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -552,6 +554,7 @@ export type Database = {
           postcode?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
+          trial_einddatum?: string | null
           updated_at?: string
           website?: string | null
         }

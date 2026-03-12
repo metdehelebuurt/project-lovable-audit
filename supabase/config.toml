@@ -1,1 +1,10 @@
 project_id = "xmguipmetciwvzeyxugu"
+
+[functions.trial-signup]
+verify_jwt = false
+
+[functions.user-management]
+verify_jwt = false
+
+[functions.ai-product-import]
+verify_jwt = false
