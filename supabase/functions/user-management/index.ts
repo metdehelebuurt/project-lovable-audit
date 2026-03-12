@@ -270,7 +270,7 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
     id: authUser.user.id,
     email,
     voornaam: "Admin",
-    achternaam: "Mijnhuis",
+    achternaam: "Cenora",
     rol: "superadmin",
     partner_id: null,
     status: "actief",
