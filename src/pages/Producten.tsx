@@ -14,8 +14,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import ProductImage from "@/components/producten/ProductImage";
+import ProductImageUpload from "@/components/producten/ProductImageUpload";
+import SpecsEditor from "@/components/producten/SpecsEditor";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 type ProductInsert = Database["public"]["Tables"]["producten"]["Insert"];
@@ -65,6 +68,9 @@ interface ProductFormData {
   garantie_jaren: number | null;
   certificeringen: string;
   status: ProductStatus;
+  afbeelding_url: string | null;
+  afbeeldingen: string[];
+  specs: Record<string, string>;
 }
 
 const emptyForm: ProductFormData = {
@@ -73,7 +79,8 @@ const emptyForm: ProductFormData = {
   voorraad: null, btw_percentage: 21, max_korting_euro: null,
   max_korting_percentage: null, product_code: "", leverancier: "",
   artikelnummer: "", ean_code: "", levertijd: "", garantie_jaren: null,
-  certificeringen: "", status: "actief",
+  certificeringen: "", status: "actief", afbeelding_url: null,
+  afbeeldingen: [], specs: {},
 };
 
 interface AIProduct {
@@ -89,14 +96,12 @@ interface AIProduct {
   warnings?: string[];
 }
 
-// Simple fuzzy match: checks if two strings are similar enough
 function isSimilar(a: string, b: string): boolean {
   const normalize = (s: string) => s.toLowerCase().replace(/[\s\-_\/\\().]+/g, "").trim();
   const na = normalize(a);
   const nb = normalize(b);
   if (na === nb) return true;
   if (na.includes(nb) || nb.includes(na)) return true;
-  // Check if >80% of characters match
   const longer = na.length > nb.length ? na : nb;
   const shorter = na.length > nb.length ? nb : na;
   if (shorter.length < 3) return false;
@@ -109,7 +114,7 @@ function isSimilar(a: string, b: string): boolean {
 
 function isDuplicate(product: AIProduct, existingNames: string[]): boolean {
   return existingNames.some(existing => {
-    const existingNorm = existing.replace(/\s*\(.*\)\s*$/, ""); // Strip "(model)" suffix
+    const existingNorm = existing.replace(/\s*\(.*\)\s*$/, "");
     return isSimilar(product.naam, existingNorm) || isSimilar(product.naam, existing);
   });
 }
@@ -118,8 +123,8 @@ const Producten = () => {
   const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string>("alle");
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState<ProductFormData>(emptyForm);
   const queryClient = useQueryClient();
 
@@ -138,6 +143,8 @@ const Producten = () => {
   const isPartnerStaff = profile?.rol === "partner_staff";
   const isInstallateur = profile?.rol === "installateur";
   const canEdit = isSuperadmin || isPartnerAdmin || isPartnerStaff || isInstallateur;
+
+  const showInlineForm = isCreating || editingProduct !== null;
 
   const { data: producten = [], isLoading } = useQuery({
     queryKey: ["producten"],
@@ -176,9 +183,12 @@ const Producten = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & ProductFormData) => {
-      const { id, ...rest } = data;
+      const { id, afbeelding_url, afbeeldingen, specs, ...rest } = data;
       const record: any = {
         ...rest,
+        afbeelding_url: afbeelding_url || null,
+        afbeeldingen: afbeeldingen.length > 0 ? afbeeldingen : null,
+        specs: Object.keys(specs).length > 0 ? specs : null,
         merk: rest.merk || null,
         model: rest.model || null,
         omschrijving: rest.omschrijving || null,
@@ -202,7 +212,7 @@ const Producten = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["producten"] });
       toast.success(editingProduct ? "Product bijgewerkt" : "Product aangemaakt");
-      closeDialog();
+      closeForm();
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
@@ -219,9 +229,19 @@ const Producten = () => {
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
 
-  const openCreate = () => { setEditingProduct(null); setForm(emptyForm); setDialogOpen(true); };
+  const openCreate = () => {
+    setEditingProduct(null);
+    setForm(emptyForm);
+    setIsCreating(true);
+  };
+
   const openEdit = (p: Product) => {
+    setIsCreating(false);
     setEditingProduct(p);
+    const galleryImages = Array.isArray(p.afbeeldingen) ? (p.afbeeldingen as string[]) : [];
+    const specs = (p.specs && typeof p.specs === "object" && !Array.isArray(p.specs))
+      ? (p.specs as Record<string, string>)
+      : {};
     setForm({
       naam: p.naam, categorie: p.categorie, merk: p.merk || "",
       model: p.model || "", omschrijving: p.omschrijving || "",
@@ -234,10 +254,17 @@ const Producten = () => {
       artikelnummer: p.artikelnummer || "", ean_code: p.ean_code || "",
       levertijd: p.levertijd || "", garantie_jaren: p.garantie_jaren,
       certificeringen: p.certificeringen || "", status: p.status,
+      afbeelding_url: p.afbeelding_url || null,
+      afbeeldingen: galleryImages,
+      specs,
     });
-    setDialogOpen(true);
   };
-  const closeDialog = () => { setDialogOpen(false); setEditingProduct(null); setForm(emptyForm); };
+
+  const closeForm = () => {
+    setIsCreating(false);
+    setEditingProduct(null);
+    setForm(emptyForm);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,28 +280,15 @@ const Producten = () => {
         body: { merk: aiMerk.trim(), categorie: aiCategorie },
       });
       if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
+      if (data?.error) { toast.error(data.error); return; }
       const products: AIProduct[] = data?.products || [];
       const existingNames: string[] = data?.bestaande_producten || [];
       setAiExistingNames(existingNames);
-
-      if (products.length === 0) {
-        toast.info("Geen producten gevonden voor dit merk en deze categorie");
-        return;
-      }
+      if (products.length === 0) { toast.info("Geen producten gevonden voor dit merk en deze categorie"); return; }
       setAiProducts(products);
-
-      // Smart pre-selection: deselect duplicates and products with warnings
       const preSelected = new Set<number>();
       products.forEach((p, i) => {
-        const duplicate = isDuplicate(p, existingNames);
-        const hasWarnings = p.warnings && p.warnings.length > 0;
-        if (!duplicate && !hasWarnings) {
-          preSelected.add(i);
-        }
+        if (!isDuplicate(p, existingNames) && !(p.warnings && p.warnings.length > 0)) preSelected.add(i);
       });
       setAiSelected(preSelected);
       setAiStep("preview");
@@ -291,15 +305,10 @@ const Producten = () => {
     setAiLoading(true);
     try {
       const records: ProductInsert[] = selected.map(p => ({
-        naam: p.naam,
-        model: p.model || null,
-        merk: p.merk || null,
-        omschrijving: p.omschrijving || null,
-        prijs_excl_btw: p.prijs_excl_btw || 0,
-        garantie_jaren: p.garantie_jaren || null,
-        certificeringen: p.certificeringen || null,
-        specs: p.specs ? (p.specs as any) : null,
-        categorie: p.categorie,
+        naam: p.naam, model: p.model || null, merk: p.merk || null,
+        omschrijving: p.omschrijving || null, prijs_excl_btw: p.prijs_excl_btw || 0,
+        garantie_jaren: p.garantie_jaren || null, certificeringen: p.certificeringen || null,
+        specs: p.specs ? (p.specs as any) : null, categorie: p.categorie,
         partner_id: isSuperadmin ? null : profile?.partner_id!,
         status: "actief" as const,
       }));
@@ -316,21 +325,12 @@ const Producten = () => {
   };
 
   const closeAiDialog = () => {
-    setAiDialogOpen(false);
-    setAiMerk("");
-    setAiCategorie("zonnepanelen");
-    setAiProducts([]);
-    setAiSelected(new Set());
-    setAiStep("input");
-    setAiExistingNames([]);
+    setAiDialogOpen(false); setAiMerk(""); setAiCategorie("zonnepanelen");
+    setAiProducts([]); setAiSelected(new Set()); setAiStep("input"); setAiExistingNames([]);
   };
 
   const toggleAiSelect = (idx: number) => {
-    setAiSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx); else next.add(idx);
-      return next;
-    });
+    setAiSelected(prev => { const next = new Set(prev); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; });
   };
 
   const filtered = producten.filter(p => {
@@ -342,9 +342,11 @@ const Producten = () => {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(price);
 
-  // Count duplicates and warnings in AI results
   const aiDuplicateCount = aiProducts.filter(p => isDuplicate(p, aiExistingNames)).length;
   const aiWarningCount = aiProducts.filter(p => p.warnings && p.warnings.length > 0).length;
+
+  // Product ID for image upload — use existing or temp id
+  const formProductId = editingProduct?.id || "new-product";
 
   return (
     <div className="space-y-6">
@@ -353,7 +355,7 @@ const Producten = () => {
           <h1 className="text-2xl font-semibold text-foreground">Producten</h1>
           <p className="text-muted-foreground mt-1">Productcatalogus beheren</p>
         </div>
-        {canEdit && (
+        {canEdit && !showInlineForm && (
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="rounded-pill gap-2">
               <Sparkles className="h-4 w-4" /> AI Import
@@ -365,49 +367,165 @@ const Producten = () => {
         )}
       </div>
 
-      {/* Statistieken */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Inline Form */}
+      {showInlineForm && (
         <Card className="rounded-2xl border-0 shadow-sm">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">Totaal</p>
-            <p className="text-2xl font-bold text-foreground">{producten.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-0 shadow-sm">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">Actief</p>
-            <p className="text-2xl font-bold text-foreground">{actief}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-0 shadow-sm">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">Uitgefaseerd</p>
-            <p className="text-2xl font-bold text-foreground">{uitgefaseerd}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-0 shadow-sm">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">Cataloguswaarde</p>
-            <p className="text-2xl font-bold text-foreground">{formatPrice(totaalWaarde)}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {topProducten.length > 0 && (
-        <Card className="rounded-2xl border-0 shadow-sm">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Meest verkochte producten</p>
-            <div className="flex flex-wrap gap-3">
-              {topProducten.map((tp, i) => (
-                <Badge key={i} variant="outline" className="text-sm py-1 px-3">
-                  {tp.naam} <span className="ml-1 text-muted-foreground">({tp.aantal}×)</span>
-                </Badge>
-              ))}
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">
+                {editingProduct ? "Product bewerken" : "Nieuw product"}
+              </h2>
+              <Button variant="ghost" size="icon" onClick={closeForm}>
+                <X className="h-5 w-5" />
+              </Button>
             </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Basisgegevens</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2"><Label>Productnaam *</Label><Input value={form.naam} onChange={e => setForm(p => ({ ...p, naam: e.target.value }))} required className="rounded-xl" /></div>
+                  <div>
+                    <Label>Categorie *</Label>
+                    <Select value={form.categorie} onValueChange={v => setForm(p => ({ ...p, categorie: v as ProductCategorie }))}>
+                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(categorieLabels) as ProductCategorie[]).map(c => (
+                          <SelectItem key={c} value={c}>{categorieLabels[c]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as ProductStatus }))}>
+                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(statusLabels) as ProductStatus[]).map(s => (
+                          <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Merk</Label><Input value={form.merk} onChange={e => setForm(p => ({ ...p, merk: e.target.value }))} className="rounded-xl" /></div>
+                  <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="rounded-xl" /></div>
+                  <div className="col-span-2"><Label>Omschrijving</Label><Textarea value={form.omschrijving} onChange={e => setForm(p => ({ ...p, omschrijving: e.target.value }))} className="rounded-xl" rows={3} /></div>
+                </div>
+              </div>
+
+              {/* Image upload (only for existing products) */}
+              {editingProduct && (
+                <ProductImageUpload
+                  productId={formProductId}
+                  mainImage={form.afbeelding_url}
+                  galleryImages={form.afbeeldingen}
+                  merk={form.merk}
+                  naam={form.naam}
+                  onMainImageChange={(url) => setForm(p => ({ ...p, afbeelding_url: url }))}
+                  onGalleryChange={(urls) => setForm(p => ({ ...p, afbeeldingen: urls }))}
+                />
+              )}
+
+              {/* Specs editor */}
+              <SpecsEditor
+                specs={form.specs}
+                onChange={(specs) => setForm(p => ({ ...p, specs }))}
+              />
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Prijzen & Voorraad</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Verkoopprijs excl. BTW *</Label><Input type="number" step="0.01" value={form.prijs_excl_btw} onChange={e => setForm(p => ({ ...p, prijs_excl_btw: parseFloat(e.target.value) || 0 }))} required className="rounded-xl" /></div>
+                  <div><Label>Kostprijs</Label><Input type="number" step="0.01" value={form.kostprijs ?? ""} onChange={e => setForm(p => ({ ...p, kostprijs: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
+                  <div><Label>BTW %</Label><Input type="number" value={form.btw_percentage} onChange={e => setForm(p => ({ ...p, btw_percentage: parseInt(e.target.value) || 21 }))} className="rounded-xl" /></div>
+                  <div>
+                    <Label>Eenheid</Label>
+                    <Select value={form.eenheid} onValueChange={v => setForm(p => ({ ...p, eenheid: v }))}>
+                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["stuk", "m2", "meter", "set", "uur"].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Voorraad</Label><Input type="number" value={form.voorraad ?? ""} onChange={e => setForm(p => ({ ...p, voorraad: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
+                  <div><Label>Max korting €</Label><Input type="number" step="0.01" value={form.max_korting_euro ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_euro: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
+                  <div><Label>Max korting %</Label><Input type="number" step="0.1" value={form.max_korting_percentage ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_percentage: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Leverancier & Codes</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Product code</Label><Input value={form.product_code} onChange={e => setForm(p => ({ ...p, product_code: e.target.value }))} className="rounded-xl" /></div>
+                  <div><Label>Leverancier</Label><Input value={form.leverancier} onChange={e => setForm(p => ({ ...p, leverancier: e.target.value }))} className="rounded-xl" /></div>
+                  <div><Label>Artikelnummer</Label><Input value={form.artikelnummer} onChange={e => setForm(p => ({ ...p, artikelnummer: e.target.value }))} className="rounded-xl" /></div>
+                  <div><Label>EAN code</Label><Input value={form.ean_code} onChange={e => setForm(p => ({ ...p, ean_code: e.target.value }))} className="rounded-xl" /></div>
+                  <div><Label>Levertijd</Label><Input value={form.levertijd} onChange={e => setForm(p => ({ ...p, levertijd: e.target.value }))} className="rounded-xl" /></div>
+                  <div><Label>Garantie (jaren)</Label><Input type="number" value={form.garantie_jaren ?? ""} onChange={e => setForm(p => ({ ...p, garantie_jaren: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
+                  <div className="col-span-2"><Label>Certificeringen</Label><Input value={form.certificeringen} onChange={e => setForm(p => ({ ...p, certificeringen: e.target.value }))} className="rounded-xl" /></div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={closeForm} className="rounded-pill">Annuleren</Button>
+                <Button type="submit" className="rounded-pill" disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Opslaan..." : editingProduct ? "Bijwerken" : "Aanmaken"}
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       )}
 
+      {/* Stats */}
+      {!showInlineForm && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-muted-foreground">Totaal</p>
+                <p className="text-2xl font-bold text-foreground">{producten.length}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-muted-foreground">Actief</p>
+                <p className="text-2xl font-bold text-foreground">{actief}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-muted-foreground">Uitgefaseerd</p>
+                <p className="text-2xl font-bold text-foreground">{uitgefaseerd}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-muted-foreground">Cataloguswaarde</p>
+                <p className="text-2xl font-bold text-foreground">{formatPrice(totaalWaarde)}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {topProducten.length > 0 && (
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Meest verkochte producten</p>
+                <div className="flex flex-wrap gap-3">
+                  {topProducten.map((tp, i) => (
+                    <Badge key={i} variant="outline" className="text-sm py-1 px-3">
+                      {tp.naam} <span className="ml-1 text-muted-foreground">({tp.aantal}×)</span>
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Product table */}
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row gap-3">
@@ -439,6 +557,7 @@ const Producten = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12"></TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Categorie</TableHead>
                     <TableHead>Merk</TableHead>
@@ -451,7 +570,19 @@ const Producten = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(product => (
-                    <TableRow key={product.id}>
+                    <TableRow
+                      key={product.id}
+                      className={`cursor-pointer hover:bg-muted/50 ${editingProduct?.id === product.id ? "bg-primary/5" : ""}`}
+                      onClick={() => canEdit && openEdit(product)}
+                    >
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <ProductImage
+                          afbeeldingUrl={product.afbeelding_url}
+                          merk={product.merk}
+                          naam={product.naam}
+                          size="sm"
+                        />
+                      </TableCell>
                       <TableCell>
                         <div>
                           <p className="font-medium">{product.naam}</p>
@@ -467,7 +598,7 @@ const Producten = () => {
                         <Badge variant="outline">{product.partner_id ? "Partner" : "Globaal"}</Badge>
                       </TableCell>
                       {canEdit && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" onClick={() => openEdit(product)}>
                               <Pencil className="h-4 w-4" />
@@ -499,90 +630,7 @@ const Producten = () => {
         </CardContent>
       </Card>
 
-      {/* Product create/edit dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingProduct ? "Product bewerken" : "Nieuw product"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Basisgegevens</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2"><Label>Productnaam *</Label><Input value={form.naam} onChange={e => setForm(p => ({ ...p, naam: e.target.value }))} required className="rounded-xl" /></div>
-                <div>
-                  <Label>Categorie *</Label>
-                  <Select value={form.categorie} onValueChange={v => setForm(p => ({ ...p, categorie: v as ProductCategorie }))}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(categorieLabels) as ProductCategorie[]).map(c => (
-                        <SelectItem key={c} value={c}>{categorieLabels[c]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as ProductStatus }))}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(statusLabels) as ProductStatus[]).map(s => (
-                        <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Merk</Label><Input value={form.merk} onChange={e => setForm(p => ({ ...p, merk: e.target.value }))} className="rounded-xl" /></div>
-                <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="rounded-xl" /></div>
-                <div className="col-span-2"><Label>Omschrijving</Label><Textarea value={form.omschrijving} onChange={e => setForm(p => ({ ...p, omschrijving: e.target.value }))} className="rounded-xl" rows={3} /></div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Prijzen & Voorraad</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Verkoopprijs excl. BTW *</Label><Input type="number" step="0.01" value={form.prijs_excl_btw} onChange={e => setForm(p => ({ ...p, prijs_excl_btw: parseFloat(e.target.value) || 0 }))} required className="rounded-xl" /></div>
-                <div><Label>Kostprijs</Label><Input type="number" step="0.01" value={form.kostprijs ?? ""} onChange={e => setForm(p => ({ ...p, kostprijs: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
-                <div><Label>BTW %</Label><Input type="number" value={form.btw_percentage} onChange={e => setForm(p => ({ ...p, btw_percentage: parseInt(e.target.value) || 21 }))} className="rounded-xl" /></div>
-                <div>
-                  <Label>Eenheid</Label>
-                  <Select value={form.eenheid} onValueChange={v => setForm(p => ({ ...p, eenheid: v }))}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["stuk", "m2", "meter", "set", "uur"].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Voorraad</Label><Input type="number" value={form.voorraad ?? ""} onChange={e => setForm(p => ({ ...p, voorraad: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
-                <div><Label>Max korting €</Label><Input type="number" step="0.01" value={form.max_korting_euro ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_euro: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
-                <div><Label>Max korting %</Label><Input type="number" step="0.1" value={form.max_korting_percentage ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_percentage: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Leverancier & Codes</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Product code</Label><Input value={form.product_code} onChange={e => setForm(p => ({ ...p, product_code: e.target.value }))} className="rounded-xl" /></div>
-                <div><Label>Leverancier</Label><Input value={form.leverancier} onChange={e => setForm(p => ({ ...p, leverancier: e.target.value }))} className="rounded-xl" /></div>
-                <div><Label>Artikelnummer</Label><Input value={form.artikelnummer} onChange={e => setForm(p => ({ ...p, artikelnummer: e.target.value }))} className="rounded-xl" /></div>
-                <div><Label>EAN code</Label><Input value={form.ean_code} onChange={e => setForm(p => ({ ...p, ean_code: e.target.value }))} className="rounded-xl" /></div>
-                <div><Label>Levertijd</Label><Input value={form.levertijd} onChange={e => setForm(p => ({ ...p, levertijd: e.target.value }))} className="rounded-xl" /></div>
-                <div><Label>Garantie (jaren)</Label><Input type="number" value={form.garantie_jaren ?? ""} onChange={e => setForm(p => ({ ...p, garantie_jaren: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
-                <div className="col-span-2"><Label>Certificeringen</Label><Input value={form.certificeringen} onChange={e => setForm(p => ({ ...p, certificeringen: e.target.value }))} className="rounded-xl" /></div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeDialog} className="rounded-pill">Annuleren</Button>
-              <Button type="submit" className="rounded-pill" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Opslaan..." : editingProduct ? "Bijwerken" : "Aanmaken"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* AI Import Dialog */}
+      {/* AI Import Dialog (kept as dialog — it's a wizard flow) */}
       <Dialog open={aiDialogOpen} onOpenChange={(open) => { if (!open) closeAiDialog(); else setAiDialogOpen(true); }}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -600,12 +648,7 @@ const Producten = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Merknaam *</Label>
-                  <Input
-                    placeholder="bijv. SolarEdge, Enphase, Daikin..."
-                    value={aiMerk}
-                    onChange={e => setAiMerk(e.target.value)}
-                    className="rounded-xl"
-                  />
+                  <Input placeholder="bijv. SolarEdge, Enphase, Daikin..." value={aiMerk} onChange={e => setAiMerk(e.target.value)} className="rounded-xl" />
                 </div>
                 <div>
                   <Label>Categorie *</Label>
@@ -654,19 +697,11 @@ const Producten = () => {
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => {
                     const all = new Set<number>();
-                    aiProducts.forEach((p, i) => {
-                      if (!isDuplicate(p, aiExistingNames)) all.add(i);
-                    });
+                    aiProducts.forEach((p, i) => { if (!isDuplicate(p, aiExistingNames)) all.add(i); });
                     setAiSelected(all);
-                  }}>
-                    Selecteer nieuw
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}>
-                    Alles
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set())}>
-                    Niets
-                  </Button>
+                  }}>Selecteer nieuw</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}>Alles</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set())}>Niets</Button>
                 </div>
               </div>
 
@@ -674,66 +709,38 @@ const Producten = () => {
                 {aiProducts.map((product, idx) => {
                   const duplicate = isDuplicate(product, aiExistingNames);
                   const hasWarnings = product.warnings && product.warnings.length > 0;
-
                   return (
                     <Card key={idx} className={`rounded-xl border cursor-pointer transition-colors ${
-                      aiSelected.has(idx)
-                        ? "border-primary bg-primary/5"
-                        : duplicate
-                          ? "border-muted bg-muted/30 opacity-60"
-                          : "border-border"
-                    }`}
-                      onClick={() => toggleAiSelect(idx)}>
+                      aiSelected.has(idx) ? "border-primary bg-primary/5" : duplicate ? "border-muted bg-muted/30 opacity-60" : "border-border"
+                    }`} onClick={() => toggleAiSelect(idx)}>
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
-                          <Checkbox
-                            checked={aiSelected.has(idx)}
-                            onCheckedChange={() => toggleAiSelect(idx)}
-                            className="mt-1"
-                          />
+                          <Checkbox checked={aiSelected.has(idx)} onCheckedChange={() => toggleAiSelect(idx)} className="mt-1" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 <p className="font-medium text-foreground truncate">{product.naam}</p>
-                                {duplicate && (
-                                  <Badge variant="outline" className="text-xs shrink-0 border-warning-foreground text-warning-foreground">
-                                    <Copy className="h-3 w-3 mr-1" /> Bestaat al
-                                  </Badge>
-                                )}
-                                {hasWarnings && (
-                                  <Badge variant="outline" className="text-xs shrink-0 border-destructive text-destructive">
-                                    <AlertTriangle className="h-3 w-3 mr-1" /> Let op
-                                  </Badge>
-                                )}
+                                {duplicate && <Badge variant="outline" className="text-xs shrink-0 border-warning-foreground text-warning-foreground"><Copy className="h-3 w-3 mr-1" /> Bestaat al</Badge>}
+                                {hasWarnings && <Badge variant="outline" className="text-xs shrink-0 border-destructive text-destructive"><AlertTriangle className="h-3 w-3 mr-1" /> Let op</Badge>}
                               </div>
-                              <p className="text-sm font-semibold text-primary whitespace-nowrap">
-                                {formatPrice(product.prijs_excl_btw)}
-                              </p>
+                              <p className="text-sm font-semibold text-primary whitespace-nowrap">{formatPrice(product.prijs_excl_btw)}</p>
                             </div>
                             <p className="text-sm text-muted-foreground mt-0.5">{product.model} · {product.merk}</p>
-                            {product.omschrijving && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.omschrijving}</p>
-                            )}
+                            {product.omschrijving && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.omschrijving}</p>}
                             {hasWarnings && (
                               <div className="mt-1.5 space-y-0.5">
                                 {product.warnings!.map((w, wi) => (
-                                  <p key={wi} className="text-xs text-destructive flex items-center gap-1">
-                                    <AlertTriangle className="h-3 w-3 shrink-0" /> {w}
-                                  </p>
+                                  <p key={wi} className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3 shrink-0" /> {w}</p>
                                 ))}
                               </div>
                             )}
                             {product.specs && Object.keys(product.specs).length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-2">
                                 {Object.entries(product.specs).slice(0, 6).map(([key, val]) => (
-                                  <Badge key={key} variant="outline" className="text-xs font-normal">
-                                    {key}: {val}
-                                  </Badge>
+                                  <Badge key={key} variant="outline" className="text-xs font-normal">{key}: {val}</Badge>
                                 ))}
                                 {Object.keys(product.specs).length > 6 && (
-                                  <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
-                                    +{Object.keys(product.specs).length - 6} meer
-                                  </Badge>
+                                  <Badge variant="outline" className="text-xs font-normal text-muted-foreground">+{Object.keys(product.specs).length - 6} meer</Badge>
                                 )}
                               </div>
                             )}
