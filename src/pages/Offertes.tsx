@@ -564,6 +564,29 @@ const Offertes = () => {
               </div>
             </div>
 
+            {/* Opties */}
+            {form.schouw_id && (
+              <div className="space-y-3 border-t pt-4">
+                <h3 className="font-medium text-foreground">PDF-opties</h3>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="include_schouw"
+                    checked={form.include_schouw}
+                    onCheckedChange={(c) => setForm(p => ({ ...p, include_schouw: !!c }))}
+                  />
+                  <Label htmlFor="include_schouw" className="cursor-pointer">Schouwgegevens opnemen in offerte PDF</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="include_energieadvies"
+                    checked={form.include_energieadvies}
+                    onCheckedChange={(c) => setForm(p => ({ ...p, include_energieadvies: !!c }))}
+                  />
+                  <Label htmlFor="include_energieadvies" className="cursor-pointer">Energieadvies opnemen in offerte PDF</Label>
+                </div>
+              </div>
+            )}
+
             <div>
               <Label>Notities</Label>
               <Textarea value={form.notities} onChange={e => setForm(p => ({ ...p, notities: e.target.value }))} className="rounded-xl" rows={3} />
