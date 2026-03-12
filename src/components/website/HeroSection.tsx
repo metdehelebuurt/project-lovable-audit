@@ -14,7 +14,7 @@ const HeroSection = () => {
       className="relative min-h-[90vh] flex items-center overflow-hidden"
       style={{
         backgroundImage:
-          "url('https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&w=1920&q=80')",
+          "url('https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1920&q=80&fm=webp')",
         backgroundAttachment: "fixed",
         backgroundSize: "cover",
         backgroundPosition: "center",
