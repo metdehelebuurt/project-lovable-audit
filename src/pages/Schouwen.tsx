@@ -745,7 +745,7 @@ const Schouwen = () => {
               )}
 
               {/* Foto's in view */}
-              {viewDialog.fotos && (viewDialog.fotos as SchouwFoto[]).length > 0 && (
+              {viewDialog.fotos && (viewDialog.fotos as unknown as SchouwFoto[]).length > 0 && (
                 <div className="border-t pt-4">
                   <h3 className="font-medium text-foreground mb-3">Foto's</h3>
                   <div className="grid grid-cols-3 gap-3">
