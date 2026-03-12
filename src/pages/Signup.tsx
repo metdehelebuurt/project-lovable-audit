@@ -279,7 +279,6 @@ const Signup = () => {
                 Inloggen
               </button>
             </p>
-            </form>
           </CardContent>
         </Card>
 
