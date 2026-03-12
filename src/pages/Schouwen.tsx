@@ -770,7 +770,7 @@ const Schouwen = () => {
                       const checked = (viewDialog.checklist as Record<string, boolean>)?.[item.key];
                       return (
                         <div key={item.key} className="flex items-center gap-1.5 text-sm">
-                          {checked ? <Check className="h-3.5 w-3.5 text-green-600" /> : <span className="h-3.5 w-3.5 rounded-sm border border-muted-foreground/30 inline-block" />}
+                          {checked ? <Check className="h-3.5 w-3.5 text-primary" /> : <span className="h-3.5 w-3.5 rounded-sm border border-muted-foreground/30 inline-block" />}
                           <span className={checked ? "" : "text-muted-foreground"}>{item.label}</span>
                         </div>
                       );
