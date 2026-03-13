@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,25 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, profile, loading: authLoading } = useAuth();
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user && profile) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [authLoading, user, profile, navigate]);
 
   const handleGoogleSignUp = async () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/dashboard`,
+        redirect_uri: window.location.origin,
       });
       if (result?.error) {
         toast.error("Google registratie mislukt", { description: String(result.error) });
+      } else if (result && !result.redirected) {
+        navigate("/dashboard");
       }
     } catch (err: any) {
       toast.error("Google registratie mislukt", { description: err.message });

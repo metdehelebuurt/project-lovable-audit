@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { lovable } from "@/integrations/lovable/index";
@@ -18,17 +18,26 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const { signIn, resetPassword } = useAuth();
+  const { signIn, resetPassword, user, profile, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (!loading && user && profile) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [loading, user, profile, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/dashboard`,
+        redirect_uri: window.location.origin,
       });
       if (result?.error) {
         toast.error("Google inloggen mislukt", { description: String(result.error) });
+      } else if (result && !result.redirected) {
+        navigate("/dashboard");
       }
     } catch (err: any) {
       toast.error("Google inloggen mislukt", { description: err.message });
