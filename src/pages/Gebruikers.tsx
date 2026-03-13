@@ -144,6 +144,38 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const { data: result, error } = await supabase.functions.invoke("user-management", {
+        body: { action: "reset_password", user_id: userId, new_password: password },
+      });
+      if (error) throw error;
+      if (result?.error) throw new Error(result.error);
+    },
+    onSuccess: () => {
+      toast.success("Wachtwoord gewijzigd");
+      setPasswordDialogOpen(false);
+      setPasswordTarget(null);
+      setNewPassword("");
+    },
+    onError: (err: Error) => toast.error("Fout", { description: err.message }),
+  });
+
+  const openPasswordDialog = (u: UserRow) => {
+    setPasswordTarget(u);
+    setNewPassword("");
+    setPasswordDialogOpen(true);
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordTarget || newPassword.length < 8) {
+      toast.error("Wachtwoord moet minimaal 8 karakters zijn");
+      return;
+    }
+    resetPasswordMutation.mutate({ userId: passwordTarget.id, password: newPassword });
+  };
+
   const openCreate = () => {
     setEditingUser(null);
     setForm({ ...emptyForm, rol: filterRol || "adviseur", partner_id: profile?.partner_id || "" });
