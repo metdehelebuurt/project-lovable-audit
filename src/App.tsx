@@ -31,7 +31,11 @@ import Energieadvies from "@/pages/Energieadvies";
 import OfferteNieuw from "@/pages/OfferteNieuw";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
+import WebTools from "@/pages/WebTools";
 import NotFound from "@/pages/NotFound";
+
+import EmbedContact from "@/pages/embed/EmbedContact";
+import EmbedCalculator from "@/pages/embed/EmbedCalculator";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
 import FeatureOffertes from "@/pages/website/FeatureOffertes";
@@ -60,6 +64,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+
+            {/* Public embed routes — no auth, no layout */}
+            <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
+            <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -128,6 +136,9 @@ const App = () => (
               } />
               <Route path="/tools/thuisbatterij" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><ThuisbatterijSelector /></ProtectedRoute>
+              } />
+              <Route path="/tools/webtools" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><WebTools /></ProtectedRoute>
               } />
               <Route path="/offertes/nieuw" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
