@@ -48,6 +48,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data as UserProfile;
   };
 
+  const provisionGoogleUser = async (): Promise<UserProfile | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("google-user-provision");
+      if (error || data?.error) {
+        console.error("Google user provision failed:", error || data?.error);
+        return null;
+      }
+      // Re-fetch the profile after provisioning
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      if (currentUser) {
+        return await fetchProfile(currentUser.id);
+      }
+      return null;
+    } catch (err) {
+      console.error("Google user provision error:", err);
+      return null;
+    }
+  };
+
+  const loadProfile = async (sessionUser: User) => {
+    let prof = await fetchProfile(sessionUser.id);
+
+    // If no profile exists and user came via OAuth (Google), auto-provision
+    if (!prof && sessionUser.app_metadata?.provider === "google") {
+      prof = await provisionGoogleUser();
+    }
+
+    setProfile(prof);
+    setLoading(false);
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -56,11 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           // Use setTimeout to avoid Supabase deadlock
-          setTimeout(async () => {
-            const prof = await fetchProfile(session.user.id);
-            setProfile(prof);
-            setLoading(false);
-          }, 0);
+          setTimeout(() => loadProfile(session.user), 0);
         } else {
           setProfile(null);
           setLoading(false);
@@ -72,10 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id).then((prof) => {
-          setProfile(prof);
-          setLoading(false);
-        });
+        loadProfile(session.user);
       } else {
         setLoading(false);
       }
