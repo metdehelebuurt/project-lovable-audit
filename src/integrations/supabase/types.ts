@@ -899,6 +899,47 @@ export type Database = {
           },
         ]
       }
+      web_widgets: {
+        Row: {
+          actief: boolean
+          config: Json
+          created_at: string
+          id: string
+          naam: string
+          partner_id: string
+          type: Database["public"]["Enums"]["widget_type"]
+          updated_at: string
+        }
+        Insert: {
+          actief?: boolean
+          config?: Json
+          created_at?: string
+          id?: string
+          naam?: string
+          partner_id: string
+          type: Database["public"]["Enums"]["widget_type"]
+          updated_at?: string
+        }
+        Update: {
+          actief?: boolean
+          config?: Json
+          created_at?: string
+          id?: string
+          naam?: string
+          partner_id?: string
+          type?: Database["public"]["Enums"]["widget_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_widgets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -966,6 +1007,12 @@ export type Database = {
         | "opgelost"
         | "gesloten"
       user_status: "actief" | "inactief"
+      widget_type:
+        | "contactformulier"
+        | "calculator_zonnepanelen"
+        | "calculator_warmtepomp"
+        | "calculator_isolatie"
+        | "calculator_laadpaal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1154,6 +1201,13 @@ export const Constants = {
         "gesloten",
       ],
       user_status: ["actief", "inactief"],
+      widget_type: [
+        "contactformulier",
+        "calculator_zonnepanelen",
+        "calculator_warmtepomp",
+        "calculator_isolatie",
+        "calculator_laadpaal",
+      ],
     },
   },
 } as const
