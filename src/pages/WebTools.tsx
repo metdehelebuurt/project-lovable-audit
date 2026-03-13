@@ -36,8 +36,7 @@ const WebTools = () => {
 
   const fetchWidgets = async () => {
     if (!profile?.partner_id) return;
-    const { data } = await supabase
-      .from("web_widgets")
+    const { data } = await (supabase.from("web_widgets") as any)
       .select("*")
       .eq("partner_id", profile.partner_id)
       .order("created_at", { ascending: false });
