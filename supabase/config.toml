@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.send-offerte-email]
 verify_jwt = false
+
+[functions.ai-data-import]
+verify_jwt = false

@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare, FileDown, Send } from "lucide-react";
+import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -347,11 +348,26 @@ const Offertes = () => {
           <h1 className="text-2xl font-semibold text-foreground">Offertes</h1>
           <p className="text-muted-foreground mt-1">Offertes aanmaken en beheren</p>
         </div>
-        {canCreate && (
-          <Button onClick={openCreate} className="rounded-pill gap-2">
-            <Plus className="h-4 w-4" /> Nieuwe Offerte
-          </Button>
-        )}
+        <div className="flex gap-2">
+          <ImportExportButtons
+            entityType="offertes"
+            exportData={offertes}
+            exportColumns={[
+              { key: "offertenummer", label: "Nummer" }, { key: "klant_naam", label: "Klant" },
+              { key: "klant_email", label: "E-mail" }, { key: "subtotaal", label: "Subtotaal" },
+              { key: "btw_bedrag", label: "BTW" }, { key: "totaal_bedrag", label: "Totaal" },
+              { key: "status", label: "Status" }, { key: "geldig_tot", label: "Geldig tot" },
+            ]}
+            exportFilename="offertes-export"
+            showImport={false}
+            queryKey={["offertes"]}
+          />
+          {canCreate && (
+            <Button onClick={openCreate} className="rounded-pill gap-2">
+              <Plus className="h-4 w-4" /> Nieuwe Offerte
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="rounded-2xl border-0 shadow-sm">
