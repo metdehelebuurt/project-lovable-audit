@@ -60,6 +60,7 @@ export default function ImportDialog({ open, onOpenChange, entityType, queryKey 
   const readFile = async (file: File): Promise<string> => {
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext === "xlsx" || ext === "xls") {
+      // @ts-ignore - read-excel-file has no type declarations
       const readXlsxFile = (await import("read-excel-file")).default;
       const rows = await readXlsxFile(file);
       // Convert to CSV-like text
