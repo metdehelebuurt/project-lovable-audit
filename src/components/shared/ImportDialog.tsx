@@ -60,11 +60,11 @@ export default function ImportDialog({ open, onOpenChange, entityType, queryKey 
   const readFile = async (file: File): Promise<string> => {
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext === "xlsx" || ext === "xls") {
-      // @ts-ignore - read-excel-file has no type declarations
-      const readXlsxFile = (await import("read-excel-file")).default;
-      const rows = await readXlsxFile(file);
-      // Convert to CSV-like text
-      return rows.map(row => row.map(cell => cell ?? "").join("\t")).join("\n");
+      const XLSX = await import("xlsx");
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      return XLSX.utils.sheet_to_csv(sheet, { FS: "\t" });
     }
     return await file.text();
   };
