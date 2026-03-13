@@ -77,10 +77,17 @@ export default function ImportDialog({ open, onOpenChange, entityType, queryKey 
     setFileName(file.name);
     setLoading(true);
     try {
-      const rawData = await readFile(file);
+      let rawData = await readFile(file);
       if (!rawData.trim()) {
         toast.error("Bestand is leeg");
         return;
+      }
+
+      // Truncate to ~500KB to avoid request size limits
+      const MAX_CHARS = 500_000;
+      if (rawData.length > MAX_CHARS) {
+        rawData = rawData.substring(0, MAX_CHARS);
+        toast.info("Bestand is groot — alleen de eerste records worden verwerkt");
       }
 
       const { data, error } = await supabase.functions.invoke("ai-data-import", {
