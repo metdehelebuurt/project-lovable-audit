@@ -6,6 +6,7 @@ import { ZonnepanelenCalc } from "@/components/webtools/calculators/Zonnepanelen
 import { WarmtepompCalc } from "@/components/webtools/calculators/WarmtepompCalc";
 import { IsolatieCalc } from "@/components/webtools/calculators/IsolatieCalc";
 import { LaadpaalCalc } from "@/components/webtools/calculators/LaadpaalCalc";
+import { ThuisbatterijCalc } from "@/components/webtools/calculators/ThuisbatterijCalc";
 import { Loader2 } from "lucide-react";
 
 const calcMap: Record<string, React.ComponentType<{ primaryColor: string; onComplete: (r: Record<string, unknown>) => void }>> = {
@@ -13,6 +14,7 @@ const calcMap: Record<string, React.ComponentType<{ primaryColor: string; onComp
   calculator_warmtepomp: WarmtepompCalc,
   calculator_isolatie: IsolatieCalc,
   calculator_laadpaal: LaadpaalCalc,
+  calculator_thuisbatterij: ThuisbatterijCalc,
 };
 
 const EmbedCalculator = () => {

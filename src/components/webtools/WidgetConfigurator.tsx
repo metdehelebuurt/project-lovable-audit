@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 
@@ -18,6 +17,7 @@ export type WidgetFormData = {
     toon_bericht?: boolean;
   };
   actief: boolean;
+  notificatie_email?: string;
 };
 
 interface WidgetConfiguratorProps {
@@ -30,10 +30,11 @@ interface WidgetConfiguratorProps {
 
 const widgetTypeLabels: Record<string, string> = {
   contactformulier: "Contactformulier",
-  calculator_zonnepanelen: "Calculator — Zonnepanelen",
-  calculator_warmtepomp: "Calculator — Warmtepomp",
-  calculator_isolatie: "Calculator — Isolatie",
-  calculator_laadpaal: "Calculator — Laadpaal",
+  calculator_zonnepanelen: "Zonnepanelen Calculator",
+  calculator_warmtepomp: "Warmtepomp Calculator",
+  calculator_isolatie: "Isolatie Calculator",
+  calculator_laadpaal: "Laadpaal Calculator",
+  calculator_thuisbatterij: "Thuisbatterij Calculator",
 };
 
 export const WidgetConfigurator = ({
@@ -55,6 +56,7 @@ export const WidgetConfigurator = ({
         toon_bericht: true,
       },
       actief: true,
+      notificatie_email: "",
     }
   );
 
@@ -68,28 +70,19 @@ export const WidgetConfigurator = ({
     }
   };
 
+  const isContact = form.type === "contactformulier";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Widget bewerken" : "Nieuwe widget aanmaken"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Widget bewerken" : "Widget aanmaken"}</DialogTitle>
+          <DialogDescription>
+            {widgetTypeLabels[form.type] || form.type}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {!isEditing && (
-            <div className="space-y-1.5">
-              <Label>Type widget</Label>
-              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(widgetTypeLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           <div className="space-y-1.5">
             <Label>Naam (intern)</Label>
             <Input
@@ -101,11 +94,25 @@ export const WidgetConfigurator = ({
           </div>
 
           <div className="space-y-1.5">
+            <Label>Notificatie e-mail</Label>
+            <Input
+              type="email"
+              value={form.notificatie_email || ""}
+              onChange={(e) => setForm({ ...form, notificatie_email: e.target.value })}
+              placeholder="optioneel — standaard via systeem notificaties"
+              maxLength={255}
+            />
+            <p className="text-xs text-muted-foreground">
+              Vul een e-mailadres in als u leads ook per e-mail wilt ontvangen.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
             <Label>Intro tekst</Label>
             <Textarea
               value={form.config.intro_tekst || ""}
               onChange={(e) => setForm({ ...form, config: { ...form.config, intro_tekst: e.target.value } })}
-              placeholder="Neem contact met ons op..."
+              placeholder={isContact ? "Neem contact met ons op..." : "Bereken uw besparing..."}
               maxLength={500}
               rows={2}
             />
@@ -119,6 +126,32 @@ export const WidgetConfigurator = ({
               maxLength={50}
             />
           </div>
+
+          {isContact && (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Telefoonnummer veld tonen</Label>
+                  <p className="text-xs text-muted-foreground">Bezoekers kunnen optioneel een telefoonnummer invullen.</p>
+                </div>
+                <Switch
+                  checked={form.config.toon_telefoon ?? true}
+                  onCheckedChange={(v) => setForm({ ...form, config: { ...form.config, toon_telefoon: v } })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Berichtveld tonen</Label>
+                  <p className="text-xs text-muted-foreground">Bezoekers kunnen een vrij bericht meesturen.</p>
+                </div>
+                <Switch
+                  checked={form.config.toon_bericht ?? true}
+                  onCheckedChange={(v) => setForm({ ...form, config: { ...form.config, toon_bericht: v } })}
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex items-center justify-between">
             <Label>Actief</Label>
