@@ -111,6 +111,9 @@ const Offertes = () => {
   const [editingOfferte, setEditingOfferte] = useState<Offerte | null>(null);
   const [form, setForm] = useState<OfferteFormData>(emptyForm);
   const [feedbackText, setFeedbackText] = useState("");
+  const [emailDialog, setEmailDialog] = useState<Offerte | null>(null);
+  const [emailTo, setEmailTo] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
