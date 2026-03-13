@@ -361,6 +361,40 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Wachtwoord wijzigen dialoog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Wachtwoord wijzigen</DialogTitle>
+          </DialogHeader>
+          {passwordTarget && (
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Nieuw wachtwoord instellen voor <span className="font-medium text-foreground">{passwordTarget.voornaam} {passwordTarget.achternaam}</span>
+              </p>
+              <div>
+                <Label>Nieuw wachtwoord *</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Minimaal 8 karakters"
+                  required
+                  minLength={8}
+                  className="rounded-xl"
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setPasswordDialogOpen(false)} className="rounded-pill">Annuleren</Button>
+                <Button type="submit" className="rounded-pill" disabled={resetPasswordMutation.isPending}>
+                  {resetPasswordMutation.isPending ? "Opslaan..." : "Wachtwoord opslaan"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
