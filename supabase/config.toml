@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.clear-demo-data]
 verify_jwt = false
+
+[functions.send-offerte-email]
+verify_jwt = false

@@ -328,6 +328,11 @@ const Instellingen = () => {
         </Card>
       )}
 
+      {/* E-mail configuratie — alleen partner_admin */}
+      {isPartnerAdmin && profile?.partner_id && (
+        <EmailConfiguratie partnerId={profile.partner_id} />
+      )}
+
       {/* Schouw instellingen — alleen partner_admin */}
       {isPartnerAdmin && profile?.partner_id && (
         <SchouwInstellingen partnerId={profile.partner_id} />
