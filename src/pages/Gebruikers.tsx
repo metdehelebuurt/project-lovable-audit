@@ -63,6 +63,9 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [form, setForm] = useState<UserFormData>(emptyForm);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<UserRow | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
