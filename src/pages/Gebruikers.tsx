@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, KeyRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -63,6 +63,9 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [form, setForm] = useState<UserFormData>(emptyForm);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<UserRow | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
@@ -140,6 +143,38 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const { data: result, error } = await supabase.functions.invoke("user-management", {
+        body: { action: "reset_password", user_id: userId, new_password: password },
+      });
+      if (error) throw error;
+      if (result?.error) throw new Error(result.error);
+    },
+    onSuccess: () => {
+      toast.success("Wachtwoord gewijzigd");
+      setPasswordDialogOpen(false);
+      setPasswordTarget(null);
+      setNewPassword("");
+    },
+    onError: (err: Error) => toast.error("Fout", { description: err.message }),
+  });
+
+  const openPasswordDialog = (u: UserRow) => {
+    setPasswordTarget(u);
+    setNewPassword("");
+    setPasswordDialogOpen(true);
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordTarget || newPassword.length < 8) {
+      toast.error("Wachtwoord moet minimaal 8 karakters zijn");
+      return;
+    }
+    resetPasswordMutation.mutate({ userId: passwordTarget.id, password: newPassword });
+  };
 
   const openCreate = () => {
     setEditingUser(null);
@@ -234,9 +269,14 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                       <TableCell>{user.telefoon || "—"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Bewerken">
                             <Pencil className="h-4 w-4" />
                           </Button>
+                          {user.id !== profile?.id && (
+                            <Button variant="ghost" size="icon" onClick={() => openPasswordDialog(user)} title="Wachtwoord wijzigen">
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
+                          )}
                           {user.id !== profile?.id && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -319,6 +359,40 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Wachtwoord wijzigen dialoog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Wachtwoord wijzigen</DialogTitle>
+          </DialogHeader>
+          {passwordTarget && (
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Nieuw wachtwoord instellen voor <span className="font-medium text-foreground">{passwordTarget.voornaam} {passwordTarget.achternaam}</span>
+              </p>
+              <div>
+                <Label>Nieuw wachtwoord *</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Minimaal 8 karakters"
+                  required
+                  minLength={8}
+                  className="rounded-xl"
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setPasswordDialogOpen(false)} className="rounded-pill">Annuleren</Button>
+                <Button type="submit" className="rounded-pill" disabled={resetPasswordMutation.isPending}>
+                  {resetPasswordMutation.isPending ? "Opslaan..." : "Wachtwoord opslaan"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>
