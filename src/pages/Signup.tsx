@@ -38,10 +38,12 @@ const Signup = () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/dashboard`,
+        redirect_uri: window.location.origin,
       });
       if (result?.error) {
         toast.error("Google registratie mislukt", { description: String(result.error) });
+      } else if (result && !result.redirected) {
+        navigate("/dashboard");
       }
     } catch (err: any) {
       toast.error("Google registratie mislukt", { description: err.message });
