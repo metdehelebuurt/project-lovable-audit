@@ -25,6 +25,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
 
   // Auto-redirect if already logged in
