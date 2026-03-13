@@ -31,7 +31,11 @@ import Energieadvies from "@/pages/Energieadvies";
 import OfferteNieuw from "@/pages/OfferteNieuw";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
+import WebTools from "@/pages/WebTools";
 import NotFound from "@/pages/NotFound";
+
+import EmbedContact from "@/pages/embed/EmbedContact";
+import EmbedCalculator from "@/pages/embed/EmbedCalculator";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
 import FeatureOffertes from "@/pages/website/FeatureOffertes";
