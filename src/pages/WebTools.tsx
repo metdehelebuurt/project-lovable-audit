@@ -65,8 +65,7 @@ const WebTools = () => {
 
   const handleUpdate = async (formData: WidgetFormData) => {
     if (!editingWidget) return;
-    const { error } = await supabase
-      .from("web_widgets")
+    const { error } = await (supabase.from("web_widgets") as any)
       .update({ naam: formData.naam, config: formData.config, actief: formData.actief })
       .eq("id", editingWidget.id);
     if (error) {
