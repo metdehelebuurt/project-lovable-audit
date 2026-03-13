@@ -34,12 +34,18 @@ const WebTools = () => {
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
   const [embedWidget, setEmbedWidget] = useState<Widget | null>(null);
 
+  const isSuperadmin = profile?.rol === "superadmin";
+
   const fetchWidgets = async () => {
-    if (!profile?.partner_id) return;
-    const { data } = await (supabase.from("web_widgets") as any)
-      .select("*")
-      .eq("partner_id", profile.partner_id)
-      .order("created_at", { ascending: false });
+    if (!profile?.partner_id && !isSuperadmin) {
+      setLoading(false);
+      return;
+    }
+    let query = (supabase.from("web_widgets") as any).select("*");
+    if (!isSuperadmin && profile?.partner_id) {
+      query = query.eq("partner_id", profile.partner_id);
+    }
+    const { data } = await query.order("created_at", { ascending: false });
     setWidgets((data as Widget[]) || []);
     setLoading(false);
   };
