@@ -478,6 +478,8 @@ export type Database = {
           abonnement_type: string | null
           adres: string | null
           adviseurs_delen_schouwen: boolean
+          afzender_email: string | null
+          afzender_naam: string | null
           bedrijfsslogan: string | null
           btw: string | null
           commissie_percentage: number | null
@@ -502,6 +504,10 @@ export type Database = {
           postcode: string | null
           primaire_kleur: string | null
           secundaire_kleur: string | null
+          smtp_host: string | null
+          smtp_pass_encrypted: string | null
+          smtp_port: number | null
+          smtp_user: string | null
           status: Database["public"]["Enums"]["partner_status"]
           telefoonnummer: string | null
           trial_einddatum: string | null
@@ -512,6 +518,8 @@ export type Database = {
           abonnement_type?: string | null
           adres?: string | null
           adviseurs_delen_schouwen?: boolean
+          afzender_email?: string | null
+          afzender_naam?: string | null
           bedrijfsslogan?: string | null
           btw?: string | null
           commissie_percentage?: number | null
@@ -536,6 +544,10 @@ export type Database = {
           postcode?: string | null
           primaire_kleur?: string | null
           secundaire_kleur?: string | null
+          smtp_host?: string | null
+          smtp_pass_encrypted?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
           trial_einddatum?: string | null
@@ -546,6 +558,8 @@ export type Database = {
           abonnement_type?: string | null
           adres?: string | null
           adviseurs_delen_schouwen?: boolean
+          afzender_email?: string | null
+          afzender_naam?: string | null
           bedrijfsslogan?: string | null
           btw?: string | null
           commissie_percentage?: number | null
@@ -570,6 +584,10 @@ export type Database = {
           postcode?: string | null
           primaire_kleur?: string | null
           secundaire_kleur?: string | null
+          smtp_host?: string | null
+          smtp_pass_encrypted?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
           trial_einddatum?: string | null
