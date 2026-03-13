@@ -269,9 +269,14 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                       <TableCell>{user.telefoon || "—"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Bewerken">
                             <Pencil className="h-4 w-4" />
                           </Button>
+                          {user.id !== profile?.id && (
+                            <Button variant="ghost" size="icon" onClick={() => openPasswordDialog(user)} title="Wachtwoord wijzigen">
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
+                          )}
                           {user.id !== profile?.id && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
