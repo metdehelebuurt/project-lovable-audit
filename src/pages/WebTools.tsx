@@ -49,9 +49,9 @@ const WebTools = () => {
 
   const handleCreate = async (formData: WidgetFormData) => {
     if (!profile?.partner_id) return;
-    const { error } = await supabase.from("web_widgets").insert({
+    const { error } = await (supabase.from("web_widgets") as any).insert({
       partner_id: profile.partner_id,
-      type: formData.type as Widget["type"],
+      type: formData.type,
       naam: formData.naam,
       config: formData.config,
       actief: formData.actief,
