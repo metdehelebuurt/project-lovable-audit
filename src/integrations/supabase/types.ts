@@ -906,6 +906,7 @@ export type Database = {
           created_at: string
           id: string
           naam: string
+          notificatie_email: string | null
           partner_id: string
           type: Database["public"]["Enums"]["widget_type"]
           updated_at: string
@@ -916,6 +917,7 @@ export type Database = {
           created_at?: string
           id?: string
           naam?: string
+          notificatie_email?: string | null
           partner_id: string
           type: Database["public"]["Enums"]["widget_type"]
           updated_at?: string
@@ -926,6 +928,7 @@ export type Database = {
           created_at?: string
           id?: string
           naam?: string
+          notificatie_email?: string | null
           partner_id?: string
           type?: Database["public"]["Enums"]["widget_type"]
           updated_at?: string
@@ -1013,6 +1016,7 @@ export type Database = {
         | "calculator_warmtepomp"
         | "calculator_isolatie"
         | "calculator_laadpaal"
+        | "calculator_thuisbatterij"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1207,6 +1211,7 @@ export const Constants = {
         "calculator_warmtepomp",
         "calculator_isolatie",
         "calculator_laadpaal",
+        "calculator_thuisbatterij",
       ],
     },
   },
