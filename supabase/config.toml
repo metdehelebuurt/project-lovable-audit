@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.ai-data-import]
 verify_jwt = false
+
+[functions.widget-submit]
+verify_jwt = false

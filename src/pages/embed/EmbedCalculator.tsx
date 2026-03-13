@@ -32,8 +32,7 @@ const EmbedCalculator = () => {
     const load = async () => {
       if (!widgetId) { setError("Widget niet gevonden"); setLoading(false); return; }
 
-      const { data: w, error: wErr } = await supabase
-        .from("web_widgets")
+      const { data: w, error: wErr } = await (supabase.from("web_widgets") as any)
         .select("partner_id, config, actief, type")
         .eq("id", widgetId)
         .single();
