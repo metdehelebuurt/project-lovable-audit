@@ -79,7 +79,7 @@ const WebTools = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Weet u zeker dat u deze widget wilt verwijderen?")) return;
-    const { error } = await supabase.from("web_widgets").delete().eq("id", id);
+    const { error } = await (supabase.from("web_widgets") as any).delete().eq("id", id);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {

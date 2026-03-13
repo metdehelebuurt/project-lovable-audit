@@ -137,6 +137,9 @@ const App = () => (
               <Route path="/tools/thuisbatterij" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><ThuisbatterijSelector /></ProtectedRoute>
               } />
+              <Route path="/tools/webtools" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><WebTools /></ProtectedRoute>
+              } />
               <Route path="/offertes/nieuw" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
               } />
