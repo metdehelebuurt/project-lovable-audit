@@ -42,10 +42,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fetch widget to get partner_id and type
+    // Fetch widget to get partner_id, type, and notificatie_email
     const { data: widget, error: widgetError } = await supabaseAdmin
       .from("web_widgets")
-      .select("id, partner_id, type, actief")
+      .select("id, partner_id, type, actief, config, notificatie_email")
       .eq("id", widget_id)
       .single();
 
@@ -93,6 +93,9 @@ Deno.serve(async (req) => {
     if (calculator_resultaat) {
       notities += `\nCalculator resultaat:\n${JSON.stringify(calculator_resultaat, null, 2)}`;
     }
+    if (widget.notificatie_email) {
+      notities += `\nNotificatie e-mail: ${widget.notificatie_email}`;
+    }
 
     // Create lead
     const { data: lead, error: leadError } = await supabaseAdmin
@@ -120,10 +123,14 @@ Deno.serve(async (req) => {
     }
 
     // Create notification for partner_admin
+    const widgetLabel = widget.type === "contactformulier"
+      ? "het contactformulier"
+      : `de ${widget.type.replace("calculator_", "")} calculator`;
+
     await supabaseAdmin.from("notificaties").insert({
       user_id: partnerAdmin.id,
       titel: "Nieuwe lead via website widget",
-      bericht: `${trimmedVoornaam} ${trimmedAchternaam} heeft contact opgenomen via ${widget.type === "contactformulier" ? "het contactformulier" : "de besparingscalculator"} op uw website.`,
+      bericht: `${trimmedVoornaam} ${trimmedAchternaam} heeft contact opgenomen via ${widgetLabel} op uw website.`,
       type: "nieuwe_lead",
       entity_type: "leads",
       entity_id: lead.id,

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 interface EmbedCodeDialogProps {
@@ -51,16 +51,31 @@ export const EmbedCodeDialog = ({ open, onOpenChange, widgetId, widgetType }: Em
             rows={8}
             className="font-mono text-xs"
           />
+
           <div className="flex gap-2">
             <Button onClick={handleCopy} className="rounded-[40px] gap-2">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? "Gekopieerd!" : "Kopieer code"}
             </Button>
-            <Button variant="outline" className="rounded-[40px]" asChild>
+            <Button variant="outline" className="rounded-[40px] gap-2" asChild>
               <a href={`${baseUrl}${embedPath}`} target="_blank" rel="noopener noreferrer">
-                Preview openen
+                <ExternalLink className="h-4 w-4" /> Preview openen
               </a>
             </Button>
+          </div>
+
+          {/* Live preview */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Live preview</p>
+            <div className="border rounded-xl overflow-hidden bg-white" style={{ height: 360 }}>
+              <iframe
+                src={`${baseUrl}${embedPath}`}
+                width="100%"
+                height="100%"
+                style={{ border: "none" }}
+                title="Widget preview"
+              />
+            </div>
           </div>
         </div>
       </DialogContent>
