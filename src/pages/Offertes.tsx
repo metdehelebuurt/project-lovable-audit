@@ -743,6 +743,61 @@ const Offertes = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* E-mail versturen dialog */}
+      <Dialog open={!!emailDialog} onOpenChange={(open) => !open && setEmailDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Offerte per e-mail versturen</DialogTitle>
+          </DialogHeader>
+          {emailDialog && (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!emailTo.trim()) { toast.error("Vul een e-mailadres in"); return; }
+                setSendingEmail(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("send-offerte-email", {
+                    body: { offerte_id: emailDialog.id, ontvanger_email: emailTo.trim() },
+                  });
+                  if (error || data?.error) {
+                    toast.error("Versturen mislukt", { description: data?.error || error?.message });
+                  } else {
+                    toast.success("Offerte verstuurd", { description: `E-mail verzonden naar ${emailTo}` });
+                    queryClient.invalidateQueries({ queryKey: ["offertes"] });
+                    setEmailDialog(null);
+                  }
+                } catch {
+                  toast.error("Versturen mislukt");
+                }
+                setSendingEmail(false);
+              }}
+              className="space-y-4"
+            >
+              <p className="text-sm text-muted-foreground">
+                Offerte <span className="font-medium text-foreground">{emailDialog.offertenummer}</span> wordt per e-mail verstuurd naar de klant.
+              </p>
+              <div>
+                <Label>Ontvanger e-mail</Label>
+                <Input
+                  type="email"
+                  value={emailTo}
+                  onChange={(e) => setEmailTo(e.target.value)}
+                  required
+                  className="rounded-xl mt-1"
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEmailDialog(null)} className="rounded-pill">Annuleren</Button>
+                <Button type="submit" className="rounded-pill gap-2" disabled={sendingEmail}>
+                  <Send className="h-4 w-4" />
+                  {sendingEmail ? "Versturen..." : "Versturen"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
