@@ -358,6 +358,19 @@ const Producten = () => {
         </div>
         {canEdit && !showInlineForm && (
           <div className="flex gap-2">
+            <ImportExportButtons
+              entityType="producten"
+              exportData={producten}
+              exportColumns={[
+                { key: "naam", label: "Naam" }, { key: "categorie", label: "Categorie" },
+                { key: "merk", label: "Merk" }, { key: "model", label: "Model" },
+                { key: "prijs_excl_btw", label: "Prijs excl BTW" }, { key: "leverancier", label: "Leverancier" },
+                { key: "voorraad", label: "Voorraad" }, { key: "status", label: "Status" },
+                { key: "artikelnummer", label: "Artikelnummer" }, { key: "ean_code", label: "EAN" },
+              ]}
+              exportFilename="producten-export"
+              queryKey={["producten"]}
+            />
             <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="rounded-pill gap-2">
               <Sparkles className="h-4 w-4" /> AI Import
             </Button>

@@ -348,11 +348,26 @@ const Offertes = () => {
           <h1 className="text-2xl font-semibold text-foreground">Offertes</h1>
           <p className="text-muted-foreground mt-1">Offertes aanmaken en beheren</p>
         </div>
-        {canCreate && (
-          <Button onClick={openCreate} className="rounded-pill gap-2">
-            <Plus className="h-4 w-4" /> Nieuwe Offerte
-          </Button>
-        )}
+        <div className="flex gap-2">
+          <ImportExportButtons
+            entityType="offertes"
+            exportData={offertes}
+            exportColumns={[
+              { key: "offertenummer", label: "Nummer" }, { key: "klant_naam", label: "Klant" },
+              { key: "klant_email", label: "E-mail" }, { key: "subtotaal", label: "Subtotaal" },
+              { key: "btw_bedrag", label: "BTW" }, { key: "totaal_bedrag", label: "Totaal" },
+              { key: "status", label: "Status" }, { key: "geldig_tot", label: "Geldig tot" },
+            ]}
+            exportFilename="offertes-export"
+            showImport={false}
+            queryKey={["offertes"]}
+          />
+          {canCreate && (
+            <Button onClick={openCreate} className="rounded-pill gap-2">
+              <Plus className="h-4 w-4" /> Nieuwe Offerte
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="rounded-2xl border-0 shadow-sm">

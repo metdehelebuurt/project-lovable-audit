@@ -184,9 +184,24 @@ const Leads = () => {
           <h1 className="text-2xl font-semibold text-foreground">Leads</h1>
           <p className="text-muted-foreground mt-1">Beheer leads en prospects</p>
         </div>
-        <Button onClick={openCreate} className="rounded-pill gap-2">
-          <Plus className="h-4 w-4" /> Nieuwe Lead
-        </Button>
+        <div className="flex gap-2">
+          <ImportExportButtons
+            entityType="leads"
+            exportData={leads}
+            exportColumns={[
+              { key: "voornaam", label: "Voornaam" }, { key: "achternaam", label: "Achternaam" },
+              { key: "email", label: "E-mail" }, { key: "telefoon", label: "Telefoon" },
+              { key: "bedrijfsnaam", label: "Bedrijfsnaam" }, { key: "adres", label: "Adres" },
+              { key: "postcode", label: "Postcode" }, { key: "plaats", label: "Plaats" },
+              { key: "bron", label: "Bron" }, { key: "lead_status", label: "Status" },
+            ]}
+            exportFilename="leads-export"
+            queryKey={["leads"]}
+          />
+          <Button onClick={openCreate} className="rounded-pill gap-2">
+            <Plus className="h-4 w-4" /> Nieuwe Lead
+          </Button>
+        </div>
       </div>
 
       <Card className="rounded-2xl border-0 shadow-sm">
