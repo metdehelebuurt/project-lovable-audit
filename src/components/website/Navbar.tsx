@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -14,6 +15,8 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { user, profile } = useAuth();
+  const isLoggedIn = !!user && !!profile;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -69,19 +72,27 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button
-              variant="ghost"
-              asChild
-              className={scrolled ? "" : "text-background hover:text-background hover:bg-background/10"}
-            >
-              <Link to="/login">Inloggen</Link>
-            </Button>
-            <Button
-              className="rounded-pill px-6"
-              asChild
-            >
-              <Link to="/signup">Gratis proberen</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button className="rounded-pill px-6 gap-2" asChild>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  asChild
+                  className={scrolled ? "" : "text-background hover:text-background hover:bg-background/10"}
+                >
+                  <Link to="/login">Inloggen</Link>
+                </Button>
+                <Button className="rounded-pill px-6" asChild>
+                  <Link to="/signup">Gratis proberen</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           <button
@@ -117,19 +128,27 @@ const Navbar = () => {
               )
             )}
             <div className="pt-3 border-t border-border flex flex-col gap-2">
-              <Button variant="ghost" asChild className="justify-start">
-                <Link to="/login">Inloggen</Link>
-              </Button>
-              <Button
-                className="rounded-pill"
-                asChild
-              >
-                <Link to="/signup">Gratis proberen</Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button className="rounded-pill gap-2" asChild>
+                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" asChild className="justify-start">
+                    <Link to="/login">Inloggen</Link>
+                  </Button>
+                  <Button className="rounded-pill" asChild>
+                    <Link to="/signup">Gratis proberen</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
-            )}
+      )}
     </nav>
   );
 };
