@@ -627,7 +627,7 @@ export type Database = {
           lead_id: string | null
           notities: string | null
           offertenummer: string
-          partner_id: string
+          partner_id: string | null
           regels: Json
           schouw_id: string | null
           status: Database["public"]["Enums"]["offerte_status"]
@@ -654,7 +654,7 @@ export type Database = {
           lead_id?: string | null
           notities?: string | null
           offertenummer: string
-          partner_id: string
+          partner_id?: string | null
           regels?: Json
           schouw_id?: string | null
           status?: Database["public"]["Enums"]["offerte_status"]
@@ -681,7 +681,7 @@ export type Database = {
           lead_id?: string | null
           notities?: string | null
           offertenummer?: string
-          partner_id?: string
+          partner_id?: string | null
           regels?: Json
           schouw_id?: string | null
           status?: Database["public"]["Enums"]["offerte_status"]
