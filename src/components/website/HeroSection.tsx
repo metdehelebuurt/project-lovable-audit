@@ -55,7 +55,7 @@ const HeroSection = () => {
               variant="outline"
               size="lg"
               className="rounded-pill px-8 text-base h-12 border-background/30 text-background hover:bg-background/10 hover:text-background"
-              onClick={() => scrollTo("#features")}
+              onClick={() => navigate("/features")}
             >
               <Play size={16} />
               Bekijk features

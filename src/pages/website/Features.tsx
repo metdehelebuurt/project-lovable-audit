@@ -1,4 +1,4 @@
-import { FileText, Search, CalendarDays, Users, BarChart3, Globe, Lightbulb, FolderOpen } from "lucide-react";
+import { FileText, Search, CalendarDays, Users, BarChart3, Globe, Lightbulb, FolderOpen, CheckCircle, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import CTASection from "@/components/website/CTASection";
@@ -62,23 +62,36 @@ const features = [
   },
 ];
 
+const usps = [
+  "Eén platform in plaats van 5+ losse tools",
+  "Speciaal gebouwd voor de verduurzamingsbranche",
+  "Werkt op tablet, laptop en telefoon",
+  "Dagelijks updates en nieuwe functionaliteiten",
+];
+
 const Features = () => (
   <>
-    <section className="pt-32 pb-20 lg:pb-28 bg-card">
+    {/* Hero */}
+    <section className="pt-32 pb-16 lg:pb-20 bg-card">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="text-center max-w-3xl mx-auto">
           <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
             Platform features
           </p>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
             Alles wat je nodig hebt, in één platform
           </h1>
-          <p className="mt-4 text-muted-foreground text-lg">
+          <p className="mt-5 text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto">
             Van het eerste klantcontact tot de oplevering — mijnhuis.nu
-            stroomlijnt je hele werkproces.
+            stroomlijnt je hele werkproces. Ontdek alle mogelijkheden hieronder.
           </p>
         </div>
+      </div>
+    </section>
 
+    {/* Feature cards */}
+    <section className="py-16 lg:py-24 bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature) => (
             <Link key={feature.title} to={feature.href} className="block group">
@@ -93,6 +106,9 @@ const Features = () => (
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
+                  <span className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    Meer info <ArrowRight size={14} />
+                  </span>
                 </CardContent>
               </Card>
             </Link>
@@ -100,6 +116,53 @@ const Features = () => (
         </div>
       </div>
     </section>
+
+    {/* Waarom alles-in-één */}
+    <section className="py-16 lg:py-24 bg-card">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
+              Waarom alles-in-één?
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+              Stop met schakelen tussen losse tools
+            </h2>
+            <p className="text-muted-foreground leading-relaxed mb-8">
+              De meeste installateurs en adviseurs werken met een mix van Excel,
+              WhatsApp, losse agenda's en papieren formulieren. Mijnhuis.nu
+              vervangt al die losse systemen door één geïntegreerd platform —
+              ontworpen voor jouw branche.
+            </p>
+            <ul className="space-y-3">
+              {usps.map((usp) => (
+                <li key={usp} className="flex items-start gap-3">
+                  <CheckCircle className="text-primary flex-shrink-0 mt-0.5" size={20} />
+                  <span className="text-foreground">{usp}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { value: "8+", label: "Geïntegreerde modules" },
+              { value: "500+", label: "Actieve professionals" },
+              { value: "30%", label: "Meer omzet gemiddeld" },
+              { value: "2u", label: "Admin bespaard per dag" },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="p-6 rounded-2xl bg-background border border-border/50 text-center"
+              >
+                <p className="text-3xl font-bold text-primary">{stat.value}</p>
+                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
     <CTASection />
   </>
 );
