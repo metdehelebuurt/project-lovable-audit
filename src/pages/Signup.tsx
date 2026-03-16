@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -26,6 +26,8 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref") || "";
   const { user, profile, loading: authLoading } = useAuth();
 
   // Auto-redirect if already logged in
@@ -78,6 +80,7 @@ const Signup = () => {
         email: form.email,
         telefoon: form.telefoon,
         password: form.password,
+        ref_code: refCode || undefined,
       },
     });
 

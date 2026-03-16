@@ -32,6 +32,8 @@ import OfferteNieuw from "@/pages/OfferteNieuw";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import WebTools from "@/pages/WebTools";
+import Affiliates from "@/pages/Affiliates";
+import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import NotFound from "@/pages/NotFound";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
@@ -142,6 +144,12 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
+              <Route path="/affiliates" element={
+                <ProtectedRoute allowedRoles={["affiliate"]}><Affiliates /></ProtectedRoute>
+              } />
+              <Route path="/affiliate-beheer" element={
+                <ProtectedRoute allowedRoles={["superadmin"]}><AffiliateBeheer /></ProtectedRoute>
+              } />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
             </Route>
 

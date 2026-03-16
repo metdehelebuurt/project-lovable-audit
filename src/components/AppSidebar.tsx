@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
-  MessageSquare, Home, FolderOpen, Battery, PenTool
+  MessageSquare, Home, FolderOpen, Battery, PenTool, Link2, Handshake
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +34,7 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Offertes", url: "/offertes", icon: FileText },
         { title: "Documenten", url: "/documenten", icon: FolderOpen },
         { title: "Tools", url: "/tools", icon: PenTool },
+        { title: "Affiliate Beheer", url: "/affiliate-beheer", icon: Handshake },
         { title: "Instellingen", url: "/instellingen", icon: Settings },
       ];
     case "partner_admin":
@@ -90,6 +91,12 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Mijn Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Afspraken", url: "/planning", icon: Calendar },
         { title: "Berichten", url: "/berichten", icon: MessageSquare },
+      ];
+    case "affiliate":
+      return [
+        ...common,
+        { title: "Mijn Klanten", url: "/affiliates", icon: Users },
+        { title: "Instellingen", url: "/instellingen", icon: Settings },
       ];
     default:
       return common;

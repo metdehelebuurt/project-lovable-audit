@@ -25,6 +25,7 @@ const rolLabels: Record<AppRole, string> = {
   adviseur: "Energieadviseur",
   installateur: "Installateur",
   consument: "Consument",
+  affiliate: "Affiliate",
 };
 
 const rolColors: Record<AppRole, string> = {
@@ -34,6 +35,7 @@ const rolColors: Record<AppRole, string> = {
   adviseur: "bg-success-light text-success",
   installateur: "bg-warning-light text-warning-foreground",
   consument: "bg-muted text-muted-foreground",
+  affiliate: "bg-chart-4/10 text-chart-4",
 };
 
 interface UserFormData {
