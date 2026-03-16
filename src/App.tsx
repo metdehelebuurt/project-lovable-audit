@@ -54,6 +54,9 @@ import FAQ from "@/pages/website/FAQ";
 import Privacy from "@/pages/website/Privacy";
 import Voorwaarden from "@/pages/website/Voorwaarden";
 import CookieBeleid from "@/pages/website/CookieBeleid";
+import Features from "@/pages/website/Features";
+import HoeHetWerkt from "@/pages/website/HoeHetWerkt";
+import Voordelen from "@/pages/website/Voordelen";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +80,9 @@ const App = () => (
 
             {/* Public website pages with shared layout */}
             <Route element={<WebsiteLayout />}>
+              <Route path="/features" element={<Features />} />
+              <Route path="/hoe-het-werkt" element={<HoeHetWerkt />} />
+              <Route path="/voordelen" element={<Voordelen />} />
               <Route path="/features/offertes" element={<FeatureOffertes />} />
               <Route path="/features/digitale-schouwen" element={<FeatureSchouwen />} />
               <Route path="/features/planning" element={<FeaturePlanning />} />
