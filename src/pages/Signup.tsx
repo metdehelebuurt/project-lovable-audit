@@ -80,6 +80,7 @@ const Signup = () => {
         email: form.email,
         telefoon: form.telefoon,
         password: form.password,
+        ref_code: refCode || undefined,
       },
     });
 
