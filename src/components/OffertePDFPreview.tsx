@@ -64,6 +64,15 @@ export default function OffertePDFPreview() {
   const [schouw, setSchouw] = useState<SchouwData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const platformBranding: PartnerBranding = {
+    naam: "mijnhuis.nu",
+    adres: null, postcode: null, plaats: null,
+    email: "info@mijnhuis.nu", telefoonnummer: null,
+    kvk: null, btw: null, website: "www.mijnhuis.nu",
+    logo_url: null, primaire_kleur: "#5B58E1", secundaire_kleur: "#1a1a2e",
+    bedrijfsslogan: "Slim verduurzamen begint hier",
+  };
+
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -71,8 +80,13 @@ export default function OffertePDFPreview() {
       if (!o) { setLoading(false); return; }
       setOfferte(o);
 
-      const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan").eq("id", o.partner_id).single();
-      if (p) setPartner(p as PartnerBranding);
+      if (o.partner_id) {
+        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan").eq("id", o.partner_id).single();
+        if (p) setPartner(p as PartnerBranding);
+        else setPartner(platformBranding);
+      } else {
+        setPartner(platformBranding);
+      }
 
       if (o.include_schouw && o.schouw_id) {
         const { data: s } = await supabase.from("schouwen").select("schouw_nummer, categorie, geplande_datum, status, consument_naam, gegevens, notities").eq("id", o.schouw_id).single();
