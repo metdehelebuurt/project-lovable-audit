@@ -92,6 +92,12 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Afspraken", url: "/planning", icon: Calendar },
         { title: "Berichten", url: "/berichten", icon: MessageSquare },
       ];
+    case "affiliate":
+      return [
+        ...common,
+        { title: "Mijn Klanten", url: "/affiliates", icon: Users },
+        { title: "Instellingen", url: "/instellingen", icon: Settings },
+      ];
     default:
       return common;
   }
