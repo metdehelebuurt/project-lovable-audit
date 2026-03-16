@@ -80,6 +80,9 @@ const App = () => (
 
             {/* Public website pages with shared layout */}
             <Route element={<WebsiteLayout />}>
+              <Route path="/features" element={<Features />} />
+              <Route path="/hoe-het-werkt" element={<HoeHetWerkt />} />
+              <Route path="/voordelen" element={<Voordelen />} />
               <Route path="/features/offertes" element={<FeatureOffertes />} />
               <Route path="/features/digitale-schouwen" element={<FeatureSchouwen />} />
               <Route path="/features/planning" element={<FeaturePlanning />} />
