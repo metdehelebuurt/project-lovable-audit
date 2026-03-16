@@ -963,6 +963,7 @@ export type Database = {
         | "adviseur"
         | "installateur"
         | "consument"
+        | "affiliate"
       document_entity_type: "lead" | "schouw" | "offerte" | "installatie"
       document_type: "contract" | "foto" | "certificaat" | "rapport" | "overig"
       installatie_status:
@@ -1151,6 +1152,7 @@ export const Constants = {
         "adviseur",
         "installateur",
         "consument",
+        "affiliate",
       ],
       document_entity_type: ["lead", "schouw", "offerte", "installatie"],
       document_type: ["contract", "foto", "certificaat", "rapport", "overig"],
