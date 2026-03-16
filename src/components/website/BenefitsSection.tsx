@@ -1,4 +1,4 @@
-import { TrendingUp, Clock, Award, Cloud } from "lucide-react";
+import { TrendingUp, Clock, Award, Cloud, Globe, Handshake } from "lucide-react";
 
 const benefits = [
   {
@@ -25,6 +25,18 @@ const benefits = [
     description:
       "Cloudgebaseerd platform. Werk op locatie, thuis of op kantoor. Altijd actuele data, op elk apparaat.",
   },
+  {
+    icon: Globe,
+    title: "Website-widgets",
+    description:
+      "Embed besparingscalculatoren en contactformulieren op je eigen website. Leads stromen automatisch je CRM in.",
+  },
+  {
+    icon: Handshake,
+    title: "Affiliate programma",
+    description:
+      "Verdien mee als wederverkoper. Genereer affiliate links, maak kortingscodes aan en ontvang commissie per aangebrachte klant.",
+  },
 ];
 
 const BenefitsSection = () => (
@@ -39,7 +51,7 @@ const BenefitsSection = () => (
         </h2>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-8">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {benefits.map((b) => (
           <div
             key={b.title}

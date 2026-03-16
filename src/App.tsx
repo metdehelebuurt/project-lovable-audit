@@ -45,6 +45,8 @@ import FeatureSchouwen from "@/pages/website/FeatureSchouwen";
 import FeaturePlanning from "@/pages/website/FeaturePlanning";
 import FeatureLeadbeheer from "@/pages/website/FeatureLeadbeheer";
 import FeatureRapportages from "@/pages/website/FeatureRapportages";
+import FeatureWebtools from "@/pages/website/FeatureWebtools";
+import FeatureEnergieadvies from "@/pages/website/FeatureEnergieadvies";
 import OverOns from "@/pages/website/OverOns";
 import Prijzen from "@/pages/website/Prijzen";
 import PartnersWorden from "@/pages/website/PartnersWorden";
@@ -80,6 +82,8 @@ const App = () => (
               <Route path="/features/planning" element={<FeaturePlanning />} />
               <Route path="/features/leadbeheer" element={<FeatureLeadbeheer />} />
               <Route path="/features/rapportages" element={<FeatureRapportages />} />
+              <Route path="/features/webtools" element={<FeatureWebtools />} />
+              <Route path="/features/energieadvies" element={<FeatureEnergieadvies />} />
               <Route path="/over-ons" element={<OverOns />} />
               <Route path="/prijzen" element={<Prijzen />} />
               <Route path="/partners-worden" element={<PartnersWorden />} />

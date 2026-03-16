@@ -38,8 +38,8 @@ const HeroSection = () => {
 
           <p className="mt-6 text-lg sm:text-xl text-background/70 max-w-2xl leading-relaxed">
             Maak offertes op locatie, voer digitale schouwen uit, beheer je
-            planning en klanten — alles vanuit één platform. Gebouwd voor
-            installateurs en adviseurs.
+            planning en klanten, geef energieadvies en embed webtools op je
+            site — alles vanuit één platform.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
@@ -58,7 +58,7 @@ const HeroSection = () => {
               onClick={() => scrollTo("#features")}
             >
               <Play size={16} />
-              Bekijk demo
+              Bekijk features
             </Button>
           </div>
 

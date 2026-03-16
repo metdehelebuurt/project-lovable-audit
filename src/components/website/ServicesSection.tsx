@@ -1,5 +1,6 @@
-import { FileText, Search, CalendarDays, Users } from "lucide-react";
+import { FileText, Search, CalendarDays, Users, BarChart3, Globe, Lightbulb, FolderOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 
 const features = [
   {
@@ -7,24 +8,56 @@ const features = [
     title: "Offertes op locatie",
     description:
       "Genereer direct professionele offertes bij de klant thuis. Producten selecteren, prijzen berekenen en versturen — ter plekke.",
+    href: "/features/offertes",
   },
   {
     icon: Search,
     title: "Digitale schouwen",
     description:
       "Voer schouwen uit met digitale formulieren, maak foto's en genereer automatisch rapportages. Geen papierwerk meer.",
+    href: "/features/digitale-schouwen",
   },
   {
     icon: CalendarDays,
     title: "Planning & agenda",
     description:
       "Beheer installaties, schouwen en afspraken in één overzichtelijke planning. Wijs taken toe aan je team.",
+    href: "/features/planning",
   },
   {
     icon: Users,
     title: "Klant- & leadbeheer",
     description:
       "Volg je leads van eerste contact tot installatie. Complete CRM-pipeline speciaal voor de verduurzamingsbranche.",
+    href: "/features/leadbeheer",
+  },
+  {
+    icon: BarChart3,
+    title: "Rapportages & analytics",
+    description:
+      "Dashboards met KPI's, conversieratio's en omzetprognoses. Exporteer rapportages naar Excel of PDF.",
+    href: "/features/rapportages",
+  },
+  {
+    icon: Globe,
+    title: "Webtools & widgets",
+    description:
+      "Embed besparingscalculatoren en contactformulieren op je eigen website. Leads stromen automatisch binnen.",
+    href: "/features/webtools",
+  },
+  {
+    icon: Lightbulb,
+    title: "Energieadvies tools",
+    description:
+      "Geef klanten direct inzicht met de energieadvies-wizard en thuisbatterij selector. Onderbouw je advies met data.",
+    href: "/features/energieadvies",
+  },
+  {
+    icon: FolderOpen,
+    title: "Documentbeheer",
+    description:
+      "Bewaar contracten, certificaten, foto's en rapporten centraal. Alles gekoppeld aan de juiste klant of installatie.",
+    href: "/features/offertes",
   },
 ];
 
@@ -46,22 +79,21 @@ const ServicesSection = () => (
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {features.map((feature) => (
-          <Card
-            key={feature.title}
-            className="group border-border/50 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 cursor-default"
-          >
-            <CardContent className="p-6 pt-8">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
-                <feature.icon className="text-primary" size={24} />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
-            </CardContent>
-          </Card>
+          <Link key={feature.title} to={feature.href} className="block group">
+            <Card className="h-full border-border/50 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
+              <CardContent className="p-6 pt-8">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                  <feature.icon className="text-primary" size={24} />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>

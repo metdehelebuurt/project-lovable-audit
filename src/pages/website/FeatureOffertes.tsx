@@ -25,9 +25,9 @@ const FeatureOffertes = () => (
     ]}
     relatedPages={[
       { label: "Digitale schouwen", href: "/features/digitale-schouwen" },
-      { label: "Planning & agenda", href: "/features/planning" },
+      { label: "Energieadvies tools", href: "/features/energieadvies" },
       { label: "Klant- & leadbeheer", href: "/features/leadbeheer" },
-      { label: "Rapportages", href: "/features/rapportages" },
+      { label: "Webtools & widgets", href: "/features/webtools" },
     ]}
   />
 );

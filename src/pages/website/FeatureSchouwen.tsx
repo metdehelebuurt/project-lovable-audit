@@ -25,9 +25,9 @@ const FeatureSchouwen = () => (
     ]}
     relatedPages={[
       { label: "Offertes op locatie", href: "/features/offertes" },
-      { label: "Planning & agenda", href: "/features/planning" },
+      { label: "Energieadvies tools", href: "/features/energieadvies" },
       { label: "Klant- & leadbeheer", href: "/features/leadbeheer" },
-      { label: "Rapportages", href: "/features/rapportages" },
+      { label: "Webtools & widgets", href: "/features/webtools" },
     ]}
   />
 );
