@@ -6,10 +6,10 @@ import Logo from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Hoe het werkt", href: "#hoe-het-werkt" },
-  { label: "Voordelen", href: "#voordelen" },
-  { label: "Prijzen", href: "/prijzen", isRoute: true },
+  { label: "Features", href: "/features" },
+  { label: "Hoe het werkt", href: "/hoe-het-werkt" },
+  { label: "Voordelen", href: "/voordelen" },
+  { label: "Prijzen", href: "/prijzen" },
 ];
 
 const Navbar = () => {
@@ -24,11 +24,6 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollTo = (href: string) => {
-    setIsOpen(false);
-    document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -42,33 +37,19 @@ const Navbar = () => {
           <Logo variant={scrolled ? "purple" : "white"} />
 
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) =>
-              (link as any).isRoute ? (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`text-sm font-medium transition-colors ${
-                    scrolled
-                      ? "text-foreground/70 hover:text-primary"
-                      : "text-background/70 hover:text-background"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <button
-                  key={link.href}
-                  onClick={() => scrollTo(link.href)}
-                  className={`text-sm font-medium transition-colors ${
-                    scrolled
-                      ? "text-foreground/70 hover:text-primary"
-                      : "text-background/70 hover:text-background"
-                  }`}
-                >
-                  {link.label}
-                </button>
-              )
-            )}
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`text-sm font-medium transition-colors ${
+                  scrolled
+                    ? "text-foreground/70 hover:text-primary"
+                    : "text-background/70 hover:text-background"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
           <div className="hidden md:flex items-center gap-3">
