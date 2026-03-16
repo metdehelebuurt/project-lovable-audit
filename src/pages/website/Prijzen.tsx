@@ -15,6 +15,8 @@ const plans = [
       "Offertes op locatie",
       "Digitale schouwen",
       "Klant- & leadbeheer",
+      "Energieadvies tools",
+      "1 webtool widget",
       "E-mail support",
       "500 MB opslag",
     ],
