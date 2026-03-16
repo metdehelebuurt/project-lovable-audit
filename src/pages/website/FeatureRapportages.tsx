@@ -25,8 +25,8 @@ const FeatureRapportages = () => (
     ]}
     relatedPages={[
       { label: "Offertes op locatie", href: "/features/offertes" },
-      { label: "Digitale schouwen", href: "/features/digitale-schouwen" },
-      { label: "Planning & agenda", href: "/features/planning" },
+      { label: "Webtools & widgets", href: "/features/webtools" },
+      { label: "Energieadvies tools", href: "/features/energieadvies" },
       { label: "Klant- & leadbeheer", href: "/features/leadbeheer" },
     ]}
   />

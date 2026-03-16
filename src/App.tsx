@@ -82,6 +82,8 @@ const App = () => (
               <Route path="/features/planning" element={<FeaturePlanning />} />
               <Route path="/features/leadbeheer" element={<FeatureLeadbeheer />} />
               <Route path="/features/rapportages" element={<FeatureRapportages />} />
+              <Route path="/features/webtools" element={<FeatureWebtools />} />
+              <Route path="/features/energieadvies" element={<FeatureEnergieadvies />} />
               <Route path="/over-ons" element={<OverOns />} />
               <Route path="/prijzen" element={<Prijzen />} />
               <Route path="/partners-worden" element={<PartnersWorden />} />
