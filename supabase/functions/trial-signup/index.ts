@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon } = await req.json();
+    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode } = await req.json();
 
     // Validation
     if (!bedrijfsnaam || !voornaam || !achternaam || !email || !password) {
@@ -105,12 +105,118 @@ serve(async (req) => {
       );
     }
 
-    // 4. Seed demo data
+    // 4. Handle affiliate referral & kortingscode
+    let affiliateReferralId: string | null = null;
+    let kortingscodeId: string | null = null;
+    let kortingActiefTot: string | null = null;
+
+    if (ref_code) {
+      try {
+        // Look up affiliate link
+        const { data: affLink } = await supabaseAdmin
+          .from("affiliate_links")
+          .select("id, user_id")
+          .eq("code", ref_code)
+          .eq("actief", true)
+          .single();
+
+        if (affLink) {
+          // Increment clicks
+          await supabaseAdmin
+            .from("affiliate_links")
+            .update({ clicks: (await supabaseAdmin.from("affiliate_links").select("clicks").eq("id", affLink.id).single()).data?.clicks + 1 || 1 })
+            .eq("id", affLink.id);
+
+          // Get default commission
+          const { data: settings } = await supabaseAdmin
+            .from("affiliate_instellingen")
+            .select("standaard_commissie_percentage")
+            .limit(1)
+            .single();
+
+          // Create referral
+          const { data: referral } = await supabaseAdmin
+            .from("affiliate_referrals")
+            .insert({
+              affiliate_id: affLink.user_id,
+              partner_id: partner.id,
+              affiliate_link_id: affLink.id,
+              commissie_percentage: settings?.standaard_commissie_percentage ?? 10,
+              status: "actief",
+            })
+            .select("id")
+            .single();
+
+          if (referral) affiliateReferralId = referral.id;
+        }
+      } catch (e) {
+        console.error("Affiliate referral error (non-fatal):", e);
+      }
+    }
+
+    if (kortingscode) {
+      try {
+        const { data: code } = await supabaseAdmin
+          .from("kortingscodes")
+          .select("*")
+          .eq("code", kortingscode.toUpperCase())
+          .eq("actief", true)
+          .single();
+
+        if (code) {
+          const now = new Date();
+          const isExpired = code.geldig_tot && new Date(code.geldig_tot) < now;
+          const isMaxed = code.max_gebruik && code.aantal_gebruikt >= code.max_gebruik;
+
+          if (!isExpired && !isMaxed) {
+            kortingscodeId = code.id;
+            // Korting active for 12 months
+            const kortingEnd = new Date(now);
+            kortingEnd.setMonth(kortingEnd.getMonth() + 12);
+            kortingActiefTot = kortingEnd.toISOString().split("T")[0];
+
+            // Increment usage
+            await supabaseAdmin
+              .from("kortingscodes")
+              .update({ aantal_gebruikt: code.aantal_gebruikt + 1 })
+              .eq("id", code.id);
+
+            // Link to referral if affiliate matches
+            if (affiliateReferralId) {
+              await supabaseAdmin
+                .from("affiliate_referrals")
+                .update({ kortingscode_id: code.id })
+                .eq("id", affiliateReferralId);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Kortingscode error (non-fatal):", e);
+      }
+    }
+
+    // 5. Create abonnement record
+    try {
+      await supabaseAdmin.from("abonnementen").insert({
+        partner_id: partner.id,
+        plan: "trial",
+        status: "actief",
+        maand_bedrag: 0,
+        start_datum: trialStart.toISOString().split("T")[0],
+        verloop_datum: trialEnd.toISOString().split("T")[0],
+        affiliate_referral_id: affiliateReferralId,
+        kortingscode_id: kortingscodeId,
+        korting_actief_tot: kortingActiefTot,
+      });
+    } catch (e) {
+      console.error("Abonnement creation error (non-fatal):", e);
+    }
+
+    // 6. Seed demo data
     try {
       await seedDemoData(supabaseAdmin, partner.id, authUser.user.id);
     } catch (seedErr) {
       console.error("Demo seed error (non-fatal):", seedErr);
-      // Non-fatal: account is created, demo data just failed
     }
 
     return new Response(
