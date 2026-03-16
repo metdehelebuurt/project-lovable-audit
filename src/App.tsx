@@ -32,6 +32,8 @@ import OfferteNieuw from "@/pages/OfferteNieuw";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import WebTools from "@/pages/WebTools";
+import Affiliates from "@/pages/Affiliates";
+import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import NotFound from "@/pages/NotFound";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
