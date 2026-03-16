@@ -7,10 +7,28 @@ const categories = [
   {
     title: "Over het platform",
     items: [
-      { q: "Wat is mijnhuis.nu?", a: "mijnhuis.nu is een alles-in-één softwareplatform voor installateurs en adviseurs in de verduurzamingsbranche. Het combineert offertes, schouwen, planning, leadbeheer en rapportages in één systeem." },
+      { q: "Wat is mijnhuis.nu?", a: "mijnhuis.nu is een alles-in-één softwareplatform voor installateurs en adviseurs in de verduurzamingsbranche. Het combineert offertes, schouwen, planning, leadbeheer, energieadvies tools, webtools en rapportages in één systeem." },
       { q: "Voor wie is mijnhuis.nu bedoeld?", a: "Het platform is ontworpen voor bedrijven die werken met zonnepanelen, warmtepompen, isolatie, laadpalen en andere verduurzamingsoplossingen. Van zelfstandige adviseurs tot grote installatiebedrijven." },
       { q: "Kan ik mijnhuis.nu op mijn telefoon gebruiken?", a: "Ja, mijnhuis.nu werkt volledig responsive op telefoons, tablets en laptops. Ideaal voor gebruik op locatie bij de klant." },
       { q: "Welke categorieën schouwen worden ondersteund?", a: "We ondersteunen schouwen voor zonnepanelen, warmtepompen, dakisolatie, muurisolatie, vloerisolatie, HR-glas, ventilatie en thuisbatterijen." },
+    ],
+  },
+  {
+    title: "Webtools & widgets",
+    items: [
+      { q: "Wat zijn webtools?", a: "Webtools zijn embeddable widgets die je op je eigen website kunt plaatsen. Denk aan besparingscalculatoren voor zonnepanelen, warmtepompen, isolatie, laadpalen en thuisbatterijen, plus contactformulieren." },
+      { q: "Hoe embed ik een widget op mijn website?", a: "Je kopieert een stukje embed-code vanuit het platform en plakt het in je website. Werkt met WordPress, Wix, Squarespace en elke andere website. Geen technische kennis vereist." },
+      { q: "Worden widget-inzendingen automatisch als lead aangemaakt?", a: "Ja, alle inzendingen via webtools worden automatisch als lead in je CRM aangemaakt, inclusief bronvermelding. Je ontvangt optioneel een e-mailnotificatie." },
+      { q: "Kan ik de widgets aanpassen aan mijn huisstijl?", a: "Absoluut. Je kunt kleuren, logo en teksten aanpassen zodat de widgets naadloos aansluiten bij je website-ontwerp." },
+    ],
+  },
+  {
+    title: "Affiliate programma",
+    items: [
+      { q: "Wat is het affiliate programma?", a: "Als affiliate verdien je commissie voor elke klant die je aanbrengt bij mijnhuis.nu. Je krijgt een eigen dashboard met affiliate links, kortingscodes en commissie-overzicht." },
+      { q: "Hoe word ik affiliate?", a: "Neem contact met ons op via partners-worden. Na goedkeuring krijg je toegang tot je eigen affiliate dashboard waar je links en kortingscodes kunt aanmaken." },
+      { q: "Hoe werkt de commissiestructuur?", a: "Je ontvangt een percentage commissie over het maandbedrag van elke aangebrachte klant, zolang het abonnement actief is. De exacte percentages worden bij aanmelding besproken." },
+      { q: "Kan ik kortingscodes aanmaken voor klanten?", a: "Ja, als affiliate kun je kortingscodes aanmaken die je kunt delen met potentiële klanten. De maximale korting wordt door het platform beheerd." },
     ],
   },
   {

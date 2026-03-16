@@ -47,6 +47,8 @@ const plans = [
     features: [
       "Onbeperkt gebruikers",
       "Alles van Professional",
+      "Affiliate programma",
+      "White-label webtools",
       "API-toegang",
       "SSO / SAML",
       "Dedicated accountmanager",
