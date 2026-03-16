@@ -45,6 +45,8 @@ import FeatureSchouwen from "@/pages/website/FeatureSchouwen";
 import FeaturePlanning from "@/pages/website/FeaturePlanning";
 import FeatureLeadbeheer from "@/pages/website/FeatureLeadbeheer";
 import FeatureRapportages from "@/pages/website/FeatureRapportages";
+import FeatureWebtools from "@/pages/website/FeatureWebtools";
+import FeatureEnergieadvies from "@/pages/website/FeatureEnergieadvies";
 import OverOns from "@/pages/website/OverOns";
 import Prijzen from "@/pages/website/Prijzen";
 import PartnersWorden from "@/pages/website/PartnersWorden";
