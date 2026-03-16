@@ -95,6 +95,8 @@ const getNavItems = (rol: string): NavItem[] => {
     case "affiliate":
       return [
         ...common,
+        { title: "Offertes", url: "/offertes", icon: FileText },
+        { title: "Affiliate Links", url: "/affiliates", icon: Link2 },
         { title: "Mijn Klanten", url: "/affiliates", icon: Users },
         { title: "Instellingen", url: "/instellingen", icon: Settings },
       ];
