@@ -24,6 +24,8 @@ const Footer = () => (
             <li><Link to="/features/planning" className="hover:text-background transition-colors">Planning & agenda</Link></li>
             <li><Link to="/features/leadbeheer" className="hover:text-background transition-colors">Klant- & leadbeheer</Link></li>
             <li><Link to="/features/rapportages" className="hover:text-background transition-colors">Rapportages</Link></li>
+            <li><Link to="/features/webtools" className="hover:text-background transition-colors">Webtools & widgets</Link></li>
+            <li><Link to="/features/energieadvies" className="hover:text-background transition-colors">Energieadvies tools</Link></li>
           </ul>
         </div>
 
@@ -33,6 +35,7 @@ const Footer = () => (
             <li><Link to="/over-ons" className="hover:text-background transition-colors">Over ons</Link></li>
             <li><Link to="/prijzen" className="hover:text-background transition-colors">Prijzen</Link></li>
             <li><Link to="/partners-worden" className="hover:text-background transition-colors">Partners worden</Link></li>
+            <li><Link to="/partners-worden" className="hover:text-background transition-colors">Affiliate worden</Link></li>
             <li><Link to="/veelgestelde-vragen" className="hover:text-background transition-colors">Veelgestelde vragen</Link></li>
           </ul>
         </div>

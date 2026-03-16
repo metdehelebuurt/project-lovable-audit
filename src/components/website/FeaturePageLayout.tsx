@@ -136,8 +136,7 @@ const FeaturePageLayout = ({
           </p>
           <Button
             size="lg"
-            variant="secondary"
-            className="rounded-full px-8 h-12 text-base font-semibold shadow-lg"
+            className="rounded-full px-8 h-12 text-base font-semibold shadow-lg bg-background text-foreground hover:bg-background/90"
             onClick={() => navigate("/signup")}
           >
             Start gratis proefperiode <ArrowRight size={18} />
