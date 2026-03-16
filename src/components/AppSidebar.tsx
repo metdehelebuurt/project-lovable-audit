@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
-  MessageSquare, Home, FolderOpen, Battery, PenTool
+  MessageSquare, Home, FolderOpen, Battery, PenTool, Link2, Handshake
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
