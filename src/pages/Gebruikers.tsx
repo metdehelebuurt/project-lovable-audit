@@ -25,6 +25,7 @@ const rolLabels: Record<AppRole, string> = {
   adviseur: "Energieadviseur",
   installateur: "Installateur",
   consument: "Consument",
+  affiliate: "Affiliate",
 };
 
 const rolColors: Record<AppRole, string> = {
