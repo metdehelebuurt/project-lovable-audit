@@ -31,6 +31,8 @@ const plans = [
       "Alles van Starter",
       "Planning & agenda",
       "Rapportages & analytics",
+      "Onbeperkt webtools",
+      "Thuisbatterij selector",
       "Documentbeheer",
       "Productcatalogus",
       "5 GB opslag",
