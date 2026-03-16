@@ -54,6 +54,9 @@ import FAQ from "@/pages/website/FAQ";
 import Privacy from "@/pages/website/Privacy";
 import Voorwaarden from "@/pages/website/Voorwaarden";
 import CookieBeleid from "@/pages/website/CookieBeleid";
+import Features from "@/pages/website/Features";
+import HoeHetWerkt from "@/pages/website/HoeHetWerkt";
+import Voordelen from "@/pages/website/Voordelen";
 
 const queryClient = new QueryClient();
 
