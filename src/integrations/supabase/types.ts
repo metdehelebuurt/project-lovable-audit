@@ -14,6 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
+      abonnementen: {
+        Row: {
+          affiliate_referral_id: string | null
+          created_at: string
+          id: string
+          korting_actief_tot: string | null
+          kortingscode_id: string | null
+          maand_bedrag: number
+          partner_id: string
+          plan: string
+          start_datum: string
+          status: string
+          updated_at: string
+          verloop_datum: string | null
+        }
+        Insert: {
+          affiliate_referral_id?: string | null
+          created_at?: string
+          id?: string
+          korting_actief_tot?: string | null
+          kortingscode_id?: string | null
+          maand_bedrag?: number
+          partner_id: string
+          plan?: string
+          start_datum?: string
+          status?: string
+          updated_at?: string
+          verloop_datum?: string | null
+        }
+        Update: {
+          affiliate_referral_id?: string | null
+          created_at?: string
+          id?: string
+          korting_actief_tot?: string | null
+          kortingscode_id?: string | null
+          maand_bedrag?: number
+          partner_id?: string
+          plan?: string
+          start_datum?: string
+          status?: string
+          updated_at?: string
+          verloop_datum?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abonnementen_affiliate_referral_id_fkey"
+            columns: ["affiliate_referral_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnementen_kortingscode_id_fkey"
+            columns: ["kortingscode_id"]
+            isOneToOne: false
+            referencedRelation: "kortingscodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnementen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_instellingen: {
+        Row: {
+          cookie_dagen: number
+          id: string
+          max_commissie_percentage: number
+          max_korting_percentage: number
+          max_korting_vast_bedrag: number
+          min_abonnement_maanden: number
+          standaard_commissie_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          cookie_dagen?: number
+          id?: string
+          max_commissie_percentage?: number
+          max_korting_percentage?: number
+          max_korting_vast_bedrag?: number
+          min_abonnement_maanden?: number
+          standaard_commissie_percentage?: number
+          updated_at?: string
+        }
+        Update: {
+          cookie_dagen?: number
+          id?: string
+          max_commissie_percentage?: number
+          max_korting_percentage?: number
+          max_korting_vast_bedrag?: number
+          min_abonnement_maanden?: number
+          standaard_commissie_percentage?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      affiliate_links: {
+        Row: {
+          actief: boolean
+          clicks: number
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          actief?: boolean
+          clicks?: number
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          actief?: boolean
+          clicks?: number
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_referrals: {
+        Row: {
+          affiliate_id: string
+          affiliate_link_id: string | null
+          commissie_percentage: number
+          commissie_verdiend: number
+          created_at: string
+          id: string
+          kortingscode_id: string | null
+          partner_id: string | null
+          status: string
+        }
+        Insert: {
+          affiliate_id: string
+          affiliate_link_id?: string | null
+          commissie_percentage?: number
+          commissie_verdiend?: number
+          created_at?: string
+          id?: string
+          kortingscode_id?: string | null
+          partner_id?: string | null
+          status?: string
+        }
+        Update: {
+          affiliate_id?: string
+          affiliate_link_id?: string | null
+          commissie_percentage?: number
+          commissie_verdiend?: number
+          created_at?: string
+          id?: string
+          kortingscode_id?: string | null
+          partner_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_affiliate_link_id_fkey"
+            columns: ["affiliate_link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_kortingscode_id_fkey"
+            columns: ["kortingscode_id"]
+            isOneToOne: false
+            referencedRelation: "kortingscodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consumenten: {
         Row: {
           achternaam: string | null
@@ -230,6 +430,53 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kortingscodes: {
+        Row: {
+          aantal_gebruikt: number
+          actief: boolean
+          affiliate_id: string
+          code: string
+          created_at: string
+          geldig_tot: string | null
+          id: string
+          korting_type: string
+          korting_waarde: number
+          max_gebruik: number | null
+        }
+        Insert: {
+          aantal_gebruikt?: number
+          actief?: boolean
+          affiliate_id: string
+          code: string
+          created_at?: string
+          geldig_tot?: string | null
+          id?: string
+          korting_type: string
+          korting_waarde: number
+          max_gebruik?: number | null
+        }
+        Update: {
+          aantal_gebruikt?: number
+          actief?: boolean
+          affiliate_id?: string
+          code?: string
+          created_at?: string
+          geldig_tot?: string | null
+          id?: string
+          korting_type?: string
+          korting_waarde?: number
+          max_gebruik?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kortingscodes_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
