@@ -361,6 +361,29 @@ const OfferteNieuw = () => {
           </CardContent>
         </Card>
 
+        {/* Extra velden */}
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Offerte inhoud</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Introductietekst (optioneel)</Label>
+              <Textarea value={introductieTekst} onChange={e => setIntroductieTekst(e.target.value)} className="rounded-xl mt-1" rows={3} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Garantievoorwaarden</Label>
+                <Textarea value={garantieVoorwaarden} onChange={e => setGarantieVoorwaarden(e.target.value)} className="rounded-xl mt-1" rows={2} placeholder="Garantievoorwaarden..." />
+              </div>
+              <div>
+                <Label>Installatietermijn</Label>
+                <Input value={installatieTermijn} onChange={e => setInstallatieTermijn(e.target.value)} className="rounded-xl" placeholder="Bijv. Binnen 4 weken na akkoord" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Notities */}
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardContent className="pt-6">
