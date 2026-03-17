@@ -101,6 +101,9 @@ export default function OffertePDFPreview() {
     bedrijfsslogan: "Slim verduurzamen begint hier",
   };
 
+  // Template config
+  const [templateConfig, setTemplateConfig] = useState<any>(null);
+
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -108,10 +111,18 @@ export default function OffertePDFPreview() {
       if (!o) { setLoading(false); return; }
       setOfferte(o);
 
-      // Partner branding
+      // Partner branding + template
       if (o.partner_id) {
-        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan").eq("id", o.partner_id).single();
-        setPartner(p ? (p as PartnerBranding) : platformBranding);
+        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
+        if (p) {
+          setPartner(p as PartnerBranding);
+          if (p.feature_flags_json && typeof p.feature_flags_json === "object") {
+            const flags = p.feature_flags_json as Record<string, any>;
+            if (flags.offerte_template) setTemplateConfig(flags.offerte_template);
+          }
+        } else {
+          setPartner(platformBranding);
+        }
       } else {
         setPartner(platformBranding);
       }
@@ -155,22 +166,40 @@ export default function OffertePDFPreview() {
   const mainCategory = producten.length > 0 ? producten[0].categorie : null;
   const categoryLabel = mainCategory ? (categoryLabels[mainCategory] || mainCategory) : null;
 
-  // Energieadvies berekening
+  // Energieadvies berekening — works with schouw data OR product-based fallback
   let energieadvies: { capaciteit: number; besparing: number; terugverdientijd: number; investering: number } | null = null;
-  if (offerte.include_energieadvies && schouw?.gegevens) {
-    const g = schouw.gegevens as any;
-    const wp = Number(g.zonnepanelen_wp) || 0;
-    const verbruik = Number(g.jaarverbruik) || 0;
-    if (wp > 0 && verbruik > 0) {
-      const jaarOpwekking = wp * 0.85 / 1000;
-      const dagelijksOverschot = (jaarOpwekking * (1 - CONFIG.zelfconsumptie_zonder_batterij)) / 365;
-      const capaciteit = Math.min(Math.ceil(dagelijksOverschot), 20);
-      const extraZelf = jaarOpwekking * (CONFIG.zelfconsumptie_met_batterij - CONFIG.zelfconsumptie_zonder_batterij) * CONFIG.batterij_rendement;
-      const prijsverschil = CONFIG.gemiddelde_stroomprijs_kwh - CONFIG.teruglever_vergoeding_kwh;
-      const besparing = Math.round(extraZelf * prijsverschil);
-      const investering = capaciteit * CONFIG.batterij_prijs_per_kwh;
-      const terugverdientijd = besparing > 0 ? Math.round((investering / besparing) * 10) / 10 : 0;
-      if (capaciteit >= 1) energieadvies = { capaciteit, besparing, terugverdientijd, investering };
+  if (offerte.include_energieadvies) {
+    // Try schouw-based calculation first
+    if (schouw?.gegevens) {
+      const g = schouw.gegevens as any;
+      const wp = Number(g.zonnepanelen_wp) || 0;
+      const verbruik = Number(g.jaarverbruik) || 0;
+      if (wp > 0 && verbruik > 0) {
+        const jaarOpwekking = wp * 0.85 / 1000;
+        const dagelijksOverschot = (jaarOpwekking * (1 - CONFIG.zelfconsumptie_zonder_batterij)) / 365;
+        const capaciteit = Math.min(Math.ceil(dagelijksOverschot), 20);
+        const extraZelf = jaarOpwekking * (CONFIG.zelfconsumptie_met_batterij - CONFIG.zelfconsumptie_zonder_batterij) * CONFIG.batterij_rendement;
+        const prijsverschil = CONFIG.gemiddelde_stroomprijs_kwh - CONFIG.teruglever_vergoeding_kwh;
+        const besparing = Math.round(extraZelf * prijsverschil);
+        const investering = capaciteit * CONFIG.batterij_prijs_per_kwh;
+        const terugverdientijd = besparing > 0 ? Math.round((investering / besparing) * 10) / 10 : 0;
+        if (capaciteit >= 1) energieadvies = { capaciteit, besparing, terugverdientijd, investering };
+      }
+    }
+    // Fallback: product-based estimate when schouw data is missing
+    if (!energieadvies && producten.length > 0) {
+      const totalInvestering = regels.reduce((sum, r) => sum + (r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100)), 0);
+      if (totalInvestering > 0) {
+        // Estimate ~15% annual ROI for energy products
+        const estBesparing = Math.round(totalInvestering * 0.12);
+        const terugverdientijd = estBesparing > 0 ? Math.round((totalInvestering / estBesparing) * 10) / 10 : 0;
+        energieadvies = {
+          capaciteit: 0,
+          besparing: estBesparing,
+          terugverdientijd,
+          investering: totalInvestering,
+        };
+      }
     }
   }
 
@@ -178,6 +207,18 @@ export default function OffertePDFPreview() {
   const introTekst = (offerte as any).introductie_tekst as string | null;
   const garantieVw = (offerte as any).garantie_voorwaarden as string | null;
   const installTermijn = (offerte as any).installatie_termijn as string | null;
+
+  // Template config with defaults
+  const tc = {
+    voorblad: templateConfig?.voorblad ?? true,
+    productpagina: templateConfig?.productpagina ?? true,
+    energieadvies: templateConfig?.energieadvies ?? true,
+    schouwrapport: templateConfig?.schouwrapport ?? true,
+    badge_1: templateConfig?.badge_1 ?? "Gecertificeerd installateur",
+    badge_2: templateConfig?.badge_2 ?? "Persoonlijk advies",
+    badge_3: templateConfig?.badge_3 ?? "Professionele installatie",
+    akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
+  };
 
   /* ─── Shared components ─── */
   const PageHeader = () => (
@@ -252,7 +293,7 @@ export default function OffertePDFPreview() {
       </div>
 
       {/* ═══════════════ PAGE 1: COVER ═══════════════ */}
-      <div className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
+      {tc.voorblad && <div className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
         {/* Hero band */}
         <div style={{ backgroundColor: sc, color: "#fff", padding: "60px 50px 40px", position: "relative" }}>
           <div style={{ position: "absolute", top: 0, right: 0, width: 220, height: "100%", background: `linear-gradient(135deg, ${pc}, ${hexToTint(pc, 0.6)})`, clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
@@ -307,9 +348,9 @@ export default function OffertePDFPreview() {
         {/* Bottom badges band */}
         <div style={{ backgroundColor: pcTint, padding: "16px 50px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${pcTint2}` }}>
           <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#666" }}>
-            <span>✓ Gecertificeerd installateur</span>
-            <span>✓ Persoonlijk advies</span>
-            <span>✓ Professionele installatie</span>
+            <span>✓ {tc.badge_1}</span>
+            <span>✓ {tc.badge_2}</span>
+            <span>✓ {tc.badge_3}</span>
           </div>
           {partner.telefoonnummer && (
             <span style={{ fontSize: 12, fontWeight: 600, color: sc }}>
@@ -317,10 +358,10 @@ export default function OffertePDFPreview() {
             </span>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ═══════════════ PAGE 2: PRODUCT INFO ═══════════════ */}
-      {producten.length > 0 && (
+      {tc.productpagina && producten.length > 0 && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
           <div style={{ flex: 1 }}>
@@ -400,7 +441,7 @@ export default function OffertePDFPreview() {
       )}
 
       {/* ═══════════════ PAGE 3: ENERGIEADVIES / BESPARINGEN ═══════════════ */}
-      {energieadvies && (
+      {tc.energieadvies && energieadvies && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
           <div style={{ flex: 1 }}>
@@ -416,7 +457,7 @@ export default function OffertePDFPreview() {
             {/* Highlight cards */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
               {[
-                { label: "Aanbevolen capaciteit", value: `${energieadvies.capaciteit} kWh`, icon: "⚡" },
+                ...(energieadvies.capaciteit > 0 ? [{ label: "Aanbevolen capaciteit", value: `${energieadvies.capaciteit} kWh`, icon: "⚡" }] : []),
                 { label: "Geschatte investering", value: formatCurrency(energieadvies.investering), icon: "💰" },
                 { label: "Jaarlijkse besparing", value: formatCurrency(energieadvies.besparing), icon: "📉" },
                 { label: "Terugverdientijd", value: `${energieadvies.terugverdientijd} jaar`, icon: "⏱" },
@@ -583,6 +624,13 @@ export default function OffertePDFPreview() {
             </div>
           )}
 
+          {/* Akkoord tekst */}
+          {tc.akkoord_tekst && (
+            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
+              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{tc.akkoord_tekst}</p>
+            </div>
+          )}
+
           {/* Signature section */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 20, borderTop: `1px solid ${pcTint2}`, paddingTop: 20 }}>
             <div>
@@ -603,7 +651,7 @@ export default function OffertePDFPreview() {
       </div>
 
       {/* ═══════════════ PAGE 5: SCHOUWRAPPORT (optioneel) ═══════════════ */}
-      {offerte.include_schouw && schouw && (
+      {tc.schouwrapport && offerte.include_schouw && schouw && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
           <div style={{ flex: 1 }}>

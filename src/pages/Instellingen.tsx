@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { User, Lock, Shield, Download, Trash2, Sparkles, Palette } from "lucide-react";
+import { User, Lock, Shield, Download, Trash2, Sparkles, Palette, FileText } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const rolLabels: Record<string, string> = {
@@ -338,6 +340,11 @@ const Instellingen = () => {
         <SchouwInstellingen partnerId={profile.partner_id} />
       )}
 
+      {/* Offerte Template Instellingen — alleen partner_admin */}
+      {isPartnerAdmin && profile?.partner_id && (
+        <OfferteTemplateInstellingen partnerId={profile.partner_id} />
+      )}
+
       {(profile?.rol === "partner_admin" || profile?.rol === "superadmin") && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center gap-3">
@@ -421,3 +428,155 @@ const Instellingen = () => {
 };
 
 export default Instellingen;
+
+/* ─── Offerte Template Instellingen Component ─── */
+interface OfferteTemplate {
+  voorblad: boolean;
+  productpagina: boolean;
+  energieadvies: boolean;
+  schouwrapport: boolean;
+  standaard_garantievoorwaarden: string;
+  standaard_betalingsvoorwaarden: string;
+  standaard_installatietermijn: string;
+  badge_1: string;
+  badge_2: string;
+  badge_3: string;
+  akkoord_tekst: string;
+}
+
+const defaultTemplate: OfferteTemplate = {
+  voorblad: true,
+  productpagina: true,
+  energieadvies: true,
+  schouwrapport: true,
+  standaard_garantievoorwaarden: "Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.",
+  standaard_betalingsvoorwaarden: "30 dagen netto",
+  standaard_installatietermijn: "Binnen 4 weken na akkoord",
+  badge_1: "Gecertificeerd installateur",
+  badge_2: "Persoonlijk advies",
+  badge_3: "Professionele installatie",
+  akkoord_tekst: "",
+};
+
+function OfferteTemplateInstellingen({ partnerId }: { partnerId: string }) {
+  const [template, setTemplate] = useState<OfferteTemplate>(defaultTemplate);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("partners")
+      .select("feature_flags_json")
+      .eq("id", partnerId)
+      .single()
+      .then(({ data }) => {
+        if (data?.feature_flags_json && typeof data.feature_flags_json === "object") {
+          const flags = data.feature_flags_json as Record<string, any>;
+          if (flags.offerte_template) {
+            setTemplate({ ...defaultTemplate, ...flags.offerte_template });
+          }
+        }
+        setLoading(false);
+      });
+  }, [partnerId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    // First get current flags
+    const { data: current } = await supabase
+      .from("partners")
+      .select("feature_flags_json")
+      .eq("id", partnerId)
+      .single();
+
+    const existingFlags = (current?.feature_flags_json && typeof current.feature_flags_json === "object")
+      ? current.feature_flags_json as Record<string, any>
+      : {};
+
+    const { error } = await supabase
+      .from("partners")
+      .update({
+        feature_flags_json: { ...existingFlags, offerte_template: template } as any,
+      })
+      .eq("id", partnerId);
+
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Offerte template opgeslagen");
+  };
+
+  const update = <K extends keyof OfferteTemplate>(key: K, val: OfferteTemplate[K]) =>
+    setTemplate(prev => ({ ...prev, [key]: val }));
+
+  if (loading) return null;
+
+  return (
+    <Card className="rounded-2xl border-0 shadow-sm">
+      <CardHeader className="flex flex-row items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <FileText className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <CardTitle className="text-lg">Offerte template</CardTitle>
+          <p className="text-sm text-muted-foreground">Bepaal welke pagina's en standaardteksten in offertes verschijnen</p>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Page toggles */}
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-foreground">Pagina's</p>
+          {[
+            { key: "voorblad" as const, label: "Voorblad (coverpagina)", desc: "Hero-sectie met branding en klantgegevens" },
+            { key: "productpagina" as const, label: "Productinformatie", desc: "Afbeeldingen, specs en garantie per product" },
+            { key: "energieadvies" as const, label: "Besparingen & energieadvies", desc: "ROI-berekening en besparingscijfers" },
+            { key: "schouwrapport" as const, label: "Schouwrapport", desc: "Technische gegevens uit de schouw" },
+          ].map(item => (
+            <div key={item.key} className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+              <Switch checked={template[item.key]} onCheckedChange={v => update(item.key, v)} />
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
+          <p className="text-sm font-medium text-foreground">Standaardteksten</p>
+          <div>
+            <Label>Standaard garantievoorwaarden</Label>
+            <Textarea value={template.standaard_garantievoorwaarden} onChange={e => update("standaard_garantievoorwaarden", e.target.value)} className="rounded-xl mt-1" rows={2} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Standaard betalingsvoorwaarden</Label>
+              <Input value={template.standaard_betalingsvoorwaarden} onChange={e => update("standaard_betalingsvoorwaarden", e.target.value)} className="rounded-xl" />
+            </div>
+            <div>
+              <Label>Standaard installatietermijn</Label>
+              <Input value={template.standaard_installatietermijn} onChange={e => update("standaard_installatietermijn", e.target.value)} className="rounded-xl" />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
+          <p className="text-sm font-medium text-foreground">Voorblad badges</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div><Label>Badge 1</Label><Input value={template.badge_1} onChange={e => update("badge_1", e.target.value)} className="rounded-xl" /></div>
+            <div><Label>Badge 2</Label><Input value={template.badge_2} onChange={e => update("badge_2", e.target.value)} className="rounded-xl" /></div>
+            <div><Label>Badge 3</Label><Input value={template.badge_3} onChange={e => update("badge_3", e.target.value)} className="rounded-xl" /></div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <Label>Akkoordsectie tekst (optioneel)</Label>
+          <Textarea value={template.akkoord_tekst} onChange={e => update("akkoord_tekst", e.target.value)} className="rounded-xl mt-1" rows={2} placeholder="Extra tekst boven de handtekeningsectie..." />
+        </div>
+
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Opslaan..." : "Template opslaan"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}

@@ -34,6 +34,7 @@ import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
+import LeadDetail from "@/pages/LeadDetail";
 import NotFound from "@/pages/NotFound";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
@@ -112,6 +113,9 @@ const App = () => (
               } />
               <Route path="/leads" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Leads /></ProtectedRoute>
+              } />
+              <Route path="/leads/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><LeadDetail /></ProtectedRoute>
               } />
               <Route path="/producten" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Producten /></ProtectedRoute>

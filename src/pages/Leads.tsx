@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, FileText, ClipboardCheck } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -46,6 +47,7 @@ const emptyForm: LeadFormData = {
 
 const Leads = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("alle");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -267,16 +269,16 @@ const Leads = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(lead => (
-                    <TableRow key={lead.id} className={selected.has(lead.id) ? "bg-muted/50" : ""}>
-                      <TableCell>
+                    <TableRow key={lead.id} className={`${selected.has(lead.id) ? "bg-muted/50" : ""} cursor-pointer hover:bg-muted/30`} onClick={() => navigate(`/leads/${lead.id}`)}>
+                      <TableCell onClick={e => e.stopPropagation()}>
                         <Checkbox checked={selected.has(lead.id)} onCheckedChange={() => toggleSelect(lead.id)} />
                       </TableCell>
-                      <TableCell className="font-medium">{lead.voornaam} {lead.achternaam}</TableCell>
+                      <TableCell className="font-medium text-primary hover:underline">{lead.voornaam} {lead.achternaam}</TableCell>
                       <TableCell>{lead.email}</TableCell>
                       <TableCell>{lead.telefoon || "—"}</TableCell>
                       <TableCell>{lead.plaats || "—"}</TableCell>
                       <TableCell className="capitalize">{lead.bron || "—"}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
                         <Select value={lead.lead_status} onValueChange={v => statusMutation.mutate({ id: lead.id, status: v as LeadStatus })}>
                           <SelectTrigger className="w-40 h-8">
                             <Badge className={statusColors[lead.lead_status]}>{statusLabels[lead.lead_status]}</Badge>
@@ -288,8 +290,19 @@ const Leads = () => {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" title="Offerte maken" onClick={() => {
+                            sessionStorage.setItem("offerte-prefill", JSON.stringify({
+                              lead: { id: lead.id, voornaam: lead.voornaam, achternaam: lead.achternaam, email: lead.email, telefoon: lead.telefoon, adres: lead.adres, postcode: lead.postcode, plaats: lead.plaats },
+                            }));
+                            navigate("/offertes/nieuw");
+                          }}>
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Schouw plannen" onClick={() => navigate("/schouwen")}>
+                            <ClipboardCheck className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(lead)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
