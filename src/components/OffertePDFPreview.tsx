@@ -624,6 +624,13 @@ export default function OffertePDFPreview() {
             </div>
           )}
 
+          {/* Akkoord tekst */}
+          {tc.akkoord_tekst && (
+            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
+              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{tc.akkoord_tekst}</p>
+            </div>
+          )}
+
           {/* Signature section */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 20, borderTop: `1px solid ${pcTint2}`, paddingTop: 20 }}>
             <div>
