@@ -31,10 +31,10 @@ const EmbedContact = () => {
       }
 
       const { data: p } = await supabase
-        .from("partners")
+        .from("partner_branding" as any)
         .select("naam, logo_url, primaire_kleur")
         .eq("id", w.partner_id)
-        .single();
+        .single() as { data: { naam: string; logo_url: string; primaire_kleur: string } | null };
 
       setWidget({ config: (w.config || {}) as Record<string, unknown> });
       setPartner(p);

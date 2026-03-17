@@ -19,54 +19,7 @@ serve(async (req) => {
 
     const { action, ...payload } = await req.json();
 
-    // Setup superadmin doesn't require auth (bootstrap)
-    if (action === "setup_superadmin") {
-      return await handleSetupSuperadmin(supabaseAdmin, corsHeaders);
-    }
-
-    // Admin password reset (bootstrap utility)
-    if (action === "reset_admin_password") {
-      const { new_password, new_email } = payload;
-      const { data: admins } = await supabaseAdmin
-        .from("users")
-        .select("id, email")
-        .eq("rol", "superadmin")
-        .limit(1);
-      
-      if (!admins || admins.length === 0) {
-        return new Response(JSON.stringify({ error: "Geen superadmin gevonden" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const updateData: any = {};
-      if (new_password) updateData.password = new_password;
-      if (new_email) {
-        updateData.email = new_email;
-        updateData.email_confirm = true;
-      }
-
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(admins[0].id, updateData);
-
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Also update email in users table if changed
-      if (new_email) {
-        await supabaseAdmin.from("users").update({ email: new_email }).eq("id", admins[0].id);
-      }
-
-      return new Response(JSON.stringify({ success: true, message: "Admin account bijgewerkt", old_email: admins[0].email }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // All other actions require authentication
+    // All actions require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
@@ -105,6 +58,17 @@ serve(async (req) => {
 
 
     switch (action) {
+      case "setup_superadmin": {
+        // Only existing superadmins can bootstrap another superadmin
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen superadmins kunnen dit uitvoeren" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return await handleSetupSuperadmin(supabaseAdmin, corsHeaders);
+      }
+
       case "create_user": {
         const { email, password, voornaam, achternaam, rol, partner_id, telefoon } = payload;
 
@@ -260,8 +224,16 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
     });
   }
 
-  const email = "info@cenora.nl";
-  const password = "AdminCenora2024!";
+  // Use environment variables for initial admin credentials
+  const email = Deno.env.get("INITIAL_ADMIN_EMAIL");
+  const password = Deno.env.get("INITIAL_ADMIN_PASSWORD") || generatePassword();
+
+  if (!email) {
+    return new Response(JSON.stringify({ error: "INITIAL_ADMIN_EMAIL niet geconfigureerd" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -280,7 +252,7 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
     id: authUser.user.id,
     email,
     voornaam: "Admin",
-    achternaam: "Cenora",
+    achternaam: "Platform",
     rol: "superadmin",
     partner_id: null,
     status: "actief",
@@ -295,7 +267,7 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
   }
 
   return new Response(
-    JSON.stringify({ success: true, email, message: "Superadmin aangemaakt" }),
+    JSON.stringify({ success: true, message: "Superadmin aangemaakt" }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
