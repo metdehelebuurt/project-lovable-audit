@@ -101,6 +101,9 @@ export default function OffertePDFPreview() {
     bedrijfsslogan: "Slim verduurzamen begint hier",
   };
 
+  // Template config
+  const [templateConfig, setTemplateConfig] = useState<any>(null);
+
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -108,10 +111,18 @@ export default function OffertePDFPreview() {
       if (!o) { setLoading(false); return; }
       setOfferte(o);
 
-      // Partner branding
+      // Partner branding + template
       if (o.partner_id) {
-        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan").eq("id", o.partner_id).single();
-        setPartner(p ? (p as PartnerBranding) : platformBranding);
+        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
+        if (p) {
+          setPartner(p as PartnerBranding);
+          if (p.feature_flags_json && typeof p.feature_flags_json === "object") {
+            const flags = p.feature_flags_json as Record<string, any>;
+            if (flags.offerte_template) setTemplateConfig(flags.offerte_template);
+          }
+        } else {
+          setPartner(platformBranding);
+        }
       } else {
         setPartner(platformBranding);
       }
