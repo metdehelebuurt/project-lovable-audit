@@ -269,11 +269,11 @@ const Leads = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(lead => (
-                    <TableRow key={lead.id} className={selected.has(lead.id) ? "bg-muted/50" : ""}>
-                      <TableCell>
+                    <TableRow key={lead.id} className={`${selected.has(lead.id) ? "bg-muted/50" : ""} cursor-pointer hover:bg-muted/30`} onClick={() => navigate(`/leads/${lead.id}`)}>
+                      <TableCell onClick={e => e.stopPropagation()}>
                         <Checkbox checked={selected.has(lead.id)} onCheckedChange={() => toggleSelect(lead.id)} />
                       </TableCell>
-                      <TableCell className="font-medium">{lead.voornaam} {lead.achternaam}</TableCell>
+                      <TableCell className="font-medium text-primary hover:underline">{lead.voornaam} {lead.achternaam}</TableCell>
                       <TableCell>{lead.email}</TableCell>
                       <TableCell>{lead.telefoon || "—"}</TableCell>
                       <TableCell>{lead.plaats || "—"}</TableCell>
