@@ -644,7 +644,7 @@ export default function OffertePDFPreview() {
       </div>
 
       {/* ═══════════════ PAGE 5: SCHOUWRAPPORT (optioneel) ═══════════════ */}
-      {offerte.include_schouw && schouw && (
+      {tc.schouwrapport && offerte.include_schouw && schouw && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
           <div style={{ flex: 1 }}>
