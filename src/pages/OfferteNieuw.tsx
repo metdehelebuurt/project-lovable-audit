@@ -76,6 +76,9 @@ const OfferteNieuw = () => {
   });
   const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("30 dagen netto");
   const [notities, setNotities] = useState("");
+  const [introductieTekst, setIntroductieTekst] = useState("");
+  const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
+  const [installatieTermijn, setInstallatieTermijn] = useState("Binnen 4 weken na akkoord");
   const [regels, setRegels] = useState<OfferteRegel[]>([{ ...emptyRegel }]);
   const [includeSchouw, setIncludeSchouw] = useState(false);
   const [includeEnergieadvies, setIncludeEnergieadvies] = useState(false);
@@ -178,6 +181,9 @@ const OfferteNieuw = () => {
         geldig_tot: geldigTot,
         betalingsvoorwaarden: betalingsvoorwaarden || null,
         notities: notities || null,
+        introductie_tekst: introductieTekst || null,
+        garantie_voorwaarden: garantieVoorwaarden || null,
+        installatie_termijn: installatieTermijn || null,
         lead_id: selectedLead?.id || null,
         schouw_id: schouwId || null,
         regels: regels as unknown as Json,
@@ -350,6 +356,29 @@ const OfferteNieuw = () => {
               <div className="flex justify-between font-semibold text-lg border-t pt-2">
                 <span>Totaal incl. BTW</span>
                 <span>{formatCurrency(totals.totaal)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Extra velden */}
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Offerte inhoud</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Introductietekst (optioneel)</Label>
+              <Textarea value={introductieTekst} onChange={e => setIntroductieTekst(e.target.value)} className="rounded-xl mt-1" rows={3} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Garantievoorwaarden</Label>
+                <Textarea value={garantieVoorwaarden} onChange={e => setGarantieVoorwaarden(e.target.value)} className="rounded-xl mt-1" rows={2} placeholder="Garantievoorwaarden..." />
+              </div>
+              <div>
+                <Label>Installatietermijn</Label>
+                <Input value={installatieTermijn} onChange={e => setInstallatieTermijn(e.target.value)} className="rounded-xl" placeholder="Bijv. Binnen 4 weken na akkoord" />
               </div>
             </div>
           </CardContent>
