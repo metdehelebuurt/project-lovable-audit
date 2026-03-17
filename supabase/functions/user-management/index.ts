@@ -224,8 +224,16 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
     });
   }
 
-  const email = "info@cenora.nl";
-  const password = "AdminCenora2024!";
+  // Use environment variables for initial admin credentials
+  const email = Deno.env.get("INITIAL_ADMIN_EMAIL");
+  const password = Deno.env.get("INITIAL_ADMIN_PASSWORD") || generatePassword();
+
+  if (!email) {
+    return new Response(JSON.stringify({ error: "INITIAL_ADMIN_EMAIL niet geconfigureerd" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -244,7 +252,7 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
     id: authUser.user.id,
     email,
     voornaam: "Admin",
-    achternaam: "Cenora",
+    achternaam: "Platform",
     rol: "superadmin",
     partner_id: null,
     status: "actief",
@@ -259,7 +267,7 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
   }
 
   return new Response(
-    JSON.stringify({ success: true, email, message: "Superadmin aangemaakt" }),
+    JSON.stringify({ success: true, message: "Superadmin aangemaakt" }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
