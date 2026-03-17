@@ -31,7 +31,7 @@ const EmbedContact = () => {
       }
 
       const { data: p } = await supabase
-        .from("partners")
+        .from("partner_branding" as any)
         .select("naam, logo_url, primaire_kleur")
         .eq("id", w.partner_id)
         .single();
