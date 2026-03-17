@@ -208,6 +208,18 @@ export default function OffertePDFPreview() {
   const garantieVw = (offerte as any).garantie_voorwaarden as string | null;
   const installTermijn = (offerte as any).installatie_termijn as string | null;
 
+  // Template config with defaults
+  const tc = {
+    voorblad: templateConfig?.voorblad ?? true,
+    productpagina: templateConfig?.productpagina ?? true,
+    energieadvies: templateConfig?.energieadvies ?? true,
+    schouwrapport: templateConfig?.schouwrapport ?? true,
+    badge_1: templateConfig?.badge_1 ?? "Gecertificeerd installateur",
+    badge_2: templateConfig?.badge_2 ?? "Persoonlijk advies",
+    badge_3: templateConfig?.badge_3 ?? "Professionele installatie",
+    akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
+  };
+
   /* ─── Shared components ─── */
   const PageHeader = () => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: `2px solid ${pc}`, marginBottom: 24 }}>
