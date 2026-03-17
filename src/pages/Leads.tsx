@@ -47,6 +47,7 @@ const emptyForm: LeadFormData = {
 
 const Leads = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("alle");
   const [dialogOpen, setDialogOpen] = useState(false);
