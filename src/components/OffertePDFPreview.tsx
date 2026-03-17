@@ -293,7 +293,7 @@ export default function OffertePDFPreview() {
       </div>
 
       {/* ═══════════════ PAGE 1: COVER ═══════════════ */}
-      <div className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
+      {tc.voorblad && <div className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
         {/* Hero band */}
         <div style={{ backgroundColor: sc, color: "#fff", padding: "60px 50px 40px", position: "relative" }}>
           <div style={{ position: "absolute", top: 0, right: 0, width: 220, height: "100%", background: `linear-gradient(135deg, ${pc}, ${hexToTint(pc, 0.6)})`, clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
