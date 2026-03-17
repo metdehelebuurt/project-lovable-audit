@@ -76,6 +76,13 @@ export type Database = {
             foreignKeyName: "abonnementen_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: true
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnementen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -209,6 +216,13 @@ export type Database = {
             foreignKeyName: "affiliate_referrals_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -258,6 +272,13 @@ export type Database = {
           voornaam?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "consumenten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "consumenten_partner_id_fkey"
             columns: ["partner_id"]
@@ -345,6 +366,13 @@ export type Database = {
             foreignKeyName: "documenten_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documenten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -423,6 +451,13 @@ export type Database = {
             columns: ["offerte_id"]
             isOneToOne: false
             referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installaties_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
             referencedColumns: ["id"]
           },
           {
@@ -545,6 +580,13 @@ export type Database = {
             columns: ["owner_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
             referencedColumns: ["id"]
           },
           {
@@ -711,6 +753,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offertes_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
             referencedColumns: ["id"]
           },
           {
@@ -951,6 +1000,13 @@ export type Database = {
             foreignKeyName: "producten_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "producten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -1043,6 +1099,13 @@ export type Database = {
             foreignKeyName: "schouwen_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schouwen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -1103,6 +1166,13 @@ export type Database = {
             foreignKeyName: "tickets_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -1146,6 +1216,13 @@ export type Database = {
           voornaam?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "users_partner_id_fkey"
             columns: ["partner_id"]
@@ -1194,6 +1271,13 @@ export type Database = {
             foreignKeyName: "web_widgets_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "web_widgets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -1201,7 +1285,57 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      partner_branding: {
+        Row: {
+          adres: string | null
+          bedrijfsslogan: string | null
+          btw: string | null
+          email: string | null
+          id: string | null
+          kvk: string | null
+          logo_url: string | null
+          naam: string | null
+          plaats: string | null
+          postcode: string | null
+          primaire_kleur: string | null
+          secundaire_kleur: string | null
+          telefoonnummer: string | null
+          website: string | null
+        }
+        Insert: {
+          adres?: string | null
+          bedrijfsslogan?: string | null
+          btw?: string | null
+          email?: string | null
+          id?: string | null
+          kvk?: string | null
+          logo_url?: string | null
+          naam?: string | null
+          plaats?: string | null
+          postcode?: string | null
+          primaire_kleur?: string | null
+          secundaire_kleur?: string | null
+          telefoonnummer?: string | null
+          website?: string | null
+        }
+        Update: {
+          adres?: string | null
+          bedrijfsslogan?: string | null
+          btw?: string | null
+          email?: string | null
+          id?: string | null
+          kvk?: string | null
+          logo_url?: string | null
+          naam?: string | null
+          plaats?: string | null
+          postcode?: string | null
+          primaire_kleur?: string | null
+          secundaire_kleur?: string | null
+          telefoonnummer?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
