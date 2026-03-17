@@ -441,7 +441,7 @@ export default function OffertePDFPreview() {
       )}
 
       {/* ═══════════════ PAGE 3: ENERGIEADVIES / BESPARINGEN ═══════════════ */}
-      {energieadvies && (
+      {tc.energieadvies && energieadvies && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
           <div style={{ flex: 1 }}>
