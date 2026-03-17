@@ -278,7 +278,7 @@ const Leads = () => {
                       <TableCell>{lead.telefoon || "—"}</TableCell>
                       <TableCell>{lead.plaats || "—"}</TableCell>
                       <TableCell className="capitalize">{lead.bron || "—"}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
                         <Select value={lead.lead_status} onValueChange={v => statusMutation.mutate({ id: lead.id, status: v as LeadStatus })}>
                           <SelectTrigger className="w-40 h-8">
                             <Badge className={statusColors[lead.lead_status]}>{statusLabels[lead.lead_status]}</Badge>
