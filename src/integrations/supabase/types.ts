@@ -614,10 +614,13 @@ export type Database = {
           btw_bedrag: number
           created_at: string
           feedback_berichten: Json | null
+          garantie_voorwaarden: string | null
           geldig_tot: string
           id: string
           include_energieadvies: boolean | null
           include_schouw: boolean | null
+          installatie_termijn: string | null
+          introductie_tekst: string | null
           klant_adres: string | null
           klant_email: string
           klant_naam: string
@@ -641,10 +644,13 @@ export type Database = {
           btw_bedrag?: number
           created_at?: string
           feedback_berichten?: Json | null
+          garantie_voorwaarden?: string | null
           geldig_tot?: string
           id?: string
           include_energieadvies?: boolean | null
           include_schouw?: boolean | null
+          installatie_termijn?: string | null
+          introductie_tekst?: string | null
           klant_adres?: string | null
           klant_email: string
           klant_naam: string
@@ -668,10 +674,13 @@ export type Database = {
           btw_bedrag?: number
           created_at?: string
           feedback_berichten?: Json | null
+          garantie_voorwaarden?: string | null
           geldig_tot?: string
           id?: string
           include_energieadvies?: boolean | null
           include_schouw?: boolean | null
+          installatie_termijn?: string | null
+          introductie_tekst?: string | null
           klant_adres?: string | null
           klant_email?: string
           klant_naam?: string
