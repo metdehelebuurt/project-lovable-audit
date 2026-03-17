@@ -166,22 +166,40 @@ export default function OffertePDFPreview() {
   const mainCategory = producten.length > 0 ? producten[0].categorie : null;
   const categoryLabel = mainCategory ? (categoryLabels[mainCategory] || mainCategory) : null;
 
-  // Energieadvies berekening
+  // Energieadvies berekening — works with schouw data OR product-based fallback
   let energieadvies: { capaciteit: number; besparing: number; terugverdientijd: number; investering: number } | null = null;
-  if (offerte.include_energieadvies && schouw?.gegevens) {
-    const g = schouw.gegevens as any;
-    const wp = Number(g.zonnepanelen_wp) || 0;
-    const verbruik = Number(g.jaarverbruik) || 0;
-    if (wp > 0 && verbruik > 0) {
-      const jaarOpwekking = wp * 0.85 / 1000;
-      const dagelijksOverschot = (jaarOpwekking * (1 - CONFIG.zelfconsumptie_zonder_batterij)) / 365;
-      const capaciteit = Math.min(Math.ceil(dagelijksOverschot), 20);
-      const extraZelf = jaarOpwekking * (CONFIG.zelfconsumptie_met_batterij - CONFIG.zelfconsumptie_zonder_batterij) * CONFIG.batterij_rendement;
-      const prijsverschil = CONFIG.gemiddelde_stroomprijs_kwh - CONFIG.teruglever_vergoeding_kwh;
-      const besparing = Math.round(extraZelf * prijsverschil);
-      const investering = capaciteit * CONFIG.batterij_prijs_per_kwh;
-      const terugverdientijd = besparing > 0 ? Math.round((investering / besparing) * 10) / 10 : 0;
-      if (capaciteit >= 1) energieadvies = { capaciteit, besparing, terugverdientijd, investering };
+  if (offerte.include_energieadvies) {
+    // Try schouw-based calculation first
+    if (schouw?.gegevens) {
+      const g = schouw.gegevens as any;
+      const wp = Number(g.zonnepanelen_wp) || 0;
+      const verbruik = Number(g.jaarverbruik) || 0;
+      if (wp > 0 && verbruik > 0) {
+        const jaarOpwekking = wp * 0.85 / 1000;
+        const dagelijksOverschot = (jaarOpwekking * (1 - CONFIG.zelfconsumptie_zonder_batterij)) / 365;
+        const capaciteit = Math.min(Math.ceil(dagelijksOverschot), 20);
+        const extraZelf = jaarOpwekking * (CONFIG.zelfconsumptie_met_batterij - CONFIG.zelfconsumptie_zonder_batterij) * CONFIG.batterij_rendement;
+        const prijsverschil = CONFIG.gemiddelde_stroomprijs_kwh - CONFIG.teruglever_vergoeding_kwh;
+        const besparing = Math.round(extraZelf * prijsverschil);
+        const investering = capaciteit * CONFIG.batterij_prijs_per_kwh;
+        const terugverdientijd = besparing > 0 ? Math.round((investering / besparing) * 10) / 10 : 0;
+        if (capaciteit >= 1) energieadvies = { capaciteit, besparing, terugverdientijd, investering };
+      }
+    }
+    // Fallback: product-based estimate when schouw data is missing
+    if (!energieadvies && producten.length > 0) {
+      const totalInvestering = regels.reduce((sum, r) => sum + (r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100)), 0);
+      if (totalInvestering > 0) {
+        // Estimate ~15% annual ROI for energy products
+        const estBesparing = Math.round(totalInvestering * 0.12);
+        const terugverdientijd = estBesparing > 0 ? Math.round((totalInvestering / estBesparing) * 10) / 10 : 0;
+        energieadvies = {
+          capaciteit: 0,
+          besparing: estBesparing,
+          terugverdientijd,
+          investering: totalInvestering,
+        };
+      }
     }
   }
 
