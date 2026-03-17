@@ -457,7 +457,7 @@ export default function OffertePDFPreview() {
             {/* Highlight cards */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
               {[
-                { label: "Aanbevolen capaciteit", value: `${energieadvies.capaciteit} kWh`, icon: "⚡" },
+                ...(energieadvies.capaciteit > 0 ? [{ label: "Aanbevolen capaciteit", value: `${energieadvies.capaciteit} kWh`, icon: "⚡" }] : []),
                 { label: "Geschatte investering", value: formatCurrency(energieadvies.investering), icon: "💰" },
                 { label: "Jaarlijkse besparing", value: formatCurrency(energieadvies.besparing), icon: "📉" },
                 { label: "Terugverdientijd", value: `${energieadvies.terugverdientijd} jaar`, icon: "⏱" },
