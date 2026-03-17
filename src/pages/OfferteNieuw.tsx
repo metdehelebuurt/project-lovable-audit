@@ -76,6 +76,9 @@ const OfferteNieuw = () => {
   });
   const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("30 dagen netto");
   const [notities, setNotities] = useState("");
+  const [introductieTekst, setIntroductieTekst] = useState("");
+  const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
+  const [installatieTermijn, setInstallatieTermijn] = useState("Binnen 4 weken na akkoord");
   const [regels, setRegels] = useState<OfferteRegel[]>([{ ...emptyRegel }]);
   const [includeSchouw, setIncludeSchouw] = useState(false);
   const [includeEnergieadvies, setIncludeEnergieadvies] = useState(false);
