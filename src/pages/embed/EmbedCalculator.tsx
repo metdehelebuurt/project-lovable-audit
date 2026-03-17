@@ -49,7 +49,7 @@ const EmbedCalculator = () => {
         .from("partner_branding" as any)
         .select("naam, logo_url, primaire_kleur")
         .eq("id", w.partner_id)
-        .single();
+        .single() as { data: { naam: string; logo_url: string; primaire_kleur: string } | null };
 
       setWidgetType(w.type);
       setConfig((w.config || {}) as Record<string, unknown>);
