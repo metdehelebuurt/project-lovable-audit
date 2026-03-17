@@ -58,6 +58,17 @@ serve(async (req) => {
 
 
     switch (action) {
+      case "setup_superadmin": {
+        // Only existing superadmins can bootstrap another superadmin
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen superadmins kunnen dit uitvoeren" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return await handleSetupSuperadmin(supabaseAdmin, corsHeaders);
+      }
+
       case "create_user": {
         const { email, password, voornaam, achternaam, rol, partner_id, telefoon } = payload;
 
