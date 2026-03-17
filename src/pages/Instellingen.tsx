@@ -340,6 +340,11 @@ const Instellingen = () => {
         <SchouwInstellingen partnerId={profile.partner_id} />
       )}
 
+      {/* Offerte Template Instellingen — alleen partner_admin */}
+      {isPartnerAdmin && profile?.partner_id && (
+        <OfferteTemplateInstellingen partnerId={profile.partner_id} />
+      )}
+
       {(profile?.rol === "partner_admin" || profile?.rol === "superadmin") && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center gap-3">
