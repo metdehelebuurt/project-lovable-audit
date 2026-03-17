@@ -358,10 +358,10 @@ export default function OffertePDFPreview() {
             </span>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ═══════════════ PAGE 2: PRODUCT INFO ═══════════════ */}
-      {producten.length > 0 && (
+      {tc.productpagina && producten.length > 0 && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
           <div style={{ flex: 1 }}>
