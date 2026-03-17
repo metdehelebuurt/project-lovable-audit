@@ -77,7 +77,11 @@ export default function ProductImage({ afbeeldingUrl, merk, naam, size = "sm" }:
           onError={(e) => {
             const parent = (e.target as HTMLImageElement).parentElement;
             if (parent) {
-              parent.innerHTML = `<span class="text-xs font-bold text-muted-foreground">${(merk || "?")[0].toUpperCase()}</span>`;
+              parent.innerHTML = '';
+              const span = document.createElement('span');
+              span.className = 'text-xs font-bold text-muted-foreground';
+              span.textContent = (merk || '?')[0].toUpperCase();
+              parent.appendChild(span);
             }
           }}
         />
