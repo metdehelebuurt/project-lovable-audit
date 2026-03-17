@@ -348,9 +348,9 @@ export default function OffertePDFPreview() {
         {/* Bottom badges band */}
         <div style={{ backgroundColor: pcTint, padding: "16px 50px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${pcTint2}` }}>
           <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#666" }}>
-            <span>✓ Gecertificeerd installateur</span>
-            <span>✓ Persoonlijk advies</span>
-            <span>✓ Professionele installatie</span>
+            <span>✓ {tc.badge_1}</span>
+            <span>✓ {tc.badge_2}</span>
+            <span>✓ {tc.badge_3}</span>
           </div>
           {partner.telefoonnummer && (
             <span style={{ fontSize: 12, fontWeight: 600, color: sc }}>
