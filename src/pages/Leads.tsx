@@ -290,8 +290,19 @@ const Leads = () => {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" title="Offerte maken" onClick={() => {
+                            sessionStorage.setItem("offerte-prefill", JSON.stringify({
+                              lead: { id: lead.id, voornaam: lead.voornaam, achternaam: lead.achternaam, email: lead.email, telefoon: lead.telefoon, adres: lead.adres, postcode: lead.postcode, plaats: lead.plaats },
+                            }));
+                            navigate("/offertes/nieuw");
+                          }}>
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Schouw plannen" onClick={() => navigate("/schouwen")}>
+                            <ClipboardCheck className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(lead)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
