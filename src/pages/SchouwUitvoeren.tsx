@@ -143,7 +143,7 @@ const SchouwUitvoeren = () => {
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Foto's & Media</CardTitle></CardHeader>
           <CardContent>
-            <SchouwMediaUpload fotos={fotos} onFotosChange={setFotos} />
+            <SchouwMediaUpload schouwId={id!} fotos={fotos} onFotosChange={setFotos} />
           </CardContent>
         </Card>
       )}

@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import LeadSearchInput from "@/components/shared/LeadSearchInput";
+
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
