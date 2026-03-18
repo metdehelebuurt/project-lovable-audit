@@ -98,7 +98,7 @@ export const PriceCompact: React.FC<PrijstabelProps> = ({ pc, sc, regels, subtot
       const sub = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
       return (
         <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #eee", fontSize: 12 }}>
-          <span style={{ color: "#333" }}>{r.aantal}× {r.omschrijving}</span>
+          <span style={{ color: "#333" }}>{r.aantal}× {r.omschrijving}{r.offerte_tekst && <span style={{ fontSize: 10, color: "#888" }}> — {r.offerte_tekst}</span>}</span>
           <span style={{ fontWeight: 600, color: sc }}>{formatCurrency(sub)}</span>
         </div>
       );
