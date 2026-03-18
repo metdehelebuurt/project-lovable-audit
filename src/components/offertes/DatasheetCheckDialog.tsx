@@ -157,7 +157,7 @@ const DatasheetCheckDialog = ({
                   )}
                 </div>
 
-                {(status === "pending") && (
+                {(status === "pending" || !status) && (
                   <div className="flex flex-wrap gap-2">
                     <input
                       type="file"
