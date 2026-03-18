@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Upload, FileText, Sparkles, Eye, Download, Loader2, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { Upload, FileText, Sparkles, Eye, Download, Loader2, X, CheckCircle } from "lucide-react";
 import ProductDatasheet from "./ProductDatasheet";
 
 interface ProductDatasheetSectionProps {
@@ -32,10 +32,12 @@ interface ProductDatasheetSectionProps {
   partnerId: string | null;
 }
 
-interface VerifyResult {
+interface GenerateResult {
   verified: boolean;
   suggestions: string[];
   corrected_specs: Record<string, string>;
+  installatie_specs?: Record<string, string>;
+  regelgeving?: string;
   omschrijving_suggestie?: string;
 }
 
@@ -51,16 +53,16 @@ export default function ProductDatasheetSection({
 }: ProductDatasheetSectionProps) {
   const [mode, setMode] = useState<"fabrikant" | "genereer">(datasheetType === "fabrikant" ? "fabrikant" : "genereer");
   const [uploading, setUploading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partner, setPartner] = useState<any>(null);
+  const [enrichedProduct, setEnrichedProduct] = useState<typeof productData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadPartner = async () => {
     if (partner) return partner;
     if (!partnerId) {
-      // Use platform branding
       const p = { naam: "mijnhuis.nu", primaire_kleur: "#5B58E1", secundaire_kleur: "#1a1a2e", website: "www.mijnhuis.nu", email: "info@mijnhuis.nu" };
       setPartner(p);
       return p;
@@ -100,13 +102,13 @@ export default function ProductDatasheetSection({
     }
   };
 
-  const handleVerify = async () => {
+  const handleGenerate = async () => {
     if (!productData.naam) {
       toast.error("Voer eerst een productnaam in");
       return;
     }
-    setVerifying(true);
-    setVerifyResult(null);
+    setGenerating(true);
+    setGenerated(false);
     try {
       const { data, error } = await supabase.functions.invoke("ai-verify-product-specs", {
         body: {
@@ -122,29 +124,58 @@ export default function ProductDatasheetSection({
       });
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
-      setVerifyResult(data as VerifyResult);
-      toast.success("Specs geverifieerd door AI");
-    } catch (err: any) {
-      toast.error("Verificatie mislukt", { description: err.message });
-    } finally {
-      setVerifying(false);
-    }
-  };
 
-  const applyVerifiedSpecs = () => {
-    if (!verifyResult) return;
-    onSpecsUpdate(verifyResult.corrected_specs);
-    if (verifyResult.omschrijving_suggestie && onOmschrijvingUpdate) {
-      onOmschrijvingUpdate(verifyResult.omschrijving_suggestie);
+      const result = data as GenerateResult;
+
+      // Merge all specs together: corrected_specs + installatie_specs (prefixed)
+      const allSpecs: Record<string, string> = { ...result.corrected_specs };
+      if (result.installatie_specs) {
+        Object.entries(result.installatie_specs).forEach(([k, v]) => {
+          allSpecs[k] = v;
+        });
+      }
+
+      // Apply specs to product
+      onSpecsUpdate(allSpecs);
+
+      // Apply description if available
+      if (result.omschrijving_suggestie && onOmschrijvingUpdate) {
+        onOmschrijvingUpdate(result.omschrijving_suggestie);
+      }
+
+      // Store enriched product for preview with installatie_specs separated
+      const enriched = {
+        ...productData,
+        specs: result.corrected_specs,
+        omschrijving: result.omschrijving_suggestie || productData.omschrijving,
+        certificeringen: result.regelgeving || productData.certificeringen,
+        installatie_specs: result.installatie_specs,
+      };
+      setEnrichedProduct(enriched as any);
+
+      // Mark as generated
+      onDatasheetChange(null, "gegenereerd");
+      setGenerated(true);
+
+      // Auto-open preview
+      const p = await loadPartner();
+      if (p) {
+        setPreviewOpen(true);
+      }
+
+      toast.success("Specificatieblad gegenereerd", {
+        description: `${Object.keys(allSpecs).length} specificaties aangevuld door AI`,
+      });
+    } catch (err: any) {
+      toast.error("Generatie mislukt", { description: err.message });
+    } finally {
+      setGenerating(false);
     }
-    toast.success("AI-geverifieerde specs toegepast");
-    setVerifyResult(null);
-    onDatasheetChange(null, "gegenereerd");
   };
 
   const handlePreview = async () => {
-    await loadPartner();
-    setPreviewOpen(true);
+    const p = await loadPartner();
+    if (p) setPreviewOpen(true);
   };
 
   const handlePrint = () => {
@@ -153,13 +184,17 @@ export default function ProductDatasheetSection({
 
   const removeDatasheet = () => {
     onDatasheetChange(null, null);
-    setVerifyResult(null);
+    setGenerated(false);
+    setEnrichedProduct(null);
     toast.success("Datasheet verwijderd");
   };
 
   const datasheetPublicUrl = datasheetUrl && datasheetType === "fabrikant"
     ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${datasheetUrl}`
     : null;
+
+  // Use enriched product data for preview if available, otherwise fall back to current productData
+  const previewProduct = enrichedProduct || productData;
 
   return (
     <div className="space-y-4">
@@ -231,91 +266,62 @@ export default function ProductDatasheetSection({
 
       {/* ─── GENEREER MODE ─── */}
       {mode === "genereer" && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-pill gap-2"
-              onClick={handleVerify}
-              disabled={verifying}
-            >
-              {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {verifying ? "Verifiëren..." : "AI Verificatie"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-pill gap-2"
-              onClick={handlePreview}
-            >
-              <Eye className="h-4 w-4" /> Preview
-            </Button>
-          </div>
+        <div className="space-y-4">
+          {/* Main generate button */}
+          <Button
+            type="button"
+            size="lg"
+            className="w-full gap-3 rounded-xl h-14 text-base font-semibold"
+            onClick={handleGenerate}
+            disabled={generating}
+          >
+            {generating ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Specificaties worden gegenereerd...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-5 w-5" />
+                Specificatieblad genereren
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            AI analyseert het product en genereert een compleet, professioneel specificatieblad
+          </p>
 
-          {/* AI Verify Results */}
-          {verifyResult && (
-            <div className="border rounded-xl p-4 space-y-3">
+          {/* Generated result */}
+          {(generated || datasheetType === "gegenereerd") && (
+            <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 space-y-3">
               <div className="flex items-center gap-2">
-                {verifyResult.verified ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                ) : (
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
-                )}
-                <span className="font-medium text-sm">
-                  {verifyResult.verified ? "Specificaties geverifieerd" : "Verbeteringen gevonden"}
-                </span>
+                <CheckCircle className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-sm">Specificatieblad gegenereerd</span>
               </div>
-
-              {verifyResult.suggestions.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Suggesties:</p>
-                  <ul className="text-xs text-muted-foreground space-y-1">
-                    {verifyResult.suggestions.map((s, i) => (
-                      <li key={i} className="flex gap-1">
-                        <span className="text-primary">•</span> {s}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {Object.keys(verifyResult.corrected_specs).length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Voorgestelde specs ({Object.keys(verifyResult.corrected_specs).length}):
-                  </p>
-                  <div className="grid grid-cols-2 gap-1 text-xs max-h-40 overflow-y-auto">
-                    {Object.entries(verifyResult.corrected_specs).map(([k, v]) => (
-                      <div key={k} className="flex gap-1">
-                        <span className="text-muted-foreground">{k}:</span>
-                        <span className="font-medium">{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="flex gap-2">
-                <Button type="button" size="sm" className="rounded-pill" onClick={applyVerifiedSpecs}>
-                  Toepassen
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-pill gap-2 flex-1"
+                  onClick={handlePreview}
+                >
+                  <Eye className="h-4 w-4" /> Bekijk & Download PDF
                 </Button>
-                <Button type="button" variant="ghost" size="sm" className="rounded-pill" onClick={() => setVerifyResult(null)}>
-                  Negeren
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-pill gap-2"
+                  onClick={handleGenerate}
+                  disabled={generating}
+                >
+                  <Sparkles className="h-4 w-4" /> Opnieuw
+                </Button>
+                <Button type="button" variant="ghost" size="icon" onClick={removeDatasheet}>
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-          )}
-
-          {datasheetType === "gegenereerd" && (
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-              <FileText className="h-5 w-5 text-primary" />
-              <p className="text-sm font-medium flex-1">Gegenereerde datasheet actief</p>
-              <Button type="button" variant="ghost" size="icon" onClick={removeDatasheet}>
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           )}
         </div>
@@ -326,7 +332,7 @@ export default function ProductDatasheetSection({
         <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
           <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
             <DialogHeader>
-              <DialogTitle>Datasheet Preview</DialogTitle>
+              <DialogTitle>Specificatieblad Preview</DialogTitle>
             </DialogHeader>
             <div className="flex gap-2">
               <Button size="sm" className="rounded-pill gap-2" onClick={handlePrint}>
@@ -335,7 +341,7 @@ export default function ProductDatasheetSection({
             </div>
           </div>
           {partner && (
-            <ProductDatasheet product={productData} partner={partner} />
+            <ProductDatasheet product={previewProduct} partner={partner} />
           )}
         </DialogContent>
       </Dialog>
