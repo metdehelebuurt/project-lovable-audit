@@ -376,7 +376,7 @@ export default function OffertePDFPreview() {
         </div>
       )}
 
-      {/* ═══════════════ PAGE 3: ENERGIEADVIES / BESPARINGEN ═══════════════ */}
+      {/* ═══════════════ PAGE 3: ENERGIEADVIES (dynamic template) ═══════════════ */}
       {tc.energieadvies && energieadvies && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
@@ -385,67 +385,21 @@ export default function OffertePDFPreview() {
               Uw besparing & rendement
             </h2>
             <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-
             <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, marginBottom: 28 }}>
               Op basis van de schouwgegevens en uw energieverbruik hebben wij berekend wat de geschatte besparing en terugverdientijd is van de voorgestelde oplossing.
             </p>
-
-            {/* Highlight cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
-              {[
-                ...(energieadvies.capaciteit > 0 ? [{ label: "Aanbevolen capaciteit", value: `${energieadvies.capaciteit} kWh`, icon: "⚡" }] : []),
-                { label: "Geschatte investering", value: formatCurrency(energieadvies.investering), icon: "💰" },
-                { label: "Jaarlijkse besparing", value: formatCurrency(energieadvies.besparing), icon: "📉" },
-                { label: "Terugverdientijd", value: `${energieadvies.terugverdientijd} jaar`, icon: "⏱" },
-              ].map((c, i) => (
-                <div key={i} style={{ backgroundColor: i === 3 ? pc : pcTint, borderRadius: 12, padding: "20px 24px", color: i === 3 ? "#fff" : sc }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>{c.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.8, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>{c.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800 }}>{c.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Comparison */}
-            <div style={{ border: `1px solid ${pcTint2}`, borderRadius: 12, overflow: "hidden", marginBottom: 24 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-                <div style={{ padding: "16px 20px", backgroundColor: "#f8f8fa" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#999", margin: "0 0 8px", textTransform: "uppercase" }}>Zonder oplossing</p>
-                  <p style={{ fontSize: 12, color: "#666", margin: "4px 0" }}>Zelfconsumptie: {Math.round(CONFIG.zelfconsumptie_zonder_batterij * 100)}%</p>
-                  <p style={{ fontSize: 12, color: "#666", margin: "4px 0" }}>Terugleververgoeding: {formatCurrency(CONFIG.teruglever_vergoeding_kwh)}/kWh</p>
-                </div>
-                <div style={{ padding: "16px 20px", backgroundColor: pcTint }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: pc, margin: "0 0 8px", textTransform: "uppercase" }}>Met oplossing</p>
-                  <p style={{ fontSize: 12, color: "#333", margin: "4px 0" }}>Zelfconsumptie: {Math.round(CONFIG.zelfconsumptie_met_batterij * 100)}%</p>
-                  <p style={{ fontSize: 12, color: "#333", fontWeight: 600, margin: "4px 0" }}>Besparing: {formatCurrency(energieadvies.besparing)} per jaar</p>
-                </div>
-              </div>
-            </div>
-
-            {/* ROI bar */}
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: sc, margin: "0 0 10px" }}>Verwacht rendement over {CONFIG.levensduur_jaren} jaar</p>
-              <div style={{ height: 24, backgroundColor: "#f0f0f0", borderRadius: 12, overflow: "hidden", position: "relative" }}>
-                <div style={{
-                  height: "100%",
-                  width: `${Math.min((energieadvies.besparing * CONFIG.levensduur_jaren / energieadvies.investering) * 100, 100)}%`,
-                  background: `linear-gradient(90deg, ${pc}, ${hexToTint(pc, 0.6)})`,
-                  borderRadius: 12,
-                  display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10,
-                  fontSize: 10, fontWeight: 700, color: "#fff"
-                }}>
-                  {Math.round((energieadvies.besparing * CONFIG.levensduur_jaren / energieadvies.investering) * 100)}%
-                </div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#999", marginTop: 4 }}>
-                <span>0 jaar</span>
-                <span>{Math.round(CONFIG.levensduur_jaren / 2)} jaar</span>
-                <span>{CONFIG.levensduur_jaren} jaar</span>
-              </div>
-            </div>
-
-            <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 16 }}>
-              * Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen. Werkelijke resultaten kunnen afwijken door seizoensinvloeden, verbruikspatronen en energieprijsontwikkelingen.
+            <EnergieComp
+              pc={pc}
+              sc={sc}
+              pcTint={pcTint}
+              capaciteit={energieadvies.capaciteit}
+              besparing={energieadvies.besparing}
+              terugverdientijd={energieadvies.terugverdientijd}
+              investering={energieadvies.investering}
+              formatCurrency={formatCurrency}
+            />
+            <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 24 }}>
+              * Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen. Werkelijke resultaten kunnen afwijken.
             </p>
           </div>
           <PageFooter />
