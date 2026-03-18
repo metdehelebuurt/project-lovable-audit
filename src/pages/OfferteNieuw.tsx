@@ -419,6 +419,19 @@ const OfferteNieuw = () => {
           </Button>
         </div>
       </form>
+
+      <DatasheetCheckDialog
+        open={datasheetDialogOpen}
+        onOpenChange={setDatasheetDialogOpen}
+        products={productsMissingDatasheet}
+        onComplete={() => {
+          setDatasheetDialogOpen(false);
+          saveMutation.mutate();
+        }}
+        onNavigateToProduct={(productId) => {
+          navigate(`/producten/${productId}/datasheet`);
+        }}
+      />
     </div>
   );
 };
