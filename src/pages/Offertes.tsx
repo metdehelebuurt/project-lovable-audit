@@ -115,6 +115,9 @@ const Offertes = () => {
   const [emailDialog, setEmailDialog] = useState<Offerte | null>(null);
   const [emailTo, setEmailTo] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [shareDialog, setShareDialog] = useState<Offerte | null>(null);
+  const [shareLink, setShareLink] = useState("");
+  const [generatingLink, setGeneratingLink] = useState(false);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
