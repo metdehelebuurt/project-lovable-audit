@@ -30,15 +30,16 @@ const DatasheetCheckDialog = ({
   onComplete,
   onNavigateToProduct,
 }: DatasheetCheckDialogProps) => {
-  const [statuses, setStatuses] = useState<Record<string, ProductStatus>>(() =>
-    Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus]))
-  );
+  const [statuses, setStatuses] = useState<Record<string, ProductStatus>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [rechecking, setRechecking] = useState(false);
 
-  // Reset statuses when products prop changes
+  // Reset statuses when products prop changes or dialog opens
   useEffect(() => {
-    setStatuses(Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus])));
-  }, [products]);
+    if (open && products.length > 0) {
+      setStatuses(Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus])));
+    }
+  }, [products, open]);
 
   const allResolved = products.every(
     (p) => statuses[p.id] === "uploaded" || statuses[p.id] === "skipped"
