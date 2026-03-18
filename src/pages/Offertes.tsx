@@ -63,6 +63,9 @@ interface OfferteFormData {
   geldig_tot: string;
   betalingsvoorwaarden: string;
   notities: string;
+  introductie_tekst: string;
+  garantie_voorwaarden: string;
+  installatie_termijn: string;
   regels: OfferteRegel[];
   include_schouw: boolean;
   include_energieadvies: boolean;
@@ -88,6 +91,9 @@ const emptyForm: OfferteFormData = {
   geldig_tot: "",
   betalingsvoorwaarden: "30 dagen netto",
   notities: "",
+  introductie_tekst: "",
+  garantie_voorwaarden: "",
+  installatie_termijn: "",
   regels: [{ ...emptyRegel }],
   include_schouw: false,
   include_energieadvies: false,
@@ -207,6 +213,9 @@ const Offertes = () => {
         geldig_tot: rest.geldig_tot,
         betalingsvoorwaarden: rest.betalingsvoorwaarden || null,
         notities: rest.notities || null,
+        introductie_tekst: rest.introductie_tekst || null,
+        garantie_voorwaarden: rest.garantie_voorwaarden || null,
+        installatie_termijn: rest.installatie_termijn || null,
         lead_id: rest.lead_id || null,
         schouw_id: rest.schouw_id || null,
         regels: regels as unknown as Json,
@@ -282,6 +291,9 @@ const Offertes = () => {
       geldig_tot: o.geldig_tot,
       betalingsvoorwaarden: o.betalingsvoorwaarden || "",
       notities: o.notities || "",
+      introductie_tekst: o.introductie_tekst || "",
+      garantie_voorwaarden: o.garantie_voorwaarden || "",
+      installatie_termijn: o.installatie_termijn || "",
       regels,
       include_schouw: (o as any).include_schouw ?? false,
       include_energieadvies: (o as any).include_energieadvies ?? false,
@@ -635,6 +647,25 @@ const Offertes = () => {
                 </div>
               </div>
             )}
+
+            {/* Tekstvelden */}
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="font-medium text-foreground">Offerte teksten</h3>
+              <div>
+                <Label>Introductietekst</Label>
+                <Textarea value={form.introductie_tekst} onChange={e => setForm(p => ({ ...p, introductie_tekst: e.target.value }))} className="rounded-xl" rows={3} placeholder="Inleidende tekst bovenaan de offerte..." />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Garantievoorwaarden</Label>
+                  <Textarea value={form.garantie_voorwaarden} onChange={e => setForm(p => ({ ...p, garantie_voorwaarden: e.target.value }))} className="rounded-xl" rows={3} placeholder="Garantievoorwaarden..." />
+                </div>
+                <div>
+                  <Label>Installatietermijn</Label>
+                  <Textarea value={form.installatie_termijn} onChange={e => setForm(p => ({ ...p, installatie_termijn: e.target.value }))} className="rounded-xl" rows={3} placeholder="Verwachte installatietermijn..." />
+                </div>
+              </div>
+            </div>
 
             <div>
               <Label>Notities</Label>
