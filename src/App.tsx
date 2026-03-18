@@ -34,6 +34,7 @@ import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Energieadvies from "@/pages/Energieadvies";
 import OfferteNieuw from "@/pages/OfferteNieuw";
+import OfferteTemplatePage from "@/pages/OfferteTemplatePage";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import ProductDatasheetPage from "@/pages/ProductDatasheetPage";
@@ -179,6 +180,9 @@ const App = () => (
               {/* /tools/webtools now redirects to /tools — webtools are integrated */}
               <Route path="/offertes/nieuw" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
+              } />
+              <Route path="/offertes/template" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteTemplatePage /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/affiliates" element={

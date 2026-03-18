@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
+import { voorbladTemplates, HeroDark } from "@/components/offertes/templates/VoorbladTemplates";
+import { productTemplates, ProductCards } from "@/components/offertes/templates/ProductTemplates";
+import { prijstabelTemplates, PriceModern } from "@/components/offertes/templates/PrijstabelTemplates";
+import { energieadviesTemplates, EnergyCards } from "@/components/offertes/templates/EnergieadviesTemplates";
+import { voorwaardenTemplates, TermsSimple } from "@/components/offertes/templates/VoorwaardenTemplates";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -218,17 +223,32 @@ export default function OffertePDFPreview() {
   const garantieVw = (offerte as any).garantie_voorwaarden as string | null;
   const installTermijn = (offerte as any).installatie_termijn as string | null;
 
-  // Template config with defaults
+  // Template config with defaults — design variant keys + section toggles + custom text
   const tc = {
-    voorblad: templateConfig?.voorblad ?? true,
-    productpagina: templateConfig?.productpagina ?? true,
-    energieadvies: templateConfig?.energieadvies ?? true,
-    schouwrapport: templateConfig?.schouwrapport ?? true,
+    // Section toggles
+    voorblad: templateConfig?.secties_voorblad ?? templateConfig?.voorblad ?? true,
+    productpagina: templateConfig?.secties_producten ?? templateConfig?.productpagina ?? true,
+    energieadvies: templateConfig?.secties_energieadvies ?? templateConfig?.energieadvies ?? true,
+    schouwrapport: templateConfig?.secties_schouwrapport ?? templateConfig?.schouwrapport ?? true,
+    // Custom text
     badge_1: templateConfig?.badge_1 ?? "Gecertificeerd installateur",
     badge_2: templateConfig?.badge_2 ?? "Persoonlijk advies",
     badge_3: templateConfig?.badge_3 ?? "Professionele installatie",
     akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
+    // Design variant keys
+    voorblad_variant: (templateConfig?.voorblad as string) || "hero-dark",
+    producten_variant: (templateConfig?.producten as string) || "product-cards",
+    prijstabel_variant: (templateConfig?.prijstabel as string) || "price-modern",
+    energieadvies_variant: (templateConfig?.energieadvies as string) || "energy-cards",
+    voorwaarden_variant: (templateConfig?.voorwaarden as string) || "terms-simple",
   };
+
+  // Resolve template components
+  const VoorbladComp = voorbladTemplates[tc.voorblad_variant] || HeroDark;
+  const ProductComp = productTemplates[tc.producten_variant] || ProductCards;
+  const PrijsComp = prijstabelTemplates[tc.prijstabel_variant] || PriceModern;
+  const EnergieComp = energieadviesTemplates[tc.energieadvies_variant] || EnergyCards;
+  const VoorwaardenComp = voorwaardenTemplates[tc.voorwaarden_variant] || TermsSimple;
 
   /* ─── Shared components ─── */
   const PageHeader = () => (
@@ -302,75 +322,31 @@ export default function OffertePDFPreview() {
         </button>
       </div>
 
-      {/* ═══════════════ PAGE 1: COVER ═══════════════ */}
+      {/* ═══════════════ PAGE 1: COVER (dynamic template) ═══════════════ */}
       {tc.voorblad && <div className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
-        {/* Hero band */}
-        <div style={{ backgroundColor: sc, color: "#fff", padding: "60px 50px 40px", position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, right: 0, width: 220, height: "100%", background: `linear-gradient(135deg, ${pc}, ${hexToTint(pc, 0.6)})`, clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            {logoUrl && <img src={logoUrl} alt={partner.naam} style={{ height: 48, marginBottom: 24, objectFit: "contain" }} />}
-            <h1 style={{ fontSize: 36, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>
-              Verduurzaam je huis
-            </h1>
-            <h1 style={{ fontSize: 36, fontWeight: 800, margin: "4px 0 0", lineHeight: 1.15, color: pc }}>
-              {categoryLabel ? `met onze ${categoryLabel}` : "met onze oplossing"}
-            </h1>
-            {producten.length > 0 && (
-              <p style={{ fontSize: 18, fontWeight: 500, marginTop: 12, opacity: 0.9 }}>
-                {producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Client info + intro */}
-        <div style={{ padding: "40px 50px", flex: 1, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", gap: 40, marginBottom: 32 }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: pc, marginBottom: 8 }}>Opgesteld voor</p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: sc, margin: 0 }}>{offerte.klant_naam}</p>
-              {offerte.klant_adres && <p style={{ margin: "4px 0 0", color: "#555" }}>{offerte.klant_adres}</p>}
-              {(offerte.klant_postcode || offerte.klant_plaats) && (
-                <p style={{ margin: "2px 0 0", color: "#555" }}>{offerte.klant_postcode} {offerte.klant_plaats}</p>
-              )}
-            </div>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: pc, marginBottom: 8 }}>Uw adviseur</p>
-              <p style={{ fontSize: 16, fontWeight: 600, color: sc, margin: 0 }}>{adviseurNaam}</p>
-              <p style={{ margin: "4px 0 0", color: "#555", fontSize: 13 }}>Offertenr: {offerte.offertenummer}</p>
-              <p style={{ margin: "2px 0 0", color: "#555", fontSize: 13 }}>{formatDate(offerte.created_at)}</p>
-            </div>
-          </div>
-
-          {introTekst && (
-            <div style={{ backgroundColor: pcTint, borderLeft: `4px solid ${pc}`, padding: "16px 20px", borderRadius: 8, marginBottom: 24 }}>
-              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#333" }}>{introTekst}</p>
-            </div>
-          )}
-
-          {partner.bedrijfsslogan && (
-            <p style={{ fontSize: 15, fontStyle: "italic", color: pc, marginTop: "auto", marginBottom: 0 }}>
-              "{partner.bedrijfsslogan}"
-            </p>
-          )}
-        </div>
-
-        {/* Bottom badges band */}
-        <div style={{ backgroundColor: pcTint, padding: "16px 50px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${pcTint2}` }}>
-          <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#666" }}>
-            <span>✓ {tc.badge_1}</span>
-            <span>✓ {tc.badge_2}</span>
-            <span>✓ {tc.badge_3}</span>
-          </div>
-          {partner.telefoonnummer && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: sc }}>
-              Neem contact op: {partner.telefoonnummer}
-            </span>
-          )}
-        </div>
+        <VoorbladComp
+          pc={pc}
+          sc={sc}
+          pcTint={pcTint}
+          logoUrl={logoUrl}
+          partnerNaam={partner.naam}
+          klantNaam={offerte.klant_naam}
+          offertenummer={offerte.offertenummer}
+          adviseurNaam={adviseurNaam}
+          datum={formatDate(offerte.created_at)}
+          categoryLabel={categoryLabel || null}
+          productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null}
+          slogan={partner.bedrijfsslogan || null}
+          introTekst={introTekst}
+          badges={[tc.badge_1, tc.badge_2, tc.badge_3]}
+          telefoon={partner.telefoonnummer || null}
+          klantAdres={offerte.klant_adres || null}
+          klantPostcode={offerte.klant_postcode || null}
+          klantPlaats={offerte.klant_plaats || null}
+        />
       </div>}
 
-      {/* ═══════════════ PAGE 2: PRODUCT INFO ═══════════════ */}
+      {/* ═══════════════ PAGE 2: PRODUCT INFO (dynamic template) ═══════════════ */}
       {tc.productpagina && producten.length > 0 && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
@@ -379,91 +355,28 @@ export default function OffertePDFPreview() {
               {producten.length === 1 ? "Uw product" : "Uw producten"}
             </h2>
             <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-
-            {producten.map((prod, pi) => {
-              const specs = prod.specs && typeof prod.specs === "object" ? (prod.specs as Record<string, any>) : null;
-              const imgUrl = prod.afbeelding_url
-                ? (prod.afbeelding_url.startsWith("http") ? prod.afbeelding_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${prod.afbeelding_url}`)
-                : null;
-
-              return (
-                <div key={prod.id} style={{ marginBottom: pi < producten.length - 1 ? 32 : 0 }}>
-                  <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
-                    {imgUrl && (
-                      <div style={{ width: 160, height: 160, borderRadius: 12, overflow: "hidden", backgroundColor: "#f8f8fa", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <img src={imgUrl} alt={prod.naam} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-                      </div>
-                    )}
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 700, color: sc, margin: "0 0 4px" }}>{prod.naam}</h3>
-                      {prod.merk && <p style={{ fontSize: 12, color: pc, fontWeight: 600, margin: "0 0 8px" }}>{prod.merk}{prod.model ? ` — ${prod.model}` : ""}</p>}
-                      {prod.omschrijving && <p style={{ fontSize: 12, color: "#555", lineHeight: 1.6, margin: 0 }}>{prod.omschrijving}</p>}
-                      <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
-                        {prod.garantie_jaren && (
-                          <div style={{ backgroundColor: pcTint, borderRadius: 8, padding: "8px 14px", fontSize: 11 }}>
-                            <span style={{ fontWeight: 700, color: pc }}>{prod.garantie_jaren} jaar</span>
-                            <span style={{ color: "#666", marginLeft: 4 }}>garantie</span>
-                          </div>
-                        )}
-                        {prod.certificeringen && (
-                          <div style={{ backgroundColor: pcTint, borderRadius: 8, padding: "8px 14px", fontSize: 11 }}>
-                            <span style={{ color: "#666" }}>Certificering: </span>
-                            <span style={{ fontWeight: 600, color: sc }}>{prod.certificeringen}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Specs table */}
-                  {specs && Object.keys(specs).length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Technische specificaties</p>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                        <tbody>
-                          {Object.entries(specs).map(([key, val], si) => (
-                            <tr key={key} style={{ backgroundColor: si % 2 === 0 ? "#fff" : pcTint }}>
-                              <td style={{ padding: "6px 10px", fontWeight: 500, color: "#555", width: "40%", borderBottom: "1px solid #f0f0f0" }}>
-                                {key.replace(/_/g, " ")}
-                              </td>
-                              <td style={{ padding: "6px 10px", color: sc, fontWeight: 600, borderBottom: "1px solid #f0f0f0" }}>
-                                {String(val)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  {/* Onderhoud */}
-                  {prod.onderhoud && (
-                    <div style={{ marginTop: 12, fontSize: 11, color: "#666" }}>
-                      <span style={{ fontWeight: 600 }}>Onderhoud: </span>{prod.onderhoud}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <ProductComp
+              pc={pc}
+              sc={sc}
+              pcTint={pcTint}
+              producten={producten.map(p => ({
+                naam: p.naam,
+                merk: p.merk,
+                model: p.model,
+                omschrijving: p.omschrijving,
+                afbeelding_url: p.afbeelding_url,
+                garantie_jaren: p.garantie_jaren,
+                certificeringen: p.certificeringen,
+                specs: p.specs && typeof p.specs === "object" ? (p.specs as Record<string, any>) : null,
+                onderhoud: p.onderhoud,
+              }))}
+            />
           </div>
-
-          {/* Datasheet links */}
-          {producten.some(p => (p as any).datasheet_url && (p as any).datasheet_type === "fabrikant") && (
-            <div style={{ marginTop: 20, padding: "12px 16px", backgroundColor: pcTint, borderRadius: 8 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Productdatasheets</p>
-              {producten.filter(p => (p as any).datasheet_url && (p as any).datasheet_type === "fabrikant").map(p => (
-                <p key={p.id} style={{ fontSize: 11, color: "#555", margin: "2px 0" }}>
-                  📄 {p.naam} — Fabrikant-datasheet beschikbaar (zie bijlage)
-                </p>
-              ))}
-            </div>
-          )}
-
           <PageFooter />
         </div>
       )}
 
-      {/* ═══════════════ PAGE 3: ENERGIEADVIES / BESPARINGEN ═══════════════ */}
+      {/* ═══════════════ PAGE 3: ENERGIEADVIES (dynamic template) ═══════════════ */}
       {tc.energieadvies && energieadvies && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
@@ -472,74 +385,28 @@ export default function OffertePDFPreview() {
               Uw besparing & rendement
             </h2>
             <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-
             <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, marginBottom: 28 }}>
               Op basis van de schouwgegevens en uw energieverbruik hebben wij berekend wat de geschatte besparing en terugverdientijd is van de voorgestelde oplossing.
             </p>
-
-            {/* Highlight cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
-              {[
-                ...(energieadvies.capaciteit > 0 ? [{ label: "Aanbevolen capaciteit", value: `${energieadvies.capaciteit} kWh`, icon: "⚡" }] : []),
-                { label: "Geschatte investering", value: formatCurrency(energieadvies.investering), icon: "💰" },
-                { label: "Jaarlijkse besparing", value: formatCurrency(energieadvies.besparing), icon: "📉" },
-                { label: "Terugverdientijd", value: `${energieadvies.terugverdientijd} jaar`, icon: "⏱" },
-              ].map((c, i) => (
-                <div key={i} style={{ backgroundColor: i === 3 ? pc : pcTint, borderRadius: 12, padding: "20px 24px", color: i === 3 ? "#fff" : sc }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>{c.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.8, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>{c.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800 }}>{c.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Comparison */}
-            <div style={{ border: `1px solid ${pcTint2}`, borderRadius: 12, overflow: "hidden", marginBottom: 24 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-                <div style={{ padding: "16px 20px", backgroundColor: "#f8f8fa" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#999", margin: "0 0 8px", textTransform: "uppercase" }}>Zonder oplossing</p>
-                  <p style={{ fontSize: 12, color: "#666", margin: "4px 0" }}>Zelfconsumptie: {Math.round(CONFIG.zelfconsumptie_zonder_batterij * 100)}%</p>
-                  <p style={{ fontSize: 12, color: "#666", margin: "4px 0" }}>Terugleververgoeding: {formatCurrency(CONFIG.teruglever_vergoeding_kwh)}/kWh</p>
-                </div>
-                <div style={{ padding: "16px 20px", backgroundColor: pcTint }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: pc, margin: "0 0 8px", textTransform: "uppercase" }}>Met oplossing</p>
-                  <p style={{ fontSize: 12, color: "#333", margin: "4px 0" }}>Zelfconsumptie: {Math.round(CONFIG.zelfconsumptie_met_batterij * 100)}%</p>
-                  <p style={{ fontSize: 12, color: "#333", fontWeight: 600, margin: "4px 0" }}>Besparing: {formatCurrency(energieadvies.besparing)} per jaar</p>
-                </div>
-              </div>
-            </div>
-
-            {/* ROI bar */}
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: sc, margin: "0 0 10px" }}>Verwacht rendement over {CONFIG.levensduur_jaren} jaar</p>
-              <div style={{ height: 24, backgroundColor: "#f0f0f0", borderRadius: 12, overflow: "hidden", position: "relative" }}>
-                <div style={{
-                  height: "100%",
-                  width: `${Math.min((energieadvies.besparing * CONFIG.levensduur_jaren / energieadvies.investering) * 100, 100)}%`,
-                  background: `linear-gradient(90deg, ${pc}, ${hexToTint(pc, 0.6)})`,
-                  borderRadius: 12,
-                  display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10,
-                  fontSize: 10, fontWeight: 700, color: "#fff"
-                }}>
-                  {Math.round((energieadvies.besparing * CONFIG.levensduur_jaren / energieadvies.investering) * 100)}%
-                </div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#999", marginTop: 4 }}>
-                <span>0 jaar</span>
-                <span>{Math.round(CONFIG.levensduur_jaren / 2)} jaar</span>
-                <span>{CONFIG.levensduur_jaren} jaar</span>
-              </div>
-            </div>
-
-            <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 16 }}>
-              * Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen. Werkelijke resultaten kunnen afwijken door seizoensinvloeden, verbruikspatronen en energieprijsontwikkelingen.
+            <EnergieComp
+              pc={pc}
+              sc={sc}
+              pcTint={pcTint}
+              capaciteit={energieadvies.capaciteit}
+              besparing={energieadvies.besparing}
+              terugverdientijd={energieadvies.terugverdientijd}
+              investering={energieadvies.investering}
+              formatCurrency={formatCurrency}
+            />
+            <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 24 }}>
+              * Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen. Werkelijke resultaten kunnen afwijken.
             </p>
           </div>
           <PageFooter />
         </div>
       )}
 
-      {/* ═══════════════ PAGE 4: FORMELE OFFERTE ═══════════════ */}
+      {/* ═══════════════ PAGE 4: PRIJSTABEL + VOORWAARDEN (dynamic templates) ═══════════════ */}
       <div className="pdf-page" style={pageStyle}>
         <PageHeader />
         <div style={{ flex: 1 }}>
@@ -575,99 +442,30 @@ export default function OffertePDFPreview() {
             </div>
           </div>
 
-          {/* Price table */}
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 16 }}>
-            <thead>
-              <tr>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 11 }}>Aantal</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 11 }}>Omschrijving</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Prijs excl. BTW</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Korting</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Subtotaal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {regels.map((r, i) => {
-                const sub = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
-                return (
-                  <tr key={i} style={{ borderBottom: `1px solid ${pcTint2}`, backgroundColor: i % 2 === 0 ? "#fff" : pcTint }}>
-                    <td style={{ padding: "10px 12px", fontWeight: 500 }}>{r.aantal}</td>
-                    <td style={{ padding: "10px 12px" }}>{r.omschrijving}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right", color: r.korting_percentage > 0 ? pc : "#ccc" }}>{r.korting_percentage > 0 ? `${r.korting_percentage}%` : "—"}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(sub)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* Dynamic price table */}
+          <PrijsComp
+            pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2}
+            regels={regels}
+            subtotaal={offerte.subtotaal}
+            btwBedrag={offerte.btw_bedrag}
+            totaalBedrag={offerte.totaal_bedrag}
+            formatCurrency={formatCurrency}
+          />
 
-          {/* Totals */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-            <div style={{ width: 260 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "#666" }}>
-                <span>Subtotaal excl. BTW</span><span>{formatCurrency(offerte.subtotaal)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "#666" }}>
-                <span>BTW</span><span>{formatCurrency(offerte.btw_bedrag)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontSize: 16, fontWeight: 800, color: sc, borderTop: `3px solid ${pc}`, marginTop: 4 }}>
-                <span>Totaal incl. BTW</span><span>{formatCurrency(offerte.totaal_bedrag)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Garantie */}
-          {garantieVw && (
-            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Garantievoorwaarden</p>
-              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{garantieVw}</p>
-            </div>
-          )}
-
-          {/* Installatietermijn */}
-          {installTermijn && (
-            <p style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>
-              <strong style={{ color: sc }}>Installatietermijn:</strong> {installTermijn}
-            </p>
-          )}
-
-          {/* Betalingsvoorwaarden */}
-          {offerte.betalingsvoorwaarden && (
-            <p style={{ fontSize: 11, color: "#666", marginBottom: 16 }}>
-              <strong>Betalingsvoorwaarden:</strong> {offerte.betalingsvoorwaarden}
-            </p>
-          )}
-
-          {/* Notities */}
-          {offerte.notities && (
-            <div style={{ marginBottom: 16, fontSize: 11, color: "#666" }}>
-              <strong>Opmerkingen:</strong>
-              <p style={{ margin: "4px 0 0", whiteSpace: "pre-wrap" }}>{offerte.notities}</p>
-            </div>
-          )}
-
-          {/* Akkoord tekst */}
-          {tc.akkoord_tekst && (
-            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
-              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{tc.akkoord_tekst}</p>
-            </div>
-          )}
-
-          {/* Signature section */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 20, borderTop: `1px solid ${pcTint2}`, paddingTop: 20 }}>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — {partner.naam}</p>
-              <p style={{ fontSize: 12, color: "#555", margin: "4px 0" }}>{adviseurNaam}</p>
-              <p style={{ fontSize: 12, color: "#888", margin: "4px 0" }}>Datum: {formatDate(offerte.created_at)}</p>
-              <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 16 }} />
-            </div>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — Klant</p>
-              <p style={{ fontSize: 12, color: "#555", margin: "4px 0" }}>{offerte.klant_naam}</p>
-              <p style={{ fontSize: 12, color: "#888", margin: "4px 0" }}>Datum: ____________________</p>
-              <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 16 }} />
-            </div>
+          {/* Dynamic terms & signature */}
+          <div style={{ marginTop: 28 }}>
+            <VoorwaardenComp
+              pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2}
+              partnerNaam={partner.naam}
+              klantNaam={offerte.klant_naam}
+              adviseurNaam={adviseurNaam}
+              datum={formatDate(offerte.created_at)}
+              garantieVw={garantieVw}
+              installTermijn={installTermijn}
+              betalingsvoorwaarden={offerte.betalingsvoorwaarden || null}
+              notities={offerte.notities || null}
+              akkoordTekst={tc.akkoord_tekst}
+            />
           </div>
         </div>
         <PageFooter />

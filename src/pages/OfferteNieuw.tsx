@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
 import DatasheetCheckDialog from "@/components/offertes/DatasheetCheckDialog";
-import OfferteTemplateBuilder from "@/components/offertes/OfferteTemplateBuilder";
 import { defaultTemplateConfig, type TemplateConfig } from "@/components/offertes/templates/templateRegistry";
 import type { Database, Json } from "@/integrations/supabase/types";
 
@@ -89,9 +88,26 @@ const OfferteNieuw = () => {
   const [schouwId, setSchouwId] = useState("");
   const [datasheetDialogOpen, setDatasheetDialogOpen] = useState(false);
   const [productsMissingDatasheet, setProductsMissingDatasheet] = useState<Array<{ id: string; naam: string; merk: string | null; model: string | null }>>([]);
-  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(defaultTemplateConfig);
-  const [templateBuilderOpen, setTemplateBuilderOpen] = useState(false);
+  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(() => {
+    const raw = sessionStorage.getItem("offerte-template-config");
+    if (raw) {
+      try { return { ...defaultTemplateConfig, ...JSON.parse(raw) }; } catch {}
+    }
+    return defaultTemplateConfig;
+  });
   const [generatingIntro, setGeneratingIntro] = useState(false);
+
+  // Reload template config when returning from template page
+  useEffect(() => {
+    const handleFocus = () => {
+      const raw = sessionStorage.getItem("offerte-template-config");
+      if (raw) {
+        try { setTemplateConfig({ ...defaultTemplateConfig, ...JSON.parse(raw) }); } catch {}
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
 
   // Prefill from sessionStorage
   useEffect(() => {
@@ -461,7 +477,10 @@ const OfferteNieuw = () => {
 
         {/* Actions */}
         <div className="flex items-center justify-between gap-3">
-          <Button type="button" variant="outline" onClick={() => setTemplateBuilderOpen(true)} className="rounded-pill gap-2">
+          <Button type="button" variant="outline" onClick={() => {
+            sessionStorage.setItem("offerte-template-config", JSON.stringify(templateConfig));
+            navigate("/offertes/template?return=/offertes/nieuw");
+          }} className="rounded-pill gap-2">
             <Palette className="h-4 w-4" /> Template kiezen
           </Button>
           <div className="flex gap-3">
@@ -487,12 +506,6 @@ const OfferteNieuw = () => {
         }}
       />
 
-      <OfferteTemplateBuilder
-        open={templateBuilderOpen}
-        onOpenChange={setTemplateBuilderOpen}
-        currentConfig={templateConfig}
-        onSave={setTemplateConfig}
-      />
     </div>
   );
 };
