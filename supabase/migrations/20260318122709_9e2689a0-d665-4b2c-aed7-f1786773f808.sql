@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Publiek leest offerte via share_token" ON public.offertes;
