@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2 } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
+import DatasheetCheckDialog from "@/components/offertes/DatasheetCheckDialog";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -83,6 +84,8 @@ const OfferteNieuw = () => {
   const [includeSchouw, setIncludeSchouw] = useState(false);
   const [includeEnergieadvies, setIncludeEnergieadvies] = useState(false);
   const [schouwId, setSchouwId] = useState("");
+  const [datasheetDialogOpen, setDatasheetDialogOpen] = useState(false);
+  const [productsMissingDatasheet, setProductsMissingDatasheet] = useState<Array<{ id: string; naam: string; merk: string | null; model: string | null }>>([]);
 
   // Prefill from sessionStorage
   useEffect(() => {
@@ -211,6 +214,21 @@ const OfferteNieuw = () => {
     e.preventDefault();
     if (!klantNaam || !klantEmail) { toast.error("Vul klantnaam en e-mail in"); return; }
     if (regels.length === 0) { toast.error("Voeg minimaal één regel toe"); return; }
+
+    // Check which product-linked rows are missing a datasheet
+    const productIds = regels.map(r => r.product_id).filter(Boolean) as string[];
+    if (productIds.length > 0) {
+      const missing = producten.filter(
+        p => productIds.includes(p.id) && !p.datasheet_type
+      ).map(p => ({ id: p.id, naam: p.naam, merk: p.merk, model: p.model }));
+
+      if (missing.length > 0) {
+        setProductsMissingDatasheet(missing);
+        setDatasheetDialogOpen(true);
+        return;
+      }
+    }
+
     saveMutation.mutate();
   };
 
@@ -401,6 +419,19 @@ const OfferteNieuw = () => {
           </Button>
         </div>
       </form>
+
+      <DatasheetCheckDialog
+        open={datasheetDialogOpen}
+        onOpenChange={setDatasheetDialogOpen}
+        products={productsMissingDatasheet}
+        onComplete={() => {
+          setDatasheetDialogOpen(false);
+          saveMutation.mutate();
+        }}
+        onNavigateToProduct={(productId) => {
+          navigate(`/producten/${productId}/datasheet`);
+        }}
+      />
     </div>
   );
 };
