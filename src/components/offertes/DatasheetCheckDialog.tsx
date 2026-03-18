@@ -35,6 +35,11 @@ const DatasheetCheckDialog = ({
   );
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  // Reset statuses when products prop changes
+  useEffect(() => {
+    setStatuses(Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus])));
+  }, [products]);
+
   const allResolved = products.every(
     (p) => statuses[p.id] === "uploaded" || statuses[p.id] === "skipped"
   );
