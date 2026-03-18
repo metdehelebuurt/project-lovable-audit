@@ -71,6 +71,7 @@ export const PriceModern: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, regels,
         <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", backgroundColor: i % 2 === 0 ? pcTint : "#fff", borderRadius: 8, marginBottom: 4 }}>
           <div>
             <p style={{ fontSize: 13, fontWeight: 600, color: sc, margin: 0 }}>{r.omschrijving}</p>
+            {r.offerte_tekst && <p style={{ fontSize: 10, color: "#777", margin: "2px 0 0" }}>{r.offerte_tekst}</p>}
             <p style={{ fontSize: 10, color: "#888", margin: "2px 0 0" }}>{r.aantal}× {formatCurrency(r.prijs_per_stuk)} {r.korting_percentage > 0 ? `(-${r.korting_percentage}%)` : ""}</p>
           </div>
           <span style={{ fontSize: 14, fontWeight: 700, color: sc }}>{formatCurrency(sub)}</span>
