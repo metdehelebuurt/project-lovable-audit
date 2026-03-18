@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare, FileDown, Send } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare, FileDown, Send, Link2, Copy } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
@@ -115,6 +115,9 @@ const Offertes = () => {
   const [emailDialog, setEmailDialog] = useState<Offerte | null>(null);
   const [emailTo, setEmailTo] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [shareDialog, setShareDialog] = useState<Offerte | null>(null);
+  const [shareLink, setShareLink] = useState("");
+  const [generatingLink, setGeneratingLink] = useState(false);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
@@ -435,6 +438,28 @@ const Offertes = () => {
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => { setEmailDialog(o); setEmailTo(o.klant_email); }} title="Verstuur per e-mail">
                             <Send className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={async () => {
+                            setShareDialog(o);
+                            if ((o as any).share_token) {
+                              setShareLink(`${window.location.origin}/offerte/${(o as any).share_token}`);
+                            } else {
+                              setGeneratingLink(true);
+                              const token = crypto.randomUUID();
+                              const { error } = await supabase.from("offertes").update({
+                                share_token: token,
+                                share_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                              } as any).eq("id", o.id);
+                              if (!error) {
+                                setShareLink(`${window.location.origin}/offerte/${token}`);
+                                queryClient.invalidateQueries({ queryKey: ["offertes"] });
+                              } else {
+                                toast.error("Link genereren mislukt");
+                              }
+                              setGeneratingLink(false);
+                            }
+                          }} title="Deel link">
+                            <Link2 className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => setViewDialog(o)}>
                             <Eye className="h-4 w-4" />
@@ -811,6 +836,35 @@ const Offertes = () => {
                 </Button>
               </DialogFooter>
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Share link dialog */}
+      <Dialog open={!!shareDialog} onOpenChange={(open) => !open && setShareDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Offertelink delen</DialogTitle>
+          </DialogHeader>
+          {shareDialog && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Deel deze link met <strong>{shareDialog.klant_naam}</strong> zodat zij de offerte online kunnen bekijken en accepteren.
+              </p>
+              {generatingLink ? (
+                <p className="text-sm text-muted-foreground">Link genereren...</p>
+              ) : shareLink ? (
+                <div className="flex gap-2">
+                  <Input value={shareLink} readOnly className="rounded-xl text-xs" />
+                  <Button variant="outline" size="icon" onClick={() => {
+                    navigator.clipboard.writeText(shareLink);
+                    toast.success("Link gekopieerd!");
+                  }} className="shrink-0">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : null}
+              <p className="text-xs text-muted-foreground">De link is 30 dagen geldig. De klant kan de offerte bekijken en direct online accepteren.</p>
+            </div>
           )}
         </DialogContent>
       </Dialog>

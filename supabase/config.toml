@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.ai-verify-product-specs]
 verify_jwt = false
+
+[functions.ai-offerte-intro]
+verify_jwt = false
+
+[functions.offerte-accept]
+verify_jwt = false

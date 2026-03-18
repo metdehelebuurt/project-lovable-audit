@@ -651,6 +651,8 @@ export type Database = {
       }
       offertes: {
         Row: {
+          accepted_at: string | null
+          accepted_ip: string | null
           adviseur_id: string
           betalingsvoorwaarden: string | null
           btw_bedrag: number
@@ -675,12 +677,17 @@ export type Database = {
           partner_id: string | null
           regels: Json
           schouw_id: string | null
+          share_expires_at: string | null
+          share_token: string | null
           status: Database["public"]["Enums"]["offerte_status"]
           subtotaal: number
+          template_config: Json | null
           totaal_bedrag: number
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_ip?: string | null
           adviseur_id: string
           betalingsvoorwaarden?: string | null
           btw_bedrag?: number
@@ -705,12 +712,17 @@ export type Database = {
           partner_id?: string | null
           regels?: Json
           schouw_id?: string | null
+          share_expires_at?: string | null
+          share_token?: string | null
           status?: Database["public"]["Enums"]["offerte_status"]
           subtotaal?: number
+          template_config?: Json | null
           totaal_bedrag?: number
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          accepted_ip?: string | null
           adviseur_id?: string
           betalingsvoorwaarden?: string | null
           btw_bedrag?: number
@@ -735,8 +747,11 @@ export type Database = {
           partner_id?: string | null
           regels?: Json
           schouw_id?: string | null
+          share_expires_at?: string | null
+          share_token?: string | null
           status?: Database["public"]["Enums"]["offerte_status"]
           subtotaal?: number
+          template_config?: Json | null
           totaal_bedrag?: number
           updated_at?: string
         }

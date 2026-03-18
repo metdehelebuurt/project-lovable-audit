@@ -37,6 +37,7 @@ import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import LeadDetail from "@/pages/LeadDetail";
 import NotFound from "@/pages/NotFound";
+import OffertePublic from "@/pages/OffertePublic";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
 
             {/* Public embed routes — no auth, no layout */}
+            <Route path="/offerte/:token" element={<OffertePublic />} />
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
             <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
             <Route path="/signup" element={<Signup />} />
