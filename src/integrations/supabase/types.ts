@@ -1172,6 +1172,8 @@ export type Database = {
           fotos: Json | null
           gegevens: Json | null
           geplande_datum: string
+          handtekening_akkoord_op: string | null
+          handtekening_data: string | null
           id: string
           installateur_id: string | null
           klant_email: string | null
@@ -1192,6 +1194,8 @@ export type Database = {
           fotos?: Json | null
           gegevens?: Json | null
           geplande_datum: string
+          handtekening_akkoord_op?: string | null
+          handtekening_data?: string | null
           id?: string
           installateur_id?: string | null
           klant_email?: string | null
@@ -1212,6 +1216,8 @@ export type Database = {
           fotos?: Json | null
           gegevens?: Json | null
           geplande_datum?: string
+          handtekening_akkoord_op?: string | null
+          handtekening_data?: string | null
           id?: string
           installateur_id?: string | null
           klant_email?: string | null

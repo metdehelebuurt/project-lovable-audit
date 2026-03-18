@@ -15,11 +15,12 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
+import SignaturePad from "@/components/schouwen/SignaturePad";
 import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
-const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Samenvatting"];
+const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Klant akkoord", "Samenvatting"];
 
 const SchouwUitvoeren = () => {
   const { id } = useParams();
@@ -41,6 +42,8 @@ const SchouwUitvoeren = () => {
   const [fotos, setFotos] = useState<SchouwFoto[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [aandachtspunten, setAandachtspunten] = useState("");
+  const [handtekeningData, setHandtekeningData] = useState<string | null>(null);
+  const [ondertekenaarNaam, setOndertekenaarNaam] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   // Initialize from schouw data once loaded
@@ -54,11 +57,16 @@ const SchouwUitvoeren = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (!handtekeningData) {
+        throw new Error("Handtekening is verplicht om de schouw af te ronden");
+      }
       const { error } = await supabase.from("schouwen").update({
         gegevens: Object.keys(gegevens).length > 0 ? gegevens : null,
         fotos: fotos.length > 0 ? fotos as any : [],
         checklist: Object.keys(checklist).length > 0 ? checklist : {},
         aandachtspunten: aandachtspunten || null,
+        handtekening_data: handtekeningData,
+        handtekening_akkoord_op: new Date().toISOString(),
         status: "uitgevoerd",
       }).eq("id", id!);
       if (error) throw error;
@@ -168,8 +176,40 @@ const SchouwUitvoeren = () => {
         </Card>
       )}
 
-      {/* Step 3: Samenvatting */}
+      {/* Step 3: Klant akkoord */}
       {step === 3 && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader><CardTitle className="text-lg">Klant akkoord & Handtekening</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-1">
+              <p><strong>Schouw:</strong> {schouw.schouw_nummer}</p>
+              <p><strong>Klant:</strong> {schouw.consument_naam}</p>
+              <p><strong>Datum:</strong> {new Date().toLocaleDateString("nl-NL")}</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Hierbij verklaart de klant akkoord te gaan met de uitgevoerde schouw en de vastgelegde bevindingen.
+            </p>
+            <div>
+              <Label className="text-sm">Naam ondertekenaar</Label>
+              <Input
+                value={ondertekenaarNaam}
+                onChange={e => setOndertekenaarNaam(e.target.value)}
+                placeholder="Volledige naam"
+              />
+            </div>
+            <div>
+              <Label className="text-sm mb-2 block">Handtekening</Label>
+              <SignaturePad value={handtekeningData} onChange={setHandtekeningData} />
+            </div>
+            {!handtekeningData && (
+              <p className="text-xs text-destructive">* Een handtekening is verplicht om de schouw af te ronden</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Samenvatting */}
+      {step === 4 && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Samenvatting</CardTitle></CardHeader>
           <CardContent className="space-y-4 text-sm">
@@ -177,6 +217,8 @@ const SchouwUitvoeren = () => {
             <p><strong>Foto's:</strong> {fotos.length}</p>
             <p><strong>Checklist:</strong> {Object.values(checklist).filter(Boolean).length} / {checklistItems.length} afgevinkt</p>
             {aandachtspunten && <p><strong>Aandachtspunten:</strong> {aandachtspunten}</p>}
+            <p><strong>Handtekening:</strong> {handtekeningData ? "✓ Ondertekend" : "✗ Niet ondertekend"}</p>
+            {ondertekenaarNaam && <p><strong>Ondertekenaar:</strong> {ondertekenaarNaam}</p>}
           </CardContent>
         </Card>
       )}
