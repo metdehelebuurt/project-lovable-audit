@@ -84,8 +84,30 @@ const DatasheetCheckDialog = ({
   };
 
   const handleGenerate = (productId: string) => {
-    onOpenChange(false);
-    onNavigateToProduct(productId);
+    // Open in new tab so offerte form is preserved
+    window.open(`/producten/${productId}/datasheet`, "_blank");
+  };
+
+  const handleRecheck = async () => {
+    setRechecking(true);
+    try {
+      const ids = products.map((p) => p.id);
+      const { data } = await supabase
+        .from("producten")
+        .select("id, datasheet_type")
+        .in("id", ids);
+      if (data) {
+        const updated = { ...statuses };
+        data.forEach((p) => {
+          if (p.datasheet_type) updated[p.id] = "uploaded";
+        });
+        setStatuses(updated);
+        toast.success("Datasheets hergecontroleerd");
+      }
+    } catch {
+      toast.error("Hercontrole mislukt");
+    }
+    setRechecking(false);
   };
 
   return (
