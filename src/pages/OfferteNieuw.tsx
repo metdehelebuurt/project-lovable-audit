@@ -458,12 +458,17 @@ const OfferteNieuw = () => {
         </Card>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate("/offertes")} className="rounded-pill">Annuleren</Button>
-          <Button type="submit" className="rounded-pill gap-2" disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Offerte aanmaken
+        <div className="flex items-center justify-between gap-3">
+          <Button type="button" variant="outline" onClick={() => setTemplateBuilderOpen(true)} className="rounded-pill gap-2">
+            <Palette className="h-4 w-4" /> Template kiezen
           </Button>
+          <div className="flex gap-3">
+            <Button type="button" variant="outline" onClick={() => navigate("/offertes")} className="rounded-pill">Annuleren</Button>
+            <Button type="submit" className="rounded-pill gap-2" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Offerte aanmaken
+            </Button>
+          </div>
         </div>
       </form>
 
