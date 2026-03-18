@@ -108,7 +108,6 @@ const OfferteNieuw = () => {
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
   }, []);
-  const [generatingIntro, setGeneratingIntro] = useState(false);
 
   // Prefill from sessionStorage
   useEffect(() => {
