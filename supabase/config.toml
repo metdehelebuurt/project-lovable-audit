@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.offerte-accept]
 verify_jwt = false
+
+[functions.offerte-public-view]
+verify_jwt = false

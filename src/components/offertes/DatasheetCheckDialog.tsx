@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,11 @@ const DatasheetCheckDialog = ({
     Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus]))
   );
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Reset statuses when products prop changes
+  useEffect(() => {
+    setStatuses(Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus])));
+  }, [products]);
 
   const allResolved = products.every(
     (p) => statuses[p.id] === "uploaded" || statuses[p.id] === "skipped"
