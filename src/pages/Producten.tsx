@@ -455,6 +455,31 @@ const Producten = () => {
                 onChange={(specs) => setForm(p => ({ ...p, specs }))}
               />
 
+              {/* Datasheet section (only for existing products) */}
+              {editingProduct && (
+                <ProductDatasheetSection
+                  productId={editingProduct.id}
+                  productData={{
+                    naam: form.naam,
+                    merk: form.merk,
+                    model: form.model,
+                    categorie: form.categorie,
+                    omschrijving: form.omschrijving,
+                    specs: form.specs,
+                    certificeringen: form.certificeringen,
+                    garantie_jaren: form.garantie_jaren,
+                    prijs_excl_btw: form.prijs_excl_btw,
+                    afbeelding_url: form.afbeelding_url,
+                  }}
+                  datasheetUrl={form.datasheet_url}
+                  datasheetType={form.datasheet_type}
+                  onDatasheetChange={(url, type) => setForm(p => ({ ...p, datasheet_url: url, datasheet_type: type }))}
+                  onSpecsUpdate={(specs) => setForm(p => ({ ...p, specs }))}
+                  onOmschrijvingUpdate={(omschrijving) => setForm(p => ({ ...p, omschrijving }))}
+                  partnerId={editingProduct.partner_id}
+                />
+              )}
+
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Prijzen & Voorraad</h3>
                 <div className="grid grid-cols-2 gap-4">
