@@ -492,6 +492,27 @@ const Planning = () => {
                     <p className="font-medium text-foreground">{format(parseISO(selectedEvent.extra.einddatum), "d MMMM yyyy", { locale: nl })}</p>
                   </div>
                 )}
+                {selectedEvent.extra?.type && (
+                  <div>
+                    <p className="text-muted-foreground">Type</p>
+                    <p className="font-medium text-foreground capitalize">{selectedEvent.extra.type.replace(/_/g, " ")}</p>
+                  </div>
+                )}
+                {selectedEvent.extra?.start_tijd && (
+                  <div>
+                    <p className="text-muted-foreground">Tijd</p>
+                    <p className="font-medium text-foreground">
+                      {selectedEvent.extra.start_tijd.slice(0, 5)}
+                      {selectedEvent.extra?.eind_tijd && ` - ${selectedEvent.extra.eind_tijd.slice(0, 5)}`}
+                    </p>
+                  </div>
+                )}
+                {selectedEvent.extra?.locatie && (
+                  <div>
+                    <p className="text-muted-foreground">Locatie</p>
+                    <p className="font-medium text-foreground">{selectedEvent.extra.locatie}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-muted-foreground text-sm mb-1">Status</p>
