@@ -37,6 +37,7 @@ import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import LeadDetail from "@/pages/LeadDetail";
 import NotFound from "@/pages/NotFound";
+import OffertePublic from "@/pages/OffertePublic";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
