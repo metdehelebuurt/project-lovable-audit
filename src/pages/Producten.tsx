@@ -14,12 +14,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X, FileText } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
 import ProductImage from "@/components/producten/ProductImage";
 import ProductImageUpload from "@/components/producten/ProductImageUpload";
 import SpecsEditor from "@/components/producten/SpecsEditor";
+import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 type ProductInsert = Database["public"]["Tables"]["producten"]["Insert"];
@@ -72,6 +73,8 @@ interface ProductFormData {
   afbeelding_url: string | null;
   afbeeldingen: string[];
   specs: Record<string, string>;
+  datasheet_url: string | null;
+  datasheet_type: string | null;
 }
 
 const emptyForm: ProductFormData = {
@@ -82,6 +85,7 @@ const emptyForm: ProductFormData = {
   artikelnummer: "", ean_code: "", levertijd: "", garantie_jaren: null,
   certificeringen: "", status: "actief", afbeelding_url: null,
   afbeeldingen: [], specs: {},
+  datasheet_url: null, datasheet_type: null,
 };
 
 interface AIProduct {
@@ -184,12 +188,14 @@ const Producten = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & ProductFormData) => {
-      const { id, afbeelding_url, afbeeldingen, specs, ...rest } = data;
+      const { id, afbeelding_url, afbeeldingen, specs, datasheet_url, datasheet_type, ...rest } = data;
       const record: any = {
         ...rest,
         afbeelding_url: afbeelding_url || null,
         afbeeldingen: afbeeldingen.length > 0 ? afbeeldingen : null,
         specs: Object.keys(specs).length > 0 ? specs : null,
+        datasheet_url: datasheet_url || null,
+        datasheet_type: datasheet_type || null,
         merk: rest.merk || null,
         model: rest.model || null,
         omschrijving: rest.omschrijving || null,
@@ -258,6 +264,8 @@ const Producten = () => {
       afbeelding_url: p.afbeelding_url || null,
       afbeeldingen: galleryImages,
       specs,
+      datasheet_url: (p as any).datasheet_url || null,
+      datasheet_type: (p as any).datasheet_type || null,
     });
   };
 
@@ -446,6 +454,31 @@ const Producten = () => {
                 specs={form.specs}
                 onChange={(specs) => setForm(p => ({ ...p, specs }))}
               />
+
+              {/* Datasheet section (only for existing products) */}
+              {editingProduct && (
+                <ProductDatasheetSection
+                  productId={editingProduct.id}
+                  productData={{
+                    naam: form.naam,
+                    merk: form.merk,
+                    model: form.model,
+                    categorie: form.categorie,
+                    omschrijving: form.omschrijving,
+                    specs: form.specs,
+                    certificeringen: form.certificeringen,
+                    garantie_jaren: form.garantie_jaren,
+                    prijs_excl_btw: form.prijs_excl_btw,
+                    afbeelding_url: form.afbeelding_url,
+                  }}
+                  datasheetUrl={form.datasheet_url}
+                  datasheetType={form.datasheet_type}
+                  onDatasheetChange={(url, type) => setForm(p => ({ ...p, datasheet_url: url, datasheet_type: type }))}
+                  onSpecsUpdate={(specs) => setForm(p => ({ ...p, specs }))}
+                  onOmschrijvingUpdate={(omschrijving) => setForm(p => ({ ...p, omschrijving }))}
+                  partnerId={editingProduct.partner_id}
+                />
+              )}
 
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Prijzen & Voorraad</h3>

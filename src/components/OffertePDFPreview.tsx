@@ -436,6 +436,19 @@ export default function OffertePDFPreview() {
               );
             })}
           </div>
+
+          {/* Datasheet links */}
+          {producten.some(p => (p as any).datasheet_url && (p as any).datasheet_type === "fabrikant") && (
+            <div style={{ marginTop: 20, padding: "12px 16px", backgroundColor: pcTint, borderRadius: 8 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Productdatasheets</p>
+              {producten.filter(p => (p as any).datasheet_url && (p as any).datasheet_type === "fabrikant").map(p => (
+                <p key={p.id} style={{ fontSize: 11, color: "#555", margin: "2px 0" }}>
+                  📄 {p.naam} — Fabrikant-datasheet beschikbaar (zie bijlage)
+                </p>
+              ))}
+            </div>
+          )}
+
           <PageFooter />
         </div>
       )}

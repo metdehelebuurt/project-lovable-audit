@@ -910,6 +910,8 @@ export type Database = {
           categorie: Database["public"]["Enums"]["product_categorie"]
           certificeringen: string | null
           created_at: string
+          datasheet_type: string | null
+          datasheet_url: string | null
           ean_code: string | null
           eenheid: string | null
           garantie_jaren: number | null
@@ -941,6 +943,8 @@ export type Database = {
           categorie: Database["public"]["Enums"]["product_categorie"]
           certificeringen?: string | null
           created_at?: string
+          datasheet_type?: string | null
+          datasheet_url?: string | null
           ean_code?: string | null
           eenheid?: string | null
           garantie_jaren?: number | null
@@ -972,6 +976,8 @@ export type Database = {
           categorie?: Database["public"]["Enums"]["product_categorie"]
           certificeringen?: string | null
           created_at?: string
+          datasheet_type?: string | null
+          datasheet_url?: string | null
           ean_code?: string | null
           eenheid?: string | null
           garantie_jaren?: number | null

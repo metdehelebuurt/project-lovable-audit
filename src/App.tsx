@@ -31,6 +31,7 @@ import Energieadvies from "@/pages/Energieadvies";
 import OfferteNieuw from "@/pages/OfferteNieuw";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
+import ProductDatasheetPage from "@/pages/ProductDatasheetPage";
 import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
@@ -165,6 +166,7 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin"]}><AffiliateBeheer /></ProtectedRoute>
               } />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
+              <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
