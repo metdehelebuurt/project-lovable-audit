@@ -42,6 +42,8 @@ const SchouwUitvoeren = () => {
   const [fotos, setFotos] = useState<SchouwFoto[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [aandachtspunten, setAandachtspunten] = useState("");
+  const [handtekeningData, setHandtekeningData] = useState<string | null>(null);
+  const [ondertekenaarNaam, setOndertekenaarNaam] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   // Initialize from schouw data once loaded
