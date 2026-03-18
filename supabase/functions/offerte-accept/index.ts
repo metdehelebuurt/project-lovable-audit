@@ -26,7 +26,7 @@ serve(async (req) => {
     // Find offerte by share_token
     const { data: offerte, error: fetchErr } = await supabase
       .from("offertes")
-      .select("id, status, share_expires_at, adviseur_id, offertenummer, klant_naam")
+      .select("id, status, share_expires_at, adviseur_id, offertenummer, klant_naam, klant_email, klant_telefoon, klant_adres, klant_postcode, klant_plaats, partner_id, lead_id, regels, totaal_bedrag")
       .eq("share_token", share_token)
       .single();
 
@@ -68,6 +68,26 @@ serve(async (req) => {
       .eq("id", offerte.id);
 
     if (updateErr) throw updateErr;
+
+    // Create opdracht automatically
+    const { error: opdrachtErr } = await supabase.from("opdrachten").insert({
+      partner_id: offerte.partner_id,
+      offerte_id: offerte.id,
+      lead_id: offerte.lead_id || null,
+      klant_naam: offerte.klant_naam,
+      klant_email: offerte.klant_email,
+      klant_telefoon: offerte.klant_telefoon,
+      klant_adres: offerte.klant_adres,
+      klant_postcode: offerte.klant_postcode,
+      klant_plaats: offerte.klant_plaats,
+      regels: offerte.regels,
+      totaal_bedrag: offerte.totaal_bedrag,
+      status: "nieuw",
+    });
+
+    if (opdrachtErr) {
+      console.error("Opdracht aanmaken mislukt:", opdrachtErr);
+    }
 
     // Create notification for adviseur
     await supabase.from("notificaties").insert({
