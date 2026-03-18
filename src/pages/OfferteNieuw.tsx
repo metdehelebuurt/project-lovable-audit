@@ -84,6 +84,8 @@ const OfferteNieuw = () => {
   const [includeSchouw, setIncludeSchouw] = useState(false);
   const [includeEnergieadvies, setIncludeEnergieadvies] = useState(false);
   const [schouwId, setSchouwId] = useState("");
+  const [datasheetDialogOpen, setDatasheetDialogOpen] = useState(false);
+  const [productsMissingDatasheet, setProductsMissingDatasheet] = useState<Array<{ id: string; naam: string; merk: string | null; model: string | null }>>([]);
 
   // Prefill from sessionStorage
   useEffect(() => {
