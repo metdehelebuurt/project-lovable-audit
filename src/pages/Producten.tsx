@@ -254,6 +254,7 @@ const Producten = () => {
     setForm({
       naam: p.naam, categorie: p.categorie, merk: p.merk || "",
       model: p.model || "", omschrijving: p.omschrijving || "",
+      offerte_tekst: (p as any).offerte_tekst || "",
       prijs_excl_btw: Number(p.prijs_excl_btw), kostprijs: p.kostprijs ? Number(p.kostprijs) : null,
       eenheid: p.eenheid || "stuk", voorraad: p.voorraad,
       btw_percentage: p.btw_percentage ?? 21,
