@@ -57,8 +57,8 @@ function generateICS(events: CalendarEvent[]): string {
       `UID:${ev.id}@planning`,
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${dt}`,
-      `SUMMARY:${ev.type === "schouw" ? "Schouw" : "Installatie"} - ${ev.title}`,
-      `DESCRIPTION:Status: ${ev.status}`,
+      `SUMMARY:${ev.type === "schouw" ? "Schouw" : ev.type === "installatie" ? "Installatie" : "Afspraak"} - ${ev.title}`,
+      `DESCRIPTION:Status: ${ev.status}${ev.extra?.type ? "\\nType: " + ev.extra.type : ""}`,
       "END:VEVENT",
     );
   }
