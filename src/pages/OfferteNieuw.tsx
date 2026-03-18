@@ -506,12 +506,6 @@ const OfferteNieuw = () => {
         }}
       />
 
-      <OfferteTemplateBuilder
-        open={templateBuilderOpen}
-        onOpenChange={setTemplateBuilderOpen}
-        currentConfig={templateConfig}
-        onSave={setTemplateConfig}
-      />
     </div>
   );
 };
