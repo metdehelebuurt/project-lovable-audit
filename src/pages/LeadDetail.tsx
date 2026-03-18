@@ -57,6 +57,7 @@ const LeadDetail = () => {
   const queryClient = useQueryClient();
   const [aiSignals, setAiSignals] = useState<AiSignal[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [afspraakOpen, setAfspraakOpen] = useState(false);
 
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
