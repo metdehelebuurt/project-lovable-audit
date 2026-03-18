@@ -392,8 +392,49 @@ const OfferteNieuw = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Introductietekst (optioneel)</Label>
-              <Textarea value={introductieTekst} onChange={e => setIntroductieTekst(e.target.value)} className="rounded-xl mt-1" rows={3} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
+              <div className="flex items-center justify-between mb-1">
+                <Label>Introductietekst (optioneel)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-pill gap-1 text-xs"
+                  disabled={generatingIntro || !klantNaam}
+                  onClick={async () => {
+                    setGeneratingIntro(true);
+                    try {
+                      const productContext = regels
+                        .filter(r => r.product_id)
+                        .map(r => {
+                          const p = producten.find(pr => pr.id === r.product_id);
+                          return p ? { naam: p.naam, merk: p.merk } : null;
+                        })
+                        .filter(Boolean);
+                      const { data, error } = await supabase.functions.invoke("ai-offerte-intro", {
+                        body: {
+                          klant_naam: klantNaam,
+                          klant_plaats: klantPlaats,
+                          producten: productContext,
+                          notities: notities,
+                        },
+                      });
+                      if (error || data?.error) {
+                        toast.error(data?.error || "AI intro genereren mislukt");
+                      } else if (data?.intro) {
+                        setIntroductieTekst(data.intro);
+                        toast.success("Introductietekst gegenereerd");
+                      }
+                    } catch {
+                      toast.error("AI intro genereren mislukt");
+                    }
+                    setGeneratingIntro(false);
+                  }}
+                >
+                  {generatingIntro ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  AI Intro genereren
+                </Button>
+              </div>
+              <Textarea value={introductieTekst} onChange={e => setIntroductieTekst(e.target.value)} className="rounded-xl" rows={3} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
