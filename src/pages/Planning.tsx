@@ -521,7 +521,7 @@ const Planning = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(selectedEvent.type === "schouw" ? schouwStatuses : installatieStatuses).map((s) => (
+                    {(selectedEvent.type === "schouw" ? schouwStatuses : selectedEvent.type === "installatie" ? installatieStatuses : afspraakStatuses).map((s) => (
                       <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
                     ))}
                   </SelectContent>

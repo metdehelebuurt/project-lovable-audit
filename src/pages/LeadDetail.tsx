@@ -427,6 +427,14 @@ const LeadDetail = () => {
           </Card>
         </div>
       </div>
+
+      <AfspraakDialog
+        open={afspraakOpen}
+        onOpenChange={setAfspraakOpen}
+        leadId={id}
+        defaultTitle={`Afspraak ${lead.voornaam} ${lead.achternaam}`}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
+      />
     </div>
   );
 };

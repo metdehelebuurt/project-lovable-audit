@@ -26,7 +26,6 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // Look up user by ical_token
   const { data: user, error: userErr } = await supabase
     .from("users")
     .select("id, partner_id")
@@ -37,14 +36,13 @@ Deno.serve(async (req) => {
     return new Response("Invalid token", { status: 403 });
   }
 
-  // Fetch events for next 6 months
   const now = new Date();
   const sixMonthsLater = new Date(now);
   sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
   const startStr = now.toISOString().slice(0, 10);
   const endStr = sixMonthsLater.toISOString().slice(0, 10);
 
-  const [schouwen, installaties] = await Promise.all([
+  const [schouwen, installaties, afspraken] = await Promise.all([
     supabase.from("schouwen")
       .select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie")
       .eq("partner_id", user.partner_id)
@@ -55,6 +53,11 @@ Deno.serve(async (req) => {
       .eq("partner_id", user.partner_id)
       .gte("geplande_startdatum", startStr)
       .lte("geplande_startdatum", endStr),
+    supabase.from("afspraken")
+      .select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie")
+      .eq("partner_id", user.partner_id)
+      .gte("datum", startStr)
+      .lte("datum", endStr),
   ]);
 
   const stamp = now.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -81,7 +84,6 @@ Deno.serve(async (req) => {
   }
 
   for (const i of installaties.data ?? []) {
-    const dtEnd = i.geplande_einddatum ? `\r\nDTEND;VALUE=DATE:${formatDate(i.geplande_einddatum)}` : "";
     lines.push(
       "BEGIN:VEVENT",
       `UID:installatie-${i.id}@planning`,
@@ -90,6 +92,28 @@ Deno.serve(async (req) => {
       ...(i.geplande_einddatum ? [`DTEND;VALUE=DATE:${formatDate(i.geplande_einddatum)}`] : []),
       `SUMMARY:Installatie - ${i.consument_naam || "Installatie"}`,
       `DESCRIPTION:Status: ${i.status}`,
+      "END:VEVENT",
+    );
+  }
+
+  for (const a of afspraken.data ?? []) {
+    const dtStart = a.start_tijd
+      ? `${formatDate(a.datum)}T${(a.start_tijd as string).replace(/:/g, "").slice(0, 6)}`
+      : formatDate(a.datum);
+    const dtEnd = a.eind_tijd
+      ? `${formatDate(a.datum)}T${(a.eind_tijd as string).replace(/:/g, "").slice(0, 6)}`
+      : null;
+    const isAllDay = !a.start_tijd;
+
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:afspraak-${a.id}@planning`,
+      `DTSTAMP:${stamp}`,
+      isAllDay ? `DTSTART;VALUE=DATE:${dtStart}` : `DTSTART:${dtStart}`,
+      ...(dtEnd && !isAllDay ? [`DTEND:${dtEnd}`] : []),
+      `SUMMARY:${a.type === "op_afstand" ? "📹" : "🏠"} ${a.titel}`,
+      `DESCRIPTION:Type: ${a.type}\\nStatus: ${a.status}${a.locatie ? "\\nLocatie: " + a.locatie : ""}`,
+      ...(a.locatie ? [`LOCATION:${a.locatie}`] : []),
       "END:VEVENT",
     );
   }
