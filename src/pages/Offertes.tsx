@@ -439,6 +439,28 @@ const Offertes = () => {
                           <Button variant="ghost" size="icon" onClick={() => { setEmailDialog(o); setEmailTo(o.klant_email); }} title="Verstuur per e-mail">
                             <Send className="h-4 w-4" />
                           </Button>
+                          <Button variant="ghost" size="icon" onClick={async () => {
+                            setShareDialog(o);
+                            if ((o as any).share_token) {
+                              setShareLink(`${window.location.origin}/offerte/${(o as any).share_token}`);
+                            } else {
+                              setGeneratingLink(true);
+                              const token = crypto.randomUUID();
+                              const { error } = await supabase.from("offertes").update({
+                                share_token: token,
+                                share_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                              } as any).eq("id", o.id);
+                              if (!error) {
+                                setShareLink(`${window.location.origin}/offerte/${token}`);
+                                queryClient.invalidateQueries({ queryKey: ["offertes"] });
+                              } else {
+                                toast.error("Link genereren mislukt");
+                              }
+                              setGeneratingLink(false);
+                            }
+                          }} title="Deel link">
+                            <Link2 className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => setViewDialog(o)}>
                             <Eye className="h-4 w-4" />
                           </Button>
