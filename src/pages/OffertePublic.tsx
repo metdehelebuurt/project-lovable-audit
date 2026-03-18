@@ -16,6 +16,7 @@ const formatDate = (d: string) =>
 
 interface OfferteRegel {
   omschrijving: string;
+  offerte_tekst?: string;
   aantal: number;
   prijs_per_stuk: number;
   btw_percentage: number;
