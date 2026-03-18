@@ -260,6 +260,41 @@ const LeadDetail = () => {
               </Card>
             </TabsContent>
 
+            <TabsContent value="afspraken">
+              <Card className="rounded-2xl border-0 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-base">Afspraken</CardTitle>
+                  <Button size="sm" onClick={() => setAfspraakOpen(true)} className="gap-1">
+                    <Plus className="h-3.5 w-3.5" /> Afspraak inplannen
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {afspraken.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">Geen afspraken voor deze lead</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {afspraken.map((a: any) => (
+                        <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border">
+                          <div className="flex items-center gap-3">
+                            {a.type === "op_afstand" ? <Video className="h-5 w-5 text-primary" /> : <MapPin className="h-5 w-5 text-primary" />}
+                            <div>
+                              <p className="text-sm font-medium">{a.titel}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDate(a.datum)}
+                                {a.start_tijd && ` • ${a.start_tijd.slice(0, 5)}`}
+                                {a.eind_tijd && ` - ${a.eind_tijd.slice(0, 5)}`}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs">{a.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="offertes">
               <Card className="rounded-2xl border-0 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-3">
