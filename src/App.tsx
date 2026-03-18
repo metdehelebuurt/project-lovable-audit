@@ -42,6 +42,8 @@ import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import LeadDetail from "@/pages/LeadDetail";
+import Klanten from "@/pages/Klanten";
+import KlantDetail from "@/pages/KlantDetail";
 import NotFound from "@/pages/NotFound";
 import OffertePublic from "@/pages/OffertePublic";
 
