@@ -38,7 +38,7 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
           return (
             <tr key={i} style={{ borderBottom: `1px solid ${pcTint2}`, backgroundColor: i % 2 === 0 ? "#fff" : "rgba(0,0,0,0.02)" }}>
               <td style={{ padding: "10px 12px", fontWeight: 500 }}>{r.aantal}</td>
-              <td style={{ padding: "10px 12px" }}>{r.omschrijving}</td>
+              <td style={{ padding: "10px 12px" }}>{r.omschrijving}{r.offerte_tekst && <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{r.offerte_tekst}</div>}</td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
               <td style={{ padding: "10px 12px", textAlign: "right", color: r.korting_percentage > 0 ? pc : "#ccc" }}>{r.korting_percentage > 0 ? `${r.korting_percentage}%` : "—"}</td>
               <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(sub)}</td>
