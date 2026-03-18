@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
-
-type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
+import { voorbladTemplates, HeroDark } from "@/components/offertes/templates/VoorbladTemplates";
+import { productTemplates, ProductCards } from "@/components/offertes/templates/ProductTemplates";
+import { prijstabelTemplates, PriceModern } from "@/components/offertes/templates/PrijstabelTemplates";
+import { energieadviesTemplates, EnergyCards } from "@/components/offertes/templates/EnergieadviesTemplates";
+import { voorwaardenTemplates, TermsSimple } from "@/components/offertes/templates/VoorwaardenTemplates";
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 
 interface OfferteRegel {
