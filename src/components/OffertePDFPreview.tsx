@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { voorbladTemplates, HeroDark } from "@/components/offertes/templates/VoorbladTemplates";
 import { productTemplates, ProductCards } from "@/components/offertes/templates/ProductTemplates";
+import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import { prijstabelTemplates, PriceModern } from "@/components/offertes/templates/PrijstabelTemplates";
 import { energieadviesTemplates, EnergyCards } from "@/components/offertes/templates/EnergieadviesTemplates";
 import { voorwaardenTemplates, TermsSimple } from "@/components/offertes/templates/VoorwaardenTemplates";
@@ -375,6 +376,53 @@ export default function OffertePDFPreview() {
           <PageFooter />
         </div>
       )}
+
+      {/* ═══════════════ DATASHEET PAGES ═══════════════ */}
+      {producten.filter(p => p.datasheet_url && p.datasheet_type).map(p => {
+        const dsUrl = p.datasheet_url!.startsWith("http")
+          ? p.datasheet_url!
+          : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${p.datasheet_url}`;
+
+        if (p.datasheet_type === "fabrikant") {
+          return (
+            <div key={`ds-${p.id}`} className="pdf-page" style={{ ...pageStyle, padding: 0 }}>
+              <iframe
+                src={dsUrl}
+                title={`Datasheet ${p.naam}`}
+                style={{ width: "100%", height: "100%", border: "none", minHeight: "297mm" }}
+              />
+            </div>
+          );
+        }
+
+        if (p.datasheet_type === "gegenereerd") {
+          const specs = p.specs && typeof p.specs === "object" && !Array.isArray(p.specs)
+            ? (p.specs as Record<string, string>) : null;
+          return (
+            <div key={`ds-${p.id}`} className="pdf-page" style={{ margin: "0 auto", pageBreakAfter: "always" }}>
+              <ProductDatasheet
+                product={{
+                  naam: p.naam,
+                  merk: p.merk,
+                  model: p.model,
+                  categorie: p.categorie,
+                  omschrijving: p.omschrijving,
+                  afbeelding_url: p.afbeelding_url,
+                  specs,
+                  certificeringen: p.certificeringen,
+                  garantie_jaren: p.garantie_jaren,
+                  prijs_excl_btw: p.prijs_excl_btw,
+                  onderhoud: p.onderhoud,
+                  installatie_instructies: p.installatie_instructies,
+                }}
+                partner={partner}
+              />
+            </div>
+          );
+        }
+
+        return null;
+      })}
 
       {/* ═══════════════ PAGE 3: ENERGIEADVIES (dynamic template) ═══════════════ */}
       {tc.energieadvies && energieadvies && (
