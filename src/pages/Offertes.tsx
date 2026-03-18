@@ -63,6 +63,9 @@ interface OfferteFormData {
   geldig_tot: string;
   betalingsvoorwaarden: string;
   notities: string;
+  introductie_tekst: string;
+  garantie_voorwaarden: string;
+  installatie_termijn: string;
   regels: OfferteRegel[];
   include_schouw: boolean;
   include_energieadvies: boolean;
