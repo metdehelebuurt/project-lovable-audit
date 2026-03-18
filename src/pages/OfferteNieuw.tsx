@@ -195,6 +195,7 @@ const OfferteNieuw = () => {
         lead_id: selectedLead?.id || null,
         schouw_id: schouwId || null,
         regels: regels as unknown as Json,
+        template_config: templateConfig as unknown as Json,
         subtotaal: totals.subtotaal,
         btw_bedrag: totals.btwBedrag,
         totaal_bedrag: totals.totaal,
