@@ -15,11 +15,12 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
+import SignaturePad from "@/components/schouwen/SignaturePad";
 import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
-const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Samenvatting"];
+const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Klant akkoord", "Samenvatting"];
 
 const SchouwUitvoeren = () => {
   const { id } = useParams();
