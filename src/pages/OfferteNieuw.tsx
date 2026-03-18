@@ -484,6 +484,13 @@ const OfferteNieuw = () => {
           navigate(`/producten/${productId}/datasheet`);
         }}
       />
+
+      <OfferteTemplateBuilder
+        open={templateBuilderOpen}
+        onOpenChange={setTemplateBuilderOpen}
+        currentConfig={templateConfig}
+        onSave={setTemplateConfig}
+      />
     </div>
   );
 };

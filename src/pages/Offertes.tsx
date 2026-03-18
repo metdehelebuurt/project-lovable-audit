@@ -839,6 +839,35 @@ const Offertes = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Share link dialog */}
+      <Dialog open={!!shareDialog} onOpenChange={(open) => !open && setShareDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Offertelink delen</DialogTitle>
+          </DialogHeader>
+          {shareDialog && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Deel deze link met <strong>{shareDialog.klant_naam}</strong> zodat zij de offerte online kunnen bekijken en accepteren.
+              </p>
+              {generatingLink ? (
+                <p className="text-sm text-muted-foreground">Link genereren...</p>
+              ) : shareLink ? (
+                <div className="flex gap-2">
+                  <Input value={shareLink} readOnly className="rounded-xl text-xs" />
+                  <Button variant="outline" size="icon" onClick={() => {
+                    navigator.clipboard.writeText(shareLink);
+                    toast.success("Link gekopieerd!");
+                  }} className="shrink-0">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : null}
+              <p className="text-xs text-muted-foreground">De link is 30 dagen geldig. De klant kan de offerte bekijken en direct online accepteren.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

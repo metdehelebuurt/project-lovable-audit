@@ -76,6 +76,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
 
             {/* Public embed routes — no auth, no layout */}
+            <Route path="/offerte/:token" element={<OffertePublic />} />
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
             <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
             <Route path="/signup" element={<Signup />} />
