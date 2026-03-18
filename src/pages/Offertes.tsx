@@ -44,6 +44,7 @@ const statusColors: Record<OfferteStatus, string> = {
 interface OfferteRegel {
   product_id?: string;
   omschrijving: string;
+  offerte_tekst?: string;
   aantal: number;
   prijs_per_stuk: number;
   btw_percentage: number;
