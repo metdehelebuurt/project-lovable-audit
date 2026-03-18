@@ -457,8 +457,10 @@ const Planning = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {selectedEvent?.type === "schouw" ? <ClipboardList className="h-5 w-5 text-primary" /> : <Wrench className="h-5 w-5 text-orange-500" />}
-              {selectedEvent?.type === "schouw" ? "Schouw" : "Installatie"} Details
+              {selectedEvent?.type === "schouw" ? <ClipboardList className="h-5 w-5 text-primary" /> :
+               selectedEvent?.type === "installatie" ? <Wrench className="h-5 w-5 text-orange-500" /> :
+               <CalendarIcon className="h-5 w-5 text-violet-500" />}
+              {selectedEvent?.type === "schouw" ? "Schouw" : selectedEvent?.type === "installatie" ? "Installatie" : "Afspraak"} Details
             </DialogTitle>
           </DialogHeader>
           {selectedEvent && (
