@@ -46,10 +46,11 @@ const sampleProduct = {
   merk: "SolarMax",
   model: "SM-400",
   omschrijving: "Hoogrendement zonnepaneel",
-  imgUrl: null,
-  specs: { Vermogen: "400 Wp", Garantie: "25 jaar" },
-  garantieJaren: 25,
-  certificeringen: "IEC 61215",
+  afbeelding_url: null as string | null,
+  garantie_jaren: 25 as number | null,
+  certificeringen: "IEC 61215" as string | null,
+  specs: { Vermogen: "400 Wp", Garantie: "25 jaar" } as Record<string, any> | null,
+  onderhoud: null as string | null,
 };
 
 const sampleRegels = [
@@ -57,12 +58,9 @@ const sampleRegels = [
   { omschrijving: "Omvormer", aantal: 1, prijs_per_stuk: 1200, btw_percentage: 21, korting_percentage: 0 },
 ];
 
-const sampleEnergie = {
-  capaciteit: 5,
-  besparing: 850,
-  terugverdientijd: 6.5,
-  investering: 5500,
-};
+const fmtCur = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
+
+const pcTint2 = "rgba(91,88,225,0.15)";
 
 // Map variant IDs to their actual components
 const thumbnailComponents: Record<string, React.ReactNode> = {
@@ -75,16 +73,16 @@ const thumbnailComponents: Record<string, React.ReactNode> = {
   "product-cards": <ProductCards pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} producten={[sampleProduct]} isThumbnail />,
   "product-grid": <ProductGrid pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} producten={[sampleProduct]} isThumbnail />,
   "product-spotlight": <ProductSpotlight pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} producten={[sampleProduct]} isThumbnail />,
-  "price-classic": <PriceClassic pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
-  "price-modern": <PriceModern pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
-  "price-compact": <PriceCompact pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
-  "price-detailed": <PriceDetailed pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
-  "energy-cards": <EnergyCards pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} energieadvies={sampleEnergie} isThumbnail />,
-  "energy-infographic": <EnergyInfographic pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} energieadvies={sampleEnergie} isThumbnail />,
-  "energy-minimal": <EnergyMinimal pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} energieadvies={sampleEnergie} isThumbnail />,
-  "terms-simple": <TermsSimple pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} akkoordTekst="" isThumbnail />,
-  "terms-boxed": <TermsBoxed pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} akkoordTekst="" isThumbnail />,
-  "terms-sidebar": <TermsSidebar pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} akkoordTekst="" isThumbnail />,
+  "price-classic": <PriceClassic pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaalBedrag={6110.5} formatCurrency={fmtCur} isThumbnail />,
+  "price-modern": <PriceModern pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaalBedrag={6110.5} formatCurrency={fmtCur} isThumbnail />,
+  "price-compact": <PriceCompact pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaalBedrag={6110.5} formatCurrency={fmtCur} isThumbnail />,
+  "price-detailed": <PriceDetailed pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaalBedrag={6110.5} formatCurrency={fmtCur} isThumbnail />,
+  "energy-cards": <EnergyCards pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
+  "energy-infographic": <EnergyInfographic pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
+  "energy-minimal": <EnergyMinimal pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
+  "terms-simple": <TermsSimple pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} pcTint2={pcTint2} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} datum="1 januari 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail />,
+  "terms-boxed": <TermsBoxed pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} pcTint2={pcTint2} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} datum="1 januari 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail />,
+  "terms-sidebar": <TermsSidebar pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} pcTint2={pcTint2} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} datum="1 januari 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail />,
 };
 
 export default function OfferteTemplateBuilder({ open, onOpenChange, currentConfig, onSave }: OfferteTemplateBuilderProps) {
