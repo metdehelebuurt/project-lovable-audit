@@ -85,6 +85,7 @@ const emptyForm: ProductFormData = {
   artikelnummer: "", ean_code: "", levertijd: "", garantie_jaren: null,
   certificeringen: "", status: "actief", afbeelding_url: null,
   afbeeldingen: [], specs: {},
+  datasheet_url: null, datasheet_type: null,
 };
 
 interface AIProduct {
