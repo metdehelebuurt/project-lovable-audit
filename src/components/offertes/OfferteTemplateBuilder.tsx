@@ -5,6 +5,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Check, Palette } from "lucide-react";
 import { templateSecties, defaultTemplateConfig, type TemplateConfig } from "./templates/templateRegistry";
+import { HeroDark, HeroSplit, HeroMinimal, HeroGradient, HeroPhoto } from "./templates/VoorbladTemplates";
+import { ProductList, ProductCards, ProductGrid, ProductSpotlight } from "./templates/ProductTemplates";
+import { PriceClassic, PriceModern, PriceCompact, PriceDetailed } from "./templates/PrijstabelTemplates";
+import { EnergyCards, EnergyInfographic, EnergyMinimal } from "./templates/EnergieadviesTemplates";
+import { TermsSimple, TermsBoxed, TermsSidebar } from "./templates/VoorwaardenTemplates";
 
 interface OfferteTemplateBuilderProps {
   open: boolean;
@@ -13,27 +18,73 @@ interface OfferteTemplateBuilderProps {
   onSave: (config: TemplateConfig) => void;
 }
 
-// Mini thumbnail colors for preview representation
-const thumbnailColors: Record<string, string> = {
-  "hero-dark": "bg-gray-900",
-  "hero-split": "bg-gradient-to-r from-gray-900 to-white",
-  "hero-minimal": "bg-white border",
-  "hero-gradient": "bg-gradient-to-br from-gray-900 to-primary",
-  "hero-photo": "bg-gradient-to-b from-primary/60 to-gray-100",
-  "product-list": "bg-white border",
-  "product-cards": "bg-accent/30 border",
-  "product-grid": "bg-accent/20 border",
-  "product-spotlight": "bg-white border-l-4 border-l-primary",
-  "price-classic": "bg-gray-50 border",
-  "price-modern": "bg-accent/30 border",
-  "price-compact": "bg-white border-b-2 border-b-primary",
-  "price-detailed": "bg-primary/5 border border-primary/20",
-  "energy-cards": "bg-accent/30 border",
-  "energy-infographic": "bg-gradient-to-r from-accent/20 to-primary/10 border",
-  "energy-minimal": "bg-white border",
-  "terms-simple": "bg-white border-t-2 border-t-primary",
-  "terms-boxed": "bg-accent/10 border border-dashed",
-  "terms-sidebar": "bg-gradient-to-r from-accent/30 to-white border",
+// Sample data for thumbnail previews
+const sampleProps = {
+  pc: "#5B58E1",
+  sc: "#1a1a2e",
+  pcTint: "rgba(91,88,225,0.08)",
+  logoUrl: null,
+  partnerNaam: "Bedrijf",
+  klantNaam: "Jan de Vries",
+  offertenummer: "OF-240101-0001",
+  adviseurNaam: "Piet Jansen",
+  datum: "1 januari 2025",
+  categoryLabel: "Zonnepanelen",
+  productNaam: "SolarMax 400W",
+  slogan: "Slim verduurzamen",
+  introTekst: "Beste Jan, graag presenteren wij u onze offerte.",
+  badges: ["Gecertificeerd", "Persoonlijk advies", "Professioneel"],
+  telefoon: "020-1234567",
+  klantAdres: "Keizersgracht 1",
+  klantPostcode: "1015 AA",
+  klantPlaats: "Amsterdam",
+  isThumbnail: true,
+};
+
+const sampleProduct = {
+  naam: "SolarMax 400W",
+  merk: "SolarMax",
+  model: "SM-400",
+  omschrijving: "Hoogrendement zonnepaneel",
+  imgUrl: null,
+  specs: { Vermogen: "400 Wp", Garantie: "25 jaar" },
+  garantieJaren: 25,
+  certificeringen: "IEC 61215",
+};
+
+const sampleRegels = [
+  { omschrijving: "Zonnepanelen 12x", aantal: 12, prijs_per_stuk: 350, btw_percentage: 21, korting_percentage: 5 },
+  { omschrijving: "Omvormer", aantal: 1, prijs_per_stuk: 1200, btw_percentage: 21, korting_percentage: 0 },
+];
+
+const sampleEnergie = {
+  capaciteit: 5,
+  besparing: 850,
+  terugverdientijd: 6.5,
+  investering: 5500,
+};
+
+// Map variant IDs to their actual components
+const thumbnailComponents: Record<string, React.ReactNode> = {
+  "hero-dark": <HeroDark {...sampleProps} />,
+  "hero-split": <HeroSplit {...sampleProps} />,
+  "hero-minimal": <HeroMinimal {...sampleProps} />,
+  "hero-gradient": <HeroGradient {...sampleProps} />,
+  "hero-photo": <HeroPhoto {...sampleProps} />,
+  "product-list": <ProductList pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} producten={[sampleProduct]} isThumbnail />,
+  "product-cards": <ProductCards pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} producten={[sampleProduct]} isThumbnail />,
+  "product-grid": <ProductGrid pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} producten={[sampleProduct]} isThumbnail />,
+  "product-spotlight": <ProductSpotlight pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} producten={[sampleProduct]} isThumbnail />,
+  "price-classic": <PriceClassic pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
+  "price-modern": <PriceModern pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
+  "price-compact": <PriceCompact pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
+  "price-detailed": <PriceDetailed pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} regels={sampleRegels} subtotaal={5050} btwBedrag={1060.5} totaal={6110.5} isThumbnail />,
+  "energy-cards": <EnergyCards pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} energieadvies={sampleEnergie} isThumbnail />,
+  "energy-infographic": <EnergyInfographic pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} energieadvies={sampleEnergie} isThumbnail />,
+  "energy-minimal": <EnergyMinimal pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} energieadvies={sampleEnergie} isThumbnail />,
+  "terms-simple": <TermsSimple pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} akkoordTekst="" isThumbnail />,
+  "terms-boxed": <TermsBoxed pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} akkoordTekst="" isThumbnail />,
+  "terms-sidebar": <TermsSidebar pc={sampleProps.pc} sc={sampleProps.sc} pcTint={sampleProps.pcTint} partnerNaam={sampleProps.partnerNaam} klantNaam={sampleProps.klantNaam} adviseurNaam={sampleProps.adviseurNaam} akkoordTekst="" isThumbnail />,
 };
 
 export default function OfferteTemplateBuilder({ open, onOpenChange, currentConfig, onSave }: OfferteTemplateBuilderProps) {
@@ -59,9 +110,10 @@ export default function OfferteTemplateBuilder({ open, onOpenChange, currentConf
             {templateSecties.map(sectie => (
               <div key={sectie.id}>
                 <h3 className="text-sm font-semibold text-foreground mb-3">{sectie.naam}</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {sectie.varianten.map(variant => {
                     const isSelected = config[sectie.id as keyof TemplateConfig] === variant.id;
+                    const component = thumbnailComponents[variant.id];
                     return (
                       <button
                         key={variant.id}
@@ -73,20 +125,31 @@ export default function OfferteTemplateBuilder({ open, onOpenChange, currentConf
                             : "border-border hover:border-primary/40"
                         }`}
                       >
-                        {/* Mini thumbnail */}
-                        <div className={`w-full aspect-[3/2] rounded-lg ${thumbnailColors[variant.id] || "bg-muted"} flex items-center justify-center mb-2`}>
+                        {/* Mini-render thumbnail */}
+                        <div className="w-full aspect-[3/2] rounded-lg overflow-hidden bg-white relative">
                           {isSelected && (
-                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5">
+                            <div className="absolute top-1 right-1 z-10 bg-primary text-primary-foreground rounded-full p-0.5">
                               <Check className="h-3 w-3" />
                             </div>
                           )}
-                          <div className="space-y-1 px-2 w-full">
-                            <div className="h-1 bg-foreground/10 rounded-full w-3/4" />
-                            <div className="h-1 bg-foreground/10 rounded-full w-1/2" />
-                            <div className="h-1 bg-foreground/10 rounded-full w-2/3" />
+                          <div
+                            style={{
+                              width: 794,
+                              height: 530,
+                              transform: "scale(0.18)",
+                              transformOrigin: "top left",
+                              pointerEvents: "none",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {component || (
+                              <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                Preview
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <p className="text-xs font-medium text-foreground truncate">{variant.naam}</p>
+                        <p className="text-xs font-medium text-foreground truncate mt-1">{variant.naam}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{variant.beschrijving}</p>
                       </button>
                     );
