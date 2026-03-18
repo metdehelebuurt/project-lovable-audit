@@ -264,6 +264,8 @@ const Producten = () => {
       afbeelding_url: p.afbeelding_url || null,
       afbeeldingen: galleryImages,
       specs,
+      datasheet_url: (p as any).datasheet_url || null,
+      datasheet_type: (p as any).datasheet_type || null,
     });
   };
 
