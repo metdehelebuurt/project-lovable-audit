@@ -88,6 +88,9 @@ const OfferteNieuw = () => {
   const [schouwId, setSchouwId] = useState("");
   const [datasheetDialogOpen, setDatasheetDialogOpen] = useState(false);
   const [productsMissingDatasheet, setProductsMissingDatasheet] = useState<Array<{ id: string; naam: string; merk: string | null; model: string | null }>>([]);
+  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(defaultTemplateConfig);
+  const [templateBuilderOpen, setTemplateBuilderOpen] = useState(false);
+  const [generatingIntro, setGeneratingIntro] = useState(false);
 
   // Prefill from sessionStorage
   useEffect(() => {
