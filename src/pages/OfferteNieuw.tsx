@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
 import DatasheetCheckDialog from "@/components/offertes/DatasheetCheckDialog";
-import OfferteTemplateBuilder from "@/components/offertes/OfferteTemplateBuilder";
 import { defaultTemplateConfig, type TemplateConfig } from "@/components/offertes/templates/templateRegistry";
 import type { Database, Json } from "@/integrations/supabase/types";
 
