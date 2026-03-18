@@ -461,7 +461,10 @@ const OfferteNieuw = () => {
 
         {/* Actions */}
         <div className="flex items-center justify-between gap-3">
-          <Button type="button" variant="outline" onClick={() => setTemplateBuilderOpen(true)} className="rounded-pill gap-2">
+          <Button type="button" variant="outline" onClick={() => {
+            sessionStorage.setItem("offerte-template-config", JSON.stringify(templateConfig));
+            navigate("/offertes/template?return=/offertes/nieuw");
+          }} className="rounded-pill gap-2">
             <Palette className="h-4 w-4" /> Template kiezen
           </Button>
           <div className="flex gap-3">

@@ -181,6 +181,10 @@ const App = () => (
               <Route path="/offertes/nieuw" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
               } />
+              <Route path="/offertes/template" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteTemplatePage /></ProtectedRoute>
+              } />
+              } />
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/affiliates" element={
                 <ProtectedRoute allowedRoles={["affiliate"]}><Affiliates /></ProtectedRoute>
