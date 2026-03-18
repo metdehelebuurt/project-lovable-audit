@@ -55,6 +55,7 @@ interface ProductFormData {
   merk: string;
   model: string;
   omschrijving: string;
+  offerte_tekst: string;
   prijs_excl_btw: number;
   kostprijs: number | null;
   eenheid: string;
@@ -79,7 +80,7 @@ interface ProductFormData {
 
 const emptyForm: ProductFormData = {
   naam: "", categorie: "zonnepanelen", merk: "", model: "",
-  omschrijving: "", prijs_excl_btw: 0, kostprijs: null, eenheid: "stuk",
+  omschrijving: "", offerte_tekst: "", prijs_excl_btw: 0, kostprijs: null, eenheid: "stuk",
   voorraad: null, btw_percentage: 21, max_korting_euro: null,
   max_korting_percentage: null, product_code: "", leverancier: "",
   artikelnummer: "", ean_code: "", levertijd: "", garantie_jaren: null,
@@ -188,9 +189,10 @@ const Producten = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & ProductFormData) => {
-      const { id, afbeelding_url, afbeeldingen, specs, datasheet_url, datasheet_type, ...rest } = data;
+      const { id, afbeelding_url, afbeeldingen, specs, datasheet_url, datasheet_type, offerte_tekst, ...rest } = data;
       const record: any = {
         ...rest,
+        offerte_tekst: offerte_tekst || null,
         afbeelding_url: afbeelding_url || null,
         afbeeldingen: afbeeldingen.length > 0 ? afbeeldingen : null,
         specs: Object.keys(specs).length > 0 ? specs : null,
@@ -252,6 +254,7 @@ const Producten = () => {
     setForm({
       naam: p.naam, categorie: p.categorie, merk: p.merk || "",
       model: p.model || "", omschrijving: p.omschrijving || "",
+      offerte_tekst: (p as any).offerte_tekst || "",
       prijs_excl_btw: Number(p.prijs_excl_btw), kostprijs: p.kostprijs ? Number(p.kostprijs) : null,
       eenheid: p.eenheid || "stuk", voorraad: p.voorraad,
       btw_percentage: p.btw_percentage ?? 21,
@@ -433,6 +436,11 @@ const Producten = () => {
                   <div><Label>Merk</Label><Input value={form.merk} onChange={e => setForm(p => ({ ...p, merk: e.target.value }))} className="rounded-xl" /></div>
                   <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="rounded-xl" /></div>
                   <div className="col-span-2"><Label>Omschrijving</Label><Textarea value={form.omschrijving} onChange={e => setForm(p => ({ ...p, omschrijving: e.target.value }))} className="rounded-xl" rows={3} /></div>
+                  <div className="col-span-2">
+                    <Label>Tekst op offerte</Label>
+                    <p className="text-xs text-muted-foreground mb-1">Deze tekst wordt automatisch getoond op offertes onder de productregel.</p>
+                    <Textarea value={form.offerte_tekst} onChange={e => setForm(p => ({ ...p, offerte_tekst: e.target.value }))} className="rounded-xl" rows={3} placeholder="Bijv. inclusief montage, 25 jaar vermogensgarantie..." />
+                  </div>
                 </div>
               </div>
 

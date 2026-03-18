@@ -44,6 +44,7 @@ const statusColors: Record<OfferteStatus, string> = {
 interface OfferteRegel {
   product_id?: string;
   omschrijving: string;
+  offerte_tekst?: string;
   aantal: number;
   prijs_per_stuk: number;
   btw_percentage: number;
@@ -323,6 +324,7 @@ const Offertes = () => {
           ...r,
           product_id: product.id,
           omschrijving: `${product.naam}${product.merk ? ` — ${product.merk}` : ""}${product.model ? ` ${product.model}` : ""}`,
+          offerte_tekst: (product as any).offerte_tekst || "",
           prijs_per_stuk: product.prijs_excl_btw,
           btw_percentage: product.btw_percentage ?? 21,
         } : r),
@@ -683,7 +685,10 @@ const Offertes = () => {
                   <TableBody>
                     {(Array.isArray(viewDialog.regels) ? viewDialog.regels as unknown as OfferteRegel[] : []).map((r, i) => (
                       <TableRow key={i}>
-                        <TableCell>{r.omschrijving}</TableCell>
+                        <TableCell>
+                          <div>{r.omschrijving}</div>
+                          {r.offerte_tekst && <p className="text-xs text-muted-foreground mt-0.5">{r.offerte_tekst}</p>}
+                        </TableCell>
                         <TableCell className="text-right">{r.aantal}</TableCell>
                         <TableCell className="text-right">{formatCurrency(r.prijs_per_stuk)}</TableCell>
                         <TableCell className="text-right">{r.btw_percentage}%</TableCell>

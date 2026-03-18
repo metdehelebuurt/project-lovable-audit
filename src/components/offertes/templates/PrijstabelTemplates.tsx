@@ -8,6 +8,7 @@ interface PrijstabelProps {
   regels: Array<{
     aantal: number;
     omschrijving: string;
+    offerte_tekst?: string;
     prijs_per_stuk: number;
     btw_percentage: number;
     korting_percentage: number;
@@ -37,7 +38,7 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
           return (
             <tr key={i} style={{ borderBottom: `1px solid ${pcTint2}`, backgroundColor: i % 2 === 0 ? "#fff" : "rgba(0,0,0,0.02)" }}>
               <td style={{ padding: "10px 12px", fontWeight: 500 }}>{r.aantal}</td>
-              <td style={{ padding: "10px 12px" }}>{r.omschrijving}</td>
+              <td style={{ padding: "10px 12px" }}>{r.omschrijving}{r.offerte_tekst && <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{r.offerte_tekst}</div>}</td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
               <td style={{ padding: "10px 12px", textAlign: "right", color: r.korting_percentage > 0 ? pc : "#ccc" }}>{r.korting_percentage > 0 ? `${r.korting_percentage}%` : "—"}</td>
               <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(sub)}</td>
@@ -70,6 +71,7 @@ export const PriceModern: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, regels,
         <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", backgroundColor: i % 2 === 0 ? pcTint : "#fff", borderRadius: 8, marginBottom: 4 }}>
           <div>
             <p style={{ fontSize: 13, fontWeight: 600, color: sc, margin: 0 }}>{r.omschrijving}</p>
+            {r.offerte_tekst && <p style={{ fontSize: 10, color: "#777", margin: "2px 0 0" }}>{r.offerte_tekst}</p>}
             <p style={{ fontSize: 10, color: "#888", margin: "2px 0 0" }}>{r.aantal}× {formatCurrency(r.prijs_per_stuk)} {r.korting_percentage > 0 ? `(-${r.korting_percentage}%)` : ""}</p>
           </div>
           <span style={{ fontSize: 14, fontWeight: 700, color: sc }}>{formatCurrency(sub)}</span>
@@ -96,7 +98,7 @@ export const PriceCompact: React.FC<PrijstabelProps> = ({ pc, sc, regels, subtot
       const sub = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
       return (
         <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #eee", fontSize: 12 }}>
-          <span style={{ color: "#333" }}>{r.aantal}× {r.omschrijving}</span>
+          <span style={{ color: "#333" }}>{r.aantal}× {r.omschrijving}{r.offerte_tekst && <span style={{ fontSize: 10, color: "#888" }}> — {r.offerte_tekst}</span>}</span>
           <span style={{ fontWeight: 600, color: sc }}>{formatCurrency(sub)}</span>
         </div>
       );
@@ -128,7 +130,7 @@ export const PriceDetailed: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, pcTin
           return (
             <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#fff" : pcTint }}>
               <td style={{ padding: "8px 12px", color: "#999" }}>{i + 1}</td>
-              <td style={{ padding: "8px 12px", fontWeight: 500, color: sc }}>{r.omschrijving}</td>
+              <td style={{ padding: "8px 12px", fontWeight: 500, color: sc }}>{r.omschrijving}{r.offerte_tekst && <div style={{ fontSize: 10, color: "#888", fontWeight: 400, marginTop: 2 }}>{r.offerte_tekst}</div>}</td>
               <td style={{ padding: "8px 12px", textAlign: "right" }}>{r.aantal}</td>
               <td style={{ padding: "8px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
               <td style={{ padding: "8px 12px", textAlign: "right", color: r.korting_percentage > 0 ? pc : "#ccc" }}>{r.korting_percentage > 0 ? `${r.korting_percentage}%` : "—"}</td>

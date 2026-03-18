@@ -30,15 +30,16 @@ const DatasheetCheckDialog = ({
   onComplete,
   onNavigateToProduct,
 }: DatasheetCheckDialogProps) => {
-  const [statuses, setStatuses] = useState<Record<string, ProductStatus>>(() =>
-    Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus]))
-  );
+  const [statuses, setStatuses] = useState<Record<string, ProductStatus>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [rechecking, setRechecking] = useState(false);
 
-  // Reset statuses when products prop changes
+  // Reset statuses when products prop changes or dialog opens
   useEffect(() => {
-    setStatuses(Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus])));
-  }, [products]);
+    if (open && products.length > 0) {
+      setStatuses(Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus])));
+    }
+  }, [products, open]);
 
   const allResolved = products.every(
     (p) => statuses[p.id] === "uploaded" || statuses[p.id] === "skipped"
@@ -83,8 +84,30 @@ const DatasheetCheckDialog = ({
   };
 
   const handleGenerate = (productId: string) => {
-    onOpenChange(false);
-    onNavigateToProduct(productId);
+    // Open in new tab so offerte form is preserved
+    window.open(`/producten/${productId}/datasheet`, "_blank");
+  };
+
+  const handleRecheck = async () => {
+    setRechecking(true);
+    try {
+      const ids = products.map((p) => p.id);
+      const { data } = await supabase
+        .from("producten")
+        .select("id, datasheet_type")
+        .in("id", ids);
+      if (data) {
+        const updated = { ...statuses };
+        data.forEach((p) => {
+          if (p.datasheet_type) updated[p.id] = "uploaded";
+        });
+        setStatuses(updated);
+        toast.success("Datasheets hergecontroleerd");
+      }
+    } catch {
+      toast.error("Hercontrole mislukt");
+    }
+    setRechecking(false);
   };
 
   return (
@@ -134,7 +157,7 @@ const DatasheetCheckDialog = ({
                   )}
                 </div>
 
-                {(status === "pending") && (
+                {(status === "pending" || !status) && (
                   <div className="flex flex-wrap gap-2">
                     <input
                       type="file"
@@ -180,7 +203,19 @@ const DatasheetCheckDialog = ({
           })}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl gap-1"
+            disabled={rechecking}
+            onClick={handleRecheck}
+          >
+            {rechecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            Hercontroleer
+          </Button>
+          <div className="flex-1" />
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

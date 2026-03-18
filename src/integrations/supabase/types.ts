@@ -940,6 +940,7 @@ export type Database = {
           merk: string | null
           model: string | null
           naam: string
+          offerte_tekst: string | null
           omschrijving: string | null
           onderhoud: string | null
           partner_id: string | null
@@ -973,6 +974,7 @@ export type Database = {
           merk?: string | null
           model?: string | null
           naam: string
+          offerte_tekst?: string | null
           omschrijving?: string | null
           onderhoud?: string | null
           partner_id?: string | null
@@ -1006,6 +1008,7 @@ export type Database = {
           merk?: string | null
           model?: string | null
           naam?: string
+          offerte_tekst?: string | null
           omschrijving?: string | null
           onderhoud?: string | null
           partner_id?: string | null

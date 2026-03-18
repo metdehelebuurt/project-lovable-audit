@@ -1,0 +1,1 @@
+ALTER TABLE public.producten ADD COLUMN IF NOT EXISTS offerte_tekst text NULL;
