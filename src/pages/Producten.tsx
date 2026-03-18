@@ -73,6 +73,8 @@ interface ProductFormData {
   afbeelding_url: string | null;
   afbeeldingen: string[];
   specs: Record<string, string>;
+  datasheet_url: string | null;
+  datasheet_type: string | null;
 }
 
 const emptyForm: ProductFormData = {
