@@ -89,6 +89,46 @@ serve(async (req) => {
       console.error("Opdracht aanmaken mislukt:", opdrachtErr);
     }
 
+    // ── Create klant record ──
+    // Split klant_naam into voornaam / achternaam
+    const nameParts = (offerte.klant_naam || "").trim().split(/\s+/);
+    const voornaam = nameParts[0] || "Onbekend";
+    const achternaam = nameParts.slice(1).join(" ") || "Onbekend";
+
+    // Fetch extra lead info if available
+    let leadExtra: Record<string, string | null> = {};
+    if (offerte.lead_id) {
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("voornaam, achternaam, bedrijfsnaam, telefoon, email, adres, postcode, plaats")
+        .eq("id", offerte.lead_id)
+        .single();
+      if (lead) leadExtra = lead as any;
+    }
+
+    const { error: klantErr } = await supabase.from("klanten").insert({
+      partner_id: offerte.partner_id,
+      lead_id: offerte.lead_id || null,
+      offerte_id: offerte.id,
+      voornaam: leadExtra.voornaam || voornaam,
+      achternaam: leadExtra.achternaam || achternaam,
+      email: offerte.klant_email || leadExtra.email || null,
+      telefoon: offerte.klant_telefoon || leadExtra.telefoon || null,
+      bedrijfsnaam: leadExtra.bedrijfsnaam || null,
+      adres: offerte.klant_adres || leadExtra.adres || null,
+      postcode: offerte.klant_postcode || leadExtra.postcode || null,
+      plaats: offerte.klant_plaats || leadExtra.plaats || null,
+    });
+
+    if (klantErr) {
+      console.error("Klant aanmaken mislukt:", klantErr);
+    }
+
+    // ── Update lead status to 'klant' ──
+    if (offerte.lead_id) {
+      await supabase.from("leads").update({ lead_status: "klant" }).eq("id", offerte.lead_id);
+    }
+
     // Create notification for adviseur
     await supabase.from("notificaties").insert({
       user_id: offerte.adviseur_id,
