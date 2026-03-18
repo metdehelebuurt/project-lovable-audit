@@ -228,6 +228,96 @@ export type Database = {
           },
         ]
       }
+      afspraken: {
+        Row: {
+          adviseur_id: string
+          created_at: string
+          datum: string
+          eind_tijd: string | null
+          id: string
+          klant_id: string | null
+          lead_id: string | null
+          locatie: string | null
+          notities: string | null
+          partner_id: string
+          start_tijd: string | null
+          status: string
+          titel: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          adviseur_id: string
+          created_at?: string
+          datum: string
+          eind_tijd?: string | null
+          id?: string
+          klant_id?: string | null
+          lead_id?: string | null
+          locatie?: string | null
+          notities?: string | null
+          partner_id: string
+          start_tijd?: string | null
+          status?: string
+          titel: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          adviseur_id?: string
+          created_at?: string
+          datum?: string
+          eind_tijd?: string | null
+          id?: string
+          klant_id?: string | null
+          lead_id?: string | null
+          locatie?: string | null
+          notities?: string | null
+          partner_id?: string
+          start_tijd?: string | null
+          status?: string
+          titel?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "afspraken_adviseur_id_fkey"
+            columns: ["adviseur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "afspraken_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "afspraken_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "afspraken_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "afspraken_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consumenten: {
         Row: {
           achternaam: string | null
@@ -462,6 +552,89 @@ export type Database = {
           },
           {
             foreignKeyName: "installaties_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      klanten: {
+        Row: {
+          achternaam: string
+          adres: string | null
+          bedrijfsnaam: string | null
+          created_at: string
+          email: string | null
+          id: string
+          lead_id: string | null
+          notities: string | null
+          offerte_id: string | null
+          partner_id: string
+          plaats: string | null
+          postcode: string | null
+          telefoon: string | null
+          updated_at: string
+          voornaam: string
+        }
+        Insert: {
+          achternaam: string
+          adres?: string | null
+          bedrijfsnaam?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          notities?: string | null
+          offerte_id?: string | null
+          partner_id: string
+          plaats?: string | null
+          postcode?: string | null
+          telefoon?: string | null
+          updated_at?: string
+          voornaam: string
+        }
+        Update: {
+          achternaam?: string
+          adres?: string | null
+          bedrijfsnaam?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          notities?: string | null
+          offerte_id?: string | null
+          partner_id?: string
+          plaats?: string | null
+          postcode?: string | null
+          telefoon?: string | null
+          updated_at?: string
+          voornaam?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "klanten_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klanten_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klanten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klanten_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"

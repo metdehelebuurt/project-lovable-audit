@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon,
+  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths,
@@ -30,13 +30,14 @@ interface CalendarEvent {
   id: string;
   date: string;
   title: string;
-  type: "schouw" | "installatie";
+  type: "schouw" | "installatie" | "afspraak";
   status: string;
   extra?: Record<string, string | null>;
 }
 
 const schouwStatuses = ["gepland", "uitgevoerd", "geannuleerd"];
 const installatieStatuses = ["gepland", "in_uitvoering", "afgerond", "geannuleerd"];
+const afspraakStatuses = ["gepland", "afgerond", "geannuleerd"];
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00–20:00
 
 function generateICS(events: CalendarEvent[]): string {
@@ -56,8 +57,8 @@ function generateICS(events: CalendarEvent[]): string {
       `UID:${ev.id}@planning`,
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${dt}`,
-      `SUMMARY:${ev.type === "schouw" ? "Schouw" : "Installatie"} - ${ev.title}`,
-      `DESCRIPTION:Status: ${ev.status}`,
+      `SUMMARY:${ev.type === "schouw" ? "Schouw" : ev.type === "installatie" ? "Installatie" : "Afspraak"} - ${ev.title}`,
+      `DESCRIPTION:Status: ${ev.status}${ev.extra?.type ? "\\nType: " + ev.extra.type : ""}`,
       "END:VEVENT",
     );
   }
@@ -106,11 +107,13 @@ const Planning = () => {
       const rangeStart = format(dateRange.start, "yyyy-MM-dd");
       const rangeEnd = format(dateRange.end, "yyyy-MM-dd");
 
-      const [schouwen, installaties] = await Promise.all([
+      const [schouwen, installaties, afsprakenRes] = await Promise.all([
         supabase.from("schouwen").select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie")
           .gte("geplande_datum", rangeStart).lte("geplande_datum", rangeEnd),
         supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status")
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
+        supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
+          .gte("datum", rangeStart).lte("datum", rangeEnd),
       ]);
 
       const mapped: CalendarEvent[] = [
@@ -123,6 +126,11 @@ const Planning = () => {
           id: i.id, date: i.geplande_startdatum!,
           title: i.consument_naam ?? "Installatie", type: "installatie" as const, status: i.status,
           extra: { einddatum: i.geplande_einddatum },
+        })),
+        ...((afsprakenRes.data as any[]) ?? []).map((a: any) => ({
+          id: a.id, date: a.datum,
+          title: a.titel, type: "afspraak" as const, status: a.status,
+          extra: { type: a.type, start_tijd: a.start_tijd, eind_tijd: a.eind_tijd, locatie: a.locatie },
         })),
       ];
       setEvents(mapped);
@@ -159,9 +167,14 @@ const Planning = () => {
   }, [viewMode, currentDate]);
 
   const handleStatusUpdate = async (event: CalendarEvent, newStatus: string) => {
-    const table = event.type === "schouw" ? "schouwen" : "installaties";
-    const { error } = await supabase.from(table).update({ status: newStatus as any }).eq("id", event.id);
-    if (error) { toast.error(error.message); return; }
+    if (event.type === "afspraak") {
+      const { error } = await supabase.from("afspraken" as any).update({ status: newStatus } as any).eq("id", event.id);
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const table = event.type === "schouw" ? "schouwen" : "installaties";
+      const { error } = await supabase.from(table).update({ status: newStatus as any }).eq("id", event.id);
+      if (error) { toast.error(error.message); return; }
+    }
     toast.success("Status bijgewerkt");
     setEvents((prev) => prev.map((e) => e.id === event.id ? { ...e, status: newStatus } : e));
     setSelectedEvent((prev) => prev?.id === event.id ? { ...prev, status: newStatus } : prev);
@@ -186,10 +199,14 @@ const Planning = () => {
     <button
       onClick={() => setSelectedEvent(ev)}
       className={`w-full text-left text-[10px] leading-tight px-1.5 py-0.5 rounded truncate flex items-center gap-1 hover:opacity-80 transition-opacity ${
-        ev.type === "schouw" ? "bg-primary/10 text-primary" : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+        ev.type === "schouw" ? "bg-primary/10 text-primary" :
+        ev.type === "installatie" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" :
+        "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
       }`}
     >
-      {ev.type === "schouw" ? <ClipboardList className="h-2.5 w-2.5 shrink-0" /> : <Wrench className="h-2.5 w-2.5 shrink-0" />}
+      {ev.type === "schouw" ? <ClipboardList className="h-2.5 w-2.5 shrink-0" /> :
+       ev.type === "installatie" ? <Wrench className="h-2.5 w-2.5 shrink-0" /> :
+       ev.extra?.type === "op_afstand" ? <Video className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
       {ev.title}
     </button>
   );
@@ -408,6 +425,7 @@ const Planning = () => {
           <div className="flex gap-4 mt-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-primary/10" /> Schouw</div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/30" /> Installatie</div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-violet-100 dark:bg-violet-900/30" /> Afspraak</div>
           </div>
         </CardContent>
       </Card>
@@ -439,8 +457,10 @@ const Planning = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {selectedEvent?.type === "schouw" ? <ClipboardList className="h-5 w-5 text-primary" /> : <Wrench className="h-5 w-5 text-orange-500" />}
-              {selectedEvent?.type === "schouw" ? "Schouw" : "Installatie"} Details
+              {selectedEvent?.type === "schouw" ? <ClipboardList className="h-5 w-5 text-primary" /> :
+               selectedEvent?.type === "installatie" ? <Wrench className="h-5 w-5 text-orange-500" /> :
+               <CalendarIcon className="h-5 w-5 text-violet-500" />}
+              {selectedEvent?.type === "schouw" ? "Schouw" : selectedEvent?.type === "installatie" ? "Installatie" : "Afspraak"} Details
             </DialogTitle>
           </DialogHeader>
           {selectedEvent && (
@@ -472,6 +492,27 @@ const Planning = () => {
                     <p className="font-medium text-foreground">{format(parseISO(selectedEvent.extra.einddatum), "d MMMM yyyy", { locale: nl })}</p>
                   </div>
                 )}
+                {selectedEvent.extra?.type && (
+                  <div>
+                    <p className="text-muted-foreground">Type</p>
+                    <p className="font-medium text-foreground capitalize">{selectedEvent.extra.type.replace(/_/g, " ")}</p>
+                  </div>
+                )}
+                {selectedEvent.extra?.start_tijd && (
+                  <div>
+                    <p className="text-muted-foreground">Tijd</p>
+                    <p className="font-medium text-foreground">
+                      {selectedEvent.extra.start_tijd.slice(0, 5)}
+                      {selectedEvent.extra?.eind_tijd && ` - ${selectedEvent.extra.eind_tijd.slice(0, 5)}`}
+                    </p>
+                  </div>
+                )}
+                {selectedEvent.extra?.locatie && (
+                  <div>
+                    <p className="text-muted-foreground">Locatie</p>
+                    <p className="font-medium text-foreground">{selectedEvent.extra.locatie}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-muted-foreground text-sm mb-1">Status</p>
@@ -480,7 +521,7 @@ const Planning = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(selectedEvent.type === "schouw" ? schouwStatuses : installatieStatuses).map((s) => (
+                    {(selectedEvent.type === "schouw" ? schouwStatuses : selectedEvent.type === "installatie" ? installatieStatuses : afspraakStatuses).map((s) => (
                       <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
                     ))}
                   </SelectContent>

@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Globe, Pencil,
-  FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw,
+  FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw, Video, CalendarIcon,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -56,6 +57,7 @@ const LeadDetail = () => {
   const queryClient = useQueryClient();
   const [aiSignals, setAiSignals] = useState<AiSignal[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [afspraakOpen, setAfspraakOpen] = useState(false);
 
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
@@ -83,6 +85,17 @@ const LeadDetail = () => {
       const { data, error } = await supabase.from("schouwen").select("id, schouw_nummer, categorie, status, geplande_datum, consument_naam").eq("lead_id", id!).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: afspraken = [] } = useQuery({
+    queryKey: ["lead-afspraken", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("afspraken" as any)
+        .select("*").eq("lead_id", id!).order("datum", { ascending: false });
+      if (error) throw error;
+      return data as any[];
     },
     enabled: !!id,
   });
@@ -209,6 +222,7 @@ const LeadDetail = () => {
           <Tabs defaultValue="overzicht">
             <TabsList className="rounded-xl">
               <TabsTrigger value="overzicht" className="rounded-lg">Overzicht</TabsTrigger>
+              <TabsTrigger value="afspraken" className="rounded-lg">Afspraken ({afspraken.length})</TabsTrigger>
               <TabsTrigger value="offertes" className="rounded-lg">Offertes ({offertes.length})</TabsTrigger>
               <TabsTrigger value="schouwen" className="rounded-lg">Schouwen ({schouwen.length})</TabsTrigger>
             </TabsList>
@@ -242,6 +256,41 @@ const LeadDetail = () => {
                   <div className="text-xs text-muted-foreground pt-2">
                     Aangemaakt: {formatDate(lead.created_at)} • Laatst gewijzigd: {formatDate(lead.updated_at)}
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="afspraken">
+              <Card className="rounded-2xl border-0 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-base">Afspraken</CardTitle>
+                  <Button size="sm" onClick={() => setAfspraakOpen(true)} className="gap-1">
+                    <Plus className="h-3.5 w-3.5" /> Afspraak inplannen
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {afspraken.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">Geen afspraken voor deze lead</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {afspraken.map((a: any) => (
+                        <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border">
+                          <div className="flex items-center gap-3">
+                            {a.type === "op_afstand" ? <Video className="h-5 w-5 text-primary" /> : <MapPin className="h-5 w-5 text-primary" />}
+                            <div>
+                              <p className="text-sm font-medium">{a.titel}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDate(a.datum)}
+                                {a.start_tijd && ` • ${a.start_tijd.slice(0, 5)}`}
+                                {a.eind_tijd && ` - ${a.eind_tijd.slice(0, 5)}`}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs">{a.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -378,6 +427,14 @@ const LeadDetail = () => {
           </Card>
         </div>
       </div>
+
+      <AfspraakDialog
+        open={afspraakOpen}
+        onOpenChange={setAfspraakOpen}
+        leadId={id}
+        defaultTitle={`Afspraak ${lead.voornaam} ${lead.achternaam}`}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
+      />
     </div>
   );
 };

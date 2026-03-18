@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
-  MessageSquare, Home, FolderOpen, Battery, PenTool, Link2, Handshake, ClipboardCheck
+  MessageSquare, Home, FolderOpen, Battery, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +30,8 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Adviseurs", url: "/adviseurs", icon: UserCheck },
         { title: "Gebruikers", url: "/gebruikers", icon: Users },
         { title: "Producten", url: "/producten", icon: Package },
+        { title: "Leads", url: "/leads", icon: Users },
+        { title: "Klanten", url: "/klanten", icon: UserCheck2 },
         { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Offertes", url: "/offertes", icon: FileText },
         { title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck },
@@ -44,10 +46,11 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Adviseurs", url: "/adviseurs", icon: UserCheck },
         { title: "Gebruikers", url: "/gebruikers", icon: Users },
         { title: "Producten", url: "/producten", icon: Package },
+        { title: "Leads", url: "/leads", icon: Users },
+        { title: "Klanten", url: "/klanten", icon: UserCheck2 },
         { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Offertes", url: "/offertes", icon: FileText },
         { title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck },
-        { title: "Leads", url: "/leads", icon: Users },
         { title: "Installaties", url: "/installaties", icon: Wrench },
         { title: "Planning", url: "/planning", icon: Calendar },
         { title: "Analytics", url: "/analytics", icon: BarChart3 },
@@ -60,10 +63,11 @@ const getNavItems = (rol: string): NavItem[] => {
         ...common,
         { title: "Adviseurs", url: "/adviseurs", icon: UserCheck },
         { title: "Producten", url: "/producten", icon: Package },
+        { title: "Leads", url: "/leads", icon: Users },
+        { title: "Klanten", url: "/klanten", icon: UserCheck2 },
         { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Offertes", url: "/offertes", icon: FileText },
         { title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck },
-        { title: "Leads", url: "/leads", icon: Users },
         { title: "Installaties", url: "/installaties", icon: Wrench },
         { title: "Planning", url: "/planning", icon: Calendar },
         { title: "Analytics", url: "/analytics", icon: BarChart3 },
@@ -75,6 +79,7 @@ const getNavItems = (rol: string): NavItem[] => {
         ...common,
         { title: "Producten", url: "/producten", icon: Package },
         { title: "Mijn Leads", url: "/leads", icon: Users },
+        { title: "Klanten", url: "/klanten", icon: UserCheck2 },
         { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Offertes", url: "/offertes", icon: FileText },
         { title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck },

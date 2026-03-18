@@ -42,6 +42,8 @@ import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import LeadDetail from "@/pages/LeadDetail";
+import Klanten from "@/pages/Klanten";
+import KlantDetail from "@/pages/KlantDetail";
 import NotFound from "@/pages/NotFound";
 import OffertePublic from "@/pages/OffertePublic";
 
@@ -125,6 +127,12 @@ const App = () => (
               } />
               <Route path="/leads/:id" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><LeadDetail /></ProtectedRoute>
+              } />
+              <Route path="/klanten" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Klanten /></ProtectedRoute>
+              } />
+              <Route path="/klanten/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><KlantDetail /></ProtectedRoute>
               } />
               <Route path="/producten" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Producten /></ProtectedRoute>
