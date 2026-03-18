@@ -214,6 +214,21 @@ const OfferteNieuw = () => {
     e.preventDefault();
     if (!klantNaam || !klantEmail) { toast.error("Vul klantnaam en e-mail in"); return; }
     if (regels.length === 0) { toast.error("Voeg minimaal één regel toe"); return; }
+
+    // Check which product-linked rows are missing a datasheet
+    const productIds = regels.map(r => r.product_id).filter(Boolean) as string[];
+    if (productIds.length > 0) {
+      const missing = producten.filter(
+        p => productIds.includes(p.id) && !p.datasheet_type
+      ).map(p => ({ id: p.id, naam: p.naam, merk: p.merk, model: p.model }));
+
+      if (missing.length > 0) {
+        setProductsMissingDatasheet(missing);
+        setDatasheetDialogOpen(true);
+        return;
+      }
+    }
+
     saveMutation.mutate();
   };
 
