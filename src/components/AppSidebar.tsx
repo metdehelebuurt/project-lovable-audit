@@ -30,6 +30,8 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Adviseurs", url: "/adviseurs", icon: UserCheck },
         { title: "Gebruikers", url: "/gebruikers", icon: Users },
         { title: "Producten", url: "/producten", icon: Package },
+        { title: "Leads", url: "/leads", icon: Users },
+        { title: "Klanten", url: "/klanten", icon: UserCheck2 },
         { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Offertes", url: "/offertes", icon: FileText },
         { title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck },
