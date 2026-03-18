@@ -80,7 +80,7 @@ interface ProductFormData {
 
 const emptyForm: ProductFormData = {
   naam: "", categorie: "zonnepanelen", merk: "", model: "",
-  omschrijving: "", prijs_excl_btw: 0, kostprijs: null, eenheid: "stuk",
+  omschrijving: "", offerte_tekst: "", prijs_excl_btw: 0, kostprijs: null, eenheid: "stuk",
   voorraad: null, btw_percentage: 21, max_korting_euro: null,
   max_korting_percentage: null, product_code: "", leverancier: "",
   artikelnummer: "", ean_code: "", levertijd: "", garantie_jaren: null,
