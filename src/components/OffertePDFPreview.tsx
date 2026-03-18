@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { voorbladTemplates, HeroDark } from "@/components/offertes/templates/VoorbladTemplates";
 import { productTemplates, ProductCards } from "@/components/offertes/templates/ProductTemplates";
+import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import { prijstabelTemplates, PriceModern } from "@/components/offertes/templates/PrijstabelTemplates";
 import { energieadviesTemplates, EnergyCards } from "@/components/offertes/templates/EnergieadviesTemplates";
 import { voorwaardenTemplates, TermsSimple } from "@/components/offertes/templates/VoorwaardenTemplates";
