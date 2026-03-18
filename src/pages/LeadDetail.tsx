@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Globe, Pencil,
-  FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw,
+  FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw, Video, CalendarIcon,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
