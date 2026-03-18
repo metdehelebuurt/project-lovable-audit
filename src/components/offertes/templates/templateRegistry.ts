@@ -63,11 +63,22 @@ export const templateSecties: TemplateSectie[] = [
 ];
 
 export type TemplateConfig = {
+  // Design variant per sectie
   voorblad: string;
   producten: string;
   prijstabel: string;
   energieadvies: string;
   voorwaarden: string;
+  // Section toggles
+  secties_voorblad?: boolean;
+  secties_producten?: boolean;
+  secties_energieadvies?: boolean;
+  secties_schouwrapport?: boolean;
+  // Custom text overrides
+  badge_1?: string;
+  badge_2?: string;
+  badge_3?: string;
+  akkoord_tekst?: string;
 };
 
 export const defaultTemplateConfig: TemplateConfig = {
@@ -76,4 +87,12 @@ export const defaultTemplateConfig: TemplateConfig = {
   prijstabel: "price-modern",
   energieadvies: "energy-cards",
   voorwaarden: "terms-simple",
+  secties_voorblad: true,
+  secties_producten: true,
+  secties_energieadvies: true,
+  secties_schouwrapport: true,
+  badge_1: "Gecertificeerd installateur",
+  badge_2: "Persoonlijk advies",
+  badge_3: "Professionele installatie",
+  akkoord_tekst: "",
 };
