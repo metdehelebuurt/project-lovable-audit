@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2 } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
+import DatasheetCheckDialog from "@/components/offertes/DatasheetCheckDialog";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
