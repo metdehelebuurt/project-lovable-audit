@@ -55,6 +55,7 @@ interface ProductFormData {
   merk: string;
   model: string;
   omschrijving: string;
+  offerte_tekst: string;
   prijs_excl_btw: number;
   kostprijs: number | null;
   eenheid: string;
