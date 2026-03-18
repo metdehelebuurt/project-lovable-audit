@@ -111,14 +111,23 @@ export default function OffertePDFPreview() {
       if (!o) { setLoading(false); return; }
       setOfferte(o);
 
-      // Partner branding + template
+      // Read template_config from the offerte itself
+      if (o.template_config && typeof o.template_config === "object") {
+        setTemplateConfig(o.template_config as Record<string, any>);
+      }
+
+      // Partner branding
       if (o.partner_id) {
         const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
         if (p) {
           setPartner(p as PartnerBranding);
+          // Also read page-level toggles from feature_flags_json (voorblad on/off, etc.)
           if (p.feature_flags_json && typeof p.feature_flags_json === "object") {
             const flags = p.feature_flags_json as Record<string, any>;
-            if (flags.offerte_template) setTemplateConfig(flags.offerte_template);
+            if (flags.offerte_template) {
+              // Merge page-level toggles but don't override template_config design choices
+              setTemplateConfig(prev => ({ ...flags.offerte_template, ...prev }));
+            }
           }
         } else {
           setPartner(platformBranding);

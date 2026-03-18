@@ -34,37 +34,22 @@ export default function OffertePublic() {
   useEffect(() => {
     if (!token) return;
     (async () => {
-      const { data: o, error: err } = await supabase
-        .from("offertes")
-        .select("*")
-        .eq("share_token", token)
-        .single();
+      try {
+        const { data, error: fnErr } = await supabase.functions.invoke("offerte-public-view", {
+          body: { share_token: token },
+        });
 
-      if (err || !o) {
-        setError("Deze offertelink is ongeldig of verlopen.");
-        setLoading(false);
-        return;
+        if (fnErr || data?.error) {
+          setError(data?.error || fnErr?.message || "Deze offertelink is ongeldig of verlopen.");
+          setLoading(false);
+          return;
+        }
+
+        setOfferte(data.offerte);
+        if (data.partner) setPartner(data.partner);
+      } catch {
+        setError("Er is een fout opgetreden bij het laden van de offerte.");
       }
-
-      // Check expiry
-      if (o.share_expires_at && new Date(o.share_expires_at) < new Date()) {
-        setError("Deze offertelink is verlopen.");
-        setLoading(false);
-        return;
-      }
-
-      setOfferte(o);
-
-      // Get partner branding
-      if (o.partner_id) {
-        const { data: p } = await supabase
-          .from("partner_branding")
-          .select("*")
-          .eq("id", o.partner_id)
-          .single();
-        if (p) setPartner(p);
-      }
-
       setLoading(false);
     })();
   }, [token]);
@@ -96,13 +81,13 @@ export default function OffertePublic() {
     );
   }
 
-  if (error) {
+  if (error || !offerte) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md w-full rounded-2xl">
           <CardContent className="pt-8 pb-6 text-center space-y-4">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-            <h2 className="text-xl font-semibold text-foreground">{error}</h2>
+            <h2 className="text-xl font-semibold text-foreground">{error || "Offerte niet gevonden"}</h2>
             <p className="text-sm text-muted-foreground">Neem contact op met uw adviseur voor een nieuwe link.</p>
           </CardContent>
         </Card>
