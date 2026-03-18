@@ -37,6 +37,7 @@ interface CalendarEvent {
 
 const schouwStatuses = ["gepland", "uitgevoerd", "geannuleerd"];
 const installatieStatuses = ["gepland", "in_uitvoering", "afgerond", "geannuleerd"];
+const afspraakStatuses = ["gepland", "afgerond", "geannuleerd"];
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00–20:00
 
 function generateICS(events: CalendarEvent[]): string {
