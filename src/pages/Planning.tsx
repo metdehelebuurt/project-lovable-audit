@@ -199,10 +199,14 @@ const Planning = () => {
     <button
       onClick={() => setSelectedEvent(ev)}
       className={`w-full text-left text-[10px] leading-tight px-1.5 py-0.5 rounded truncate flex items-center gap-1 hover:opacity-80 transition-opacity ${
-        ev.type === "schouw" ? "bg-primary/10 text-primary" : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+        ev.type === "schouw" ? "bg-primary/10 text-primary" :
+        ev.type === "installatie" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" :
+        "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
       }`}
     >
-      {ev.type === "schouw" ? <ClipboardList className="h-2.5 w-2.5 shrink-0" /> : <Wrench className="h-2.5 w-2.5 shrink-0" />}
+      {ev.type === "schouw" ? <ClipboardList className="h-2.5 w-2.5 shrink-0" /> :
+       ev.type === "installatie" ? <Wrench className="h-2.5 w-2.5 shrink-0" /> :
+       ev.extra?.type === "op_afstand" ? <Video className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
       {ev.title}
     </button>
   );
