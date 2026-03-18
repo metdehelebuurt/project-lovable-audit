@@ -107,11 +107,13 @@ const Planning = () => {
       const rangeStart = format(dateRange.start, "yyyy-MM-dd");
       const rangeEnd = format(dateRange.end, "yyyy-MM-dd");
 
-      const [schouwen, installaties] = await Promise.all([
+      const [schouwen, installaties, afsprakenRes] = await Promise.all([
         supabase.from("schouwen").select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie")
           .gte("geplande_datum", rangeStart).lte("geplande_datum", rangeEnd),
         supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status")
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
+        supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
+          .gte("datum", rangeStart).lte("datum", rangeEnd),
       ]);
 
       const mapped: CalendarEvent[] = [
