@@ -172,6 +172,7 @@ const OfferteNieuw = () => {
         ...r,
         product_id: product.id,
         omschrijving: `${product.naam}${product.merk ? ` — ${product.merk}` : ""}${product.model ? ` ${product.model}` : ""}`,
+        offerte_tekst: (product as any).offerte_tekst || "",
         prijs_per_stuk: product.prijs_excl_btw,
         btw_percentage: product.btw_percentage ?? 21,
       } : r));

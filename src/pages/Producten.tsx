@@ -436,6 +436,11 @@ const Producten = () => {
                   <div><Label>Merk</Label><Input value={form.merk} onChange={e => setForm(p => ({ ...p, merk: e.target.value }))} className="rounded-xl" /></div>
                   <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="rounded-xl" /></div>
                   <div className="col-span-2"><Label>Omschrijving</Label><Textarea value={form.omschrijving} onChange={e => setForm(p => ({ ...p, omschrijving: e.target.value }))} className="rounded-xl" rows={3} /></div>
+                  <div className="col-span-2">
+                    <Label>Tekst op offerte</Label>
+                    <p className="text-xs text-muted-foreground mb-1">Deze tekst wordt automatisch getoond op offertes onder de productregel.</p>
+                    <Textarea value={form.offerte_tekst} onChange={e => setForm(p => ({ ...p, offerte_tekst: e.target.value }))} className="rounded-xl" rows={3} placeholder="Bijv. inclusief montage, 25 jaar vermogensgarantie..." />
+                  </div>
                 </div>
               </div>
 

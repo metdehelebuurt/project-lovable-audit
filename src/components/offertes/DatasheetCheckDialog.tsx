@@ -203,7 +203,19 @@ const DatasheetCheckDialog = ({
           })}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl gap-1"
+            disabled={rechecking}
+            onClick={handleRecheck}
+          >
+            {rechecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            Hercontroleer
+          </Button>
+          <div className="flex-1" />
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

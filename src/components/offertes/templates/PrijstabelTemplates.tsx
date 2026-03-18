@@ -130,7 +130,7 @@ export const PriceDetailed: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, pcTin
           return (
             <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#fff" : pcTint }}>
               <td style={{ padding: "8px 12px", color: "#999" }}>{i + 1}</td>
-              <td style={{ padding: "8px 12px", fontWeight: 500, color: sc }}>{r.omschrijving}</td>
+              <td style={{ padding: "8px 12px", fontWeight: 500, color: sc }}>{r.omschrijving}{r.offerte_tekst && <div style={{ fontSize: 10, color: "#888", fontWeight: 400, marginTop: 2 }}>{r.offerte_tekst}</div>}</td>
               <td style={{ padding: "8px 12px", textAlign: "right" }}>{r.aantal}</td>
               <td style={{ padding: "8px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
               <td style={{ padding: "8px 12px", textAlign: "right", color: r.korting_percentage > 0 ? pc : "#ccc" }}>{r.korting_percentage > 0 ? `${r.korting_percentage}%` : "—"}</td>

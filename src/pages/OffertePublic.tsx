@@ -172,6 +172,7 @@ export default function OffertePublic() {
                   <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                     <div>
                       <p className="text-sm font-medium text-foreground">{r.omschrijving}</p>
+                      {r.offerte_tekst && <p className="text-xs text-muted-foreground/80 mt-0.5">{r.offerte_tekst}</p>}
                       <p className="text-xs text-muted-foreground">
                         {r.aantal}× {formatCurrency(r.prijs_per_stuk)}
                         {r.korting_percentage > 0 ? ` (-${r.korting_percentage}%)` : ""}

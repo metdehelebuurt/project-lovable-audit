@@ -685,7 +685,10 @@ const Offertes = () => {
                   <TableBody>
                     {(Array.isArray(viewDialog.regels) ? viewDialog.regels as unknown as OfferteRegel[] : []).map((r, i) => (
                       <TableRow key={i}>
-                        <TableCell>{r.omschrijving}</TableCell>
+                        <TableCell>
+                          <div>{r.omschrijving}</div>
+                          {r.offerte_tekst && <p className="text-xs text-muted-foreground mt-0.5">{r.offerte_tekst}</p>}
+                        </TableCell>
                         <TableCell className="text-right">{r.aantal}</TableCell>
                         <TableCell className="text-right">{formatCurrency(r.prijs_per_stuk)}</TableCell>
                         <TableCell className="text-right">{r.btw_percentage}%</TableCell>
