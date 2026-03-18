@@ -166,6 +166,7 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin"]}><AffiliateBeheer /></ProtectedRoute>
               } />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
+              <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
