@@ -8,6 +8,7 @@ interface PrijstabelProps {
   regels: Array<{
     aantal: number;
     omschrijving: string;
+    offerte_tekst?: string;
     prijs_per_stuk: number;
     btw_percentage: number;
     korting_percentage: number;
