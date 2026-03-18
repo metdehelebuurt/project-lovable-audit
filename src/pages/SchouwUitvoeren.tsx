@@ -176,8 +176,40 @@ const SchouwUitvoeren = () => {
         </Card>
       )}
 
-      {/* Step 3: Samenvatting */}
+      {/* Step 3: Klant akkoord */}
       {step === 3 && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader><CardTitle className="text-lg">Klant akkoord & Handtekening</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-1">
+              <p><strong>Schouw:</strong> {schouw.schouw_nummer}</p>
+              <p><strong>Klant:</strong> {schouw.consument_naam}</p>
+              <p><strong>Datum:</strong> {new Date().toLocaleDateString("nl-NL")}</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Hierbij verklaart de klant akkoord te gaan met de uitgevoerde schouw en de vastgelegde bevindingen.
+            </p>
+            <div>
+              <Label className="text-sm">Naam ondertekenaar</Label>
+              <Input
+                value={ondertekenaarNaam}
+                onChange={e => setOndertekenaarNaam(e.target.value)}
+                placeholder="Volledige naam"
+              />
+            </div>
+            <div>
+              <Label className="text-sm mb-2 block">Handtekening</Label>
+              <SignaturePad value={handtekeningData} onChange={setHandtekeningData} />
+            </div>
+            {!handtekeningData && (
+              <p className="text-xs text-destructive">* Een handtekening is verplicht om de schouw af te ronden</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Samenvatting */}
+      {step === 4 && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Samenvatting</CardTitle></CardHeader>
           <CardContent className="space-y-4 text-sm">
@@ -185,6 +217,8 @@ const SchouwUitvoeren = () => {
             <p><strong>Foto's:</strong> {fotos.length}</p>
             <p><strong>Checklist:</strong> {Object.values(checklist).filter(Boolean).length} / {checklistItems.length} afgevinkt</p>
             {aandachtspunten && <p><strong>Aandachtspunten:</strong> {aandachtspunten}</p>}
+            <p><strong>Handtekening:</strong> {handtekeningData ? "✓ Ondertekend" : "✗ Niet ondertekend"}</p>
+            {ondertekenaarNaam && <p><strong>Ondertekenaar:</strong> {ondertekenaarNaam}</p>}
           </CardContent>
         </Card>
       )}

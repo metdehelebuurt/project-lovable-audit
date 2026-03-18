@@ -140,6 +140,23 @@ const SchouwDetail = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Handtekening klant */}
+      {schouw.handtekening_data && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader><CardTitle className="text-lg">Klant akkoord</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="border border-border rounded-xl p-4 bg-muted/30 inline-block">
+              <img src={schouw.handtekening_data} alt="Handtekening klant" className="max-h-32" />
+            </div>
+            {schouw.handtekening_akkoord_op && (
+              <p className="text-sm text-muted-foreground">
+                Ondertekend op {new Date(schouw.handtekening_akkoord_op).toLocaleString("nl-NL")}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
