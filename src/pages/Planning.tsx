@@ -30,7 +30,7 @@ interface CalendarEvent {
   id: string;
   date: string;
   title: string;
-  type: "schouw" | "installatie";
+  type: "schouw" | "installatie" | "afspraak";
   status: string;
   extra?: Record<string, string | null>;
 }
