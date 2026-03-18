@@ -346,7 +346,7 @@ export default function OffertePDFPreview() {
         />
       </div>}
 
-      {/* ═══════════════ PAGE 2: PRODUCT INFO ═══════════════ */}
+      {/* ═══════════════ PAGE 2: PRODUCT INFO (dynamic template) ═══════════════ */}
       {tc.productpagina && producten.length > 0 && (
         <div className="pdf-page" style={pageStyle}>
           <PageHeader />
@@ -355,86 +355,23 @@ export default function OffertePDFPreview() {
               {producten.length === 1 ? "Uw product" : "Uw producten"}
             </h2>
             <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-
-            {producten.map((prod, pi) => {
-              const specs = prod.specs && typeof prod.specs === "object" ? (prod.specs as Record<string, any>) : null;
-              const imgUrl = prod.afbeelding_url
-                ? (prod.afbeelding_url.startsWith("http") ? prod.afbeelding_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${prod.afbeelding_url}`)
-                : null;
-
-              return (
-                <div key={prod.id} style={{ marginBottom: pi < producten.length - 1 ? 32 : 0 }}>
-                  <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
-                    {imgUrl && (
-                      <div style={{ width: 160, height: 160, borderRadius: 12, overflow: "hidden", backgroundColor: "#f8f8fa", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <img src={imgUrl} alt={prod.naam} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-                      </div>
-                    )}
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 700, color: sc, margin: "0 0 4px" }}>{prod.naam}</h3>
-                      {prod.merk && <p style={{ fontSize: 12, color: pc, fontWeight: 600, margin: "0 0 8px" }}>{prod.merk}{prod.model ? ` — ${prod.model}` : ""}</p>}
-                      {prod.omschrijving && <p style={{ fontSize: 12, color: "#555", lineHeight: 1.6, margin: 0 }}>{prod.omschrijving}</p>}
-                      <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
-                        {prod.garantie_jaren && (
-                          <div style={{ backgroundColor: pcTint, borderRadius: 8, padding: "8px 14px", fontSize: 11 }}>
-                            <span style={{ fontWeight: 700, color: pc }}>{prod.garantie_jaren} jaar</span>
-                            <span style={{ color: "#666", marginLeft: 4 }}>garantie</span>
-                          </div>
-                        )}
-                        {prod.certificeringen && (
-                          <div style={{ backgroundColor: pcTint, borderRadius: 8, padding: "8px 14px", fontSize: 11 }}>
-                            <span style={{ color: "#666" }}>Certificering: </span>
-                            <span style={{ fontWeight: 600, color: sc }}>{prod.certificeringen}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Specs table */}
-                  {specs && Object.keys(specs).length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Technische specificaties</p>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                        <tbody>
-                          {Object.entries(specs).map(([key, val], si) => (
-                            <tr key={key} style={{ backgroundColor: si % 2 === 0 ? "#fff" : pcTint }}>
-                              <td style={{ padding: "6px 10px", fontWeight: 500, color: "#555", width: "40%", borderBottom: "1px solid #f0f0f0" }}>
-                                {key.replace(/_/g, " ")}
-                              </td>
-                              <td style={{ padding: "6px 10px", color: sc, fontWeight: 600, borderBottom: "1px solid #f0f0f0" }}>
-                                {String(val)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  {/* Onderhoud */}
-                  {prod.onderhoud && (
-                    <div style={{ marginTop: 12, fontSize: 11, color: "#666" }}>
-                      <span style={{ fontWeight: 600 }}>Onderhoud: </span>{prod.onderhoud}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <ProductComp
+              pc={pc}
+              sc={sc}
+              pcTint={pcTint}
+              producten={producten.map(p => ({
+                naam: p.naam,
+                merk: p.merk,
+                model: p.model,
+                omschrijving: p.omschrijving,
+                afbeelding_url: p.afbeelding_url,
+                garantie_jaren: p.garantie_jaren,
+                certificeringen: p.certificeringen,
+                specs: p.specs && typeof p.specs === "object" ? (p.specs as Record<string, any>) : null,
+                onderhoud: p.onderhoud,
+              }))}
+            />
           </div>
-
-          {/* Datasheet links */}
-          {producten.some(p => (p as any).datasheet_url && (p as any).datasheet_type === "fabrikant") && (
-            <div style={{ marginTop: 20, padding: "12px 16px", backgroundColor: pcTint, borderRadius: 8 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Productdatasheets</p>
-              {producten.filter(p => (p as any).datasheet_url && (p as any).datasheet_type === "fabrikant").map(p => (
-                <p key={p.id} style={{ fontSize: 11, color: "#555", margin: "2px 0" }}>
-                  📄 {p.naam} — Fabrikant-datasheet beschikbaar (zie bijlage)
-                </p>
-              ))}
-            </div>
-          )}
-
           <PageFooter />
         </div>
       )}
