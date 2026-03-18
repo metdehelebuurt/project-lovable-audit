@@ -89,6 +89,17 @@ const LeadDetail = () => {
     enabled: !!id,
   });
 
+  const { data: afspraken = [] } = useQuery({
+    queryKey: ["lead-afspraken", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("afspraken" as any)
+        .select("*").eq("lead_id", id!).order("datum", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!id,
+  });
+
   const statusMutation = useMutation({
     mutationFn: async (status: LeadStatus) => {
       const { error } = await supabase.from("leads").update({ lead_status: status }).eq("id", id!);
