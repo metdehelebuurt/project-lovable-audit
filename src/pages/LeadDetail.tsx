@@ -222,6 +222,7 @@ const LeadDetail = () => {
           <Tabs defaultValue="overzicht">
             <TabsList className="rounded-xl">
               <TabsTrigger value="overzicht" className="rounded-lg">Overzicht</TabsTrigger>
+              <TabsTrigger value="afspraken" className="rounded-lg">Afspraken ({afspraken.length})</TabsTrigger>
               <TabsTrigger value="offertes" className="rounded-lg">Offertes ({offertes.length})</TabsTrigger>
               <TabsTrigger value="schouwen" className="rounded-lg">Schouwen ({schouwen.length})</TabsTrigger>
             </TabsList>
