@@ -101,7 +101,7 @@ export default function OffertePDFPreview() {
     bedrijfsslogan: "Slim verduurzamen begint hier",
   };
 
-  // Template config
+  // Template config — reads from offerte.template_config (the per-offerte design choices)
   const [templateConfig, setTemplateConfig] = useState<any>(null);
 
   useEffect(() => {
