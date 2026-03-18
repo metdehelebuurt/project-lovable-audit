@@ -167,9 +167,14 @@ const Planning = () => {
   }, [viewMode, currentDate]);
 
   const handleStatusUpdate = async (event: CalendarEvent, newStatus: string) => {
-    const table = event.type === "schouw" ? "schouwen" : "installaties";
-    const { error } = await supabase.from(table).update({ status: newStatus as any }).eq("id", event.id);
-    if (error) { toast.error(error.message); return; }
+    if (event.type === "afspraak") {
+      const { error } = await supabase.from("afspraken" as any).update({ status: newStatus } as any).eq("id", event.id);
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const table = event.type === "schouw" ? "schouwen" : "installaties";
+      const { error } = await supabase.from(table).update({ status: newStatus as any }).eq("id", event.id);
+      if (error) { toast.error(error.message); return; }
+    }
     toast.success("Status bijgewerkt");
     setEvents((prev) => prev.map((e) => e.id === event.id ? { ...e, status: newStatus } : e));
     setSelectedEvent((prev) => prev?.id === event.id ? { ...prev, status: newStatus } : prev);
