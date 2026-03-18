@@ -1,0 +1,79 @@
+export interface TemplateVariant {
+  id: string;
+  naam: string;
+  beschrijving: string;
+}
+
+export interface TemplateSectie {
+  id: string;
+  naam: string;
+  varianten: TemplateVariant[];
+}
+
+export const templateSecties: TemplateSectie[] = [
+  {
+    id: "voorblad",
+    naam: "Voorblad",
+    varianten: [
+      { id: "hero-dark", naam: "Donker & Bold", beschrijving: "Donkere hero met accent kleur" },
+      { id: "hero-split", naam: "Gesplitst", beschrijving: "Twee kolommen met beeld en tekst" },
+      { id: "hero-minimal", naam: "Minimalistisch", beschrijving: "Clean wit met subtiele accenten" },
+      { id: "hero-gradient", naam: "Gradient", beschrijving: "Kleurverloop als achtergrond" },
+      { id: "hero-photo", naam: "Foto-focus", beschrijving: "Grote afbeelding als achtergrond" },
+    ],
+  },
+  {
+    id: "producten",
+    naam: "Producten",
+    varianten: [
+      { id: "product-list", naam: "Lijst", beschrijving: "Compacte lijst met details" },
+      { id: "product-cards", naam: "Kaarten", beschrijving: "Productkaarten met afbeeldingen" },
+      { id: "product-grid", naam: "Grid", beschrijving: "2-koloms grid layout" },
+      { id: "product-spotlight", naam: "Spotlight", beschrijving: "Elk product op volle breedte" },
+    ],
+  },
+  {
+    id: "prijstabel",
+    naam: "Prijstabel",
+    varianten: [
+      { id: "price-classic", naam: "Klassiek", beschrijving: "Traditionele tabelopmaak" },
+      { id: "price-modern", naam: "Modern", beschrijving: "Afgeronde hoeken, zachte kleuren" },
+      { id: "price-compact", naam: "Compact", beschrijving: "Beknopte weergave" },
+      { id: "price-detailed", naam: "Gedetailleerd", beschrijving: "Uitgebreide specificaties" },
+    ],
+  },
+  {
+    id: "energieadvies",
+    naam: "Energieadvies",
+    varianten: [
+      { id: "energy-cards", naam: "Kaarten", beschrijving: "Besparingskaarten met iconen" },
+      { id: "energy-infographic", naam: "Infographic", beschrijving: "Visuele grafieken en bars" },
+      { id: "energy-minimal", naam: "Minimaal", beschrijving: "Alleen kerncijfers" },
+    ],
+  },
+  {
+    id: "voorwaarden",
+    naam: "Voorwaarden & Akkoord",
+    varianten: [
+      { id: "terms-simple", naam: "Eenvoudig", beschrijving: "Tekst met handtekeningvak" },
+      { id: "terms-boxed", naam: "Omkaderd", beschrijving: "Voorwaarden in kaders" },
+      { id: "terms-sidebar", naam: "Zijbalk", beschrijving: "Voorwaarden naast handtekeningvak" },
+    ],
+  },
+];
+
+export type TemplateConfig = {
+  voorblad: string;
+  producten: string;
+  prijstabel: string;
+  energieadvies: string;
+  voorwaarden: string;
+};
+
+export const defaultTemplateConfig: TemplateConfig = {
+  voorblad: "hero-dark",
+  producten: "product-cards",
+  prijstabel: "price-modern",
+  energieadvies: "energy-cards",
+  voorwaarden: "terms-simple",
+};
