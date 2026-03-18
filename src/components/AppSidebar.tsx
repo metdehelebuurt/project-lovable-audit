@@ -79,6 +79,7 @@ const getNavItems = (rol: string): NavItem[] => {
         ...common,
         { title: "Producten", url: "/producten", icon: Package },
         { title: "Mijn Leads", url: "/leads", icon: Users },
+        { title: "Klanten", url: "/klanten", icon: UserCheck2 },
         { title: "Schouwen", url: "/schouwen", icon: ClipboardList },
         { title: "Offertes", url: "/offertes", icon: FileText },
         { title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck },
