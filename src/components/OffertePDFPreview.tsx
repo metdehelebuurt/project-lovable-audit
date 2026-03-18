@@ -223,17 +223,32 @@ export default function OffertePDFPreview() {
   const garantieVw = (offerte as any).garantie_voorwaarden as string | null;
   const installTermijn = (offerte as any).installatie_termijn as string | null;
 
-  // Template config with defaults
+  // Template config with defaults — design variant keys + section toggles + custom text
   const tc = {
-    voorblad: templateConfig?.voorblad ?? true,
-    productpagina: templateConfig?.productpagina ?? true,
-    energieadvies: templateConfig?.energieadvies ?? true,
-    schouwrapport: templateConfig?.schouwrapport ?? true,
+    // Section toggles
+    voorblad: templateConfig?.secties_voorblad ?? templateConfig?.voorblad ?? true,
+    productpagina: templateConfig?.secties_producten ?? templateConfig?.productpagina ?? true,
+    energieadvies: templateConfig?.secties_energieadvies ?? templateConfig?.energieadvies ?? true,
+    schouwrapport: templateConfig?.secties_schouwrapport ?? templateConfig?.schouwrapport ?? true,
+    // Custom text
     badge_1: templateConfig?.badge_1 ?? "Gecertificeerd installateur",
     badge_2: templateConfig?.badge_2 ?? "Persoonlijk advies",
     badge_3: templateConfig?.badge_3 ?? "Professionele installatie",
     akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
+    // Design variant keys
+    voorblad_variant: (templateConfig?.voorblad as string) || "hero-dark",
+    producten_variant: (templateConfig?.producten as string) || "product-cards",
+    prijstabel_variant: (templateConfig?.prijstabel as string) || "price-modern",
+    energieadvies_variant: (templateConfig?.energieadvies as string) || "energy-cards",
+    voorwaarden_variant: (templateConfig?.voorwaarden as string) || "terms-simple",
   };
+
+  // Resolve template components
+  const VoorbladComp = voorbladTemplates[tc.voorblad_variant] || HeroDark;
+  const ProductComp = productTemplates[tc.producten_variant] || ProductCards;
+  const PrijsComp = prijstabelTemplates[tc.prijstabel_variant] || PriceModern;
+  const EnergieComp = energieadviesTemplates[tc.energieadvies_variant] || EnergyCards;
+  const VoorwaardenComp = voorwaardenTemplates[tc.voorwaarden_variant] || TermsSimple;
 
   /* ─── Shared components ─── */
   const PageHeader = () => (
