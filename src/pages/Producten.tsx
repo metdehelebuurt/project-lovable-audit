@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X, FileText } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
 import ProductImage from "@/components/producten/ProductImage";
