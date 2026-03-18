@@ -354,7 +354,7 @@ const Schouwen = () => {
           <p className="text-muted-foreground mt-1">Woninginspecties inplannen en uitvoeren</p>
         </div>
         {canCreate && (
-          <Button onClick={openPlan} className="rounded-pill gap-2">
+          <Button onClick={() => navigate("/schouwen/nieuw")} className="rounded-pill gap-2">
             <CalendarPlus className="h-4 w-4" /> Schouw inplannen
           </Button>
         )}
