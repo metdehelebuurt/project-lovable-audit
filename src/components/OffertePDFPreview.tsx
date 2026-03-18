@@ -406,7 +406,7 @@ export default function OffertePDFPreview() {
         </div>
       )}
 
-      {/* ═══════════════ PAGE 4: FORMELE OFFERTE ═══════════════ */}
+      {/* ═══════════════ PAGE 4: PRIJSTABEL + VOORWAARDEN (dynamic templates) ═══════════════ */}
       <div className="pdf-page" style={pageStyle}>
         <PageHeader />
         <div style={{ flex: 1 }}>
@@ -442,99 +442,30 @@ export default function OffertePDFPreview() {
             </div>
           </div>
 
-          {/* Price table */}
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 16 }}>
-            <thead>
-              <tr>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 11 }}>Aantal</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 11 }}>Omschrijving</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Prijs excl. BTW</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Korting</th>
-                <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Subtotaal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {regels.map((r, i) => {
-                const sub = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
-                return (
-                  <tr key={i} style={{ borderBottom: `1px solid ${pcTint2}`, backgroundColor: i % 2 === 0 ? "#fff" : pcTint }}>
-                    <td style={{ padding: "10px 12px", fontWeight: 500 }}>{r.aantal}</td>
-                    <td style={{ padding: "10px 12px" }}>{r.omschrijving}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right", color: r.korting_percentage > 0 ? pc : "#ccc" }}>{r.korting_percentage > 0 ? `${r.korting_percentage}%` : "—"}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(sub)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* Dynamic price table */}
+          <PrijsComp
+            pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2}
+            regels={regels}
+            subtotaal={offerte.subtotaal}
+            btwBedrag={offerte.btw_bedrag}
+            totaalBedrag={offerte.totaal_bedrag}
+            formatCurrency={formatCurrency}
+          />
 
-          {/* Totals */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-            <div style={{ width: 260 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "#666" }}>
-                <span>Subtotaal excl. BTW</span><span>{formatCurrency(offerte.subtotaal)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "#666" }}>
-                <span>BTW</span><span>{formatCurrency(offerte.btw_bedrag)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontSize: 16, fontWeight: 800, color: sc, borderTop: `3px solid ${pc}`, marginTop: 4 }}>
-                <span>Totaal incl. BTW</span><span>{formatCurrency(offerte.totaal_bedrag)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Garantie */}
-          {garantieVw && (
-            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Garantievoorwaarden</p>
-              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{garantieVw}</p>
-            </div>
-          )}
-
-          {/* Installatietermijn */}
-          {installTermijn && (
-            <p style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>
-              <strong style={{ color: sc }}>Installatietermijn:</strong> {installTermijn}
-            </p>
-          )}
-
-          {/* Betalingsvoorwaarden */}
-          {offerte.betalingsvoorwaarden && (
-            <p style={{ fontSize: 11, color: "#666", marginBottom: 16 }}>
-              <strong>Betalingsvoorwaarden:</strong> {offerte.betalingsvoorwaarden}
-            </p>
-          )}
-
-          {/* Notities */}
-          {offerte.notities && (
-            <div style={{ marginBottom: 16, fontSize: 11, color: "#666" }}>
-              <strong>Opmerkingen:</strong>
-              <p style={{ margin: "4px 0 0", whiteSpace: "pre-wrap" }}>{offerte.notities}</p>
-            </div>
-          )}
-
-          {/* Akkoord tekst */}
-          {tc.akkoord_tekst && (
-            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
-              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{tc.akkoord_tekst}</p>
-            </div>
-          )}
-
-          {/* Signature section */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 20, borderTop: `1px solid ${pcTint2}`, paddingTop: 20 }}>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — {partner.naam}</p>
-              <p style={{ fontSize: 12, color: "#555", margin: "4px 0" }}>{adviseurNaam}</p>
-              <p style={{ fontSize: 12, color: "#888", margin: "4px 0" }}>Datum: {formatDate(offerte.created_at)}</p>
-              <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 16 }} />
-            </div>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — Klant</p>
-              <p style={{ fontSize: 12, color: "#555", margin: "4px 0" }}>{offerte.klant_naam}</p>
-              <p style={{ fontSize: 12, color: "#888", margin: "4px 0" }}>Datum: ____________________</p>
-              <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 16 }} />
-            </div>
+          {/* Dynamic terms & signature */}
+          <div style={{ marginTop: 28 }}>
+            <VoorwaardenComp
+              pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2}
+              partnerNaam={partner.naam}
+              klantNaam={offerte.klant_naam}
+              adviseurNaam={adviseurNaam}
+              datum={formatDate(offerte.created_at)}
+              garantieVw={garantieVw}
+              installTermijn={installTermijn}
+              betalingsvoorwaarden={offerte.betalingsvoorwaarden || null}
+              notities={offerte.notities || null}
+              akkoordTekst={tc.akkoord_tekst}
+            />
           </div>
         </div>
         <PageFooter />
