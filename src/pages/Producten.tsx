@@ -20,6 +20,7 @@ import type { Database } from "@/integrations/supabase/types";
 import ProductImage from "@/components/producten/ProductImage";
 import ProductImageUpload from "@/components/producten/ProductImageUpload";
 import SpecsEditor from "@/components/producten/SpecsEditor";
+import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 type ProductInsert = Database["public"]["Tables"]["producten"]["Insert"];
