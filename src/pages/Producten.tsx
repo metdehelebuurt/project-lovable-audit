@@ -188,12 +188,14 @@ const Producten = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & ProductFormData) => {
-      const { id, afbeelding_url, afbeeldingen, specs, ...rest } = data;
+      const { id, afbeelding_url, afbeeldingen, specs, datasheet_url, datasheet_type, ...rest } = data;
       const record: any = {
         ...rest,
         afbeelding_url: afbeelding_url || null,
         afbeeldingen: afbeeldingen.length > 0 ? afbeeldingen : null,
         specs: Object.keys(specs).length > 0 ? specs : null,
+        datasheet_url: datasheet_url || null,
+        datasheet_type: datasheet_type || null,
         merk: rest.merk || null,
         model: rest.model || null,
         omschrijving: rest.omschrijving || null,
