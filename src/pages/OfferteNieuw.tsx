@@ -88,8 +88,26 @@ const OfferteNieuw = () => {
   const [schouwId, setSchouwId] = useState("");
   const [datasheetDialogOpen, setDatasheetDialogOpen] = useState(false);
   const [productsMissingDatasheet, setProductsMissingDatasheet] = useState<Array<{ id: string; naam: string; merk: string | null; model: string | null }>>([]);
-  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(defaultTemplateConfig);
-  const [templateBuilderOpen, setTemplateBuilderOpen] = useState(false);
+  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(() => {
+    const raw = sessionStorage.getItem("offerte-template-config");
+    if (raw) {
+      try { return { ...defaultTemplateConfig, ...JSON.parse(raw) }; } catch {}
+    }
+    return defaultTemplateConfig;
+  });
+  const [generatingIntro, setGeneratingIntro] = useState(false);
+
+  // Reload template config when returning from template page
+  useEffect(() => {
+    const handleFocus = () => {
+      const raw = sessionStorage.getItem("offerte-template-config");
+      if (raw) {
+        try { setTemplateConfig({ ...defaultTemplateConfig, ...JSON.parse(raw) }); } catch {}
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
   const [generatingIntro, setGeneratingIntro] = useState(false);
 
   // Prefill from sessionStorage
