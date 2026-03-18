@@ -1338,6 +1338,7 @@ export type Database = {
           achternaam: string
           created_at: string
           email: string
+          ical_token: string | null
           id: string
           partner_id: string | null
           rol: Database["public"]["Enums"]["app_role"]
@@ -1350,6 +1351,7 @@ export type Database = {
           achternaam: string
           created_at?: string
           email: string
+          ical_token?: string | null
           id: string
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
@@ -1362,6 +1364,7 @@ export type Database = {
           achternaam?: string
           created_at?: string
           email?: string
+          ical_token?: string | null
           id?: string
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
