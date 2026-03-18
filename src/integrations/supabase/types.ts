@@ -654,6 +654,7 @@ export type Database = {
           accepted_at: string | null
           accepted_ip: string | null
           adviseur_id: string
+          annulering_reden: string | null
           betalingsvoorwaarden: string | null
           btw_bedrag: number
           created_at: string
@@ -689,6 +690,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_ip?: string | null
           adviseur_id: string
+          annulering_reden?: string | null
           betalingsvoorwaarden?: string | null
           btw_bedrag?: number
           created_at?: string
@@ -724,6 +726,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_ip?: string | null
           adviseur_id?: string
+          annulering_reden?: string | null
           betalingsvoorwaarden?: string | null
           btw_bedrag?: number
           created_at?: string
@@ -789,6 +792,128 @@ export type Database = {
             columns: ["schouw_id"]
             isOneToOne: false
             referencedRelation: "schouwen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opdrachten: {
+        Row: {
+          annulering_reden: string | null
+          bevestiging_verzonden_op: string | null
+          created_at: string
+          id: string
+          installatie_id: string | null
+          klant_adres: string | null
+          klant_email: string | null
+          klant_naam: string
+          klant_plaats: string | null
+          klant_postcode: string | null
+          klant_telefoon: string | null
+          lead_id: string | null
+          notities: string | null
+          offerte_id: string
+          partner_id: string
+          regels: Json
+          schouw_id: string | null
+          status: Database["public"]["Enums"]["opdracht_status"]
+          toegewezen_monteur_id: string | null
+          totaal_bedrag: number
+          updated_at: string
+        }
+        Insert: {
+          annulering_reden?: string | null
+          bevestiging_verzonden_op?: string | null
+          created_at?: string
+          id?: string
+          installatie_id?: string | null
+          klant_adres?: string | null
+          klant_email?: string | null
+          klant_naam: string
+          klant_plaats?: string | null
+          klant_postcode?: string | null
+          klant_telefoon?: string | null
+          lead_id?: string | null
+          notities?: string | null
+          offerte_id: string
+          partner_id: string
+          regels?: Json
+          schouw_id?: string | null
+          status?: Database["public"]["Enums"]["opdracht_status"]
+          toegewezen_monteur_id?: string | null
+          totaal_bedrag?: number
+          updated_at?: string
+        }
+        Update: {
+          annulering_reden?: string | null
+          bevestiging_verzonden_op?: string | null
+          created_at?: string
+          id?: string
+          installatie_id?: string | null
+          klant_adres?: string | null
+          klant_email?: string | null
+          klant_naam?: string
+          klant_plaats?: string | null
+          klant_postcode?: string | null
+          klant_telefoon?: string | null
+          lead_id?: string | null
+          notities?: string | null
+          offerte_id?: string
+          partner_id?: string
+          regels?: Json
+          schouw_id?: string | null
+          status?: Database["public"]["Enums"]["opdracht_status"]
+          toegewezen_monteur_id?: string | null
+          totaal_bedrag?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opdrachten_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opdrachten_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opdrachten_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opdrachten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opdrachten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opdrachten_schouw_id_fkey"
+            columns: ["schouw_id"]
+            isOneToOne: false
+            referencedRelation: "schouwen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opdrachten_toegewezen_monteur_id_fkey"
+            columns: ["toegewezen_monteur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1397,6 +1522,14 @@ export type Database = {
         | "geaccepteerd"
         | "afgewezen"
         | "verlopen"
+      opdracht_status:
+        | "nieuw"
+        | "bevestigd"
+        | "schouw_gepland"
+        | "installatie_gepland"
+        | "in_uitvoering"
+        | "afgerond"
+        | "geannuleerd"
       partner_status: "in_review" | "actief" | "inactief" | "geblokkeerd"
       product_categorie:
         | "zonnepanelen"
@@ -1589,6 +1722,15 @@ export const Constants = {
         "geaccepteerd",
         "afgewezen",
         "verlopen",
+      ],
+      opdracht_status: [
+        "nieuw",
+        "bevestigd",
+        "schouw_gepland",
+        "installatie_gepland",
+        "in_uitvoering",
+        "afgerond",
+        "geannuleerd",
       ],
       partner_status: ["in_review", "actief", "inactief", "geblokkeerd"],
       product_categorie: [

@@ -354,7 +354,7 @@ const Schouwen = () => {
           <p className="text-muted-foreground mt-1">Woninginspecties inplannen en uitvoeren</p>
         </div>
         {canCreate && (
-          <Button onClick={openPlan} className="rounded-pill gap-2">
+          <Button onClick={() => navigate("/schouwen/nieuw")} className="rounded-pill gap-2">
             <CalendarPlus className="h-4 w-4" /> Schouw inplannen
           </Button>
         )}
@@ -410,7 +410,7 @@ const Schouwen = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(s => (
-                    <TableRow key={s.id}>
+                    <TableRow key={s.id} className="cursor-pointer" onClick={() => navigate(`/schouwen/${s.id}`)}>
                       <TableCell className="font-mono text-sm">{s.schouw_nummer}</TableCell>
                       <TableCell className="font-medium">{s.consument_naam || "—"}</TableCell>
                       <TableCell><Badge variant="outline">{categorieLabels[s.categorie]}</Badge></TableCell>
@@ -421,20 +421,17 @@ const Schouwen = () => {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           {s.status === "gepland" && canCreate && (
-                            <Button variant="default" size="sm" className="rounded-pill gap-1 h-8" onClick={() => openExecute(s)}>
+                            <Button variant="default" size="sm" className="rounded-pill gap-1 h-8" onClick={(e) => { e.stopPropagation(); navigate(`/schouwen/${s.id}/uitvoeren`); }}>
                               <PlayCircle className="h-3.5 w-3.5" /> Starten
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon" onClick={() => setViewDialog(s)}>
+                          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); navigate(`/schouwen/${s.id}`); }}>
                             <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
-                            <Pencil className="h-4 w-4" />
                           </Button>
                           {canDelete && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>

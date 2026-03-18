@@ -17,7 +17,12 @@ import Adviseurs from "@/pages/Adviseurs";
 import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
 import Schouwen from "@/pages/Schouwen";
+import SchouwDetail from "@/pages/SchouwDetail";
+import SchouwNieuw from "@/pages/SchouwNieuw";
+import SchouwUitvoeren from "@/pages/SchouwUitvoeren";
 import Offertes from "@/pages/Offertes";
+import Opdrachten from "@/pages/Opdrachten";
+import OpdrachtDetail from "@/pages/OpdrachtDetail";
 import Installaties from "@/pages/Installaties";
 import Planning from "@/pages/Planning";
 import Analytics from "@/pages/Analytics";
@@ -126,8 +131,23 @@ const App = () => (
               <Route path="/schouwen" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><Schouwen /></ProtectedRoute>
               } />
+              <Route path="/schouwen/nieuw" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><SchouwNieuw /></ProtectedRoute>
+              } />
+              <Route path="/schouwen/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><SchouwDetail /></ProtectedRoute>
+              } />
+              <Route path="/schouwen/:id/uitvoeren" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><SchouwUitvoeren /></ProtectedRoute>
+              } />
               <Route path="/offertes" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"]}><Offertes /></ProtectedRoute>
+              } />
+              <Route path="/opdrachten" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Opdrachten /></ProtectedRoute>
+              } />
+              <Route path="/opdrachten/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><OpdrachtDetail /></ProtectedRoute>
               } />
               <Route path="/installaties" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "installateur"]}><Installaties /></ProtectedRoute>

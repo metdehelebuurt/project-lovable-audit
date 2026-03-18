@@ -422,16 +422,20 @@ const Offertes = () => {
                       <TableCell>{formatCurrency(o.totaal_bedrag)}</TableCell>
                       <TableCell>{new Date(o.geldig_tot).toLocaleDateString("nl-NL")}</TableCell>
                       <TableCell>
-                        <Select value={o.status} onValueChange={v => statusMutation.mutate({ id: o.id, status: v as OfferteStatus })}>
-                          <SelectTrigger className="w-40 h-8">
-                            <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.keys(statusLabels) as OfferteStatus[]).map(s => (
-                              <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {o.status === "geaccepteerd" ? (
+                          <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
+                        ) : (
+                          <Select value={o.status} onValueChange={v => statusMutation.mutate({ id: o.id, status: v as OfferteStatus })}>
+                            <SelectTrigger className="w-40 h-8">
+                              <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(statusLabels) as OfferteStatus[]).filter(s => s !== "geaccepteerd").map(s => (
+                                <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
