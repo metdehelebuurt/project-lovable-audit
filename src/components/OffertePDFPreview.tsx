@@ -322,72 +322,28 @@ export default function OffertePDFPreview() {
         </button>
       </div>
 
-      {/* ═══════════════ PAGE 1: COVER ═══════════════ */}
+      {/* ═══════════════ PAGE 1: COVER (dynamic template) ═══════════════ */}
       {tc.voorblad && <div className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
-        {/* Hero band */}
-        <div style={{ backgroundColor: sc, color: "#fff", padding: "60px 50px 40px", position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, right: 0, width: 220, height: "100%", background: `linear-gradient(135deg, ${pc}, ${hexToTint(pc, 0.6)})`, clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            {logoUrl && <img src={logoUrl} alt={partner.naam} style={{ height: 48, marginBottom: 24, objectFit: "contain" }} />}
-            <h1 style={{ fontSize: 36, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>
-              Verduurzaam je huis
-            </h1>
-            <h1 style={{ fontSize: 36, fontWeight: 800, margin: "4px 0 0", lineHeight: 1.15, color: pc }}>
-              {categoryLabel ? `met onze ${categoryLabel}` : "met onze oplossing"}
-            </h1>
-            {producten.length > 0 && (
-              <p style={{ fontSize: 18, fontWeight: 500, marginTop: 12, opacity: 0.9 }}>
-                {producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Client info + intro */}
-        <div style={{ padding: "40px 50px", flex: 1, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", gap: 40, marginBottom: 32 }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: pc, marginBottom: 8 }}>Opgesteld voor</p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: sc, margin: 0 }}>{offerte.klant_naam}</p>
-              {offerte.klant_adres && <p style={{ margin: "4px 0 0", color: "#555" }}>{offerte.klant_adres}</p>}
-              {(offerte.klant_postcode || offerte.klant_plaats) && (
-                <p style={{ margin: "2px 0 0", color: "#555" }}>{offerte.klant_postcode} {offerte.klant_plaats}</p>
-              )}
-            </div>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: pc, marginBottom: 8 }}>Uw adviseur</p>
-              <p style={{ fontSize: 16, fontWeight: 600, color: sc, margin: 0 }}>{adviseurNaam}</p>
-              <p style={{ margin: "4px 0 0", color: "#555", fontSize: 13 }}>Offertenr: {offerte.offertenummer}</p>
-              <p style={{ margin: "2px 0 0", color: "#555", fontSize: 13 }}>{formatDate(offerte.created_at)}</p>
-            </div>
-          </div>
-
-          {introTekst && (
-            <div style={{ backgroundColor: pcTint, borderLeft: `4px solid ${pc}`, padding: "16px 20px", borderRadius: 8, marginBottom: 24 }}>
-              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#333" }}>{introTekst}</p>
-            </div>
-          )}
-
-          {partner.bedrijfsslogan && (
-            <p style={{ fontSize: 15, fontStyle: "italic", color: pc, marginTop: "auto", marginBottom: 0 }}>
-              "{partner.bedrijfsslogan}"
-            </p>
-          )}
-        </div>
-
-        {/* Bottom badges band */}
-        <div style={{ backgroundColor: pcTint, padding: "16px 50px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${pcTint2}` }}>
-          <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#666" }}>
-            <span>✓ {tc.badge_1}</span>
-            <span>✓ {tc.badge_2}</span>
-            <span>✓ {tc.badge_3}</span>
-          </div>
-          {partner.telefoonnummer && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: sc }}>
-              Neem contact op: {partner.telefoonnummer}
-            </span>
-          )}
-        </div>
+        <VoorbladComp
+          pc={pc}
+          sc={sc}
+          pcTint={pcTint}
+          logoUrl={logoUrl}
+          partnerNaam={partner.naam}
+          klantNaam={offerte.klant_naam}
+          offertenummer={offerte.offertenummer}
+          adviseurNaam={adviseurNaam}
+          datum={formatDate(offerte.created_at)}
+          categoryLabel={categoryLabel || null}
+          productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null}
+          slogan={partner.bedrijfsslogan || null}
+          introTekst={introTekst}
+          badges={[tc.badge_1, tc.badge_2, tc.badge_3]}
+          telefoon={partner.telefoonnummer || null}
+          klantAdres={offerte.klant_adres || null}
+          klantPostcode={offerte.klant_postcode || null}
+          klantPlaats={offerte.klant_plaats || null}
+        />
       </div>}
 
       {/* ═══════════════ PAGE 2: PRODUCT INFO ═══════════════ */}
