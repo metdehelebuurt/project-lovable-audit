@@ -57,11 +57,16 @@ const SchouwUitvoeren = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (!handtekeningData) {
+        throw new Error("Handtekening is verplicht om de schouw af te ronden");
+      }
       const { error } = await supabase.from("schouwen").update({
         gegevens: Object.keys(gegevens).length > 0 ? gegevens : null,
         fotos: fotos.length > 0 ? fotos as any : [],
         checklist: Object.keys(checklist).length > 0 ? checklist : {},
         aandachtspunten: aandachtspunten || null,
+        handtekening_data: handtekeningData,
+        handtekening_akkoord_op: new Date().toISOString(),
         status: "uitgevoerd",
       }).eq("id", id!);
       if (error) throw error;
