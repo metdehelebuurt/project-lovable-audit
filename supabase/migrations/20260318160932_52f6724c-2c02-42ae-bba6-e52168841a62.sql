@@ -1,0 +1,1 @@
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS ical_token text UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex');
