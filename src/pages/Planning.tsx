@@ -127,6 +127,11 @@ const Planning = () => {
           title: i.consument_naam ?? "Installatie", type: "installatie" as const, status: i.status,
           extra: { einddatum: i.geplande_einddatum },
         })),
+        ...((afsprakenRes.data as any[]) ?? []).map((a: any) => ({
+          id: a.id, date: a.datum,
+          title: a.titel, type: "afspraak" as const, status: a.status,
+          extra: { type: a.type, start_tijd: a.start_tijd, eind_tijd: a.eind_tijd, locatie: a.locatie },
+        })),
       ];
       setEvents(mapped);
       setLoading(false);
