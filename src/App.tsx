@@ -38,6 +38,7 @@ import OfferteTemplatePage from "@/pages/OfferteTemplatePage";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import ProductDatasheetPage from "@/pages/ProductDatasheetPage";
+import ProductDetail from "@/pages/ProductDetail";
 import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
