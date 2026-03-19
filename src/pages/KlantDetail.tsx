@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, FileText, ClipboardCheck,
-  Wrench, CalendarIcon, Plus, Video,
+  Wrench, CalendarIcon, Plus, Video, PhoneCall,
 } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 
