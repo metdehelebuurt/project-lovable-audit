@@ -100,6 +100,9 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
                 <SelectItem value="op_afstand">
                   <span className="flex items-center gap-2"><Video className="h-3.5 w-3.5" /> Op afstand</span>
                 </SelectItem>
+                <SelectItem value="belafspraak">
+                  <span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Belafspraak</span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

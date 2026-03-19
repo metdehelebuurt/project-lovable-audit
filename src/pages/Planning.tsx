@@ -114,6 +114,8 @@ const Planning = () => {
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
         supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
           .gte("datum", rangeStart).lte("datum", rangeEnd),
+        supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
+          .gte("datum", rangeStart).lte("datum", rangeEnd),
       ]);
 
       const mapped: CalendarEvent[] = [

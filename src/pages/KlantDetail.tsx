@@ -202,7 +202,9 @@ const KlantDetail = () => {
                       {afspraken.map((a: any) => (
                         <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border">
                           <div className="flex items-center gap-3">
-                            {a.type === "op_afstand" ? <Video className="h-5 w-5 text-primary" /> : <MapPin className="h-5 w-5 text-primary" />}
+                            {a.type === "belafspraak" ? <PhoneCall className="h-5 w-5 text-emerald-600" /> :
+                             a.type === "op_afstand" ? <Video className="h-5 w-5 text-primary" /> :
+                             <MapPin className="h-5 w-5 text-primary" />}
                             <div>
                               <p className="text-sm font-medium">{a.titel}</p>
                               <p className="text-xs text-muted-foreground">
