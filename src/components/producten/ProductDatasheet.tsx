@@ -1,5 +1,5 @@
 import React from "react";
-
+import { getGroupedSpecs, type SpecDefinition } from "./categorySpecDefinitions";
 interface PartnerBranding {
   naam: string;
   adres?: string | null;
