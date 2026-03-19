@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ function isDuplicate(product: AIProduct, existingNames: string[]): boolean {
 
 const Producten = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string>("alle");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -628,8 +630,8 @@ const Producten = () => {
                   {filtered.map(product => (
                     <TableRow
                       key={product.id}
-                      className={`cursor-pointer hover:bg-muted/50 ${editingProduct?.id === product.id ? "bg-primary/5" : ""}`}
-                      onClick={() => canEdit && openEdit(product)}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/producten/${product.id}`)}
                     >
                       <TableCell onClick={e => e.stopPropagation()}>
                         <ProductImage

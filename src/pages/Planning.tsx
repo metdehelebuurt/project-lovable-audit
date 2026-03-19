@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin,
+  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths,
@@ -114,6 +114,8 @@ const Planning = () => {
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
         supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
           .gte("datum", rangeStart).lte("datum", rangeEnd),
+        supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
+          .gte("datum", rangeStart).lte("datum", rangeEnd),
       ]);
 
       const mapped: CalendarEvent[] = [
@@ -201,11 +203,13 @@ const Planning = () => {
       className={`w-full text-left text-[10px] leading-tight px-1.5 py-0.5 rounded truncate flex items-center gap-1 hover:opacity-80 transition-opacity ${
         ev.type === "schouw" ? "bg-primary/10 text-primary" :
         ev.type === "installatie" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" :
+        ev.extra?.type === "belafspraak" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
         "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
       }`}
     >
       {ev.type === "schouw" ? <ClipboardList className="h-2.5 w-2.5 shrink-0" /> :
        ev.type === "installatie" ? <Wrench className="h-2.5 w-2.5 shrink-0" /> :
+       ev.extra?.type === "belafspraak" ? <Phone className="h-2.5 w-2.5 shrink-0" /> :
        ev.extra?.type === "op_afstand" ? <Video className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
       {ev.title}
     </button>
@@ -426,6 +430,7 @@ const Planning = () => {
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-primary/10" /> Schouw</div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/30" /> Installatie</div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-violet-100 dark:bg-violet-900/30" /> Afspraak</div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-emerald-100 dark:bg-emerald-900/30" /> Belafspraak</div>
           </div>
         </CardContent>
       </Card>

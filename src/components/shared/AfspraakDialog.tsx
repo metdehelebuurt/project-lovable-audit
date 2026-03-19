@@ -12,7 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarIcon, Video, MapPin } from "lucide-react";
+import { CalendarIcon, Video, MapPin, Phone } from "lucide-react";
 
 interface AfspraakDialogProps {
   open: boolean;
@@ -99,6 +99,9 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
                 </SelectItem>
                 <SelectItem value="op_afstand">
                   <span className="flex items-center gap-2"><Video className="h-3.5 w-3.5" /> Op afstand</span>
+                </SelectItem>
+                <SelectItem value="belafspraak">
+                  <span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Belafspraak</span>
                 </SelectItem>
               </SelectContent>
             </Select>
