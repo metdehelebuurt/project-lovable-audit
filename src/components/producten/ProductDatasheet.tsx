@@ -283,25 +283,27 @@ const ProductDatasheet: React.FC<ProductDatasheetProps> = ({ product, partner })
 
         {/* ─── SPECIFICATIONS GRID ─── */}
         <div style={{ padding: "20px 36px 12px" }}>
-          {techSpecs.length > 0 && (
-            <>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
-              }}>
-                <div style={{ width: 3, height: 18, backgroundColor: pc, borderRadius: 2 }} />
-                <h2 style={{ fontSize: 14, fontWeight: 800, color: sc, margin: 0 }}>
-                  Technische Specificaties
-                </h2>
+          {specGroups.length > 0 && specGroups.map((group) => {
+            const mid = Math.ceil(group.entries.length / 2);
+            return (
+              <div key={group.title} style={{ marginBottom: 16 }}>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+                }}>
+                  <div style={{ width: 3, height: 18, backgroundColor: pc, borderRadius: 2 }} />
+                  <h2 style={{ fontSize: 13, fontWeight: 800, color: sc, margin: 0 }}>
+                    {group.title}
+                  </h2>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                  <SpecTable title="" entries={group.entries.slice(0, mid)} pc={pc} sc={sc} />
+                  <SpecTable title="" entries={group.entries.slice(mid)} pc={pc} sc={sc} />
+                </div>
               </div>
+            );
+          })}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                <SpecTable title="" entries={techLeft} pc={pc} sc={sc} />
-                <SpecTable title="" entries={techRight} pc={pc} sc={sc} />
-              </div>
-            </>
-          )}
-
-          {/* Installation specs */}
+          {/* Installation specs (from separate field, if available) */}
           {installSpecs.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div style={{

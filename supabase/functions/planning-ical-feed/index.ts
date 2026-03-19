@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       `DTSTAMP:${stamp}`,
       isAllDay ? `DTSTART;VALUE=DATE:${dtStart}` : `DTSTART:${dtStart}`,
       ...(dtEnd && !isAllDay ? [`DTEND:${dtEnd}`] : []),
-      `SUMMARY:${a.type === "op_afstand" ? "📹" : "🏠"} ${a.titel}`,
+      `SUMMARY:${a.type === "op_afstand" ? "📹" : a.type === "belafspraak" ? "📞" : "🏠"} ${a.titel}`,
       `DESCRIPTION:Type: ${a.type}\\nStatus: ${a.status}${a.locatie ? "\\nLocatie: " + a.locatie : ""}`,
       ...(a.locatie ? [`LOCATION:${a.locatie}`] : []),
       "END:VEVENT",
