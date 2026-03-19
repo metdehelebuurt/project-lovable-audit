@@ -629,8 +629,8 @@ const Producten = () => {
                   {filtered.map(product => (
                     <TableRow
                       key={product.id}
-                      className={`cursor-pointer hover:bg-muted/50 ${editingProduct?.id === product.id ? "bg-primary/5" : ""}`}
-                      onClick={() => canEdit && openEdit(product)}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/producten/${product.id}`)}
                     >
                       <TableCell onClick={e => e.stopPropagation()}>
                         <ProductImage
