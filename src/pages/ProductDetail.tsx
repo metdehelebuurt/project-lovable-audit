@@ -158,8 +158,8 @@ const ProductDetail = () => {
               <CardContent className="pt-6 flex items-center justify-center">
                 <div className="w-48 h-48">
                   <ProductImage
-                    url={product.afbeelding_url}
-                    alt={product.naam}
+                    afbeeldingUrl={product.afbeelding_url}
+                    naam={product.naam}
                     merk={product.merk}
                     size="lg"
                   />
