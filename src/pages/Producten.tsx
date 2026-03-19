@@ -128,6 +128,7 @@ function isDuplicate(product: AIProduct, existingNames: string[]): boolean {
 
 const Producten = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string>("alle");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
