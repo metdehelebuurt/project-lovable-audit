@@ -130,7 +130,7 @@ BELANGRIJKE REGELS:
 1. Geef ALLEEN echte, bestaande producten die daadwerkelijk op de markt verkrijgbaar zijn.
 2. Geef MINIMAAL 15 en MAXIMAAL 50 producten. Zoek ALLE modelvarianten, vermogensvarianten, kleuren, en configuraties.
 3. Gebruik realistische MARKTPRIJZEN in EUR excl. BTW (dealerprijzen, niet consumentenprijzen).
-4. Elke product MOET minimaal 3 technische specificaties hebben in het specs object.
+4. Elke product MOET minimaal 15 technische specificaties hebben in het specs object, inclusief: gewicht (kg), afmetingen (mm), IP-rating, connectiviteit (WiFi/Ethernet/app), monitoring platform, en alle elektrische/prestatie parameters.
 5. Gebruik Nederlandse taal voor omschrijvingen.
 6. Vermeld bij elk product de garantieduur in jaren.
 7. Als een product in meerdere vermogensvarianten bestaat (bijv. 370W, 400W, 405W, 410W), geef dan ELKE variant als apart product.
@@ -151,7 +151,7 @@ Ik wil ALLE modelvarianten inclusief:
 Geef voor elk product:
 - Volledige productnaam met modelnummer
 - Indicatieve dealerprijs excl. BTW
-- Minimaal 3 technische specificaties
+- Minimaal 15 technische specificaties (gewicht, afmetingen, IP-rating, elektrische specs, connectiviteit, app/monitoring, installatie-details)
 - Garantie-informatie
 - Relevante certificeringen${existingNote}`,
           },
