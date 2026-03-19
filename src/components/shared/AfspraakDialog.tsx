@@ -12,7 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarIcon, Video, MapPin } from "lucide-react";
+import { CalendarIcon, Video, MapPin, Phone } from "lucide-react";
 
 interface AfspraakDialogProps {
   open: boolean;
