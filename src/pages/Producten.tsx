@@ -461,6 +461,7 @@ const Producten = () => {
               <SpecsEditor
                 specs={form.specs}
                 onChange={(specs) => setForm(p => ({ ...p, specs }))}
+                categorie={form.categorie}
               />
 
               {/* Datasheet section (only for existing products) */}
