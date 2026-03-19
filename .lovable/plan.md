@@ -1,63 +1,84 @@
 
 
-## Plan: Uitgebreide technische specificatie-parameters per productcategorie
+## Plan: Producten detailpagina, belafspraken, lead→klant fix & specificatie-PDF fix
 
-### Probleem
-De huidige specificatie-editor is een vrij key-value formulier zonder voorgedefinieerde velden. De AI-verificatie heeft een beperkte lijst van essentiële specs (~15-25 per categorie). Er ontbreken veel parameters zoals gewicht, afmetingen, waterdichtheid, app-ondersteuning, monitoring, etc.
+### Overzicht
+Dit plan pakt 6 problemen/wensen aan:
+1. **Producten eigen detailpagina** met tabs (overzicht, specificaties, datasheet, AI)
+2. **Specificaties duidelijker overzicht** in een tabel met groepen
+3. **Specificatie-PDF fix** — specs komen niet mee in de PDF, fix de flow
+4. **Belafspraken** als nieuw afspraaktype + weergave in planning
+5. **Lead→klant conversie** werkt al in offerte-accept, maar controleren en verbeteren
+6. **AI specificatie-controle** direct vanuit productpagina
 
-### Oplossing
+---
 
-**1. Nieuw bestand: `src/components/producten/categorySpecDefinitions.ts`**
+### 1. Nieuwe productdetailpagina (`/producten/:id`)
 
-Een uitgebreid schema met ~100 specificatie-parameters verdeeld over 7 categorieën. Elke parameter bevat:
-- `key` (database key)
-- `label` (Nederlands label)
-- `group` (groepering: "Elektrisch", "Fysiek", "Installatie", "Connectiviteit", "Garantie & Certificering", etc.)
-- `unit` (optioneel: "kg", "mm", "W", "%", etc.)
-- `type` ("text" | "number" | "boolean" | "select")
-- `options` (voor select-velden, bijv. ja/nee, celtype)
+Nieuwe pagina `src/pages/ProductDetail.tsx` met een modern tabbed layout:
 
-Per categorie ~15-30 params, totaal ca. 100+ unieke parameters verdeeld over:
+| Tab | Inhoud |
+|-----|--------|
+| **Overzicht** | Productafbeelding, basisgegevens (naam, merk, model, categorie, status), prijs, omschrijving, offerte-tekst |
+| **Specificaties** | Gegroepeerde specificatie-tabel per categorie (accordions), met labels en eenheden uit `categorySpecDefinitions.ts`. Read-only weergave met edit-toggle |
+| **Datasheet** | Preview/download van gegenereerde of geüploade datasheet-PDF. Knop om te genereren of uploaden. Direct PDF download link |
+| **AI Controle** | Knop "Specificaties controleren & aanvullen met AI" — roept `ai-verify-product-specs` aan en toont resultaat met diff |
 
-| Categorie | Groepen | Voorbeeld-parameters |
-|-----------|---------|---------------------|
-| **Zonnepanelen** | Elektrisch, Thermisch, Fysiek, Mechanisch, Certificering | Vermogen (Wp), Efficiency (%), Celtype, Voc, Isc, Vmpp, Impp, Temp.coëff, Afmetingen, Gewicht, IP-rating, Brandklasse, Wind/sneeuwbelasting, Kleur frame/backsheet, Connectortype, Kabellengte, Max systeemspanning, Degradatie jaar 1/25 |
-| **Thuisbatterij** | Capaciteit, Vermogen, Elektrisch, Fysiek, Connectiviteit, Veiligheid | Bruikbare capaciteit, DoD, Roundtrip eff., Celtype (LFP/NMC), Cycli, Levensduur, IP-rating, Gewicht, App aanwezig, Monitoring, WiFi/Ethernet/RS485/CAN, Fase, Uitbreidbaar, Max cascade, Noodstroom, Brandklasse |
-| **Warmtepomp** | Prestatie, Geluid, Koudemiddel, Elektrisch, Fysiek, Installatie | COP, SCOP, Verwarmingscapaciteit, Koelvermogen, Geluid buitenunit, Geluid binnenunit, Koudemiddel, GWP, Max watertemp, Debiet, Energielabel, Subsidiabel, Smart grid ready |
-| **Laadpaal** | Laden, Connectiviteit, Authenticatie, Fysiek, Installatie | Laadvermogen, Fase, Connector type, Smart charging, Load balancing, OCPP, RFID, App, MID meter, IP-rating, IK-rating, Vaste kabel, Zonne-energie compatibel |
-| **Omvormer** | DC-zijde, AC-zijde, Rendement, Fysiek, Communicatie | MPPT trackers, Strings per MPPT, Max DC spanning, Europees rendement, THD, Power factor, Nachtverbruik, Hybride (ja/nee), Batterij-compatibel, Monitoring platform |
-| **Accessoires** | Algemeen, Fysiek, Compatibiliteit | Gewicht, Afmetingen, Materiaal, Waterdichtheid, Compatibele merken |
-| **Installatiemateriaal** | Algemeen, Fysiek, Technisch | Gewicht, Afmetingen, Materiaal, Belastbaarheid, Daktype compatibiliteit |
+Navigatie: klikken op product in de tabel → `/producten/:id` (niet meer inline edit). Bewerk-knop op detailpagina opent edit-dialog of inline editing.
 
-**2. Refactor `src/components/producten/SpecsEditor.tsx`**
+### 2. Specificaties duidelijker
 
-Vervang de vrije key-value editor met een gegroepeerde formulier-layout:
-- Toon voorgedefinieerde velden per categorie, gegroepeerd met accordions
-- Velden tonen label + unit + input
-- Boolean velden als switch, select velden als dropdown
-- Ongebruikte velden tonen als leeg (gebruiker kan invullen)
-- Behoud de mogelijkheid om custom key-value specs toe te voegen (onderaan)
-- Props uitbreiden met `categorie: string`
+Op de productdetailpagina, tab "Specificaties":
+- Toon specs gegroepeerd per groep (Elektrisch, Fysiek, Connectiviteit, etc.) uit `categorySpecDefinitions.ts`
+- Elke groep als een sectie met header
+- Twee-koloms tabel met label + waarde + eenheid
+- Lege specs verborgen in read-only, zichtbaar in edit-mode
+- Visueel onderscheid: gevulde vs lege specs
 
-**3. Update `supabase/functions/ai-verify-product-specs/index.ts`**
+### 3. Specificatie-PDF fix
 
-De `categoryEssentialSpecs` map vervangen met de volledige parameterlijst zodat de AI weet welke velden ingevuld moeten worden. De AI retourneert dan alle ~30 specs per categorie in de `corrected_specs` response.
+Het probleem: `ProductDatasheetSection` genereert specs via AI en slaat ze op, maar de `ProductDatasheet` component leest `product.specs` en `product.installatie_specs`. De AI retourneert `corrected_specs` + `installatie_specs` apart, maar bij opslaan worden ze samengevoegd in één `specs` object. De PDF toont dan niets onder `installatie_specs` omdat dat veld niet bestaat op het product.
 
-**4. Update `supabase/functions/ai-product-import/index.ts`**
+Fix:
+- In `ProductDatasheetSection.handleGenerate`: bewaar `installatie_specs` apart in het enriched product object (dit werkt al lokaal)
+- In de nieuwe productdetailpagina: pass `installatie_specs` correct door bij PDF preview
+- Verbeter de `ProductDatasheet` component: als er geen aparte `installatie_specs` zijn, groepeer dan specs automatisch op basis van de `categorySpecDefinitions` groepen
 
-De prompt uitbreiden zodat geïmporteerde producten ook alle relevante specs bevatten (niet slechts 3).
+### 4. Belafspraken
 
-**5. Update aanroepende componenten**
+Uitbreiden van het `type` veld in de `afspraken` tabel:
+- Huidige waarden: `thuisbezoek`, `op_afstand`
+- Toevoegen: `belafspraak`
 
-Waar `SpecsEditor` wordt gebruikt, de `categorie` prop meegeven.
+Wijzigingen:
+- `AfspraakDialog.tsx`: voeg "Belafspraak" (📞) toe als derde type-optie
+- `Planning.tsx`: belafspraken tonen met eigen icoon (Phone) en kleur
+- `planning-ical-feed`: belafspraken meenemen in de feed
+
+### 5. Lead→klant conversie verificatie
+
+De `offerte-accept` edge function maakt al een klant aan. Controleer:
+- Of de klant correct wordt aangemaakt met alle velden
+- Of `lead_status` wordt bijgewerkt naar `'klant'`
+- Dit werkt al correct in de code — geen wijzigingen nodig hier
+
+### 6. Direct PDF download
+
+Op de productdetailpagina, tab "Datasheet":
+- Als `datasheet_type === "fabrikant"`: directe download-link naar de PDF
+- Als `datasheet_type === "gegenereerd"`: knop die `window.print()` triggert voor de preview, of een "Open als PDF" knop
+
+---
 
 ### Bestanden
 
 | Bestand | Actie |
 |---------|-------|
-| `src/components/producten/categorySpecDefinitions.ts` | **Nieuw** — schema met ~100 parameters |
-| `src/components/producten/SpecsEditor.tsx` | Refactor naar gegroepeerd formulier |
-| `supabase/functions/ai-verify-product-specs/index.ts` | Uitbreiden met volledige parameterlijst |
-| `supabase/functions/ai-product-import/index.ts` | Prompt uitbreiden voor meer specs |
-| Componenten die SpecsEditor gebruiken | `categorie` prop toevoegen |
+| `src/pages/ProductDetail.tsx` | **Nieuw** — volledige productdetailpagina met tabs |
+| `src/App.tsx` | Route toevoegen: `/producten/:id` |
+| `src/pages/Producten.tsx` | Klik op product → `navigate(/producten/${id})` i.p.v. inline edit |
+| `src/components/shared/AfspraakDialog.tsx` | Type "belafspraak" toevoegen |
+| `src/pages/Planning.tsx` | Belafspraken icoon (Phone) en kleur toevoegen |
+| `src/components/producten/ProductDatasheet.tsx` | Fix: auto-groepering specs als geen aparte installatie_specs |
+| `supabase/functions/planning-ical-feed/index.ts` | Belafspraken type meenemen |
 
