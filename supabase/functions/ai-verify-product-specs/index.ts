@@ -5,70 +5,147 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Full spec definitions per category — keys the AI should fill
-const categorySpecKeys: Record<string, Record<string, string[]>> = {
+// Machine-key definitions per category — mirrors categorySpecDefinitions.ts
+const categoryMachineKeys: Record<string, Record<string, string[]>> = {
   zonnepanelen: {
-    "Elektrisch": ["Vermogen (Wp)", "Efficiency (%)", "Celtype", "Aantal cellen", "Voc (V)", "Isc (A)", "Vmpp (V)", "Impp (A)", "Max systeemspanning (V)", "Max zekering (A)", "Bifacial (ja/nee)", "Bifacial factor (%)"],
-    "Thermisch": ["Temp.coëff. Pmax (%/°C)", "Temp.coëff. Voc (%/°C)", "Temp.coëff. Isc (%/°C)", "NOCT (°C)"],
-    "Fysiek": ["Lengte (mm)", "Breedte (mm)", "Hoogte (mm)", "Gewicht (kg)", "IP-rating", "Connectortype", "Kabellengte (mm)", "Kleur frame", "Kleur backsheet", "Glastype", "Glasdikte (mm)"],
-    "Mechanisch": ["Windbelasting (Pa)", "Sneeuwbelasting (Pa)", "Brandklasse"],
-    "Prestatie": ["Degradatie jaar 1 (%)", "Degradatie jaarlijks (%)"],
-    "Garantie": ["Productgarantie (jaar)", "Vermogensgarantie (jaar)", "Gegarandeerd vermogen na 25j (%)"],
-    "Certificering": ["Certificeringen (IEC 61215, IEC 61730, etc.)"],
+    "Elektrisch": ["vermogen_wp", "efficiency_pct", "celtype", "aantal_cellen", "voc_v", "isc_a", "vmpp_v", "impp_a", "max_systeemspanning_v", "max_zekering_a", "bifacial", "bifacial_factor_pct"],
+    "Thermisch": ["temp_coeff_pmax", "temp_coeff_voc", "temp_coeff_isc", "noct_c"],
+    "Fysiek": ["lengte_mm", "breedte_mm", "hoogte_mm", "gewicht_kg", "ip_rating", "connectortype", "kabellengte_mm", "kleur_frame", "kleur_backsheet", "glastype", "glasdikte_mm", "kleur", "bedrijfstemperatuur_bereik"],
+    "Mechanisch": ["windbelasting_pa", "sneeuwbelasting_pa", "brandklasse"],
+    "Prestatie": ["degradatie_jaar1_pct", "degradatie_jaarlijks_pct"],
+    "Garantie & Certificering": ["productgarantie_jaar", "vermogensgarantie_jaar", "vermogensgarantie_pct", "certificeringen"],
+    "Algemeen": ["land_van_herkomst"],
   },
   thuisbatterij: {
-    "Capaciteit": ["Bruikbare capaciteit (kWh)", "Nominale capaciteit (kWh)", "Depth of Discharge (%)"],
-    "Vermogen": ["Nominaal vermogen continu (kW)", "Piekvermogen (kW)", "Max laadstroom (A)", "Max ontlaadstroom (A)"],
-    "Elektrisch": ["Celtype (LFP/NMC/LTO)", "Roundtrip efficiëntie (%)", "Nominale spanning (V)", "Spanningsbereik (V)", "Fase (1/3)"],
-    "Levensduur": ["Aantal cycli", "Verwachte levensduur (jaar)"],
-    "Fysiek": ["Lengte (mm)", "Breedte (mm)", "Hoogte (mm)", "Gewicht (kg)", "IP-rating", "Montagetype (wand/vloer)", "Bedrijfstemperatuur (°C)", "Opslagtemperatuur (°C)"],
-    "Connectiviteit": ["WiFi (ja/nee)", "Ethernet (ja/nee)", "RS485 (ja/nee)", "CAN bus (ja/nee)", "Bluetooth (ja/nee)", "App aanwezig (ja/nee)", "Monitoring platform"],
-    "Functionaliteit": ["Noodstroom/backup (ja/nee)", "Uitbreidbaar (ja/nee)", "Max modules in cascade", "Compatibele omvormers"],
-    "Veiligheid": ["Brandklassificatie", "Certificeringen (IEC 62619, UN38.3, VDE)"],
-    "Garantie": ["Productgarantie (jaar)"],
+    "Capaciteit": ["bruikbare_capaciteit_kwh", "nominale_capaciteit_kwh", "dod_pct"],
+    "Vermogen": ["nominaal_vermogen_kw", "piekvermogen_kw", "max_laadstroom_a", "max_ontlaadstroom_a"],
+    "Elektrisch": ["celtype", "roundtrip_efficiency_pct", "nominale_spanning_v", "spanningsbereik_v", "fase"],
+    "Levensduur": ["cycli", "verwachte_levensduur_jaar"],
+    "Fysiek": ["lengte_mm", "breedte_mm", "hoogte_mm", "gewicht_kg", "ip_rating", "montagetype", "bedrijfstemperatuur_bereik", "opslagtemperatuur_bereik", "kleur"],
+    "Connectiviteit": ["wifi", "ethernet", "rs485", "can_bus", "bluetooth", "app_aanwezig", "monitoring_platform"],
+    "Functionaliteit": ["noodstroom", "uitbreidbaar", "max_modules_cascade", "compatibele_omvormers"],
+    "Veiligheid": ["brandklasse"],
+    "Garantie & Certificering": ["productgarantie_jaar", "certificeringen"],
+    "Algemeen": ["land_van_herkomst"],
   },
   warmtepomp: {
-    "Type": ["Type warmtepomp (lucht-water/lucht-lucht/bodem-water)", "Uitvoering (split/monoblock)"],
-    "Prestatie": ["Verwarmingscapaciteit A7/W35 (kW)", "Verwarmingscapaciteit A2/W35 (kW)", "Verwarmingscapaciteit A-7/W35 (kW)", "COP A7/W35", "COP A2/W35", "SCOP"],
-    "Koeling": ["Koelvermogen (kW)", "EER", "SEER"],
-    "Geluid": ["Geluidsniveau buitenunit (dB(A))", "Geluidsniveau binnenunit (dB(A))"],
-    "Koudemiddel": ["Koudemiddel type (R32/R290/R410A)", "GWP", "Hoeveelheid koudemiddel (kg)"],
-    "Elektrisch": ["Elektrisch vermogen max (kW)", "Aansluitspanning (V)", "Zekering (A)", "Fase (1/3)"],
-    "Water": ["Max watertemperatuur (°C)", "Debiet (l/min)", "Wateraansluiting"],
-    "Fysiek buitenunit": ["Breedte (mm)", "Hoogte (mm)", "Diepte (mm)", "Gewicht (kg)"],
-    "Fysiek binnenunit": ["Breedte (mm)", "Hoogte (mm)", "Diepte (mm)", "Gewicht (kg)"],
-    "Energie": ["Energielabel verwarming", "Energielabel warm water"],
-    "Subsidie": ["Subsidiabel ISDE (ja/nee)", "Smart Grid Ready (ja/nee)"],
-    "Garantie": ["Productgarantie (jaar)", "Certificeringen (ErP, Keymark, MCS)"],
+    "Type": ["type_warmtepomp", "split_monoblock"],
+    "Prestatie": ["verwarmingscapaciteit_a7w35_kw", "verwarmingscapaciteit_a2w35_kw", "verwarmingscapaciteit_a_7w35_kw", "cop_a7w35", "cop_a2w35", "scop"],
+    "Koeling": ["koelvermogen_kw", "eer", "seer"],
+    "Geluid": ["geluid_buitenunit_dba", "geluid_binnenunit_dba"],
+    "Koudemiddel": ["koudemiddel_type", "gwp", "koudemiddel_hoeveelheid_kg"],
+    "Elektrisch": ["elektrisch_vermogen_max_kw", "aansluitspanning_v", "zekering_a", "fase"],
+    "Water": ["max_watertemperatuur_c", "debiet_l_min", "wateraansluiting"],
+    "Fysiek buitenunit": ["buitenunit_breedte_mm", "buitenunit_hoogte_mm", "buitenunit_diepte_mm", "buitenunit_gewicht_kg"],
+    "Fysiek binnenunit": ["binnenunit_breedte_mm", "binnenunit_hoogte_mm", "binnenunit_diepte_mm", "binnenunit_gewicht_kg"],
+    "Energie": ["energielabel_verwarming", "energielabel_warm_water"],
+    "Subsidie & Regelgeving": ["subsidiabel", "smart_grid_ready"],
+    "Fysiek": ["gewicht_kg", "ip_rating", "kleur", "bedrijfstemperatuur_bereik"],
+    "Garantie & Certificering": ["productgarantie_jaar", "certificeringen"],
+    "Algemeen": ["land_van_herkomst"],
   },
   laadpaal: {
-    "Laden": ["Laadvermogen (kW)", "Max laadstroom (A)", "Fase (1/3)", "Aansluitspanning (V)", "Connector type", "Vaste kabel (ja/nee)", "Kabellengte (m)"],
-    "Smart functies": ["Smart charging (ja/nee)", "Load balancing (ja/nee)", "Dynamic load balancing (ja/nee)", "Zonne-energie laden (ja/nee)", "Vehicle-to-Grid (ja/nee)", "Thuisbatterij compatibel (ja/nee)"],
-    "Connectiviteit": ["WiFi (ja/nee)", "4G/LTE (ja/nee)", "Ethernet (ja/nee)", "Bluetooth (ja/nee)", "OCPP versie", "App aanwezig (ja/nee)", "Monitoring platform"],
-    "Authenticatie": ["RFID (ja/nee)", "Plug & Charge ISO 15118 (ja/nee)", "PIN-code (ja/nee)"],
-    "Meting": ["Energiemeter ingebouwd (ja/nee)", "MID-gecertificeerd (ja/nee)"],
-    "Fysiek": ["Lengte (mm)", "Breedte (mm)", "Hoogte (mm)", "Gewicht (kg)", "IP-rating", "IK-rating", "Installatiewijze (wand/paal)", "Bedrijfstemperatuur (°C)"],
-    "Garantie": ["Productgarantie (jaar)", "Certificeringen (IEC 61851, CE)"],
+    "Laden": ["laadvermogen_kw", "max_laadstroom_a", "fase", "aansluitspanning_v", "connector_type", "vaste_kabel", "kabellengte_m"],
+    "Smart functies": ["smart_charging", "load_balancing", "dynamic_load_balancing", "solar_charging", "vehicle_to_grid", "thuisbatterij_compatibel"],
+    "Connectiviteit": ["wifi", "4g_lte", "ethernet", "bluetooth", "ocpp_versie", "app_aanwezig", "monitoring_platform"],
+    "Authenticatie": ["rfid", "plug_and_charge", "pin_code"],
+    "Meting": ["energiemeter_ingebouwd", "mid_gecertificeerd"],
+    "Fysiek": ["lengte_mm", "breedte_mm", "hoogte_mm", "gewicht_kg", "ip_rating", "ik_rating", "installatiewijze", "bedrijfstemperatuur_bereik", "kleur"],
+    "Garantie & Certificering": ["productgarantie_jaar", "certificeringen"],
+    "Algemeen": ["land_van_herkomst"],
   },
   omvormer: {
-    "Type": ["Type omvormer (string/micro/hybride/batterij)", "Hybride/batterij-ready (ja/nee)"],
-    "DC-zijde": ["Max DC-vermogen (Wp)", "Max DC-spanning (V)", "MPPT spanningsbereik (V)", "Aantal MPPT-trackers", "Strings per MPPT", "Max ingangsstroom per MPPT (A)", "Max kortsluitstroom (A)"],
-    "AC-zijde": ["Nominaal AC-vermogen (W)", "Max AC-vermogen (VA)", "Fase (1/3)", "Nominale AC-spanning (V)", "Frequentie (Hz)", "THD (%)", "Power factor"],
-    "Rendement": ["Europees rendement (%)", "Max rendement (%)", "Nachtverbruik (W)"],
-    "Fysiek": ["Lengte (mm)", "Breedte (mm)", "Hoogte (mm)", "Gewicht (kg)", "IP-rating", "Koeling (natuurlijk/ventilator)", "Bedrijfstemperatuur (°C)", "Max installatiehoogte (m)"],
-    "Communicatie": ["WiFi (ja/nee)", "Ethernet (ja/nee)", "RS485 (ja/nee)", "Monitoring platform", "App aanwezig (ja/nee)"],
-    "Batterij": ["Batterij compatibel (ja/nee)", "Compatibele batterijen", "Max batterijstroom (A)"],
-    "Garantie": ["Productgarantie (jaar)", "Certificeringen (VDE, EN 50549, IEC 62109)"],
+    "Type": ["type_omvormer", "hybride"],
+    "DC-zijde": ["max_dc_vermogen_wp", "max_dc_spanning_v", "mppt_bereik_v", "aantal_mppt_trackers", "strings_per_mppt", "max_ingangsstroom_per_mppt_a", "max_kortsluitstroom_a"],
+    "AC-zijde": ["nominaal_ac_vermogen_w", "max_ac_vermogen_va", "fase", "nominale_ac_spanning_v", "frequentie_hz", "thd_pct", "power_factor"],
+    "Rendement": ["europees_rendement_pct", "max_rendement_pct", "nachtverbruik_w"],
+    "Fysiek": ["lengte_mm", "breedte_mm", "hoogte_mm", "gewicht_kg", "ip_rating", "koeling", "bedrijfstemperatuur_bereik", "max_hoogte_m", "kleur"],
+    "Communicatie": ["wifi", "ethernet", "rs485", "monitoring_platform", "app_aanwezig"],
+    "Batterij": ["batterij_compatibel", "compatibele_batterijen", "max_batterij_stroom_a"],
+    "Garantie & Certificering": ["productgarantie_jaar", "certificeringen"],
+    "Algemeen": ["land_van_herkomst"],
   },
 };
 
+// Human-readable label mapping for the AI prompt
+const keyLabelMap: Record<string, string> = {
+  vermogen_wp: "Vermogen (Wp)", efficiency_pct: "Efficiency (%)", celtype: "Celtype", aantal_cellen: "Aantal cellen",
+  voc_v: "Voc (V)", isc_a: "Isc (A)", vmpp_v: "Vmpp (V)", impp_a: "Impp (A)",
+  max_systeemspanning_v: "Max systeemspanning (V)", max_zekering_a: "Max zekering (A)",
+  bifacial: "Bifacial (Ja/Nee)", bifacial_factor_pct: "Bifacial factor (%)",
+  temp_coeff_pmax: "Temp.coëff. Pmax (%/°C)", temp_coeff_voc: "Temp.coëff. Voc (%/°C)",
+  temp_coeff_isc: "Temp.coëff. Isc (%/°C)", noct_c: "NOCT (°C)",
+  lengte_mm: "Lengte (mm)", breedte_mm: "Breedte (mm)", hoogte_mm: "Hoogte/Diepte (mm)",
+  gewicht_kg: "Gewicht (kg)", ip_rating: "IP-rating", kleur: "Kleur",
+  bedrijfstemperatuur_bereik: "Bedrijfstemperatuur (°C)", connectortype: "Connectortype",
+  kabellengte_mm: "Kabellengte (mm)", kleur_frame: "Kleur frame", kleur_backsheet: "Kleur backsheet",
+  glastype: "Glastype", glasdikte_mm: "Glasdikte (mm)",
+  windbelasting_pa: "Windbelasting (Pa)", sneeuwbelasting_pa: "Sneeuwbelasting (Pa)", brandklasse: "Brandklasse",
+  degradatie_jaar1_pct: "Degradatie jaar 1 (%)", degradatie_jaarlijks_pct: "Degradatie jaarlijks (%)",
+  productgarantie_jaar: "Productgarantie (jaar)", vermogensgarantie_jaar: "Vermogensgarantie (jaar)",
+  vermogensgarantie_pct: "Gegarandeerd vermogen na 25j (%)", certificeringen: "Certificeringen",
+  land_van_herkomst: "Land van herkomst",
+  bruikbare_capaciteit_kwh: "Bruikbare capaciteit (kWh)", nominale_capaciteit_kwh: "Nominale capaciteit (kWh)",
+  dod_pct: "Depth of Discharge (%)", nominaal_vermogen_kw: "Nominaal vermogen continu (kW)",
+  piekvermogen_kw: "Piekvermogen (kW)", max_laadstroom_a: "Max laadstroom (A)",
+  max_ontlaadstroom_a: "Max ontlaadstroom (A)", roundtrip_efficiency_pct: "Roundtrip efficiëntie (%)",
+  nominale_spanning_v: "Nominale spanning (V)", spanningsbereik_v: "Spanningsbereik (V)",
+  fase: "Fase (1/3)", cycli: "Aantal cycli", verwachte_levensduur_jaar: "Verwachte levensduur (jaar)",
+  montagetype: "Montagetype", opslagtemperatuur_bereik: "Opslagtemperatuur (°C)",
+  wifi: "WiFi (Ja/Nee)", ethernet: "Ethernet (Ja/Nee)", rs485: "RS485 (Ja/Nee)",
+  can_bus: "CAN bus (Ja/Nee)", bluetooth: "Bluetooth (Ja/Nee)", app_aanwezig: "App aanwezig (Ja/Nee)",
+  monitoring_platform: "Monitoring platform", noodstroom: "Noodstroom/backup (Ja/Nee)",
+  uitbreidbaar: "Uitbreidbaar (Ja/Nee)", max_modules_cascade: "Max modules in cascade",
+  compatibele_omvormers: "Compatibele omvormers",
+  type_warmtepomp: "Type warmtepomp", split_monoblock: "Uitvoering (split/monoblock)",
+  verwarmingscapaciteit_a7w35_kw: "Verwarmingscapaciteit A7/W35 (kW)",
+  verwarmingscapaciteit_a2w35_kw: "Verwarmingscapaciteit A2/W35 (kW)",
+  verwarmingscapaciteit_a_7w35_kw: "Verwarmingscapaciteit A-7/W35 (kW)",
+  cop_a7w35: "COP A7/W35", cop_a2w35: "COP A2/W35", scop: "SCOP",
+  koelvermogen_kw: "Koelvermogen (kW)", eer: "EER", seer: "SEER",
+  geluid_buitenunit_dba: "Geluidsniveau buitenunit (dB(A))",
+  geluid_binnenunit_dba: "Geluidsniveau binnenunit (dB(A))",
+  koudemiddel_type: "Koudemiddel type", gwp: "GWP", koudemiddel_hoeveelheid_kg: "Hoeveelheid koudemiddel (kg)",
+  elektrisch_vermogen_max_kw: "Elektrisch vermogen max (kW)", aansluitspanning_v: "Aansluitspanning (V)",
+  zekering_a: "Zekering (A)", max_watertemperatuur_c: "Max watertemperatuur (°C)",
+  debiet_l_min: "Debiet (l/min)", wateraansluiting: "Wateraansluiting",
+  buitenunit_breedte_mm: "Buitenunit breedte (mm)", buitenunit_hoogte_mm: "Buitenunit hoogte (mm)",
+  buitenunit_diepte_mm: "Buitenunit diepte (mm)", buitenunit_gewicht_kg: "Buitenunit gewicht (kg)",
+  binnenunit_breedte_mm: "Binnenunit breedte (mm)", binnenunit_hoogte_mm: "Binnenunit hoogte (mm)",
+  binnenunit_diepte_mm: "Binnenunit diepte (mm)", binnenunit_gewicht_kg: "Binnenunit gewicht (kg)",
+  energielabel_verwarming: "Energielabel verwarming", energielabel_warm_water: "Energielabel warm water",
+  subsidiabel: "Subsidiabel ISDE (Ja/Nee)", smart_grid_ready: "Smart Grid Ready (Ja/Nee)",
+  laadvermogen_kw: "Laadvermogen (kW)", connector_type: "Connector type",
+  vaste_kabel: "Vaste kabel (Ja/Nee)", kabellengte_m: "Kabellengte (m)",
+  smart_charging: "Smart charging (Ja/Nee)", load_balancing: "Load balancing (Ja/Nee)",
+  dynamic_load_balancing: "Dynamic load balancing (Ja/Nee)", solar_charging: "Zonne-energie laden (Ja/Nee)",
+  vehicle_to_grid: "Vehicle-to-Grid (Ja/Nee)", thuisbatterij_compatibel: "Thuisbatterij compatibel (Ja/Nee)",
+  "4g_lte": "4G/LTE (Ja/Nee)", ocpp_versie: "OCPP versie",
+  rfid: "RFID (Ja/Nee)", plug_and_charge: "Plug & Charge ISO 15118 (Ja/Nee)", pin_code: "PIN-code (Ja/Nee)",
+  energiemeter_ingebouwd: "Energiemeter ingebouwd (Ja/Nee)", mid_gecertificeerd: "MID-gecertificeerd (Ja/Nee)",
+  ik_rating: "IK-rating", installatiewijze: "Installatiewijze",
+  type_omvormer: "Type omvormer", hybride: "Hybride/batterij-ready (Ja/Nee)",
+  max_dc_vermogen_wp: "Max DC-vermogen (Wp)", max_dc_spanning_v: "Max DC-spanning (V)",
+  mppt_bereik_v: "MPPT spanningsbereik (V)", aantal_mppt_trackers: "Aantal MPPT-trackers",
+  strings_per_mppt: "Strings per MPPT", max_ingangsstroom_per_mppt_a: "Max ingangsstroom per MPPT (A)",
+  max_kortsluitstroom_a: "Max kortsluitstroom (A)",
+  nominaal_ac_vermogen_w: "Nominaal AC-vermogen (W)", max_ac_vermogen_va: "Max AC-vermogen (VA)",
+  nominale_ac_spanning_v: "Nominale AC-spanning (V)", frequentie_hz: "Frequentie (Hz)",
+  thd_pct: "THD (%)", power_factor: "Power factor",
+  europees_rendement_pct: "Europees rendement (%)", max_rendement_pct: "Max rendement (%)",
+  nachtverbruik_w: "Nachtverbruik (W)", koeling: "Koeling", max_hoogte_m: "Max installatiehoogte (m)",
+  batterij_compatibel: "Batterij compatibel (Ja/Nee)", compatibele_batterijen: "Compatibele batterijen",
+  max_batterij_stroom_a: "Max batterijstroom (A)",
+};
+
 function buildSpecPrompt(categorie: string): string {
-  const specs = categorySpecKeys[categorie];
-  if (!specs) return "Gebruik je expertise om alle relevante specificaties voor dit type product te bepalen. Lever minimaal 15 specificaties.";
-  
-  const lines = [`VOLLEDIGE specificatielijst voor ${categorie} — vul ALLE onderstaande parameters in:`];
+  const specs = categoryMachineKeys[categorie];
+  if (!specs) return "Gebruik je expertise om alle relevante specificaties te bepalen. Gebruik snake_case keys (bijv. vermogen_wp).";
+
+  const lines = [`VOLLEDIGE specificatielijst voor ${categorie} — gebruik EXACT deze machine-keys:`];
   for (const [group, keys] of Object.entries(specs)) {
-    lines.push(`  ${group}: ${keys.join(", ")}`);
+    const items = keys.map(k => `${k} (= ${keyLabelMap[k] || k})`).join(", ");
+    lines.push(`  ${group}: ${items}`);
   }
   return lines.join("\n");
 }
@@ -107,25 +184,34 @@ serve(async (req) => {
           {
             role: "system",
             content: `Je bent een expert in duurzame energieproducten (zonnepanelen, thuisbatterijen, warmtepompen, laadpalen, omvormers).
-Je taak is om productspecificaties te verifiëren, corrigeren en VOLLEDIG aan te vullen zodat er een professioneel specificatieblad van gemaakt kan worden.
+Je taak is om productspecificaties te verifiëren, corrigeren en VOLLEDIG aan te vullen.
 
 ${categoryGuide}
 
-BELANGRIJK:
-1. Zoek het exacte product op basis van naam, merk en model. Gebruik ALLEEN correcte, verifieerbare specificaties.
-2. Als je het product niet kent, maak dan GEEN specs op maar geef dit aan in suggestions.
-3. Vul ALLE specificaties uit bovenstaande lijst aan — een professioneel datasheet moet compleet zijn.
-4. Groepeer specificaties logisch.
-5. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
-6. Alle labels en waarden in het Nederlands waar mogelijk.
-7. Geef ALLE fysieke specificaties: gewicht, afmetingen, IP-rating, etc.
-8. Geef ALLE connectiviteitsspecificaties: WiFi, Ethernet, app, monitoring, etc.
+KRITISCHE INSTRUCTIES:
+1. Gebruik EXACT de machine-keys uit bovenstaande lijst als keys in corrected_specs. NIET de labels, NIET de eenheden in de key. Bijvoorbeeld: "vermogen_wp" (GOED), NIET "Vermogen (Wp)" (FOUT).
+2. Zoek het exacte product op basis van naam, merk en model. Gebruik ALLEEN correcte, verifieerbare specificaties.
+3. Als je het product niet kent, maak dan GEEN specs op maar geef dit aan in suggestions.
+4. Vul ALLE specificaties uit de lijst aan — een professioneel datasheet moet compleet zijn.
+5. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
+6. Alle waarden in het Nederlands waar van toepassing.
+7. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
+
+VOORBEELD van correct corrected_specs formaat:
+{
+  "vermogen_wp": "410",
+  "efficiency_pct": "21.3",
+  "celtype": "Mono TOPCon",
+  "bifacial": "Ja",
+  "lengte_mm": "1722",
+  "gewicht_kg": "21.5"
+}
 
 Antwoord ALTIJD via de tool call.`
           },
           {
             role: "user",
-            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan voor een professioneel specificatieblad:\n\n${productInfo}`
+            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan:\n\n${productInfo}`
           }
         ],
         tools: [
@@ -133,7 +219,7 @@ Antwoord ALTIJD via de tool call.`
             type: "function",
             function: {
               name: "verify_specs",
-              description: "Return verified and complete product specifications for a professional datasheet",
+              description: "Return verified and complete product specifications using exact machine-keys",
               parameters: {
                 type: "object",
                 properties: {
@@ -149,12 +235,7 @@ Antwoord ALTIJD via de tool call.`
                   corrected_specs: {
                     type: "object",
                     additionalProperties: { type: "string" },
-                    description: "Complete set of ALL product specifications (key-value pairs, Dutch labels). Must include electrical, performance, physical dimensions, weight, connectivity, and functional specs."
-                  },
-                  installatie_specs: {
-                    type: "object",
-                    additionalProperties: { type: "string" },
-                    description: "Installation and physical specifications: dimensions (mm), weight (kg), IP-rating, mounting type, operating temperature range, cooling method, cable/connector details."
+                    description: "Complete set of ALL product specifications using machine-keys (e.g. vermogen_wp, efficiency_pct, lengte_mm). Keys must be snake_case identifiers, NOT human labels."
                   },
                   regelgeving: {
                     type: "string",
@@ -165,7 +246,7 @@ Antwoord ALTIJD via de tool call.`
                     description: "Professional product description (2-4 sentences, in Dutch) highlighting key features and benefits"
                   }
                 },
-                required: ["verified", "suggestions", "corrected_specs", "installatie_specs"],
+                required: ["verified", "suggestions", "corrected_specs"],
                 additionalProperties: false
               }
             }
@@ -178,14 +259,12 @@ Antwoord ALTIJD via de tool call.`
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Te veel verzoeken, probeer het later opnieuw." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Krediet op, voeg tegoed toe." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const text = await response.text();
@@ -205,8 +284,7 @@ Antwoord ALTIJD via de tool call.`
   } catch (e) {
     console.error("ai-verify-product-specs error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Onbekende fout" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
