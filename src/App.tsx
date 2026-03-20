@@ -31,6 +31,7 @@ import Berichten from "@/pages/Berichten";
 import Documenten from "@/pages/Documenten";
 import Instellingen from "@/pages/Instellingen";
 import OffertePDF from "@/pages/OffertePDF";
+import OffertePDFPrint from "@/pages/OffertePDFPrint";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Energieadvies from "@/pages/Energieadvies";
@@ -210,6 +211,7 @@ const App = () => (
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
             </Route>
+            <Route path="/offertes/:id/pdf/print" element={<OffertePDFPrint />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
