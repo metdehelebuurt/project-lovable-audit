@@ -51,6 +51,8 @@ const ProductDetail = () => {
   const [partnerTekst, setPartnerTekst] = useState("");
   const [editingTekst, setEditingTekst] = useState(false);
   const [savingTekst, setSavingTekst] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
