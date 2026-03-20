@@ -3,25 +3,43 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Building2, Users, ClipboardList, FileText, Wrench, TrendingUp,
-  Calendar, Package, BarChart3, PenTool, MessageSquare, UserCheck2,
-  ClipboardCheck, Bell, ArrowRight
+  Users, ClipboardList, FileText, Wrench, TrendingUp,
+  Calendar, Package, BarChart3, UserCheck2,
+  ClipboardCheck, Bell, ArrowUpRight, ArrowDownRight
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
-/* ─── Mini Stat ─── */
-const MiniStat = ({ label, value }: { label: string; value: number | string }) => (
-  <div className="flex flex-col items-center px-4 py-2">
-    <span className="text-xl font-bold text-foreground">{value}</span>
-    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{label}</span>
-  </div>
+/* ─── Mini Stat Card ─── */
+const StatCard = ({ label, value, icon: Icon, trend }: {
+  label: string; value: number | string; icon: React.ElementType; trend?: number;
+}) => (
+  <Card className="rounded-2xl border-0 shadow-sm">
+    <CardContent className="p-4 flex items-center gap-3">
+      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{label}</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-xl font-bold text-foreground">{value}</span>
+          {trend !== undefined && (
+            <span className={`text-[10px] font-medium flex items-center gap-0.5 ${trend >= 0 ? "text-primary" : "text-destructive"}`}>
+              {trend >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+              {Math.abs(trend)}%
+            </span>
+          )}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
 );
 
 /* ─── Module Tile ─── */
-const ModuleTile = ({ title, subtitle, icon: Icon, color, to }: {
-  title: string; subtitle: string; icon: React.ElementType; color: string; to: string;
+const ModuleTile = ({ title, subtitle, icon: Icon, to }: {
+  title: string; subtitle: string; icon: React.ElementType; to: string;
 }) => {
   const navigate = useNavigate();
   return (
@@ -30,8 +48,8 @@ const ModuleTile = ({ title, subtitle, icon: Icon, color, to }: {
       onClick={() => navigate(to)}
     >
       <CardContent className="p-5 flex flex-col items-start gap-3">
-        <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon className="h-5 w-5" />
+        <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{title}</p>
@@ -54,9 +72,6 @@ const rolDashboards: Record<string, { title: string; description: string }> = {
 
 const typeIcons: Record<string, React.ElementType> = {
   lead: TrendingUp, offerte: FileText, schouw: ClipboardList, installatie: Wrench,
-};
-const typeColors: Record<string, string> = {
-  lead: "text-primary", offerte: "text-warning", schouw: "text-success", installatie: "text-accent-foreground",
 };
 
 interface ActivityItem {
@@ -97,7 +112,6 @@ const Dashboard = () => {
         counts.openOffertes = openOffertes.count ?? 0;
         counts.afspraken = afspraken.count ?? 0;
 
-        // Conversieratio
         const { count: accepted } = await supabase.from("offertes").select("id", { count: "exact", head: true }).eq("status", "geaccepteerd");
         const total = counts.offertes || 1;
         counts.conversie = Math.round(((accepted ?? 0) / total) * 100);
@@ -132,6 +146,48 @@ const Dashboard = () => {
       return counts;
     },
     enabled: !!profile,
+  });
+
+  /* ─── Chart data: leads & offertes per week (last 8 weeks) ─── */
+  const { data: chartData } = useQuery({
+    queryKey: ["dashboard-chart", rol, profile?.id],
+    queryFn: async () => {
+      const weeks: { name: string; leads: number; offertes: number }[] = [];
+      const now = new Date();
+      for (let i = 7; i >= 0; i--) {
+        const weekStart = subDays(now, i * 7 + 6);
+        const weekEnd = subDays(now, i * 7);
+        const label = format(weekEnd, "d MMM", { locale: nl });
+        const startStr = format(weekStart, "yyyy-MM-dd");
+        const endStr = format(weekEnd, "yyyy-MM-dd'T'23:59:59");
+
+        const [leadsRes, offertesRes] = await Promise.all([
+          supabase.from("leads").select("id", { count: "exact", head: true })
+            .gte("created_at", startStr).lte("created_at", endStr),
+          supabase.from("offertes").select("id", { count: "exact", head: true })
+            .gte("created_at", startStr).lte("created_at", endStr),
+        ]);
+        weeks.push({ name: label, leads: leadsRes.count ?? 0, offertes: offertesRes.count ?? 0 });
+      }
+      return weeks;
+    },
+    enabled: !!profile && ["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol),
+  });
+
+  /* ─── Chart data: offerte status verdeling ─── */
+  const { data: statusData } = useQuery({
+    queryKey: ["dashboard-status-chart", rol, profile?.id],
+    queryFn: async () => {
+      const statuses = ["concept", "verzonden", "geaccepteerd", "afgewezen", "verlopen"];
+      const results = await Promise.all(
+        statuses.map(s => supabase.from("offertes").select("id", { count: "exact", head: true }).eq("status", s))
+      );
+      return statuses.map((s, i) => ({
+        name: s.charAt(0).toUpperCase() + s.slice(1),
+        aantal: results[i].count ?? 0,
+      }));
+    },
+    enabled: !!profile && ["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol),
   });
 
   /* ─── Activity ─── */
@@ -170,54 +226,73 @@ const Dashboard = () => {
   });
 
   const s = stats ?? {};
+  const showCharts = ["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol);
+
+  /* ─── Stat cards per role ─── */
+  const getStatCards = () => {
+    const cards: { label: string; value: number | string; icon: React.ElementType }[] = [];
+    if (rol === "superadmin") {
+      cards.push({ label: "Partners", value: s.partners ?? 0, icon: Users });
+    }
+    if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol)) {
+      cards.push(
+        { label: "Leads", value: s.leads ?? 0, icon: TrendingUp },
+        { label: "Offertes", value: s.offertes ?? 0, icon: FileText },
+        { label: "Openstaand", value: s.openOffertes ?? 0, icon: FileText },
+      );
+    }
+    if (["superadmin", "partner_admin", "partner_staff"].includes(rol)) {
+      cards.push(
+        { label: "Conversie", value: `${s.conversie ?? 0}%`, icon: BarChart3 },
+        { label: "Schouwen", value: s.schouwen ?? 0, icon: ClipboardList },
+      );
+    }
+    if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol)) {
+      cards.push({ label: "Vandaag", value: s.afspraken ?? 0, icon: Calendar });
+    }
+    if (rol === "installateur") {
+      cards.push(
+        { label: "Opdrachten", value: s.installaties ?? 0, icon: Wrench },
+        { label: "Gepland", value: s.gepland ?? 0, icon: Calendar },
+      );
+    }
+    if (rol === "consument") {
+      cards.push(
+        { label: "Offertes", value: s.offertes ?? 0, icon: FileText },
+        { label: "Schouwen", value: s.schouwen ?? 0, icon: ClipboardList },
+      );
+    }
+    return cards;
+  };
 
   /* ─── Module tiles per role ─── */
   const getModuleTiles = () => {
     const tiles = [];
     if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol))
-      tiles.push({ title: "Leads", subtitle: "Nieuwe aanvragen beheren", icon: Users, color: "bg-primary/10 text-primary", to: "/leads" });
+      tiles.push({ title: "Leads", subtitle: "Nieuwe aanvragen beheren", icon: Users, to: "/leads" });
     if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"].includes(rol))
-      tiles.push({ title: "Offertes", subtitle: "Offertes maken en versturen", icon: FileText, color: "bg-warning-light text-warning", to: "/offertes" });
+      tiles.push({ title: "Offertes", subtitle: "Offertes maken en versturen", icon: FileText, to: "/offertes" });
     if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"].includes(rol))
-      tiles.push({ title: "Schouwen", subtitle: "Schouwrapportages beheren", icon: ClipboardList, color: "bg-success-light text-success", to: "/schouwen" });
+      tiles.push({ title: "Schouwen", subtitle: "Schouwrapportages beheren", icon: ClipboardList, to: "/schouwen" });
     if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))
-      tiles.push({ title: "Opdrachten", subtitle: "Lopende opdrachten inzien", icon: ClipboardCheck, color: "bg-accent text-accent-foreground", to: "/opdrachten" });
+      tiles.push({ title: "Opdrachten", subtitle: "Lopende opdrachten inzien", icon: ClipboardCheck, to: "/opdrachten" });
     if (["partner_admin", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
-      tiles.push({ title: "Planning", subtitle: "Afspraken en agenda", icon: Calendar, color: "bg-primary/10 text-primary", to: "/planning" });
+      tiles.push({ title: "Planning", subtitle: "Afspraken en agenda", icon: Calendar, to: "/planning" });
     if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))
-      tiles.push({ title: "Producten", subtitle: "Productcatalogus", icon: Package, color: "bg-success-light text-success", to: "/producten" });
+      tiles.push({ title: "Producten", subtitle: "Productcatalogus", icon: Package, to: "/producten" });
     if (["partner_admin", "partner_staff"].includes(rol))
-      tiles.push({ title: "Analytics", subtitle: "Rapportages en inzichten", icon: BarChart3, color: "bg-warning-light text-warning", to: "/analytics" });
+      tiles.push({ title: "Analytics", subtitle: "Rapportages en inzichten", icon: BarChart3, to: "/analytics" });
     if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol))
-      tiles.push({ title: "Klanten", subtitle: "Klantendatabase", icon: UserCheck2, color: "bg-accent text-accent-foreground", to: "/klanten" });
+      tiles.push({ title: "Klanten", subtitle: "Klantendatabase", icon: UserCheck2, to: "/klanten" });
     return tiles;
   };
 
-  /* ─── Stats for stat bar ─── */
-  const getStatItems = () => {
-    const items: { label: string; value: number | string }[] = [];
-    if (rol === "superadmin") {
-      items.push({ label: "Partners", value: s.partners ?? 0 }, { label: "Gebruikers", value: s.users ?? 0 });
-    }
-    if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol)) {
-      items.push({ label: "Leads", value: s.leads ?? 0 }, { label: "Offertes", value: s.offertes ?? 0 });
-    }
-    if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol)) {
-      items.push({ label: "Openstaand", value: s.openOffertes ?? 0 });
-    }
-    if (["superadmin", "partner_admin", "partner_staff"].includes(rol)) {
-      items.push({ label: "Schouwen", value: s.schouwen ?? 0 }, { label: "Conversie", value: `${s.conversie ?? 0}%` });
-    }
-    if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol)) {
-      items.push({ label: "Vandaag", value: s.afspraken ?? 0 });
-    }
-    if (rol === "installateur") {
-      items.push({ label: "Opdrachten", value: s.installaties ?? 0 }, { label: "Gepland", value: s.gepland ?? 0 });
-    }
-    if (rol === "consument") {
-      items.push({ label: "Offertes", value: s.offertes ?? 0 }, { label: "Schouwen", value: s.schouwen ?? 0 });
-    }
-    return items;
+  const customTooltipStyle = {
+    backgroundColor: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "0.75rem",
+    fontSize: "12px",
+    color: "hsl(var(--foreground))",
   };
 
   return (
@@ -228,16 +303,66 @@ const Dashboard = () => {
         <p className="text-muted-foreground mt-1">{dash.description}</p>
       </div>
 
-      {/* Compact stat bar */}
-      <Card className="rounded-2xl border-0 shadow-sm">
-        <CardContent className="p-2">
-          <div className="flex flex-wrap justify-center divide-x divide-border">
-            {getStatItems().map((item) => (
-              <MiniStat key={item.label} label={item.label} value={item.value} />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        {getStatCards().map((card) => (
+          <StatCard key={card.label} {...card} />
+        ))}
+      </div>
+
+      {/* Charts */}
+      {showCharts && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="rounded-2xl border-0 shadow-sm">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Leads & Offertes (8 weken)</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 pb-3">
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData ?? []} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradLeads" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(242, 67%, 62%)" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="hsl(242, 67%, 62%)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradOffertes" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(242, 67%, 75%)" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="hsl(242, 67%, 75%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={customTooltipStyle} />
+                    <Area type="monotone" dataKey="leads" name="Leads" stroke="hsl(242, 67%, 62%)" fill="url(#gradLeads)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="offertes" name="Offertes" stroke="hsl(242, 67%, 75%)" fill="url(#gradOffertes)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-0 shadow-sm">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Offerte Statusverdeling</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 pb-3">
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={statusData ?? []} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={customTooltipStyle} />
+                    <Bar dataKey="aantal" name="Aantal" fill="hsl(242, 67%, 62%)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Module tiles */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -248,7 +373,6 @@ const Dashboard = () => {
 
       {/* Bottom row: Activity + Notifications */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Recente activiteit */}
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Recente Activiteit</CardTitle>
@@ -262,8 +386,8 @@ const Dashboard = () => {
                   const Icon = typeIcons[item.type];
                   return (
                     <div key={`${item.type}-${item.id}`} className="flex items-center gap-2.5 py-1.5 border-b border-border last:border-0">
-                      <div className={`h-7 w-7 rounded-full bg-muted flex items-center justify-center ${typeColors[item.type]}`}>
-                        <Icon className="h-3.5 w-3.5" />
+                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Icon className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-foreground truncate">
@@ -282,15 +406,14 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Notificaties */}
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <Bell className="h-4 w-4" /> Notificaties
+                <Bell className="h-4 w-4 text-primary" /> Notificaties
               </CardTitle>
               {(notifications?.length ?? 0) > 0 && (
-                <span className="text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 font-medium">
+                <span className="text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 font-medium">
                   {notifications?.length}
                 </span>
               )}
