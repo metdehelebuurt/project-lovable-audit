@@ -102,6 +102,8 @@ const OfferteNieuw = () => {
     return defaultTemplateConfig;
   });
   const [generatingIntro, setGeneratingIntro] = useState(false);
+  const [offerteKortingType, setOfferteKortingType] = useState<"percentage" | "bedrag">("percentage");
+  const [offerteKortingWaarde, setOfferteKortingWaarde] = useState(0);
 
   // Reload template config when returning from template page
   useEffect(() => {
