@@ -85,7 +85,7 @@ const Dashboard = () => {
           supabase.from("schouwen").select("id", { count: "exact", head: true }),
           supabase.from("offertes").select("id", { count: "exact", head: true }),
           supabase.from("installaties").select("id", { count: "exact", head: true }),
-          supabase.from("offertes").select("id", { count: "exact", head: true }).eq("status", "verstuurd"),
+          supabase.from("offertes").select("id", { count: "exact", head: true }).eq("status", "verzonden"),
           supabase.from("afspraken").select("id", { count: "exact", head: true }).eq("datum", today),
         ]);
         counts.partners = partners.count ?? 0;
