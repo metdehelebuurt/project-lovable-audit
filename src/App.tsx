@@ -17,6 +17,7 @@ import Adviseurs from "@/pages/Adviseurs";
 import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
 import Schouwen from "@/pages/Schouwen";
+import SchouwSnelstart from "@/pages/SchouwSnelstart";
 import SchouwDetail from "@/pages/SchouwDetail";
 import SchouwNieuw from "@/pages/SchouwNieuw";
 import SchouwUitvoeren from "@/pages/SchouwUitvoeren";
