@@ -661,11 +661,26 @@ const ProductDetail = () => {
                       )}
                     </div>
                   </div>
-                  <iframe
-                    src={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                  <object
+                    data={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                    type="application/pdf"
                     className="w-full h-[600px] rounded-xl border"
                     title="PDF Datasheet"
-                  />
+                  >
+                    <div className="flex flex-col items-center justify-center h-[200px] bg-muted/30 rounded-xl border border-dashed">
+                      <FileText className="h-10 w-10 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">PDF kan niet in de browser worden weergegeven</p>
+                      <a
+                        href={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button size="sm" variant="outline" className="gap-2 rounded-lg">
+                          <Eye className="h-4 w-4" /> Open PDF in nieuw tabblad
+                        </Button>
+                      </a>
+                    </div>
+                  </object>
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
