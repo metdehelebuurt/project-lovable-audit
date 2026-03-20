@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Camera, Trash2, Upload, Image, Video, Square, RotateCcw, Save, Play, X } from "lucide-react";
+import { Camera, Trash2, Upload, Image, Video, Square, RotateCcw, Save, Play, X, Pencil, Check } from "lucide-react";
 
 export interface SchouwFoto {
   url: string;
@@ -23,6 +23,10 @@ interface SchouwMediaUploadProps {
 const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwMediaUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [label, setLabel] = useState("");
+
+  // Inline label editing state
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingLabel, setEditingLabel] = useState("");
 
   // Video recording state
   const [showRecorder, setShowRecorder] = useState(false);
@@ -51,15 +55,15 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
     const newFotos: SchouwFoto[] = [...fotos];
 
     for (const file of Array.from(files)) {
-      const isVideo = file.type.startsWith("video/");
-      const isImage = file.type.startsWith("image/");
-      if (!isImage && !isVideo) {
+      const isVid = file.type.startsWith("video/");
+      const isImg = file.type.startsWith("image/");
+      if (!isImg && !isVid) {
         toast.error(`${file.name}: alleen afbeeldingen en video's toegestaan`);
         continue;
       }
-      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      const maxSize = isVid ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        toast.error(`${file.name}: maximaal ${isVideo ? "50" : "10"}MB`);
+        toast.error(`${file.name}: maximaal ${isVid ? "50" : "10"}MB`);
         continue;
       }
 
@@ -90,6 +94,26 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
   const handleRemove = (index: number) => {
     const updated = fotos.filter((_, i) => i !== index);
     onFotosChange(updated);
+  };
+
+  const startEditLabel = (index: number) => {
+    setEditingIndex(index);
+    setEditingLabel(fotos[index].label);
+  };
+
+  const saveEditLabel = () => {
+    if (editingIndex === null) return;
+    const updated = fotos.map((f, i) =>
+      i === editingIndex ? { ...f, label: editingLabel.trim() || f.label } : f
+    );
+    onFotosChange(updated);
+    setEditingIndex(null);
+    setEditingLabel("");
+  };
+
+  const cancelEditLabel = () => {
+    setEditingIndex(null);
+    setEditingLabel("");
   };
 
   // ─── Video recording ───
@@ -127,7 +151,7 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
 
     const recorder = new MediaRecorder(streamRef.current, {
       mimeType,
-      videoBitsPerSecond: 1_500_000, // 1.5 Mbps for good quality at HD
+      videoBitsPerSecond: 1_500_000,
     });
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -229,7 +253,7 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
         <div className="flex-1">
-          <Label>Label (optioneel)</Label>
+          <Label>Label voor nieuwe uploads (optioneel)</Label>
           <Input
             value={label}
             onChange={e => setLabel(e.target.value)}
@@ -275,22 +299,63 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
           {fotos.map((foto, i) => (
             <div
               key={i}
-              className="relative group rounded-xl overflow-hidden border bg-muted cursor-pointer"
-              onClick={() => setLightboxUrl(foto.url)}
+              className="relative group rounded-xl overflow-hidden border bg-muted"
             >
-              {isVideo(foto.url) ? (
-                <div className="relative w-full h-32 bg-black flex items-center justify-center">
-                  <video src={foto.url} className="w-full h-32 object-cover" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Play className="h-8 w-8 text-white/90 drop-shadow-lg" />
+              <div
+                className="cursor-pointer"
+                onClick={() => setLightboxUrl(foto.url)}
+              >
+                {isVideo(foto.url) ? (
+                  <div className="relative w-full h-32 bg-black flex items-center justify-center">
+                    <video src={foto.url} className="w-full h-32 object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Play className="h-8 w-8 text-white/90 drop-shadow-lg" />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <img src={foto.url} alt={foto.label} className="w-full h-32 object-cover" />
-              )}
-              <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1">
-                <p className="text-xs text-white truncate">{foto.label}</p>
+                ) : (
+                  <img src={foto.url} alt={foto.label} className="w-full h-32 object-cover" />
+                )}
               </div>
+
+              {/* Label area — inline editable */}
+              <div className="px-2 py-1.5 bg-background border-t">
+                {editingIndex === i ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      value={editingLabel}
+                      onChange={e => setEditingLabel(e.target.value)}
+                      className="h-6 text-xs rounded px-1"
+                      autoFocus
+                      onKeyDown={e => {
+                        if (e.key === "Enter") saveEditLabel();
+                        if (e.key === "Escape") cancelEditLabel();
+                      }}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={saveEditLabel}>
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={cancelEditLabel}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs truncate flex-1 text-muted-foreground">{foto.label}</p>
+                    {!disabled && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100"
+                        onClick={(e) => { e.stopPropagation(); startEditLabel(i); }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {!disabled && (
                 <Button
                   type="button"
@@ -325,25 +390,18 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Camera preview or recorded preview */}
             <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
               {recordedUrl ? (
-                <video
-                  src={recordedUrl}
-                  controls
-                  className="w-full h-full object-contain"
-                />
+                <video src={recordedUrl} controls className="w-full h-full object-contain" />
               ) : (
                 <video
                   ref={videoPreviewRef}
                   muted
                   playsInline
-                  className="w-full h-full object-cover mirror"
+                  className="w-full h-full object-cover"
                   style={{ transform: "scaleX(1)" }}
                 />
               )}
-
-              {/* Recording indicator */}
               {recording && (
                 <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/70 rounded-full px-3 py-1.5">
                   <div className="h-3 w-3 rounded-full bg-destructive animate-pulse" />
@@ -354,7 +412,6 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
               )}
             </div>
 
-            {/* Timer progress bar during recording */}
             {recording && (
               <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
@@ -364,7 +421,6 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
               </div>
             )}
 
-            {/* Controls */}
             <div className="flex justify-center gap-3">
               {!recordedUrl ? (
                 <>
