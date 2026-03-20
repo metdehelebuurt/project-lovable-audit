@@ -1,61 +1,53 @@
 
 
-## Plan: Partner-specifieke offerte_tekst & Orderbevestiging PDF
+## Plan: Configureerbare betaalvoorwaarden per partner
 
-### Probleem 1: offerte_tekst is niet per partner opgeslagen
-Het veld `offerte_tekst` staat op de `producten` tabel — globaal. Als meerdere partners hetzelfde product gebruiken, overschrijven ze elkaars tekst. De tekst verschijnt wel correct in de offerte-PDF (via de `regels` JSONB snapshot).
+### Concept
+Partners kunnen in Instellingen hun eigen betaalvoorwaarden beheren: standaardopties + custom voorwaarden, met één als standaard gemarkeerd. Deze worden als dropdown gebruikt bij offertes en orders.
 
-### Probleem 2: Geen orderbevestiging PDF bij opdrachten
-De `OpdrachtDetail.tsx` pagina toont geen orderbevestiging-document. Er is wel een knop "Opdrachtbevestiging versturen" maar geen preview/download van het document.
+### 1. Database: nieuw JSONB-veld op `partners`
 
----
-
-### Oplossing 1: Partner-specifieke offerte_tekst
-
-**Nieuwe tabel: `partner_product_teksten`**
+Migratie toevoegt aan `partners`:
 ```sql
-CREATE TABLE public.partner_product_teksten (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  partner_id uuid NOT NULL,
-  product_id uuid NOT NULL,
-  offerte_tekst text,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(partner_id, product_id)
-);
+ALTER TABLE public.partners 
+ADD COLUMN betalingsvoorwaarden_config jsonb 
+DEFAULT '[
+  {"label":"30 dagen netto","standaard":true},
+  {"label":"14 dagen netto","standaard":false},
+  {"label":"50% vooruit, 50% na installatie","standaard":false},
+  {"label":"Bij oplevering","standaard":false}
+]'::jsonb;
 ```
-Met RLS policies die het partner-isolatie patroon volgen.
 
-**Wijzigingen in code:**
-- `ProductDetail.tsx`: sectie toevoegen om de partner-specifieke offerte_tekst in te voeren/bewerken (opslaan in `partner_product_teksten` i.p.v. `producten.offerte_tekst`)
-- `OfferteNieuw.tsx` & `Offertes.tsx`: bij het selecteren van een product, eerst de partner-specifieke tekst ophalen uit `partner_product_teksten`, fallback naar `producten.offerte_tekst`
-- De snapshot in `regels` JSONB blijft hetzelfde — de juiste tekst wordt al bij aanmaak opgeslagen
+Structuur: array van `{ label: string, standaard: boolean }`.
 
-### Oplossing 2: Orderbevestiging PDF
+### 2. Instellingen: nieuw tabblad/sectie "Betaalvoorwaarden"
 
-**Nieuw component: `src/components/OrderbevestigingPDF.tsx`**
-Een professioneel orderbevestigingsdocument met:
-- Bedrijfsbranding (logo, kleuren, contactgegevens)
-- Ordernummer, datum, klantgegevens
-- Producttabel met offerteregels (incl. offerte_tekst)
-- Totaalbedrag
-- Bevestigingsdatum en -status
+**`src/components/instellingen/BetalingsvoorwaardenConfig.tsx`** (nieuw)
 
-**Wijzigingen in `OpdrachtDetail.tsx`:**
-- Knop "Orderbevestiging bekijken" toevoegen die een dialog opent met het PDF-preview component
-- Knop "PDF downloaden" via `window.print()`
-- Partner-branding ophalen voor de PDF
+- Lijst van alle voorwaarden met drag/delete
+- Per item: label (tekst) + radio "standaard"
+- Knop "Voorwaarde toevoegen" voor custom tekst
+- Opslaan naar `partners.betalingsvoorwaarden_config`
 
----
+### 3. Offertes & orders: dropdown i.p.v. vrij tekstveld
+
+Wijzigingen in `OfferteNieuw.tsx`, `Offertes.tsx`, `Affiliates.tsx`:
+- Haal `betalingsvoorwaarden_config` op uit partner
+- Vervang het `<Input>` veld door een `<Select>` dropdown met de geconfigureerde opties
+- Default waarde = de optie met `standaard: true`
+- Optie "Anders..." die een vrij tekstveld toont
+
+`OrderbevestigingPDF.tsx` toont al de betalingsvoorwaarden uit de offerte — geen wijziging nodig.
 
 ### Bestanden
 
 | Bestand | Actie |
 |---------|-------|
-| Migratie | `partner_product_teksten` tabel + RLS |
-| `src/components/OrderbevestigingPDF.tsx` | **Nieuw** — orderbevestiging layout |
-| `src/pages/OpdrachtDetail.tsx` | Orderbevestiging preview/download toevoegen |
-| `src/pages/ProductDetail.tsx` | Partner-specifieke offerte_tekst editor |
-| `src/pages/OfferteNieuw.tsx` | Partner-tekst ophalen bij productselectie |
-| `src/pages/Offertes.tsx` | Idem |
+| Migratie | `betalingsvoorwaarden_config` kolom op partners |
+| `src/components/instellingen/BetalingsvoorwaardenConfig.tsx` | **Nieuw** — configuratie-UI |
+| `src/pages/Instellingen.tsx` | Sectie toevoegen voor partner_admin |
+| `src/pages/OfferteNieuw.tsx` | Input → Select dropdown |
+| `src/pages/Offertes.tsx` | Input → Select dropdown |
+| `src/pages/Affiliates.tsx` | Input → Select dropdown |
 
