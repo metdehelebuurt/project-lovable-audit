@@ -79,6 +79,18 @@ const DatasheetCheckDialog = ({
     setStatuses((s) => ({ ...s, [productId]: "skipped" }));
   };
 
+  const handleSkipAll = () => {
+    setStatuses((prev) => {
+      const updated = { ...prev };
+      products.forEach((p) => {
+        if (!updated[p.id] || updated[p.id] === "pending") {
+          updated[p.id] = "skipped";
+        }
+      });
+      return updated;
+    });
+  };
+
   const handleGenerate = (productId: string) => {
     // Open in new tab so offerte form is preserved
     window.open(`/producten/${productId}/datasheet`, "_blank");
@@ -211,6 +223,17 @@ const DatasheetCheckDialog = ({
             {rechecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             Hercontroleer
           </Button>
+          {!allResolved && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-xl gap-1 text-muted-foreground"
+              onClick={handleSkipAll}
+            >
+              <SkipForward className="h-3.5 w-3.5" /> Alles overslaan
+            </Button>
+          )}
           <div className="flex-1" />
           <Button
             variant="outline"
@@ -220,12 +243,14 @@ const DatasheetCheckDialog = ({
             Annuleren
           </Button>
           <Button
-            disabled={!allResolved}
-            onClick={onComplete}
+            onClick={() => {
+              if (!allResolved) handleSkipAll();
+              onComplete();
+            }}
             className="rounded-xl gap-2"
           >
             <Check className="h-4 w-4" />
-            Doorgaan met offerte
+            {allResolved ? "Doorgaan met offerte" : "Overslaan & doorgaan"}
           </Button>
         </DialogFooter>
       </DialogContent>
