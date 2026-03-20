@@ -330,6 +330,30 @@ const OpdrachtDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Orderbevestiging PDF dialog */}
+      <Dialog open={orderPdfOpen} onOpenChange={setOrderPdfOpen}>
+        <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
+          <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
+            <DialogHeader><DialogTitle>Orderbevestiging</DialogTitle></DialogHeader>
+            <Button size="sm" className="rounded-lg gap-2" onClick={() => window.print()}>
+              <Download className="h-4 w-4" /> PDF downloaden
+            </Button>
+          </div>
+          {partnerData && (
+            <OrderbevestigingPDF
+              opdracht={{
+                ...opdracht,
+                regels: regels,
+              }}
+              partner={partnerData}
+            />
+          )}
+          {!partnerData && (
+            <div className="p-8 text-center text-muted-foreground">Partner-gegevens laden...</div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
