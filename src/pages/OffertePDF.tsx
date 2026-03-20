@@ -903,15 +903,60 @@ export default function OffertePDF() {
                     <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Voorblad titel</Label>
                     <Input value={config.hero_title || ""} onChange={e => setConfig(p => ({ ...p, hero_title: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="Offerte" />
                   </div>
+
+                  {/* Hero image upload + gallery */}
                   <div>
-                    <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Hero afbeelding URL</Label>
-                    <Input value={config.hero_image_url || ""} onChange={e => setConfig(p => ({ ...p, hero_image_url: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="https://voorbeeld.nl/afbeelding.jpg" />
+                    <Label className="text-xs flex items-center gap-1 mb-1.5"><ImageIcon className="h-3 w-3" /> Voorblad afbeelding</Label>
+                    <input ref={heroFileRef} type="file" accept="image/*" onChange={handleHeroUpload} className="hidden" />
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => heroFileRef.current?.click()} disabled={heroUploading}>
+                        {heroUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                        {heroUploading ? "Uploaden..." : "Upload"}
+                      </Button>
+                      {heroGallery.length > 0 && (
+                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => setShowGallery(!showGallery)}>
+                          <ImageIcon className="h-3 w-3" /> Galerij ({heroGallery.length})
+                        </Button>
+                      )}
+                      {config.hero_image_url && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfig(p => ({ ...p, hero_image_url: "" }))}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Gallery grid */}
+                    {showGallery && heroGallery.length > 0 && (
+                      <div className="grid grid-cols-3 gap-1.5 mt-2">
+                        {heroGallery.map((url, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => { setConfig(p => ({ ...p, hero_image_url: url })); setShowGallery(false); }}
+                            className={`relative rounded-md overflow-hidden border-2 aspect-[3/2] transition-all hover:opacity-90 ${config.hero_image_url === url ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
+                          >
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            {config.hero_image_url === url && (
+                              <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                                <Check className="h-2.5 w-2.5" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Current preview */}
                     {config.hero_image_url && (
-                      <div className="mt-1.5 rounded-lg overflow-hidden border border-border h-16">
+                      <div className="mt-1.5 rounded-lg overflow-hidden border border-border h-20">
                         <img src={config.hero_image_url} alt="Hero preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       </div>
                     )}
+
+                    {/* Manual URL fallback */}
+                    <Input value={config.hero_image_url || ""} onChange={e => setConfig(p => ({ ...p, hero_image_url: e.target.value }))} className="h-7 text-[10px] rounded-lg mt-1.5" placeholder="Of plak een URL..." />
                   </div>
+
                   <Separator />
                   {(["badge_1", "badge_2", "badge_3"] as const).map((key, i) => (
                     <div key={key}>
