@@ -84,6 +84,19 @@ const OpdrachtDetail = () => {
     },
   });
 
+  const { data: partnerData } = useQuery({
+    queryKey: ["partner-branding", opdracht?.partner_id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("partners")
+        .select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan")
+        .eq("id", opdracht!.partner_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!opdracht?.partner_id,
+  });
+
   const updateStatus = useMutation({
     mutationFn: async (payload: Record<string, any>) => {
       const { error } = await supabase.from("opdrachten" as any).update(payload).eq("id", id!);
