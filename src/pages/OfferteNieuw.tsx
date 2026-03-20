@@ -141,6 +141,18 @@ const OfferteNieuw = () => {
     },
   });
 
+  const { data: partnerTeksten = [] } = useQuery({
+    queryKey: ["partner-product-teksten", profile?.partner_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partner_product_teksten" as any)
+        .select("product_id, offerte_tekst")
+        .eq("partner_id", profile!.partner_id!);
+      return (data || []) as Array<{ product_id: string; offerte_tekst: string }>;
+    },
+    enabled: !!profile?.partner_id,
+  });
+
   const { data: schouwen = [] } = useQuery({
     queryKey: ["schouwen-for-offertes"],
     queryFn: async () => {
