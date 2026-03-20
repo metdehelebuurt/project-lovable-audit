@@ -14,8 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle } from "lucide-react";
+import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
+import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
