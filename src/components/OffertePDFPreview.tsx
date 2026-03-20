@@ -92,7 +92,12 @@ const categoryLabels: Record<string, string> = {
   ventilatie: "Ventilatie",
 };
 
-export default function OffertePDFPreview() {
+interface OffertePDFPreviewProps {
+  templateConfigOverride?: Record<string, any> | null;
+  hideActionBar?: boolean;
+}
+
+export default function OffertePDFPreview({ templateConfigOverride, hideActionBar }: OffertePDFPreviewProps = {}) {
   const { id } = useParams<{ id: string }>();
   const [offerte, setOfferte] = useState<Offerte | null>(null);
   const [partner, setPartner] = useState<PartnerBranding | null>(null);
