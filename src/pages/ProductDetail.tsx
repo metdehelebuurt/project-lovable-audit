@@ -67,7 +67,30 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
-  // Partner-specific offerte tekst
+  // Fetch PDF as blob for iframe display (avoids Chrome cross-origin blocking)
+  useEffect(() => {
+    if (localPdfUrl) return; // local upload preview takes priority
+    if (!product?.datasheet_url || product?.datasheet_type !== "fabrikant") {
+      setPdfBlobUrl(null);
+      return;
+    }
+    let revoked = false;
+    const fetchPdf = async () => {
+      const { data, error } = await supabase.storage
+        .from("product-images")
+        .download(product.datasheet_url!);
+      if (error || !data || revoked) return;
+      const url = URL.createObjectURL(data);
+      setPdfBlobUrl(url);
+    };
+    fetchPdf();
+    return () => {
+      revoked = true;
+      setPdfBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    };
+  }, [product?.datasheet_url, product?.datasheet_type, localPdfUrl]);
+
+
   const { data: partnerTekstData } = useQuery({
     queryKey: ["partner-product-tekst", id, profile?.partner_id],
     queryFn: async () => {
