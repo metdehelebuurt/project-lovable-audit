@@ -187,6 +187,9 @@ const OpdrachtDetail = () => {
             {!opdracht.installatie_id && (
               <Button variant="outline" onClick={() => setInstallDialog(true)} className="gap-2"><Wrench className="h-4 w-4" /> Installatie plannen</Button>
             )}
+            <Button variant="outline" onClick={() => setOrderPdfOpen(true)} className="gap-2">
+              <FileText className="h-4 w-4" /> Orderbevestiging
+            </Button>
             <Button variant="destructive" onClick={() => setCancelDialog(true)} className="gap-2 ml-auto"><XCircle className="h-4 w-4" /> Annuleren</Button>
           </CardContent>
         </Card>
