@@ -349,7 +349,7 @@ const OfferteNieuw = () => {
               <div><Label>Adres</Label><Input value={klantAdres} onChange={e => setKlantAdres(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Postcode</Label><Input value={klantPostcode} onChange={e => setKlantPostcode(e.target.value)} className="rounded-xl" /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div><Label>Plaats</Label><Input value={klantPlaats} onChange={e => setKlantPlaats(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Geldig tot *</Label><Input type="date" value={geldigTot} onChange={e => setGeldigTot(e.target.value)} required className="rounded-xl" /></div>
               <div>
