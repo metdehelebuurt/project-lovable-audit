@@ -71,18 +71,24 @@ const Instellingen = () => {
     if (file.size > 2 * 1024 * 1024) { toast.error("Maximaal 2MB"); return; }
 
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${profile.partner_id}/logo.${ext}`;
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${profile.partner_id}/logo_${Date.now()}.${ext}`;
 
-    const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
-    if (error) { toast.error("Upload mislukt: " + error.message); setUploading(false); return; }
+      const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
+      if (error) { toast.error("Upload mislukt: " + error.message); setUploading(false); return; }
 
-    const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
-    
-    const { error: updateError } = await supabase.from("partners").update({ logo_url: publicUrl }).eq("id", profile.partner_id);
-    if (updateError) { toast.error(updateError.message); } else {
-      setLogoUrl(publicUrl);
-      toast.success("Logo geüpload");
+      const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
+      const urlWithCacheBust = publicUrl + "?t=" + Date.now();
+
+      const { error: updateError } = await supabase.from("partners").update({ logo_url: urlWithCacheBust }).eq("id", profile.partner_id);
+      if (updateError) { toast.error("Fout bij opslaan: " + updateError.message); } else {
+        setLogoUrl(urlWithCacheBust);
+        toast.success("Logo geüpload");
+      }
+    } catch (err: any) {
+      console.error("Logo upload error:", err);
+      toast.error("Onverwachte fout bij uploaden");
     }
     setUploading(false);
   };
@@ -239,8 +245,12 @@ const Instellingen = () => {
                 <div>
                   <Label>Logo</Label>
                   <div className="flex items-center gap-4 mt-1">
-                    {logoUrl && (
-                      <img src={logoUrl} alt="Logo" className="h-12 w-auto object-contain rounded-lg border p-1" />
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Logo" className={`h-12 w-auto object-contain rounded-lg border p-1 ${uploading ? "opacity-50" : ""}`} />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg border border-dashed flex items-center justify-center bg-muted/30">
+                        <Palette className="h-5 w-5 text-muted-foreground" />
+                      </div>
                     )}
                     <div>
                       <Input
@@ -310,7 +320,7 @@ const Instellingen = () => {
                   <div className="mt-2 rounded-xl border p-4" style={{ borderBottom: `3px solid ${primaireKleur}` }}>
                     <div className="flex justify-between items-start">
                       <div>
-                        {logoUrl && <img src={logoUrl} alt="Logo" className="h-8 mb-1 object-contain" />}
+                        {logoUrl ? <img src={logoUrl} alt="Logo" className="h-8 mb-1 object-contain" /> : <div className="h-8 w-8 rounded bg-muted mb-1" />}
                         <p className="font-bold" style={{ color: secundaireKleur }}>{partnerNaam}</p>
                         {bedrijfsslogan && <p className="text-xs" style={{ color: primaireKleur }}>{bedrijfsslogan}</p>}
                       </div>

@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText, ChevronLeft, ChevronRight, Check, PlayCircle, CalendarPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText, ChevronLeft, ChevronRight, Check, PlayCircle, CalendarPlus, Zap, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
@@ -162,6 +162,13 @@ const Schouwen = () => {
   const [wizardMode, setWizardMode] = useState<WizardMode>("plan");
   const queryClient = useQueryClient();
 
+  // Snelstart state
+  const [snelstartOpen, setSnelstartOpen] = useState(false);
+  const [snelstartCat, setSnelstartCat] = useState<SchouwCategorie | null>(null);
+  const [snelstartLeadId, setSnelstartLeadId] = useState("");
+  const [snelstartLeadSearch, setSnelstartLeadSearch] = useState("");
+  const [snelstartCreating, setSnelstartCreating] = useState(false);
+
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
   const canDelete = isSuperadmin || isAdmin;
@@ -294,6 +301,41 @@ const Schouwen = () => {
 
   const closeDialog = () => { setDialogOpen(false); setEditingSchouw(null); setForm(emptyForm); setWizardStep(0); };
 
+  const handleSnelstart = async () => {
+    if (!snelstartCat || !snelstartLeadId) return;
+    setSnelstartCreating(true);
+    try {
+      const lead = leads.find(l => l.id === snelstartLeadId);
+      const record = {
+        categorie: snelstartCat,
+        geplande_datum: new Date().toISOString().slice(0, 10),
+        consument_naam: lead ? `${lead.voornaam} ${lead.achternaam}` : null,
+        klant_email: lead?.email || null,
+        lead_id: snelstartLeadId,
+        partner_id: profile?.partner_id!,
+        adviseur_id: profile?.id!,
+        schouw_nummer: generateSchouwNummer(),
+      };
+      const { data, error } = await supabase.from("schouwen").insert(record).select("id").single();
+      if (error) throw error;
+      toast.success("Schouw aangemaakt — wizard wordt geopend");
+      setSnelstartOpen(false);
+      setSnelstartCat(null);
+      setSnelstartLeadId("");
+      setSnelstartLeadSearch("");
+      navigate(`/schouwen/${data.id}/uitvoeren`);
+    } catch (err: any) {
+      toast.error("Fout bij aanmaken", { description: err.message });
+    }
+    setSnelstartCreating(false);
+  };
+
+  const filteredSnelstartLeads = leads.filter(l => {
+    if (!snelstartLeadSearch || snelstartLeadSearch.length < 2) return false;
+    const q = snelstartLeadSearch.toLowerCase();
+    return `${l.voornaam} ${l.achternaam}`.toLowerCase().includes(q) || l.email.toLowerCase().includes(q);
+  });
+
   const handleLeadSelect = (leadId: string) => {
     const lead = leads.find(l => l.id === leadId);
     setForm(p => ({
@@ -354,9 +396,14 @@ const Schouwen = () => {
           <p className="text-muted-foreground mt-1 text-sm">Woninginspecties inplannen en uitvoeren</p>
         </div>
         {canCreate && (
-          <Button onClick={() => navigate("/schouwen/nieuw")} className="rounded-pill gap-2">
-            <CalendarPlus className="h-4 w-4" /> <span className="hidden sm:inline">Schouw inplannen</span><span className="sm:hidden">Inplannen</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setSnelstartOpen(true)} className="rounded-pill gap-2">
+              <Zap className="h-4 w-4" /> <span className="hidden sm:inline">Direct starten</span><span className="sm:hidden">Start</span>
+            </Button>
+            <Button onClick={() => navigate("/schouwen/nieuw")} className="rounded-pill gap-2">
+              <CalendarPlus className="h-4 w-4" /> <span className="hidden sm:inline">Schouw inplannen</span><span className="sm:hidden">Inplannen</span>
+            </Button>
+          </div>
         )}
       </div>
 
@@ -856,6 +903,84 @@ const Schouwen = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Snelstart dialog */}
+      <Dialog open={snelstartOpen} onOpenChange={setSnelstartOpen}>
+        <DialogContent className="max-w-lg max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Direct schouw starten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Categorie</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(Object.keys(categorieLabels) as SchouwCategorie[]).map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSnelstartCat(cat)}
+                    className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                      snelstartCat === cat
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/30 hover:bg-muted border-border"
+                    }`}
+                  >
+                    {categorieLabels[cat]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Lead selecteren</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Zoek op naam of e-mail..."
+                  value={snelstartLeadSearch}
+                  onChange={e => { setSnelstartLeadSearch(e.target.value); setSnelstartLeadId(""); }}
+                  className="pl-10 rounded-xl"
+                />
+              </div>
+              {filteredSnelstartLeads.length > 0 && !snelstartLeadId && (
+                <div className="mt-2 border rounded-xl max-h-40 overflow-y-auto">
+                  {filteredSnelstartLeads.slice(0, 8).map(lead => (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm"
+                      onClick={() => { setSnelstartLeadId(lead.id); setSnelstartLeadSearch(`${lead.voornaam} ${lead.achternaam}`); }}
+                    >
+                      <p className="font-medium">{lead.voornaam} {lead.achternaam}</p>
+                      <p className="text-xs text-muted-foreground">{lead.email}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {snelstartLeadId && (
+                <div className="mt-2 flex items-center gap-2 p-2 rounded-xl bg-muted/30 border">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{snelstartLeadSearch}</span>
+                  <Button type="button" variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => { setSnelstartLeadId(""); setSnelstartLeadSearch(""); }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSnelstartOpen(false)}>Annuleren</Button>
+            <Button
+              disabled={!snelstartCat || !snelstartLeadId || snelstartCreating}
+              onClick={handleSnelstart}
+              className="gap-2"
+            >
+              {snelstartCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+              Starten
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
