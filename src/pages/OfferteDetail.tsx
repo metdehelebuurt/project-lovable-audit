@@ -189,26 +189,7 @@ const OfferteDetail = () => {
     }
   };
 
-  const handleSendEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailTo.trim()) { toast.error("Vul een e-mailadres in"); return; }
-    setSendingEmail(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("send-offerte-email", {
-        body: { offerte_id: offerte.id, ontvanger_email: emailTo.trim() },
-      });
-      if (error || data?.error) {
-        toast.error("Versturen mislukt", { description: data?.error || error?.message });
-      } else {
-        toast.success("Offerte verstuurd", { description: `E-mail verzonden naar ${emailTo}` });
-        queryClient.invalidateQueries({ queryKey: ["offerte", id] });
-        setEmailDialog(false);
-      }
-    } catch {
-      toast.error("Versturen mislukt");
-    }
-    setSendingEmail(false);
-  };
+  // Email sending is now handled by OfferteEmailEditor component
 
   const handleFeedback = async () => {
     if (!feedbackText.trim()) return;
