@@ -265,6 +265,36 @@ export default function OffertePDF() {
     })();
   }, [id]);
 
+  // Load hero gallery images
+  useEffect(() => {
+    if (!offerte?.partner_id) return;
+    (async () => {
+      const { data } = await supabase.storage.from("partner-assets").list(`${offerte.partner_id}/hero`, { limit: 50 });
+      if (data && data.length > 0) {
+        const urls = data
+          .filter(f => f.name && !f.name.startsWith("."))
+          .map(f => `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${offerte.partner_id}/hero/${f.name}`);
+        setHeroGallery(urls);
+      }
+    })();
+  }, [offerte?.partner_id]);
+
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !offerte?.partner_id) return;
+    setHeroUploading(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${offerte.partner_id}/hero/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
+    if (error) { toast.error("Upload mislukt"); setHeroUploading(false); return; }
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${path}`;
+    setConfig(prev => ({ ...prev, hero_image_url: url }));
+    setHeroGallery(prev => [url, ...prev]);
+    setHeroUploading(false);
+    toast.success("Afbeelding geüpload");
+    if (heroFileRef.current) heroFileRef.current.value = "";
+  };
+
   const handleSave = async () => {
     if (!id) return;
     setSaving(true);
