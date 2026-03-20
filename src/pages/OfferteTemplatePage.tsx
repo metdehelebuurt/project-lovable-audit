@@ -147,6 +147,7 @@ export default function OfferteTemplatePage() {
 
   const [expandedSectie, setExpandedSectie] = useState<string | null>("voorblad");
   const [showCustomization, setShowCustomization] = useState(false);
+  const [zoom, setZoom] = useState(52);
 
   const handleSelect = (sectieId: string, variantId: string) => {
     setConfig(prev => ({ ...prev, [sectieId]: variantId }));
