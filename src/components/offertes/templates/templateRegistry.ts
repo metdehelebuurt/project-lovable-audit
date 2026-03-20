@@ -79,6 +79,9 @@ export type TemplateConfig = {
   badge_2?: string;
   badge_3?: string;
   akkoord_tekst?: string;
+  // Hero customization
+  hero_image_url?: string;
+  hero_title?: string;
 };
 
 export const defaultTemplateConfig: TemplateConfig = {
@@ -95,4 +98,6 @@ export const defaultTemplateConfig: TemplateConfig = {
   badge_2: "Persoonlijk advies",
   badge_3: "Professionele installatie",
   akkoord_tekst: "",
+  hero_image_url: "",
+  hero_title: "Offerte",
 };

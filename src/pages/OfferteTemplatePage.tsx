@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Check, Save, Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Check, Save, Eye, EyeOff, ChevronDown, ChevronUp, ZoomIn, ImageIcon } from "lucide-react";
 import {
   templateSecties,
   defaultTemplateConfig,
@@ -146,6 +147,7 @@ export default function OfferteTemplatePage() {
 
   const [expandedSectie, setExpandedSectie] = useState<string | null>("voorblad");
   const [showCustomization, setShowCustomization] = useState(false);
+  const [zoom, setZoom] = useState(52);
 
   const handleSelect = (sectieId: string, variantId: string) => {
     setConfig(prev => ({ ...prev, [sectieId]: variantId }));
@@ -197,10 +199,27 @@ export default function OfferteTemplatePage() {
           const Comp = liveVoorbladMap[config.voorblad] || HeroDark;
           return (
             <div style={{ ...pageStyle, padding: 0 }}>
-              <Comp {...sampleVoorblad} badges={badges} />
+              <Comp {...sampleVoorblad} badges={badges} heroImageUrl={config.hero_image_url || null} heroTitle={config.hero_title || "Offerte"} />
             </div>
           );
         })()}
+
+        {/* Inhoudsopgave */}
+        <div style={{ ...pageStyle, padding: "15mm" }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Inhoudsopgave</h2>
+          <div style={{ width: 64, height: 4, backgroundColor: pc, borderRadius: 2, marginBottom: 40 }} />
+          <div style={{ maxWidth: 500 }}>
+            {["Voorblad", "Producten", "Opdrachtbevestiging", "Besparing & Rendement", "Voorwaarden & Akkoord"].map((label, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "baseline", padding: "14px 0", borderBottom: `1px solid ${pcTint2}` }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: pcTint, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: pc, flexShrink: 0, marginRight: 16 }}>
+                  {i + 1}
+                </div>
+                <span style={{ fontSize: 15, fontWeight: 500, color: sc, flex: 1 }}>{label}</span>
+                <span style={{ fontSize: 12, color: "#aaa", marginLeft: 12 }}>p. {i + 1}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Producten */}
         {config.secties_producten !== false && (() => {
@@ -383,11 +402,35 @@ export default function OfferteTemplatePage() {
                 className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
                 onClick={() => setShowCustomization(!showCustomization)}
               >
-                <span className="text-sm font-semibold text-foreground">Tekst aanpassen</span>
+                <span className="text-sm font-semibold text-foreground">Tekst & Voorblad aanpassen</span>
                 {showCustomization ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </button>
               {showCustomization && (
                 <div className="p-3 pt-0 space-y-3">
+                  <div>
+                    <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Voorblad titel</Label>
+                    <Input
+                      value={config.hero_title || ""}
+                      onChange={e => setConfig(p => ({ ...p, hero_title: e.target.value }))}
+                      className="h-8 text-xs rounded-lg"
+                      placeholder="Offerte"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Hero afbeelding URL</Label>
+                    <Input
+                      value={config.hero_image_url || ""}
+                      onChange={e => setConfig(p => ({ ...p, hero_image_url: e.target.value }))}
+                      className="h-8 text-xs rounded-lg"
+                      placeholder="https://voorbeeld.nl/afbeelding.jpg"
+                    />
+                    {config.hero_image_url && (
+                      <div className="mt-1.5 rounded-lg overflow-hidden border border-border h-16">
+                        <img src={config.hero_image_url} alt="Hero preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    )}
+                  </div>
+                  <Separator />
                   <div>
                     <Label className="text-xs">Badge 1</Label>
                     <Input
@@ -432,15 +475,27 @@ export default function OfferteTemplatePage() {
       </div>
 
       {/* ═══ RIGHT PANEL: Live preview ═══ */}
-      <div className="flex-1 bg-muted/30 overflow-auto">
-        <div className="p-8">
-          <div className="mb-4 flex items-center gap-2">
-            <Eye className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Live preview — scrollbaar</span>
+      <div className="flex-1 bg-muted/30 overflow-auto flex flex-col">
+        <div className="flex items-center gap-3 p-3 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+          <Eye className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">Live preview</span>
+          <div className="ml-auto flex items-center gap-2">
+            <ZoomIn className="h-3.5 w-3.5 text-muted-foreground" />
+            <Slider
+              value={[zoom]}
+              onValueChange={([v]) => setZoom(v)}
+              min={25}
+              max={100}
+              step={1}
+              className="w-28"
+            />
+            <span className="text-xs text-muted-foreground w-8">{zoom}%</span>
           </div>
+        </div>
+        <div className="flex-1 p-8">
           <div
             style={{
-              transform: "scale(0.52)",
+              transform: `scale(${zoom / 100})`,
               transformOrigin: "top left",
               width: "210mm",
             }}

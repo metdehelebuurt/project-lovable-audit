@@ -238,6 +238,9 @@ export default function OffertePDFPreview() {
     badge_2: templateConfig?.badge_2 ?? "Persoonlijk advies",
     badge_3: templateConfig?.badge_3 ?? "Professionele installatie",
     akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
+    // Hero customization
+    hero_image_url: templateConfig?.hero_image_url ?? "",
+    hero_title: templateConfig?.hero_title ?? "Offerte",
     // Design variant keys
     voorblad_variant: (templateConfig?.voorblad as string) || "hero-dark",
     producten_variant: (templateConfig?.producten as string) || "product-cards",
@@ -252,6 +255,13 @@ export default function OffertePDFPreview() {
   const PrijsComp = prijstabelTemplates[tc.prijstabel_variant] || PriceModern;
   const EnergieComp = energieadviesTemplates[tc.energieadvies_variant] || EnergyCards;
   const VoorwaardenComp = voorwaardenTemplates[tc.voorwaarden_variant] || TermsSimple;
+
+  /* ─── Page number component ─── */
+  const PageNumber = ({ num }: { num: number }) => (
+    <div style={{ position: "absolute", bottom: 12, right: 20, fontSize: 9, color: "#bbb", fontFamily: "'Rubik', sans-serif" }}>
+      {num}
+    </div>
+  );
 
   /* ─── Shared components ─── */
   const PageHeader = () => (
@@ -282,6 +292,19 @@ export default function OffertePDFPreview() {
       </p>
     </div>
   );
+
+  /* ─── Build TOC entries ─── */
+  const tocEntries: { label: string; page: number }[] = [];
+  let currentPage = 1;
+  if (tc.voorblad) { tocEntries.push({ label: "Voorblad", page: currentPage }); currentPage++; }
+  const tocPage = currentPage; currentPage++;
+  tocEntries.push({ label: "Inhoudsopgave", page: tocPage });
+  if (tc.productpagina && producten.length > 0) { tocEntries.push({ label: "Producten", page: currentPage }); currentPage++; }
+  const datasheetProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd");
+  datasheetProducts.forEach(p => { tocEntries.push({ label: `Datasheet: ${p.naam}`, page: currentPage }); currentPage++; });
+  if (tc.energieadvies && energieadvies) { tocEntries.push({ label: "Besparing & Rendement", page: currentPage }); currentPage++; }
+  tocEntries.push({ label: "Opdrachtbevestiging & Voorwaarden", page: currentPage }); currentPage++;
+  if (tc.schouwrapport && offerte.include_schouw && schouw) { tocEntries.push({ label: "Schouwrapport", page: currentPage }); currentPage++; }
 
   const pageStyle: React.CSSProperties = {
     width: "210mm",
@@ -346,8 +369,40 @@ export default function OffertePDFPreview() {
           klantAdres={offerte.klant_adres || null}
           klantPostcode={offerte.klant_postcode || null}
           klantPlaats={offerte.klant_plaats || null}
+          heroImageUrl={tc.hero_image_url || null}
+          heroTitle={tc.hero_title || "Offerte"}
         />
+        <PageNumber num={1} />
       </div>}
+
+      {/* ═══════════════ PAGE 2: INHOUDSOPGAVE ═══════════════ */}
+      <div className="pdf-page" style={pageStyle}>
+        <PageHeader />
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Inhoudsopgave</h2>
+          <div style={{ width: 64, height: 4, backgroundColor: pc, borderRadius: 2, marginBottom: 40 }} />
+          <div style={{ maxWidth: 500 }}>
+            {tocEntries.filter(e => e.label !== "Inhoudsopgave").map((entry, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "baseline", padding: "14px 0", borderBottom: `1px solid ${pcTint2}` }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: pcTint, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: pc, flexShrink: 0, marginRight: 16 }}>
+                  {entry.page}
+                </div>
+                <span style={{ fontSize: 15, fontWeight: 500, color: sc, flex: 1 }}>{entry.label}</span>
+                <span style={{ fontSize: 12, color: "#aaa", marginLeft: 12 }}>p. {entry.page}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 48, padding: "20px 24px", backgroundColor: pcTint, borderRadius: 12, borderLeft: `4px solid ${pc}` }}>
+            <p style={{ margin: 0, fontSize: 12, color: "#555", lineHeight: 1.7 }}>
+              <strong style={{ color: sc }}>Referentienummer:</strong> {offerte.offertenummer}<br />
+              <strong style={{ color: sc }}>Geldig tot:</strong> {formatDate(offerte.geldig_tot)}<br />
+              <strong style={{ color: sc }}>Adviseur:</strong> {adviseurNaam}
+            </p>
+          </div>
+        </div>
+        <PageFooter />
+        <PageNumber num={tocPage} />
+      </div>
 
       {/* ═══════════════ PAGE 2: PRODUCT INFO (dynamic template) ═══════════════ */}
       {tc.productpagina && producten.length > 0 && (
