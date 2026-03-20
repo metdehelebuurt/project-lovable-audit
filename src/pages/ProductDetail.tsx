@@ -139,7 +139,9 @@ const ProductDetail = () => {
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
 
-      const allSpecs: Record<string, string> = { ...specs, ...data.corrected_specs };
+      const corrected = data.corrected_specs || {};
+      const newCount = Object.keys(corrected).length;
+      const allSpecs: Record<string, string> = { ...specs, ...corrected };
 
       const updateData: any = { specs: allSpecs };
       if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
@@ -149,8 +151,12 @@ const ProductDetail = () => {
       if (updateErr) throw updateErr;
 
       queryClient.invalidateQueries({ queryKey: ["product", id] });
-      toast.success("Specificaties aangevuld door AI", {
-        description: `${Object.keys(allSpecs).length} specificaties bijgewerkt`,
+
+      const bronnen = data.bronnen as string[] | undefined;
+      const bronnenTekst = bronnen?.length ? `Bronnen: ${bronnen.length} webpagina's` : "Gebaseerd op AI trainingsdata";
+      toast.success(`${newCount} specificaties gevonden & ingevuld`, {
+        description: bronnenTekst,
+        duration: 6000,
       });
     } catch (err: any) {
       toast.error("AI verificatie mislukt", { description: err.message });
