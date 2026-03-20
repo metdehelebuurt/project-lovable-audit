@@ -79,6 +79,18 @@ const DatasheetCheckDialog = ({
     setStatuses((s) => ({ ...s, [productId]: "skipped" }));
   };
 
+  const handleSkipAll = () => {
+    setStatuses((prev) => {
+      const updated = { ...prev };
+      products.forEach((p) => {
+        if (!updated[p.id] || updated[p.id] === "pending") {
+          updated[p.id] = "skipped";
+        }
+      });
+      return updated;
+    });
+  };
+
   const handleGenerate = (productId: string) => {
     // Open in new tab so offerte form is preserved
     window.open(`/producten/${productId}/datasheet`, "_blank");
