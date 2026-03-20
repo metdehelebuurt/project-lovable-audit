@@ -576,7 +576,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Current datasheet display */}
-              {datasheetPublicUrl ? (
+              {(datasheetPublicUrl || localPdfUrl) ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
                     <FileText className="h-6 w-6 text-primary" />
@@ -595,14 +595,16 @@ const ProductDetail = () => {
                         {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanSearch className="h-4 w-4" />}
                         Specs uit PDF halen
                       </Button>
-                      <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" className="gap-2 rounded-lg">
-                          <Download className="h-4 w-4" /> Download PDF
-                        </Button>
-                      </a>
+                      {datasheetPublicUrl && (
+                        <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" className="gap-2 rounded-lg">
+                            <Download className="h-4 w-4" /> Download PDF
+                          </Button>
+                        </a>
+                      )}
                     </div>
                   </div>
-                  <iframe src={datasheetPublicUrl} className="w-full h-[600px] rounded-xl border" />
+                  <iframe src={localPdfUrl || datasheetPublicUrl!} className="w-full h-[600px] rounded-xl border" />
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
