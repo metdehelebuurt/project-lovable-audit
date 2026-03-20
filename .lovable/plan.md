@@ -1,98 +1,78 @@
 
-### Doel
-`AI invullen` en `Specs uit PDF halen` moeten **betrouwbaar** technische velden vullen zodra een fabrikant-PDF is geüpload, en de PDF moet altijd leesbaar zijn in de viewer.
 
-### Wat nu misgaat (bevestigd)
-1. `ai-parse-datasheet` geeft wel `200`, maar retourneert vaak `extracted_specs: {}`.  
-2. `ai-verify-product-specs` heeft regelmatig `Web search: no results`, dus web-only fallback blijft op 0 uitkomen.  
-3. De PDF bevat wél bruikbare specs (tabellen), dus de bottleneck zit in de huidige parse-route (PDF als `data:application/pdf` naar model).  
-4. Chrome viewer faalt nog in sommige gevallen door native iframe-PDF rendering/fallback.
+## Plan: AI invullen fix — web-only strategie
 
-### Implementatieplan
+### Kernprobleem
+Firecrawl Search retourneert **0 resultaten** omdat de zoekquery te lang en specifiek is. De query `"SolarEdge BAT-05K48R0B-01 SolarEdge Home Battery LV 4.8kWh datasheet specificaties"` combineert merk, modelnummer, productnaam EN zoektermen — dat is te veel voor een zoekengine.
 
-#### 1) PDF-parser opnieuw opbouwen (backend, hoofdfix)
-**Bestand:** `supabase/functions/ai-parse-datasheet/index.ts`
+De specs staan WEL gewoon online (SolarEdge knowledge center, VP Solar, Evergy, etc.).
 
-- Stop met de huidige “PDF als image_url/data-uri” route.
-- Haal eerst de echte datasheet-locatie op uit `producten.datasheet_url` (niet hardcoded `datasheets/{product_id}.pdf`).
-- Maak van die URL een scrapebare URL en haal eerst tekst/markdown uit de PDF (via de bestaande web-extractiestap met Firecrawl).
-- Stuur die geëxtraheerde tekst naar AI voor mapping naar machine-keys.
+### Oplossing: meervoudige zoekstrategie + directe scrape fallback
 
-**Waarom:** de tekst/tabelinhoud is dan expliciet input voor de AI i.p.v. onbetrouwbare PDF-binary interpretatie.
+**`supabase/functions/ai-verify-product-specs/index.ts`** — volledige herschrijving van `searchProductOnWeb`:
 
----
-
-#### 2) Robuuste normalisatie + mappinglaag toevoegen
-**Bestand:** `supabase/functions/ai-parse-datasheet/index.ts`
-
-Na AI output:
-- Filter op toegestane keys van `categoryMachineKeys`.
-- Normaliseer waarden:
-  - decimal comma → punt
-  - verwijder eenheden
-  - bool naar `Ja/Nee`
-  - bekende conversies (bijv. Wh→kWh, W→kW waar key dat vereist)
-- Voeg alias mapping toe voor veelvoorkomende PDF-termen (bijv. “bruikbare energie”, “constant uitgangsvermogen”, “afmetingen BxHxD”, “roundtrip efficiency”).
-- Parse `afmetingen` automatisch naar `breedte_mm`, `hoogte_mm`, `lengte_mm`.
-
-**Resultaat:** ook bij OCR-ruis of tabelvarianten worden alsnog bruikbare velden gevuld.
-
----
-
-#### 3) Kwaliteitsdrempel + duidelijke foutmeldingen
-**Bestand:** `supabase/functions/ai-parse-datasheet/index.ts`
-
-- Als `extracted_specs` leeg blijft: geef gecontroleerde fout terug (bijv. 422) met reden + tips.
-- Geef extra metadata terug:
-  - `filled_count`
-  - `source_url`
-  - `notes` (welke secties ontbraken)
-
-**Bestand:** `src/pages/ProductDetail.tsx`
-- Toon deze backend-redenen in toast i.p.v. “succes met 0”.
-- Alleen “succes” tonen bij `filled_count > 0`.
-
----
-
-#### 4) “Alleen PDF” afdwingen in UI flow
-**Bestand:** `src/pages/ProductDetail.tsx`
-
-- `handleAiVerify` strikt zo houden/verbeteren dat bij aanwezige fabrikant-PDF **altijd** `ai-parse-datasheet` wordt gebruikt (geen web-search pad).
-- Bij directe upload in dezelfde sessie ook lokaal herkennen dat PDF beschikbaar is (niet afhankelijk van trage query-refresh).
-- Na succesvolle extractie automatisch terug naar tab “Specificaties” en direct nieuwe telling tonen.
-
----
-
-#### 5) PDF viewer stabiel maken voor Chrome
-**Bestand:** `src/pages/ProductDetail.tsx` (en evt. nieuw viewer component)
-
-- Blijf blob-first renderen, maar forceer MIME (`application/pdf`) bij blob-opbouw.
-- Vervang native iframe-fallback door robuustere viewer-fallback (object/embed of pdf.js/react-pdf) + “Open in nieuw tabblad” fallback.
-- Toon expliciete viewer-error state als laden mislukt i.p.v. lege/grijze container.
-
----
-
-### Technische details
-```text
-Nieuwe extractieketen:
-UI button
-  -> ai-parse-datasheet
-      -> haal datasheet_url op uit producten
-      -> scrape PDF -> markdown/text
-      -> AI key-mapping op die text
-      -> normalize + validate + filter keys
-      -> return extracted_specs + filled_count + notes
-  -> update producten.specs
-  -> refresh + show count
+#### 1. Slimmere zoekqueries (korter, meerdere variaties)
+Huidige queries:
+```
+"SolarEdge BAT-05K48R0B-01 SolarEdge Home Battery LV 4.8kWh datasheet specificaties"
+"SolarEdge BAT-05K48R0B-01 SolarEdge Home Battery LV 4.8kWh technical specifications"
 ```
 
-### Bestanden die aangepast worden
-- `supabase/functions/ai-parse-datasheet/index.ts` (grootste wijziging)
-- `src/pages/ProductDetail.tsx` (routing/feedback/viewer robustness)
-- (optioneel) `src/components/producten/ProductPdfViewer.tsx` (als aparte robuuste viewercomponent voor onderhoudbaarheid)
+Nieuwe strategie — probeer tot 4 kortere queries achter elkaar, stop zodra resultaten gevonden:
+```
+1. "{naam} specifications"                    → "SolarEdge Home Battery LV 4.8kWh specifications"
+2. "{merk} {model} datasheet"                 → "SolarEdge BAT-05K48R0B-01 datasheet"  
+3. "{merk} {naam_kort} specs"                 → "SolarEdge Home Battery specs"
+4. "{naam} technical data"                    → "SolarEdge Home Battery LV 4.8kWh technical data"
+```
+
+Elke query: `limit: 5`, en stop zodra er minimaal 2 resultaten met inhoud zijn.
+
+#### 2. Meer content per resultaat ophalen
+Verhoog per-pagina limiet van 4000 naar 8000 chars — de AI heeft voldoende context nodig voor spec-extractie uit productpagina's.
+
+#### 3. Verwijder de strikte "alleen brondata" restrictie
+Wanneer het Firecrawl resultaten vindt maar het exacte model niet letterlijk in de tekst staat, moet de AI alsnog specs extraheren als de data duidelijk over hetzelfde product of dezelfde productlijn gaat.
+
+#### 4. AI trainingsdata als robuuste fallback
+Als alle zoekqueries geen bruikbare resultaten opleveren: gebruik het AI-model met een prompt die EXPLICIET vraagt om specs uit trainingsdata in te vullen. Het model kent deze producten (bewezen door mijn web-search test). Markeer in de response dat het trainingsdata betreft.
+
+#### 5. Verbeterde logging
+Log per query hoeveel resultaten + chars gevonden, zodat debugging makkelijker wordt.
+
+### Frontend aanpassing
+
+**`src/pages/ProductDetail.tsx`** — `handleAiVerify`:
+- Verwijder de PDF-routing check (user koos "Alleen web")
+- Roep altijd `ai-verify-product-specs` aan, ongeacht of er een PDF is
+- Toon bron-info in toast (web/trainingsdata)
+
+### Bestanden
+
+| Bestand | Wijziging |
+|---------|-----------|
+| `supabase/functions/ai-verify-product-specs/index.ts` | Herschrijf zoeklogica: kortere queries, cascading, hogere limiet, trainingsdata fallback |
+| `src/pages/ProductDetail.tsx` | Verwijder PDF-routing, altijd web-pipeline gebruiken |
+
+### Technische details
+
+```text
+Nieuwe flow:
+handleAiVerify (altijd)
+  → ai-verify-product-specs
+    → Firecrawl search: query 1 (naam + specs)
+    → Firecrawl search: query 2 (merk + model) [als query 1 < 2 results]
+    → Firecrawl search: query 3 (merk + korte naam) [als nog steeds < 2]
+    → Combineer alle markdown content (max 24KB)
+    → Gemini: extraheer specs uit bronnen OF trainingsdata
+    → Return corrected_specs + bronnen[]
+  → Update producten.specs
+  → Toast: "X specs gevonden (bron: web/trainingsdata)"
+```
 
 ### Acceptatiecriteria
-- Bij geüploade PDF vult “Specs uit PDF halen” aantoonbaar meerdere velden (geen lege `extracted_specs` bij normale datasheets).
-- “AI invullen” gebruikt bij fabrikant-PDF dezelfde PDF-pipeline.
-- Geen succes-toast meer met 0 specs zonder waarschuwing.
-- PDF is zichtbaar in Chrome; bij falen is er een duidelijke fallback-knop.
+- "AI invullen" voor SolarEdge Home Battery LV 4.8kWh vult minimaal 10+ specs in
+- Werkt voor alle categorieën (thuisbatterij, zonnepanelen, warmtepomp, etc.)
+- Duidelijke toast met aantal specs en bronvermelding
+- Geen lege `corrected_specs` meer bij bekende producten
+
