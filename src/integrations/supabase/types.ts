@@ -1091,6 +1091,55 @@ export type Database = {
           },
         ]
       }
+      partner_product_teksten: {
+        Row: {
+          created_at: string | null
+          id: string
+          offerte_tekst: string | null
+          partner_id: string
+          product_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          offerte_tekst?: string | null
+          partner_id: string
+          product_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          offerte_tekst?: string | null
+          partner_id?: string
+          product_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_product_teksten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_product_teksten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_product_teksten_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partners: {
         Row: {
           abonnement_type: string | null
