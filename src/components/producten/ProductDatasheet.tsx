@@ -85,7 +85,7 @@ const ProductDatasheet: React.FC<ProductDatasheetProps> = ({ product, partner })
     const entries: [string, string][] = [];
     for (const def of defs) {
       const val = allSpecs[def.key];
-      if (val && String(val).trim() !== "") {
+      if (val && String(val).trim() !== "" && String(val).toLowerCase() !== "null") {
         entries.push([def.label + (def.unit ? ` (${def.unit})` : ""), String(val)]);
       }
     }
