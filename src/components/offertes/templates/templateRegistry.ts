@@ -49,6 +49,8 @@ export const templateSecties: TemplateSectie[] = [
       { id: "energy-cards", naam: "Kaarten", beschrijving: "Besparingskaarten met iconen" },
       { id: "energy-infographic", naam: "Infographic", beschrijving: "Visuele grafieken en bars" },
       { id: "energy-minimal", naam: "Minimaal", beschrijving: "Alleen kerncijfers" },
+      { id: "energy-dashboard", naam: "Dashboard", beschrijving: "KPI dashboard met progress bars" },
+      { id: "energy-timeline", naam: "Tijdlijn", beschrijving: "Cumulatieve besparing over 15 jaar" },
     ],
   },
   {
