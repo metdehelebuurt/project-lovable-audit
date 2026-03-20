@@ -1,53 +1,67 @@
 
 
-## Plan: Configureerbare betaalvoorwaarden per partner
+## Plan: Fix AI specificaties, verbeter specs-weergave, handmatige upload & offerte-integratie
 
-### Concept
-Partners kunnen in Instellingen hun eigen betaalvoorwaarden beheren: standaardopties + custom voorwaarden, met één als standaard gemarkeerd. Deze worden als dropdown gebruikt bij offertes en orders.
+### Problemen geïdentificeerd
 
-### 1. Database: nieuw JSONB-veld op `partners`
+1. **AI specificaties invullen werkt niet** — De edge function `ai-verify-product-specs` bootet maar geeft geen zichtbare errors in logs, wat wijst op een runtime fout bij de AI-aanroep of response parsing. De CORS headers missen de nieuwe platform headers (`x-supabase-client-platform` etc.).
+2. **Specificaties-weergave niet leesbaar** — Lege groepen tonen "Nog geen waarden ingevuld" zonder context. De layout is functioneel maar kan compacter en overzichtelijker.
+3. **Geen handmatige datasheet upload op ProductDetail** — De Datasheet-tab toont alleen "Geen datasheet beschikbaar" zonder upload-optie. Upload werkt alleen via `DatasheetCheckDialog` (bij offerte-aanmaak).
+4. **Datasheet URL dubbelop** — `DatasheetCheckDialog` slaat de volledige `publicUrl` op, maar `ProductDetail.tsx` plakt er nogmaals de storage URL voor. Hierdoor is de URL gebroken.
+5. **Handmatig geüploade datasheets niet in offerte-PDF** — De offerte-PDF checkt `p.datasheet_url && p.datasheet_type` correct, maar door de dubbele URL bug worden fabrikant-datasheets niet correct getoond.
 
-Migratie toevoegt aan `partners`:
-```sql
-ALTER TABLE public.partners 
-ADD COLUMN betalingsvoorwaarden_config jsonb 
-DEFAULT '[
-  {"label":"30 dagen netto","standaard":true},
-  {"label":"14 dagen netto","standaard":false},
-  {"label":"50% vooruit, 50% na installatie","standaard":false},
-  {"label":"Bij oplevering","standaard":false}
-]'::jsonb;
+---
+
+### Oplossingen
+
+#### 1. Fix CORS headers in edge function
+
+**`supabase/functions/ai-verify-product-specs/index.ts`**
+
+Update `corsHeaders` om de nieuwe Supabase client headers toe te voegen (dezelfde set als alle andere edge functions):
+```
+x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version
 ```
 
-Structuur: array van `{ label: string, standaard: boolean }`.
+#### 2. Verbeterde specificaties read-only weergave
 
-### 2. Instellingen: nieuw tabblad/sectie "Betaalvoorwaarden"
+**`src/pages/ProductDetail.tsx`** — Specificaties tab
 
-**`src/components/instellingen/BetalingsvoorwaardenConfig.tsx`** (nieuw)
+- Compactere layout: alle groepen (ook lege) tonen in een uniforme stijl
+- Lege velden tonen als grijs/dash zodat je ziet wat er ontbreekt
+- Betere visuele hiërarchie met kleur-accenten per groep
 
-- Lijst van alle voorwaarden met drag/delete
-- Per item: label (tekst) + radio "standaard"
-- Knop "Voorwaarde toevoegen" voor custom tekst
-- Opslaan naar `partners.betalingsvoorwaarden_config`
+#### 3. Handmatige datasheet upload op ProductDetail
 
-### 3. Offertes & orders: dropdown i.p.v. vrij tekstveld
+**`src/pages/ProductDetail.tsx`** — Datasheet tab
 
-Wijzigingen in `OfferteNieuw.tsx`, `Offertes.tsx`, `Affiliates.tsx`:
-- Haal `betalingsvoorwaarden_config` op uit partner
-- Vervang het `<Input>` veld door een `<Select>` dropdown met de geconfigureerde opties
-- Default waarde = de optie met `standaard: true`
-- Optie "Anders..." die een vrij tekstveld toont
+- Voeg een file input + upload knop toe voor PDF-upload direct op de Datasheet tab
+- Bij upload: sla op als `datasheets/{productId}.pdf` in `product-images` bucket
+- Sla het **relatieve pad** op in `datasheet_url` (niet de volledige URL) voor consistentie
+- Na upload: invalidate query, toon preview
 
-`OrderbevestigingPDF.tsx` toont al de betalingsvoorwaarden uit de offerte — geen wijziging nodig.
+#### 4. Fix datasheet URL logica
+
+**`src/pages/ProductDetail.tsx`** + **`src/components/offertes/DatasheetCheckDialog.tsx`**
+
+- Normaliseer de URL-constructie: sla altijd het **relatieve pad** op (`datasheets/{id}.pdf`)
+- Bij weergave: construeer de volledige URL vanuit het relatieve pad
+- Fix `datasheetPublicUrl` berekening: check of URL al met `http` begint
+
+#### 5. Genereer-functie direct werkend maken
+
+**`src/pages/ProductDetail.tsx`** — Datasheet tab
+
+- Voeg een "Genereer datasheet" knop toe die `datasheet_type = "gegenereerd"` zet en de preview dialog opent
+- Na genereren: sla `datasheet_type` op zodat het in de offerte-PDF meekomt
+
+---
 
 ### Bestanden
 
 | Bestand | Actie |
 |---------|-------|
-| Migratie | `betalingsvoorwaarden_config` kolom op partners |
-| `src/components/instellingen/BetalingsvoorwaardenConfig.tsx` | **Nieuw** — configuratie-UI |
-| `src/pages/Instellingen.tsx` | Sectie toevoegen voor partner_admin |
-| `src/pages/OfferteNieuw.tsx` | Input → Select dropdown |
-| `src/pages/Offertes.tsx` | Input → Select dropdown |
-| `src/pages/Affiliates.tsx` | Input → Select dropdown |
+| `supabase/functions/ai-verify-product-specs/index.ts` | Fix CORS headers |
+| `src/pages/ProductDetail.tsx` | Verbeterde specs-weergave, handmatige upload, datasheet URL fix, genereer-knop |
+| `src/components/offertes/DatasheetCheckDialog.tsx` | Fix: sla relatief pad op i.p.v. volledige URL |
 
