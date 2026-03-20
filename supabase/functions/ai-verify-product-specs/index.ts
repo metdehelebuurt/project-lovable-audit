@@ -67,7 +67,6 @@ const categoryMachineKeys: Record<string, Record<string, string[]>> = {
   },
 };
 
-// Human-readable label mapping for the AI prompt
 const keyLabelMap: Record<string, string> = {
   vermogen_wp: "Vermogen (Wp)", efficiency_pct: "Efficiency (%)", celtype: "Celtype", aantal_cellen: "Aantal cellen",
   voc_v: "Voc (V)", isc_a: "Isc (A)", vmpp_v: "Vmpp (V)", impp_a: "Impp (A)",
@@ -150,6 +149,64 @@ function buildSpecPrompt(categorie: string): string {
   return lines.join("\n");
 }
 
+// ── Firecrawl web search ──
+async function searchProductOnWeb(merk: string, model: string, naam: string): Promise<{ content: string; urls: string[] }> {
+  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!FIRECRAWL_API_KEY) {
+    console.warn("FIRECRAWL_API_KEY not set — skipping web search");
+    return { content: "", urls: [] };
+  }
+
+  const searchTerms = [merk, model, naam].filter(Boolean).join(" ");
+  const queries = [
+    `${searchTerms} datasheet specificaties`,
+    `${searchTerms} technical specifications`,
+  ];
+
+  const allContent: string[] = [];
+  const allUrls: string[] = [];
+
+  for (const query of queries) {
+    try {
+      console.log("Firecrawl search:", query);
+      const response = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          limit: 3,
+          scrapeOptions: { formats: ["markdown"] },
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`Firecrawl error ${response.status}:`, errText);
+        continue;
+      }
+
+      const result = await response.json();
+      const items = result.data || [];
+      for (const item of items) {
+        if (item.markdown && item.markdown.length > 100) {
+          // Limit each page to 4000 chars to stay within token limits
+          allContent.push(`--- Bron: ${item.url || "onbekend"} ---\n${item.markdown.slice(0, 4000)}`);
+          if (item.url) allUrls.push(item.url);
+        }
+      }
+    } catch (err) {
+      console.error("Firecrawl search failed:", err);
+    }
+  }
+
+  // Deduplicate URLs
+  const uniqueUrls = [...new Set(allUrls)];
+  return { content: allContent.join("\n\n"), urls: uniqueUrls };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -159,6 +216,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Step 1: Search the web for product data
+    const webData = await searchProductOnWeb(merk || "", model || "", naam || "");
+    const hasWebData = webData.content.length > 200;
+    console.log(`Web search: ${hasWebData ? webData.urls.length + " sources found" : "no results"}`);
+
+    // Step 2: Build prompt with web context
     const productInfo = [
       `Product: ${naam}`,
       merk && `Merk: ${merk}`,
@@ -167,10 +230,18 @@ serve(async (req) => {
       omschrijving && `Omschrijving: ${omschrijving}`,
       garantie_jaren && `Garantie: ${garantie_jaren} jaar`,
       certificeringen && `Certificeringen: ${certificeringen}`,
-      specs && Object.keys(specs).length > 0 && `Huidige specificaties:\n${Object.entries(specs).map(([k,v]) => `  ${k}: ${v}`).join("\n")}`,
+      specs && Object.keys(specs).length > 0 && `Huidige specificaties:\n${Object.entries(specs).map(([k, v]) => `  ${k}: ${v}`).join("\n")}`,
     ].filter(Boolean).join("\n");
 
     const categoryGuide = buildSpecPrompt(categorie);
+
+    const webContext = hasWebData
+      ? `\n\nHieronder staan gescrapede bronpagina's van internet met productinformatie. Gebruik ALLEEN waarden die je hierin kunt vinden:\n\n${webData.content}`
+      : "";
+
+    const sourceInstruction = hasWebData
+      ? `\n\nBELANGRIJK: Je hebt internetbronnen ontvangen. Extraheer ALLEEN waarden die LETTERLIJK in de bronnen staan. Vul NIETS in dat je niet in de bronnen kunt vinden. Als een spec niet in de bronnen staat, laat die key dan WEG uit corrected_specs.`
+      : `\n\nBELANGRIJK: Er zijn geen internetbronnen beschikbaar. Gebruik je trainingsdata om het product op te zoeken en vul ALLE specs in waar je een betrouwbare waarde voor hebt. Markeer in suggestions welke waarden gebaseerd zijn op trainingsdata.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -184,44 +255,24 @@ serve(async (req) => {
           {
             role: "system",
             content: `Je bent een expert in duurzame energieproducten (zonnepanelen, thuisbatterijen, warmtepompen, laadpalen, omvormers).
-Je taak is om productspecificaties te verifiëren, corrigeren en VOLLEDIG aan te vullen.
+Je taak is om productspecificaties te extraheren en correct te mappen.
 
 ${categoryGuide}
 
 KRITISCHE INSTRUCTIES:
-1. Gebruik EXACT de machine-keys uit bovenstaande lijst als keys in corrected_specs. NIET de labels, NIET de eenheden in de key. Bijvoorbeeld: "vermogen_wp" (GOED), NIET "Vermogen (Wp)" (FOUT).
-2. Zoek het exacte product op basis van naam, merk en model.
-3. corrected_specs MAG NOOIT LEEG ZIJN. Je MOET altijd minstens 10-20 specs invullen. Als je het exacte product niet kent, gebruik dan je expertise om realistische waarden in te vullen op basis van vergelijkbare producten van hetzelfde merk, dezelfde categorie en hetzelfde marktsegment. Vermeld in suggestions welke waarden geschat zijn.
-4. Vul ALLE specs uit de lijst aan waar je een redelijke waarde voor kunt bepalen — een professioneel datasheet moet zo compleet mogelijk zijn. Sla GEEN specs over.
-5. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
-6. Alle waarden in het Nederlands waar van toepassing.
-7. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
-8. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT om in te vullen.
-
-VOORBEELD van correct corrected_specs formaat voor een thuisbatterij:
-{
-  "bruikbare_capaciteit_kwh": "2.84",
-  "nominale_capaciteit_kwh": "3.0",
-  "dod_pct": "95",
-  "nominaal_vermogen_kw": "2.5",
-  "celtype": "LFP",
-  "lengte_mm": "442",
-  "breedte_mm": "420",
-  "hoogte_mm": "132",
-  "gewicht_kg": "25",
-  "ip_rating": "IP20",
-  "productgarantie_jaar": "10",
-  "cycli": "6000",
-  "certificeringen": "CE, IEC 62619, UN38.3"
-}
-
-BELANGRIJK: Een leeg corrected_specs object is NIET ACCEPTABEL. Vul altijd zoveel mogelijk in.
+1. Gebruik EXACT de machine-keys uit bovenstaande lijst als keys in corrected_specs. NIET de labels, NIET de eenheden in de key.
+2. corrected_specs MAG NOOIT LEEG ZIJN. Vul altijd minstens 10-20 specs in.
+3. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
+4. Alle waarden in het Nederlands waar van toepassing.
+5. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
+6. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT.
+${sourceInstruction}
 
 Antwoord ALTIJD via de tool call.`
           },
           {
             role: "user",
-            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan:\n\n${productInfo}`
+            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan:\n\n${productInfo}${webContext}`
           }
         ],
         tools: [
@@ -233,10 +284,7 @@ Antwoord ALTIJD via de tool call.`
               parameters: {
                 type: "object",
                 properties: {
-                  verified: {
-                    type: "boolean",
-                    description: "Whether the existing specs appear correct"
-                  },
+                  verified: { type: "boolean", description: "Whether the existing specs appear correct" },
                   suggestions: {
                     type: "array",
                     items: { type: "string" },
@@ -245,16 +293,10 @@ Antwoord ALTIJD via de tool call.`
                   corrected_specs: {
                     type: "object",
                     additionalProperties: { type: "string" },
-                    description: "Complete set of ALL product specifications using machine-keys (e.g. vermogen_wp, efficiency_pct, lengte_mm). Keys must be snake_case identifiers, NOT human labels."
+                    description: "Complete set of ALL product specifications using machine-keys. Keys must be snake_case identifiers."
                   },
-                  regelgeving: {
-                    type: "string",
-                    description: "Certifications, standards and regulatory compliance as a comma-separated string in Dutch"
-                  },
-                  omschrijving_suggestie: {
-                    type: "string",
-                    description: "Professional product description (2-4 sentences, in Dutch) highlighting key features and benefits"
-                  }
+                  regelgeving: { type: "string", description: "Certifications and standards as comma-separated string in Dutch" },
+                  omschrijving_suggestie: { type: "string", description: "Professional product description (2-4 sentences, in Dutch)" }
                 },
                 required: ["verified", "suggestions", "corrected_specs"],
                 additionalProperties: false
@@ -287,6 +329,9 @@ Antwoord ALTIJD via de tool call.`
     if (!toolCall) throw new Error("Geen AI respons ontvangen");
 
     const result = JSON.parse(toolCall.function.arguments);
+
+    // Add source URLs to the response
+    result.bronnen = webData.urls;
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
