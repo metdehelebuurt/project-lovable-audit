@@ -245,8 +245,12 @@ const Instellingen = () => {
                 <div>
                   <Label>Logo</Label>
                   <div className="flex items-center gap-4 mt-1">
-                    {logoUrl && (
-                      <img src={logoUrl} alt="Logo" className="h-12 w-auto object-contain rounded-lg border p-1" />
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Logo" className={`h-12 w-auto object-contain rounded-lg border p-1 ${uploading ? "opacity-50" : ""}`} />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg border border-dashed flex items-center justify-center bg-muted/30">
+                        <Palette className="h-5 w-5 text-muted-foreground" />
+                      </div>
                     )}
                     <div>
                       <Input
