@@ -11,6 +11,7 @@ interface ProductMissingDatasheet {
   naam: string;
   merk: string | null;
   model: string | null;
+  categorie?: string;
 }
 
 interface DatasheetCheckDialogProps {
@@ -21,7 +22,7 @@ interface DatasheetCheckDialogProps {
   onNavigateToProduct: (productId: string) => void;
 }
 
-type ProductStatus = "pending" | "uploading" | "uploaded" | "skipped";
+type ProductStatus = "pending" | "uploading" | "uploaded" | "generating" | "skipped";
 
 const DatasheetCheckDialog = ({
   open,
@@ -34,7 +35,6 @@ const DatasheetCheckDialog = ({
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [rechecking, setRechecking] = useState(false);
 
-  // Reset statuses when products prop changes or dialog opens
   useEffect(() => {
     if (open && products.length > 0) {
       setStatuses(Object.fromEntries(products.map((p) => [p.id, "pending" as ProductStatus])));
@@ -91,9 +91,58 @@ const DatasheetCheckDialog = ({
     });
   };
 
-  const handleGenerate = (productId: string) => {
-    // Open in new tab so offerte form is preserved
-    window.open(`/producten/${productId}/datasheet`, "_blank");
+  const handleGenerate = async (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    setStatuses((s) => ({ ...s, [productId]: "generating" }));
+    try {
+      // Fetch full product specs for AI
+      const { data: fullProduct } = await supabase
+        .from("producten")
+        .select("naam, merk, model, categorie, specs, certificeringen, omschrijving, garantie_jaren")
+        .eq("id", productId)
+        .single();
+
+      if (!fullProduct) throw new Error("Product niet gevonden");
+
+      const currentSpecs = fullProduct.specs && typeof fullProduct.specs === "object" && !Array.isArray(fullProduct.specs)
+        ? fullProduct.specs as Record<string, string>
+        : {};
+
+      // Call AI verify to fill specs
+      const { data, error } = await supabase.functions.invoke("ai-verify-product-specs", {
+        body: {
+          product_id: productId,
+          naam: fullProduct.naam,
+          merk: fullProduct.merk,
+          model: fullProduct.model,
+          categorie: fullProduct.categorie,
+          specs: currentSpecs,
+          certificeringen: fullProduct.certificeringen,
+          omschrijving: fullProduct.omschrijving,
+          garantie_jaren: fullProduct.garantie_jaren,
+        },
+      });
+      if (error) throw error;
+
+      // Update datasheet_type to mark as generated
+      const { error: updateError } = await supabase
+        .from("producten")
+        .update({ datasheet_type: "gegenereerd" })
+        .eq("id", productId);
+      if (updateError) throw updateError;
+
+      setStatuses((s) => ({ ...s, [productId]: "uploaded" }));
+
+      const filledCount = data?.filled_count || Object.keys(data?.corrected_specs || {}).length;
+      toast.success("Datasheet gegenereerd", {
+        description: `${filledCount} specificaties aangevuld door AI`,
+      });
+    } catch (err: any) {
+      toast.error("Generatie mislukt", { description: err.message });
+      setStatuses((s) => ({ ...s, [productId]: "pending" }));
+    }
   };
 
   const handleRecheck = async () => {
@@ -150,7 +199,7 @@ const DatasheetCheckDialog = ({
                   </span>
                   {status === "uploaded" && (
                     <Badge variant="default" className="gap-1">
-                      <Check className="h-3 w-3" /> Geüpload
+                      <Check className="h-3 w-3" /> Gereed
                     </Badge>
                   )}
                   {status === "skipped" && (
@@ -158,9 +207,10 @@ const DatasheetCheckDialog = ({
                       <SkipForward className="h-3 w-3" /> Overgeslagen
                     </Badge>
                   )}
-                  {status === "uploading" && (
+                  {(status === "uploading" || status === "generating") && (
                     <Badge variant="outline" className="gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" /> Uploaden…
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      {status === "generating" ? "Genereren…" : "Uploaden…"}
                     </Badge>
                   )}
                 </div>
