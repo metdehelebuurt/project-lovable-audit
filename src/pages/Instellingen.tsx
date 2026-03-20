@@ -320,7 +320,7 @@ const Instellingen = () => {
                   <div className="mt-2 rounded-xl border p-4" style={{ borderBottom: `3px solid ${primaireKleur}` }}>
                     <div className="flex justify-between items-start">
                       <div>
-                        {logoUrl && <img src={logoUrl} alt="Logo" className="h-8 mb-1 object-contain" />}
+                        {logoUrl ? <img src={logoUrl} alt="Logo" className="h-8 mb-1 object-contain" /> : <div className="h-8 w-8 rounded bg-muted mb-1" />}
                         <p className="font-bold" style={{ color: secundaireKleur }}>{partnerNaam}</p>
                         {bedrijfsslogan && <p className="text-xs" style={{ color: primaireKleur }}>{bedrijfsslogan}</p>}
                       </div>
