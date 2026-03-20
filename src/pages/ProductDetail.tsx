@@ -92,6 +92,12 @@ const ProductDetail = () => {
     };
   }, [product?.datasheet_url, product?.datasheet_type, localPdfUrl]);
 
+  // Auto-load partner for generated datasheet inline preview
+  useEffect(() => {
+    if (product?.datasheet_type === "gegenereerd" && !partner) {
+      loadPartner();
+    }
+  }, [product?.datasheet_type]);
 
   const { data: partnerTekstData } = useQuery({
     queryKey: ["partner-product-tekst", id, profile?.partner_id],
@@ -694,15 +700,32 @@ const ProductDetail = () => {
                   </object>
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
-                <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
-                    <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
+                      <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
+                    </div>
+                    <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
+                      <Eye className="h-4 w-4" /> Bekijk & Print
+                    </Button>
                   </div>
-                  <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
-                    <Eye className="h-4 w-4" /> Bekijk & Print
-                  </Button>
+                  {partner && (
+                    <div className="border rounded-xl overflow-hidden">
+                      <ProductDatasheet
+                        product={{
+                          naam: product.naam, merk: product.merk, model: product.model,
+                          categorie: product.categorie, omschrijving: product.omschrijving,
+                          afbeelding_url: product.afbeelding_url, specs,
+                          certificeringen: product.certificeringen, garantie_jaren: product.garantie_jaren,
+                          prijs_excl_btw: Number(product.prijs_excl_btw),
+                          onderhoud: product.onderhoud, installatie_instructies: product.installatie_instructies,
+                        }}
+                        partner={partner}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-6">

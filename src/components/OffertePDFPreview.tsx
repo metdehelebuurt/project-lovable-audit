@@ -380,12 +380,12 @@ export default function OffertePDFPreview() {
       )}
 
       {/* ═══════════════ DATASHEET PAGES ═══════════════ */}
-      {producten.filter(p => p.datasheet_url && p.datasheet_type).map(p => {
-        const dsUrl = p.datasheet_url!.startsWith("http")
-          ? p.datasheet_url!
-          : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${p.datasheet_url}`;
+      {producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd").map(p => {
+        if (p.datasheet_type === "fabrikant" && p.datasheet_url) {
+          const dsUrl = p.datasheet_url.startsWith("http")
+            ? p.datasheet_url
+            : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${p.datasheet_url}`;
 
-        if (p.datasheet_type === "fabrikant") {
           return (
             <div key={`ds-${p.id}`} className="pdf-page" style={{ ...pageStyle, padding: 0 }}>
               <iframe
