@@ -41,7 +41,8 @@ export default function SpecsEditor({ specs, onChange, categorie }: SpecsEditorP
   };
 
   const renderField = (def: SpecDefinition) => {
-    const value = specs[def.key] || "";
+    const rawVal = specs[def.key] || "";
+    const value = rawVal.toLowerCase() === "null" ? "" : rawVal;
 
     if (def.type === "boolean") {
       return (

@@ -97,7 +97,7 @@ const ProductDatasheet: React.FC<ProductDatasheetProps> = ({ product, partner })
   // Custom specs
   const definedKeys = new Set(Object.values(grouped).flat().map(d => d.key));
   const customEntries: [string, string][] = Object.entries(allSpecs)
-    .filter(([k, v]) => !definedKeys.has(k) && v && String(v).trim() !== "")
+    .filter(([k, v]) => !definedKeys.has(k) && v && String(v).trim() !== "" && String(v).toLowerCase() !== "null")
     .map(([k, v]) => [k.replace(/_/g, " "), String(v)]);
   if (customEntries.length > 0) {
     specGroups.push({ title: "Overige specificaties", entries: customEntries });
