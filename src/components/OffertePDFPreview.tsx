@@ -343,24 +343,17 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         * { box-sizing: border-box; }
       `}</style>
 
-      {/* Action bar */}
-      <div className="no-print" style={{ position: "fixed", top: 16, right: 16, zIndex: 50, display: "flex", gap: 8 }}>
-        <button onClick={() => window.print()} style={{ padding: "10px 24px", borderRadius: 40, color: "#fff", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", backgroundColor: pc, boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
-          PDF downloaden
-        </button>
-        <button onClick={() => {
-          // Navigate to offerte detail with email dialog param
-          const offerteId = id;
-          if (offerteId) {
-            window.location.href = `/offertes/${offerteId}?email=true`;
-          }
-        }} style={{ padding: "10px 24px", borderRadius: 40, backgroundColor: "#fff", color: pc, fontSize: 13, fontWeight: 600, border: `2px solid ${pc}`, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
-          ✉ Verstuur per e-mail
-        </button>
-        <button onClick={() => window.history.back()} style={{ padding: "10px 24px", borderRadius: 40, backgroundColor: "#f0f0f0", color: "#555", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>
-          Terug
-        </button>
-      </div>
+      {/* Action bar — only shown when not embedded */}
+      {!hideActionBar && (
+        <div className="no-print" style={{ padding: "16px 24px", display: "flex", gap: 8, justifyContent: "center", backgroundColor: "#f8f8f8", borderBottom: "1px solid #eee" }}>
+          <button onClick={() => window.print()} style={{ padding: "10px 24px", borderRadius: 40, color: "#fff", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", backgroundColor: pc, boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
+            PDF downloaden
+          </button>
+          <button onClick={() => window.history.back()} style={{ padding: "10px 24px", borderRadius: 40, backgroundColor: "#f0f0f0", color: "#555", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>
+            Terug
+          </button>
+        </div>
+      )}
 
       {/* ═══════════════ PAGE 1: COVER (dynamic template) ═══════════════ */}
       {tc.voorblad && <div className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
