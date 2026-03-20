@@ -1,41 +1,102 @@
 
 
-## Plan: Voorblad templates full A4 + hero afbeelding upload/mediakiezer
+## Plan: Mobiel/tablet optimalisatie + Video-opname in Schouwen
 
-### Probleem
-1. De voorblad-thumbnails en live preview vullen niet de volledige A4-hoogte — de VoorbladTemplates gebruiken `height: "100%"` maar de container stelt geen expliciete hoogte in, waardoor ze vierkant of kort renderen.
-2. Hero afbeelding kan alleen via URL worden ingesteld — er is geen upload-functionaliteit of mediakiezer.
+### 1) Mobiele/tablet responsiveness verbeteringen
 
-### Wijzigingen
+**Probleem**: Diverse pagina's gebruiken vaste breedte-tabellen en desktop-georiënteerde layouts die op mobiel niet goed werken.
 
-#### 1) Voorblad templates full A4 hoogte
-**Bestand:** `src/components/offertes/templates/VoorbladTemplates.tsx`
+#### A) Lijstpagina's (Leads, Offertes, Schouwen) — Card-weergave op mobiel
+**Bestanden:** `src/pages/Leads.tsx`, `src/pages/Offertes.tsx`, `src/pages/Schouwen.tsx`
 
-Alle 5 varianten (`HeroDark`, `HeroSplit`, `HeroMinimal`, `HeroGradient`, `HeroPhoto`) krijgen een expliciete `minHeight` op de root container:
-- Voeg `minHeight: "297mm"` of `minHeight: 1123` toe aan de root `div` style van elke variant
-- Dit zorgt ervoor dat zowel thumbnails (via 794×1123 container) als live preview de volledige A4-pagina vullen
-- Pas de interne layout aan zodat content goed verdeeld is over de volledige hoogte (meer padding, grotere hero-secties, flex-grow op tussenruimtes)
+- Op `< md` breakpoint: vervang de `<Table>` door een gestapelde card-weergave (naam, status badge, key info)
+- Actieknoppen worden iconen in een horizontale rij onderaan elke card
+- Zoekbalk en filters worden full-width gestapeld op mobiel
+- Bulk-selectie toolbar wordt sticky onderaan het scherm op mobiel
 
+#### B) Formulier-dialogen
+**Bestanden:** `src/pages/Leads.tsx`, `src/pages/Schouwen.tsx`, `src/pages/OfferteNieuw.tsx`
+
+- Dialogen op mobiel: `max-w-[95vw]` en `max-h-[90vh]`
+- Form grids (`grid-cols-2`, `grid-cols-3`) worden `grid-cols-1` op mobiel
+- Knoppen worden full-width op mobiel
+
+#### C) Dashboard
+**Bestand:** `src/pages/Dashboard.tsx`
+
+- StatCards: `grid-cols-1` op mobiel (nu al `sm:grid-cols-2` — controleren)
+- Activiteiten lijst: compactere spacing op mobiel
+
+#### D) SchouwUitvoeren (wizard)
+**Bestand:** `src/pages/SchouwUitvoeren.tsx`
+
+- Titel verkleinen op mobiel (`text-xl` i.p.v. `text-2xl`)
+- Navigatieknoppen: full-width stack op kleine schermen
+- Step indicator: compacter met alleen huidige step naam
+
+#### E) PDF Editor
 **Bestand:** `src/pages/OffertePDF.tsx`
 
-- Zorg dat de voorblad-pagina in `renderSection("voorblad")` een expliciete `height: "297mm"` heeft op de container div (i.p.v. alleen `minHeight`)
-- Thumbnail container: bevestig dat de inner div 794×1123 is en de voorblad-component daarin past
+- Op mobiel: verberg het linker panel standaard, toon een toggle-knop (bottom sheet of overlay)
+- Preview schaalt naar full-width
+- Toolbar knoppen worden icoon-only op mobiel
 
-#### 2) Hero afbeelding upload + mediakiezer
-**Bestand:** `src/pages/OffertePDF.tsx`
+#### F) SignaturePad
+**Bestand:** `src/components/schouwen/SignaturePad.tsx`
 
-Vervang het "Hero afbeelding URL" tekstveld in het customization panel door:
-- **Upload knop**: Uploadt een afbeelding naar `partner-assets` storage bucket onder pad `{partner_id}/hero/{bestandsnaam}`, slaat de publieke URL op in `config.hero_image_url`
-- **Media galerij**: Toont bestaande afbeeldingen uit `partner-assets/{partner_id}/hero/` als clickable thumbnails zodat de partner eerder geüploade afbeeldingen kan hergebruiken
-- **URL invoer**: Behoudt de optie om een externe URL in te voeren als fallback
-- Preview van de geselecteerde afbeelding onder het invoerveld (bestaande functionaliteit)
+- Canvas hoogte aanpassen: 160px op mobiel, 200px op desktop
+- Touch events werken al correct (✓)
 
-De upload gebruikt `supabase.storage.from("partner-assets").upload(...)` en `getPublicUrl(...)` — hetzelfde patroon als de logo-upload in Instellingen.
+#### G) AppLayout
+**Bestand:** `src/components/AppLayout.tsx`
 
-### Bestanden
+- Main padding: `p-3` op mobiel i.p.v. `p-4` (al `md:p-8`)
+
+### 2) Video-opname functionaliteit in SchouwMediaUpload
+
+**Bestand:** `src/components/schouwen/SchouwMediaUpload.tsx`
+
+Voeg een "Video opnemen" knop toe naast "Foto's toevoegen":
+
+- **MediaRecorder API** gebruiken om video op te nemen via de camera van het apparaat
+- Max **60 seconden** opnameduur (automatische stop + visuele countdown timer)
+- Max resolutie: **1280×720 (HD)** via `getUserMedia` constraints
+- Opnameformaat: **WebM** (native browser support, kleinste bestandsgrootte bij goede kwaliteit)
+- Na opname: toon preview met afspeelknop voordat de gebruiker bevestigt
+- Upload naar `schouw-media` bucket met bestaande upload-logica
+- Bestandslimiet verhogen naar **50MB** voor video (10MB blijft voor foto's)
+- Live camera preview tijdens opname in een modal/overlay
+- Start/Stop/Annuleer knoppen
+- Rode opname-indicator met timer
+
+**UI flow:**
+```text
+[Foto's toevoegen] [Video opnemen]
+         ↓
+   Modal opent met camera preview
+   [● REC 00:00/01:00]  [Stop] [Annuleer]
+         ↓ (na stop)
+   Preview met [Opslaan] [Opnieuw] [Annuleer]
+         ↓ (na opslaan)
+   Upload naar storage → verschijnt in media grid
+```
+
+**Video in media grid:**
+- Video thumbnails tonen een play-icoon overlay
+- Click opent video in een lightbox/modal met afspeelbesturing
+- Bestaande video-uploads (file picker) ook accepteren tot 50MB
+
+### Bestanden overzicht
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/offertes/templates/VoorbladTemplates.tsx` | Alle 5 varianten: full A4 hoogte met `minHeight: 1123`, verbeterde verticale layout |
-| `src/pages/OffertePDF.tsx` | Voorblad container `height: 297mm`, hero upload + mediagalerij in customization panel |
+| `src/components/schouwen/SchouwMediaUpload.tsx` | Video-opname component, 50MB limiet video, camera modal |
+| `src/pages/Leads.tsx` | Card-weergave op mobiel |
+| `src/pages/Offertes.tsx` | Card-weergave op mobiel |
+| `src/pages/Schouwen.tsx` | Card-weergave op mobiel |
+| `src/pages/SchouwUitvoeren.tsx` | Compactere mobiele layout |
+| `src/pages/OffertePDF.tsx` | Toggle panel op mobiel |
+| `src/pages/Dashboard.tsx` | Grid responsive check |
+| `src/pages/OfferteNieuw.tsx` | Form grids responsive |
+| `src/components/AppLayout.tsx` | Mobiele padding |
 
