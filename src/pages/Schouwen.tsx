@@ -348,14 +348,14 @@ const Schouwen = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Schouwen</h1>
-          <p className="text-muted-foreground mt-1">Woninginspecties inplannen en uitvoeren</p>
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground">Schouwen</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Woninginspecties inplannen en uitvoeren</p>
         </div>
         {canCreate && (
           <Button onClick={() => navigate("/schouwen/nieuw")} className="rounded-pill gap-2">
-            <CalendarPlus className="h-4 w-4" /> Schouw inplannen
+            <CalendarPlus className="h-4 w-4" /> <span className="hidden sm:inline">Schouw inplannen</span><span className="sm:hidden">Inplannen</span>
           </Button>
         )}
       </div>
