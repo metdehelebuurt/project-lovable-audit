@@ -301,6 +301,41 @@ const Schouwen = () => {
 
   const closeDialog = () => { setDialogOpen(false); setEditingSchouw(null); setForm(emptyForm); setWizardStep(0); };
 
+  const handleSnelstart = async () => {
+    if (!snelstartCat || !snelstartLeadId) return;
+    setSnelstartCreating(true);
+    try {
+      const lead = leads.find(l => l.id === snelstartLeadId);
+      const record = {
+        categorie: snelstartCat,
+        geplande_datum: new Date().toISOString().slice(0, 10),
+        consument_naam: lead ? `${lead.voornaam} ${lead.achternaam}` : null,
+        klant_email: lead?.email || null,
+        lead_id: snelstartLeadId,
+        partner_id: profile?.partner_id!,
+        adviseur_id: profile?.id!,
+        schouw_nummer: generateSchouwNummer(),
+      };
+      const { data, error } = await supabase.from("schouwen").insert(record).select("id").single();
+      if (error) throw error;
+      toast.success("Schouw aangemaakt — wizard wordt geopend");
+      setSnelstartOpen(false);
+      setSnelstartCat(null);
+      setSnelstartLeadId("");
+      setSnelstartLeadSearch("");
+      navigate(`/schouwen/${data.id}/uitvoeren`);
+    } catch (err: any) {
+      toast.error("Fout bij aanmaken", { description: err.message });
+    }
+    setSnelstartCreating(false);
+  };
+
+  const filteredSnelstartLeads = leads.filter(l => {
+    if (!snelstartLeadSearch || snelstartLeadSearch.length < 2) return false;
+    const q = snelstartLeadSearch.toLowerCase();
+    return `${l.voornaam} ${l.achternaam}`.toLowerCase().includes(q) || l.email.toLowerCase().includes(q);
+  });
+
   const handleLeadSelect = (leadId: string) => {
     const lead = leads.find(l => l.id === leadId);
     setForm(p => ({
