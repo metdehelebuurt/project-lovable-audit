@@ -1,42 +1,98 @@
 
+### Doel
+`AI invullen` en `Specs uit PDF halen` moeten **betrouwbaar** technische velden vullen zodra een fabrikant-PDF is geüpload, en de PDF moet altijd leesbaar zijn in de viewer.
 
-## Plan: PDF Viewer + AI invullen via PDF
+### Wat nu misgaat (bevestigd)
+1. `ai-parse-datasheet` geeft wel `200`, maar retourneert vaak `extracted_specs: {}`.  
+2. `ai-verify-product-specs` heeft regelmatig `Web search: no results`, dus web-only fallback blijft op 0 uitkomen.  
+3. De PDF bevat wél bruikbare specs (tabellen), dus de bottleneck zit in de huidige parse-route (PDF als `data:application/pdf` naar model).  
+4. Chrome viewer faalt nog in sommige gevallen door native iframe-PDF rendering/fallback.
 
-### Probleem 1: PDF niet live zichtbaar na upload
-Na het uploaden van een PDF-datasheet moet de PDF direct zichtbaar zijn als embedded viewer op het Datasheet-tabblad. De huidige code doet dit al via een iframe, maar er ontbreekt een directe lokale preview na upload (voordat de query-invalidatie klaar is).
+### Implementatieplan
 
-### Probleem 2: AI invullen retourneert 0 specs
-De oorzaak is nu helder: de web search vindt 5 bronnen, maar het exacte model "M4328" bestaat niet in die bronnen (alleen "SMILE-G3-BAT-4.8S" etc.). Door de strikte "alleen brondata" instructie retourneert de AI terecht `corrected_specs: {}`.
+#### 1) PDF-parser opnieuw opbouwen (backend, hoofdfix)
+**Bestand:** `supabase/functions/ai-parse-datasheet/index.ts`
 
-De gebruiker koos voor **"Alleen PDF"**: wanneer er een fabrikant-PDF is geupload, moet AI invullen de PDF scannen — niet het web doorzoeken.
+- Stop met de huidige “PDF als image_url/data-uri” route.
+- Haal eerst de echte datasheet-locatie op uit `producten.datasheet_url` (niet hardcoded `datasheets/{product_id}.pdf`).
+- Maak van die URL een scrapebare URL en haal eerst tekst/markdown uit de PDF (via de bestaande web-extractiestap met Firecrawl).
+- Stuur die geëxtraheerde tekst naar AI voor mapping naar machine-keys.
 
----
-
-### Oplossing
-
-#### 1. Lokale PDF preview na upload
-**`src/pages/ProductDetail.tsx`**
-- Na succesvolle upload: sla een lokale blob-URL op via `URL.createObjectURL(file)` zodat de PDF direct in de iframe verschijnt zonder te wachten op query-refresh
-- Zorg dat het Datasheet-tabblad automatisch naar de PDF-viewer scrollt
-
-#### 2. AI invullen routeert naar PDF-parser wanneer PDF beschikbaar
-**`src/pages/ProductDetail.tsx`** — `handleAiVerify` aanpassen:
-- Check of `product.datasheet_type === "fabrikant"` en `product.datasheet_url` bestaat
-- Zo ja: roep `ai-parse-datasheet` aan (PDF lezen) in plaats van `ai-verify-product-specs` (web zoeken)
-- Zo nee: val terug op de bestaande web-search pipeline
-- Toon duidelijk in de toast of de specs uit de PDF of van het web kwamen
-
-#### 3. Meer lenient web-search fallback
-**`supabase/functions/ai-verify-product-specs/index.ts`**
-- Als het exacte model niet gevonden wordt maar er WEL data is van hetzelfde merk/productlijn: gebruik die data en vermeld in `suggestions` dat het van een gerelateerd model komt
-- Verwijder de "corrected_specs MAG NOOIT LEEG ZIJN" instructie (die is tegenstrijdig met "alleen brondata")
+**Waarom:** de tekst/tabelinhoud is dan expliciet input voor de AI i.p.v. onbetrouwbare PDF-binary interpretatie.
 
 ---
 
-### Bestanden
+#### 2) Robuuste normalisatie + mappinglaag toevoegen
+**Bestand:** `supabase/functions/ai-parse-datasheet/index.ts`
 
-| Bestand | Actie |
-|---------|-------|
-| `src/pages/ProductDetail.tsx` | Lokale PDF preview + AI routing naar PDF-parser |
-| `supabase/functions/ai-verify-product-specs/index.ts` | Lenient fallback bij gerelateerd model |
+Na AI output:
+- Filter op toegestane keys van `categoryMachineKeys`.
+- Normaliseer waarden:
+  - decimal comma → punt
+  - verwijder eenheden
+  - bool naar `Ja/Nee`
+  - bekende conversies (bijv. Wh→kWh, W→kW waar key dat vereist)
+- Voeg alias mapping toe voor veelvoorkomende PDF-termen (bijv. “bruikbare energie”, “constant uitgangsvermogen”, “afmetingen BxHxD”, “roundtrip efficiency”).
+- Parse `afmetingen` automatisch naar `breedte_mm`, `hoogte_mm`, `lengte_mm`.
 
+**Resultaat:** ook bij OCR-ruis of tabelvarianten worden alsnog bruikbare velden gevuld.
+
+---
+
+#### 3) Kwaliteitsdrempel + duidelijke foutmeldingen
+**Bestand:** `supabase/functions/ai-parse-datasheet/index.ts`
+
+- Als `extracted_specs` leeg blijft: geef gecontroleerde fout terug (bijv. 422) met reden + tips.
+- Geef extra metadata terug:
+  - `filled_count`
+  - `source_url`
+  - `notes` (welke secties ontbraken)
+
+**Bestand:** `src/pages/ProductDetail.tsx`
+- Toon deze backend-redenen in toast i.p.v. “succes met 0”.
+- Alleen “succes” tonen bij `filled_count > 0`.
+
+---
+
+#### 4) “Alleen PDF” afdwingen in UI flow
+**Bestand:** `src/pages/ProductDetail.tsx`
+
+- `handleAiVerify` strikt zo houden/verbeteren dat bij aanwezige fabrikant-PDF **altijd** `ai-parse-datasheet` wordt gebruikt (geen web-search pad).
+- Bij directe upload in dezelfde sessie ook lokaal herkennen dat PDF beschikbaar is (niet afhankelijk van trage query-refresh).
+- Na succesvolle extractie automatisch terug naar tab “Specificaties” en direct nieuwe telling tonen.
+
+---
+
+#### 5) PDF viewer stabiel maken voor Chrome
+**Bestand:** `src/pages/ProductDetail.tsx` (en evt. nieuw viewer component)
+
+- Blijf blob-first renderen, maar forceer MIME (`application/pdf`) bij blob-opbouw.
+- Vervang native iframe-fallback door robuustere viewer-fallback (object/embed of pdf.js/react-pdf) + “Open in nieuw tabblad” fallback.
+- Toon expliciete viewer-error state als laden mislukt i.p.v. lege/grijze container.
+
+---
+
+### Technische details
+```text
+Nieuwe extractieketen:
+UI button
+  -> ai-parse-datasheet
+      -> haal datasheet_url op uit producten
+      -> scrape PDF -> markdown/text
+      -> AI key-mapping op die text
+      -> normalize + validate + filter keys
+      -> return extracted_specs + filled_count + notes
+  -> update producten.specs
+  -> refresh + show count
+```
+
+### Bestanden die aangepast worden
+- `supabase/functions/ai-parse-datasheet/index.ts` (grootste wijziging)
+- `src/pages/ProductDetail.tsx` (routing/feedback/viewer robustness)
+- (optioneel) `src/components/producten/ProductPdfViewer.tsx` (als aparte robuuste viewercomponent voor onderhoudbaarheid)
+
+### Acceptatiecriteria
+- Bij geüploade PDF vult “Specs uit PDF halen” aantoonbaar meerdere velden (geen lege `extracted_specs` bij normale datasheets).
+- “AI invullen” gebruikt bij fabrikant-PDF dezelfde PDF-pipeline.
+- Geen succes-toast meer met 0 specs zonder waarschuwing.
+- PDF is zichtbaar in Chrome; bij falen is er een duidelijke fallback-knop.
