@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ import {
   User, Clock, StickyNote, FileText
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
+import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
@@ -65,14 +66,13 @@ const regelSub = (r: OfferteRegel) => {
 const OfferteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
 
   const [feedbackText, setFeedbackText] = useState("");
   const [notitieText, setNotitieText] = useState("");
-  const [emailDialog, setEmailDialog] = useState(false);
-  const [emailTo, setEmailTo] = useState("");
-  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailDialog, setEmailDialog] = useState(searchParams.get("email") === "true");
   const [shareDialog, setShareDialog] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
@@ -189,26 +189,7 @@ const OfferteDetail = () => {
     }
   };
 
-  const handleSendEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailTo.trim()) { toast.error("Vul een e-mailadres in"); return; }
-    setSendingEmail(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("send-offerte-email", {
-        body: { offerte_id: offerte.id, ontvanger_email: emailTo.trim() },
-      });
-      if (error || data?.error) {
-        toast.error("Versturen mislukt", { description: data?.error || error?.message });
-      } else {
-        toast.success("Offerte verstuurd", { description: `E-mail verzonden naar ${emailTo}` });
-        queryClient.invalidateQueries({ queryKey: ["offerte", id] });
-        setEmailDialog(false);
-      }
-    } catch {
-      toast.error("Versturen mislukt");
-    }
-    setSendingEmail(false);
-  };
+  // Email sending is now handled by OfferteEmailEditor component
 
   const handleFeedback = async () => {
     if (!feedbackText.trim()) return;
@@ -244,7 +225,7 @@ const OfferteDetail = () => {
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => navigate(`/offertes/${offerte.id}/pdf`)}>
             <FileDown className="h-4 w-4" /> PDF
           </Button>
-          <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => { setEmailDialog(true); setEmailTo(offerte.klant_email); }}>
+          <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => setEmailDialog(true)}>
             <Send className="h-4 w-4" /> Versturen
           </Button>
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={handleShareLink}>
@@ -591,29 +572,23 @@ const OfferteDetail = () => {
         </div>
       </div>
 
-      {/* E-mail dialog */}
-      <Dialog open={emailDialog} onOpenChange={setEmailDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Offerte per e-mail versturen</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSendEmail} className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Offerte <span className="font-medium text-foreground">{offerte.offertenummer}</span> wordt per e-mail verstuurd.
-            </p>
-            <div>
-              <Label>Ontvanger e-mail</Label>
-              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} required className="rounded-xl mt-1" />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEmailDialog(false)} className="rounded-pill">Annuleren</Button>
-              <Button type="submit" className="rounded-pill gap-2" disabled={sendingEmail}>
-                <Send className="h-4 w-4" /> {sendingEmail ? "Versturen..." : "Versturen"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* E-mail editor */}
+      {offerte && (
+        <OfferteEmailEditor
+          open={emailDialog}
+          onOpenChange={setEmailDialog}
+          offerte={{
+            id: offerte.id,
+            offertenummer: offerte.offertenummer,
+            klant_naam: offerte.klant_naam,
+            klant_email: offerte.klant_email,
+            totaal_bedrag: offerte.totaal_bedrag,
+            share_token: offerte.share_token,
+            partner_id: offerte.partner_id,
+          }}
+          onSent={() => queryClient.invalidateQueries({ queryKey: ["offerte", id] })}
+        />
+      )}
 
       {/* Share link dialog */}
       <Dialog open={shareDialog} onOpenChange={setShareDialog}>

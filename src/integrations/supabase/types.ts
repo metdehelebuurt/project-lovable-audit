@@ -822,6 +822,44 @@ export type Database = {
           },
         ]
       }
+      offerte_berichten: {
+        Row: {
+          afzender_naam: string
+          afzender_type: string
+          bericht: string
+          created_at: string
+          id: string
+          offerte_id: string
+          share_token: string
+        }
+        Insert: {
+          afzender_naam: string
+          afzender_type: string
+          bericht: string
+          created_at?: string
+          id?: string
+          offerte_id: string
+          share_token: string
+        }
+        Update: {
+          afzender_naam?: string
+          afzender_type?: string
+          bericht?: string
+          created_at?: string
+          id?: string
+          offerte_id?: string
+          share_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offerte_berichten_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offertes: {
         Row: {
           accepted_at: string | null
