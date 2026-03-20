@@ -77,7 +77,8 @@ const OfferteNieuw = () => {
     d.setDate(d.getDate() + 30);
     return d.toISOString().split("T")[0];
   });
-  const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("30 dagen netto");
+  const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("");
+  const [customBetalingsvoorwaarden, setCustomBetalingsvoorwaarden] = useState("");
   const [notities, setNotities] = useState("");
   const [introductieTekst, setIntroductieTekst] = useState("");
   const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
