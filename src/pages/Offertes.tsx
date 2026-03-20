@@ -208,17 +208,33 @@ const Offertes = () => {
     enabled: !!profile?.partner_id,
   });
 
-  // Calculate totals
+  const regelSub = (r: OfferteRegel) => {
+    const bruto = r.aantal * r.prijs_per_stuk;
+    if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
+    return bruto * (1 - (r.korting_percentage || 0) / 100);
+  };
+
   const totals = useMemo(() => {
     let subtotaal = 0;
     let btwBedrag = 0;
     form.regels.forEach(r => {
-      const regelSubtotaal = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
-      subtotaal += regelSubtotaal;
-      btwBedrag += regelSubtotaal * (r.btw_percentage / 100);
+      const s = regelSub(r);
+      subtotaal += s;
+      btwBedrag += s * (r.btw_percentage / 100);
     });
-    return { subtotaal, btwBedrag, totaal: subtotaal + btwBedrag };
-  }, [form.regels]);
+    let offerteKorting = 0;
+    if (form.offerte_korting_waarde > 0) {
+      if (form.offerte_korting_type === "percentage") {
+        offerteKorting = subtotaal * (form.offerte_korting_waarde / 100);
+      } else {
+        offerteKorting = form.offerte_korting_waarde;
+      }
+    }
+    const subtotaalNaKorting = subtotaal - offerteKorting;
+    const btwFactor = subtotaal > 0 ? btwBedrag / subtotaal : 0;
+    const btwNaKorting = subtotaalNaKorting * btwFactor;
+    return { subtotaal, offerteKorting, subtotaalNaKorting, btwBedrag: btwNaKorting, totaal: subtotaalNaKorting + btwNaKorting };
+  }, [form.regels, form.offerte_korting_type, form.offerte_korting_waarde]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & OfferteFormData) => {
