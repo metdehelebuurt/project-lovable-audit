@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Check, Save, Loader2, CheckCircle2 } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
@@ -27,6 +27,7 @@ const SchouwUitvoeren = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   const { data: schouw, isLoading } = useQuery({
     queryKey: ["schouw", id],
@@ -52,19 +53,39 @@ const SchouwUitvoeren = () => {
     setFotos((schouw.fotos as unknown as SchouwFoto[]) || []);
     setChecklist((schouw.checklist as Record<string, boolean>) || {});
     setAandachtspunten(schouw.aandachtspunten || "");
+    if (schouw.handtekening_data) setHandtekeningData(schouw.handtekening_data);
     setInitialized(true);
   }
 
-  const saveMutation = useMutation({
+  const getUpdatePayload = () => ({
+    gegevens: Object.keys(gegevens).length > 0 ? gegevens : null,
+    fotos: fotos.length > 0 ? fotos as any : [],
+    checklist: Object.keys(checklist).length > 0 ? checklist : {},
+    aandachtspunten: aandachtspunten || null,
+  });
+
+  // Save draft (tussentijds opslaan)
+  const handleSaveDraft = async () => {
+    setSavingDraft(true);
+    try {
+      const { error } = await supabase.from("schouwen").update(getUpdatePayload()).eq("id", id!);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["schouw", id] });
+      toast.success("Schouw tussentijds opgeslagen");
+    } catch (err: any) {
+      toast.error("Opslaan mislukt", { description: err.message });
+    }
+    setSavingDraft(false);
+  };
+
+  // Mark as complete (afgerond)
+  const completeMutation = useMutation({
     mutationFn: async () => {
       if (!handtekeningData) {
         throw new Error("Handtekening is verplicht om de schouw af te ronden");
       }
       const { error } = await supabase.from("schouwen").update({
-        gegevens: Object.keys(gegevens).length > 0 ? gegevens : null,
-        fotos: fotos.length > 0 ? fotos as any : [],
-        checklist: Object.keys(checklist).length > 0 ? checklist : {},
-        aandachtspunten: aandachtspunten || null,
+        ...getUpdatePayload(),
         handtekening_data: handtekeningData,
         handtekening_akkoord_op: new Date().toISOString(),
         status: "uitgevoerd",
@@ -89,16 +110,29 @@ const SchouwUitvoeren = () => {
   const updateGegevens = (key: string, value: string) => setGegevens(p => ({ ...p, [key]: value }));
   const toggleChecklist = (key: string) => setChecklist(p => ({ ...p, [key]: !p[key] }));
 
+  const isAlreadyCompleted = schouw.status === "uitgevoerd";
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/schouwen/${id}`)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h1 className="text-xl md:text-2xl font-semibold text-foreground">Schouw uitvoeren: {schouw.schouw_nummer}</h1>
           <p className="text-muted-foreground text-sm truncate">{schouw.consument_naam}</p>
         </div>
+        {/* Tussentijds opslaan knop — altijd zichtbaar */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 rounded-pill shrink-0"
+          onClick={handleSaveDraft}
+          disabled={savingDraft}
+        >
+          {savingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          <span className="hidden sm:inline">Opslaan</span>
+        </Button>
       </div>
 
       <div className="space-y-2">
@@ -219,6 +253,12 @@ const SchouwUitvoeren = () => {
             {aandachtspunten && <p><strong>Aandachtspunten:</strong> {aandachtspunten}</p>}
             <p><strong>Handtekening:</strong> {handtekeningData ? "✓ Ondertekend" : "✗ Niet ondertekend"}</p>
             {ondertekenaarNaam && <p><strong>Ondertekenaar:</strong> {ondertekenaarNaam}</p>}
+
+            {!handtekeningData && (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm text-amber-800 dark:text-amber-200">
+                💡 Je kunt de schouw tussentijds opslaan en later afronden. Een handtekening is pas nodig bij het afronden.
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -228,15 +268,34 @@ const SchouwUitvoeren = () => {
         <Button variant="outline" onClick={() => step > 0 ? setStep(step - 1) : navigate(`/schouwen/${id}`)} className="gap-2 w-full sm:w-auto">
           <ChevronLeft className="h-4 w-4" /> {step === 0 ? "Terug" : "Vorige"}
         </Button>
-        {step < STEPS.length - 1 ? (
-          <Button onClick={() => setStep(step + 1)} className="gap-2 w-full sm:w-auto">
-            Volgende <ChevronRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="gap-2 w-full sm:w-auto">
-            <Check className="h-4 w-4" /> Schouw afronden
-          </Button>
-        )}
+        <div className="flex gap-2 w-full sm:w-auto">
+          {step === STEPS.length - 1 && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleSaveDraft}
+                disabled={savingDraft}
+                className="gap-2 flex-1 sm:flex-initial"
+              >
+                {savingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Opslaan & later verder
+              </Button>
+              <Button
+                onClick={() => completeMutation.mutate()}
+                disabled={completeMutation.isPending || !handtekeningData}
+                className="gap-2 flex-1 sm:flex-initial"
+              >
+                {completeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Schouw afronden
+              </Button>
+            </>
+          )}
+          {step < STEPS.length - 1 && (
+            <Button onClick={() => setStep(step + 1)} className="gap-2 w-full sm:w-auto">
+              Volgende <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
