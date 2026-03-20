@@ -56,6 +56,8 @@ const ProductDetail = () => {
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
