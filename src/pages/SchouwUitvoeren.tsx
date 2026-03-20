@@ -96,8 +96,8 @@ const SchouwUitvoeren = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold text-foreground">Schouw uitvoeren: {schouw.schouw_nummer}</h1>
-          <p className="text-muted-foreground text-sm">{schouw.consument_naam}</p>
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground">Schouw uitvoeren: {schouw.schouw_nummer}</h1>
+          <p className="text-muted-foreground text-sm truncate">{schouw.consument_naam}</p>
         </div>
       </div>
 
