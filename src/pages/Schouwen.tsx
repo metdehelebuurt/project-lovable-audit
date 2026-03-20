@@ -905,6 +905,84 @@ const Schouwen = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Snelstart dialog */}
+      <Dialog open={snelstartOpen} onOpenChange={setSnelstartOpen}>
+        <DialogContent className="max-w-lg max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Direct schouw starten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Categorie</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(Object.keys(categorieLabels) as SchouwCategorie[]).map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSnelstartCat(cat)}
+                    className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                      snelstartCat === cat
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/30 hover:bg-muted border-border"
+                    }`}
+                  >
+                    {categorieLabels[cat]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Lead selecteren</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Zoek op naam of e-mail..."
+                  value={snelstartLeadSearch}
+                  onChange={e => { setSnelstartLeadSearch(e.target.value); setSnelstartLeadId(""); }}
+                  className="pl-10 rounded-xl"
+                />
+              </div>
+              {filteredSnelstartLeads.length > 0 && !snelstartLeadId && (
+                <div className="mt-2 border rounded-xl max-h-40 overflow-y-auto">
+                  {filteredSnelstartLeads.slice(0, 8).map(lead => (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm"
+                      onClick={() => { setSnelstartLeadId(lead.id); setSnelstartLeadSearch(`${lead.voornaam} ${lead.achternaam}`); }}
+                    >
+                      <p className="font-medium">{lead.voornaam} {lead.achternaam}</p>
+                      <p className="text-xs text-muted-foreground">{lead.email}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {snelstartLeadId && (
+                <div className="mt-2 flex items-center gap-2 p-2 rounded-xl bg-muted/30 border">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{snelstartLeadSearch}</span>
+                  <Button type="button" variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => { setSnelstartLeadId(""); setSnelstartLeadSearch(""); }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSnelstartOpen(false)}>Annuleren</Button>
+            <Button
+              disabled={!snelstartCat || !snelstartLeadId || snelstartCreating}
+              onClick={handleSnelstart}
+              className="gap-2"
+            >
+              {snelstartCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+              Starten
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
