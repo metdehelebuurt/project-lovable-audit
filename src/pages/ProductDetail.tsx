@@ -94,13 +94,10 @@ const ProductDetail = () => {
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
 
-      const allSpecs: Record<string, string> = { ...data.corrected_specs };
-      if (data.installatie_specs) {
-        Object.entries(data.installatie_specs).forEach(([k, v]) => { allSpecs[k] = v as string; });
-      }
+      const allSpecs: Record<string, string> = { ...specs, ...data.corrected_specs };
 
       const updateData: any = { specs: allSpecs };
-      if (data.omschrijving_suggestie) updateData.omschrijving = data.omschrijving_suggestie;
+      if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
       if (data.regelgeving) updateData.certificeringen = data.regelgeving;
 
       const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);

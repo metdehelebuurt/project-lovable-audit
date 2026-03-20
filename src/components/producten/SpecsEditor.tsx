@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Label } from "@/components/ui/label";
 import { Plus, X } from "lucide-react";
 import { getGroupedSpecs, categorySpecDefinitions, type SpecDefinition } from "./categorySpecDefinitions";
@@ -19,7 +18,6 @@ export default function SpecsEditor({ specs, onChange, categorie }: SpecsEditorP
     categorie ? (categorySpecDefinitions[categorie] || []).map(d => d.key) : []
   );
 
-  // Custom specs = keys not in definitions
   const customSpecs = Object.entries(specs).filter(([k]) => !definedKeys.has(k));
 
   const updateSpec = (key: string, value: string) => {
@@ -36,12 +34,9 @@ export default function SpecsEditor({ specs, onChange, categorie }: SpecsEditorP
   };
 
   const updateCustomKey = (oldKey: string, newKey: string, idx: number) => {
-    const customEntries = customSpecs;
     const newSpecs = { ...specs };
-    // Remove old key
     delete newSpecs[oldKey];
-    // Re-insert with new key at same position
-    newSpecs[newKey] = customEntries[idx]?.[1] ?? "";
+    newSpecs[newKey] = customSpecs[idx]?.[1] ?? "";
     onChange(newSpecs);
   };
 
@@ -94,64 +89,47 @@ export default function SpecsEditor({ specs, onChange, categorie }: SpecsEditorP
     );
   };
 
-  // Count filled specs per group
   const getGroupFillCount = (defs: SpecDefinition[]) => {
     const filled = defs.filter(d => specs[d.key] && specs[d.key].trim() !== "").length;
     return `${filled}/${defs.length}`;
   };
 
   if (!categorie || Object.keys(grouped).length === 0) {
-    // Fallback: free-form editor (no category selected)
-    return (
-      <FreeFormEditor
-        specs={specs}
-        onChange={onChange}
-      />
-    );
+    return <FreeFormEditor specs={specs} onChange={onChange} />;
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-          Specificaties
-        </h3>
-      </div>
-
-      <Accordion type="multiple" className="space-y-1">
-        {Object.entries(grouped).map(([group, defs]) => (
-          <AccordionItem key={group} value={group} className="border rounded-xl px-3">
-            <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline">
-              <span className="flex items-center gap-2">
-                {group}
-                <span className="text-xs font-normal text-muted-foreground">
-                  {getGroupFillCount(defs)}
-                </span>
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                {defs.map(renderField)}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+    <div className="space-y-6">
+      {Object.entries(grouped).map(([group, defs]) => (
+        <div key={group}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-5 rounded bg-primary" />
+            <h3 className="text-sm font-semibold text-foreground">{group}</h3>
+            <span className="text-xs text-muted-foreground">
+              {getGroupFillCount(defs)}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 pl-3">
+            {defs.map(renderField)}
+          </div>
+        </div>
+      ))}
 
       {/* Custom specs section */}
-      <div className="border-t pt-3 mt-3">
+      <div className="border-t pt-4 mt-4">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Extra specificaties
-          </h4>
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-5 rounded bg-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">Extra specificaties</h3>
+          </div>
           <Button type="button" variant="ghost" size="sm" onClick={addCustomSpec} className="gap-1 text-xs">
             <Plus className="h-3.5 w-3.5" /> Toevoegen
           </Button>
         </div>
         {customSpecs.length === 0 && (
-          <p className="text-xs text-muted-foreground">Geen extra specificaties.</p>
+          <p className="text-xs text-muted-foreground pl-3">Geen extra specificaties.</p>
         )}
-        <div className="space-y-2">
+        <div className="space-y-2 pl-3">
           {customSpecs.map(([key, value], i) => (
             <div key={`custom-${i}`} className="flex items-center gap-2">
               <Input
