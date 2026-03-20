@@ -352,6 +352,27 @@ Antwoord in JSON met EXACT dit formaat:
 
     console.log(`AI result: ${result.filled_count} specs, source: ${result.data_source}`);
 
+    // Save specs directly to DB using service role (bypasses RLS)
+    if (product_id && result.corrected_specs && Object.keys(result.corrected_specs).length > 0) {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const mergedSpecs = { ...(specs || {}), ...result.corrected_specs };
+        const updateData: Record<string, unknown> = { specs: mergedSpecs };
+        if (result.omschrijving_suggestie && !omschrijving) updateData.omschrijving = result.omschrijving_suggestie;
+        if (result.regelgeving) updateData.certificeringen = result.regelgeving;
+
+        const { error: dbError } = await adminClient.from("producten").update(updateData).eq("id", product_id);
+        if (dbError) {
+          console.error("DB update error:", dbError.message);
+        } else {
+          console.log(`Specs saved to DB for product ${product_id}`);
+          result.saved_to_db = true;
+        }
+      }
+    }
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
