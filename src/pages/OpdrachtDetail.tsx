@@ -14,8 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle } from "lucide-react";
+import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
+import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -48,6 +49,7 @@ const OpdrachtDetail = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [installDialog, setInstallDialog] = useState(false);
   const [installForm, setInstallForm] = useState({ monteur_id: "", start: "", eind: "" });
+  const [orderPdfOpen, setOrderPdfOpen] = useState(false);
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
@@ -80,6 +82,19 @@ const OpdrachtDetail = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: partnerData } = useQuery({
+    queryKey: ["partner-branding", opdracht?.partner_id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("partners")
+        .select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan")
+        .eq("id", opdracht!.partner_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!opdracht?.partner_id,
   });
 
   const updateStatus = useMutation({
@@ -172,6 +187,9 @@ const OpdrachtDetail = () => {
             {!opdracht.installatie_id && (
               <Button variant="outline" onClick={() => setInstallDialog(true)} className="gap-2"><Wrench className="h-4 w-4" /> Installatie plannen</Button>
             )}
+            <Button variant="outline" onClick={() => setOrderPdfOpen(true)} className="gap-2">
+              <FileText className="h-4 w-4" /> Orderbevestiging
+            </Button>
             <Button variant="destructive" onClick={() => setCancelDialog(true)} className="gap-2 ml-auto"><XCircle className="h-4 w-4" /> Annuleren</Button>
           </CardContent>
         </Card>
@@ -310,6 +328,30 @@ const OpdrachtDetail = () => {
             <Button variant="outline" onClick={() => setInstallDialog(false)}>Annuleren</Button>
             <Button onClick={handlePlanInstallatie}>Plan installatie</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Orderbevestiging PDF dialog */}
+      <Dialog open={orderPdfOpen} onOpenChange={setOrderPdfOpen}>
+        <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
+          <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
+            <DialogHeader><DialogTitle>Orderbevestiging</DialogTitle></DialogHeader>
+            <Button size="sm" className="rounded-lg gap-2" onClick={() => window.print()}>
+              <Download className="h-4 w-4" /> PDF downloaden
+            </Button>
+          </div>
+          {partnerData && (
+            <OrderbevestigingPDF
+              opdracht={{
+                ...opdracht,
+                regels: regels,
+              }}
+              partner={partnerData}
+            />
+          )}
+          {!partnerData && (
+            <div className="p-8 text-center text-muted-foreground">Partner-gegevens laden...</div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
