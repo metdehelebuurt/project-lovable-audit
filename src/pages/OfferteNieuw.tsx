@@ -316,7 +316,16 @@ const OfferteNieuw = () => {
             <div className="grid grid-cols-3 gap-4">
               <div><Label>Plaats</Label><Input value={klantPlaats} onChange={e => setKlantPlaats(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Geldig tot *</Label><Input type="date" value={geldigTot} onChange={e => setGeldigTot(e.target.value)} required className="rounded-xl" /></div>
-              <div><Label>Betalingsvoorwaarden</Label><Input value={betalingsvoorwaarden} onChange={e => setBetalingsvoorwaarden(e.target.value)} className="rounded-xl" /></div>
+              <div>
+                <Label>Betalingsvoorwaarden</Label>
+                <BetalingsvoorwaardenSelect
+                  partnerId={profile?.partner_id}
+                  value={betalingsvoorwaarden}
+                  onChange={setBetalingsvoorwaarden}
+                  customValue={customBetalingsvoorwaarden}
+                  onCustomChange={setCustomBetalingsvoorwaarden}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -336,6 +336,11 @@ const Instellingen = () => {
         <EmailConfiguratie partnerId={profile.partner_id} />
       )}
 
+      {/* Betaalvoorwaarden — alleen partner_admin */}
+      {isPartnerAdmin && profile?.partner_id && (
+        <BetalingsvoorwaardenConfig partnerId={profile.partner_id} />
+      )}
+
       {/* Schouw instellingen — alleen partner_admin */}
       {isPartnerAdmin && profile?.partner_id && (
         <SchouwInstellingen partnerId={profile.partner_id} />
