@@ -272,12 +272,28 @@ const ProductDetail = () => {
                       <p className="text-sm text-foreground leading-relaxed">{product.omschrijving}</p>
                     </div>
                   )}
-                  {product.offerte_tekst && (
-                    <div className="border-t pt-4">
-                      <p className="text-xs text-muted-foreground mb-1">Offerte tekst</p>
-                      <p className="text-sm text-foreground leading-relaxed">{product.offerte_tekst}</p>
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-muted-foreground">Offerte tekst (partner-specifiek)</p>
+                      {!editingTekst ? (
+                        <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs" onClick={() => { setPartnerTekst(effectiveOfferteTekst); setEditingTekst(true); }}>
+                          <Pencil className="h-3 w-3" /> Bewerken
+                        </Button>
+                      ) : (
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setEditingTekst(false)}><X className="h-3 w-3" /></Button>
+                          <Button size="sm" className="h-6 gap-1 text-xs" disabled={savingTekst} onClick={handleSavePartnerTekst}>
+                            <Save className="h-3 w-3" /> Opslaan
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    {editingTekst ? (
+                      <Textarea value={partnerTekst} onChange={e => setPartnerTekst(e.target.value)} rows={3} className="rounded-xl text-sm" placeholder="Tekst die op de offerte verschijnt bij dit product..." />
+                    ) : (
+                      <p className="text-sm text-foreground leading-relaxed">{effectiveOfferteTekst || <span className="text-muted-foreground italic">Geen offerte tekst ingesteld</span>}</p>
+                    )}
+                  </div>
                   {product.certificeringen && (
                     <div className="border-t pt-4">
                       <p className="text-xs text-muted-foreground mb-1">Certificeringen</p>
