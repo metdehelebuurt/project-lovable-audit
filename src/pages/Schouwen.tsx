@@ -162,10 +162,12 @@ const Schouwen = () => {
   const [wizardMode, setWizardMode] = useState<WizardMode>("plan");
   const queryClient = useQueryClient();
 
-  const isSuperadmin = profile?.rol === "superadmin";
-  const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
-  const canDelete = isSuperadmin || isAdmin;
-  const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
+  // Snelstart state
+  const [snelstartOpen, setSnelstartOpen] = useState(false);
+  const [snelstartCat, setSnelstartCat] = useState<SchouwCategorie | null>(null);
+  const [snelstartLeadId, setSnelstartLeadId] = useState("");
+  const [snelstartLeadSearch, setSnelstartLeadSearch] = useState("");
+  const [snelstartCreating, setSnelstartCreating] = useState(false);
 
   const { data: schouwen = [], isLoading } = useQuery({
     queryKey: ["schouwen"],
