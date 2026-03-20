@@ -396,62 +396,115 @@ const Schouwen = () => {
               <p className="text-muted-foreground">Geen schouwen gevonden</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nummer</TableHead>
-                    <TableHead>Klant</TableHead>
-                    <TableHead>Categorie</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(s => (
-                    <TableRow key={s.id} className="cursor-pointer" onClick={() => navigate(`/schouwen/${s.id}`)}>
-                      <TableCell className="font-mono text-sm">{s.schouw_nummer}</TableCell>
-                      <TableCell className="font-medium">{s.consument_naam || "—"}</TableCell>
-                      <TableCell><Badge variant="outline">{categorieLabels[s.categorie]}</Badge></TableCell>
-                      <TableCell>{new Date(s.geplande_datum).toLocaleDateString("nl-NL")}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {s.status === "gepland" && canCreate && (
-                            <Button variant="default" size="sm" className="rounded-pill gap-1 h-8" onClick={(e) => { e.stopPropagation(); navigate(`/schouwen/${s.id}/uitvoeren`); }}>
-                              <PlayCircle className="h-3.5 w-3.5" /> Starten
-                            </Button>
-                          )}
-                          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); navigate(`/schouwen/${s.id}`); }}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {canDelete && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Schouw verwijderen</AlertDialogTitle>
-                                  <AlertDialogDescription>Weet je zeker dat je schouw {s.schouw_nummer} wilt verwijderen?</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteMutation.mutate(s.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nummer</TableHead>
+                      <TableHead>Klant</TableHead>
+                      <TableHead>Categorie</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Acties</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map(s => (
+                      <TableRow key={s.id} className="cursor-pointer" onClick={() => navigate(`/schouwen/${s.id}`)}>
+                        <TableCell className="font-mono text-sm">{s.schouw_nummer}</TableCell>
+                        <TableCell className="font-medium">{s.consument_naam || "—"}</TableCell>
+                        <TableCell><Badge variant="outline">{categorieLabels[s.categorie]}</Badge></TableCell>
+                        <TableCell>{new Date(s.geplande_datum).toLocaleDateString("nl-NL")}</TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {s.status === "gepland" && canCreate && (
+                              <Button variant="default" size="sm" className="rounded-pill gap-1 h-8" onClick={(e) => { e.stopPropagation(); navigate(`/schouwen/${s.id}/uitvoeren`); }}>
+                                <PlayCircle className="h-3.5 w-3.5" /> Starten
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); navigate(`/schouwen/${s.id}`); }}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {canDelete && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Schouw verwijderen</AlertDialogTitle>
+                                    <AlertDialogDescription>Weet je zeker dat je schouw {s.schouw_nummer} wilt verwijderen?</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteMutation.mutate(s.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {filtered.map(s => (
+                  <div
+                    key={s.id}
+                    className="rounded-xl border border-border p-4 bg-card cursor-pointer active:scale-[0.98] transition-transform"
+                    onClick={() => navigate(`/schouwen/${s.id}`)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground truncate">{s.consument_naam || s.schouw_nummer}</p>
+                        <p className="text-xs font-mono text-muted-foreground">{s.schouw_nummer}</p>
+                      </div>
+                      <Badge className={`${statusColors[s.status]} ml-2 flex-shrink-0`}>{statusLabels[s.status]}</Badge>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                      <Badge variant="outline" className="text-xs">{categorieLabels[s.categorie]}</Badge>
+                      <span>{new Date(s.geplande_datum).toLocaleDateString("nl-NL")}</span>
+                    </div>
+                    <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                      {s.status === "gepland" && canCreate && (
+                        <Button variant="default" size="sm" className="rounded-pill gap-1 h-8" onClick={() => navigate(`/schouwen/${s.id}/uitvoeren`)}>
+                          <PlayCircle className="h-3.5 w-3.5" /> Starten
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/schouwen/${s.id}`)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {canDelete && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Schouw verwijderen</AlertDialogTitle>
+                              <AlertDialogDescription>Weet je zeker dat je schouw {s.schouw_nummer} wilt verwijderen?</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteMutation.mutate(s.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

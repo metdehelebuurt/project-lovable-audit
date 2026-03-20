@@ -459,103 +459,157 @@ const Offertes = () => {
               <p className="text-muted-foreground">Geen offertes gevonden</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nummer</TableHead>
-                    <TableHead>Klant</TableHead>
-                    <TableHead>Totaal</TableHead>
-                    <TableHead>Geldig tot</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(o => (
-                    <TableRow key={o.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/offertes/${o.id}`)}>
-                      <TableCell className="font-mono text-sm">{o.offertenummer}</TableCell>
-                      <TableCell className="font-medium">{o.klant_naam}</TableCell>
-                      <TableCell>{formatCurrency(o.totaal_bedrag)}</TableCell>
-                      <TableCell>{new Date(o.geldig_tot).toLocaleDateString("nl-NL")}</TableCell>
-                      <TableCell onClick={e => e.stopPropagation()}>
-                        {o.status === "geaccepteerd" ? (
-                          <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
-                        ) : (
-                          <Select value={o.status} onValueChange={v => statusMutation.mutate({ id: o.id, status: v as OfferteStatus })}>
-                            <SelectTrigger className="w-40 h-8">
-                              <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(Object.keys(statusLabels) as OfferteStatus[]).filter(s => s !== "geaccepteerd").map(s => (
-                                <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${o.id}/pdf`)} title="PDF">
-                            <FileDown className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setEmailDialog(o); setEmailTo(o.klant_email); }} title="Verstuur per e-mail">
-                            <Send className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={async () => {
-                            setShareDialog(o);
-                            if ((o as any).share_token) {
-                              setShareLink(`${window.location.origin}/offerte/${(o as any).share_token}`);
-                            } else {
-                              setGeneratingLink(true);
-                              const token = crypto.randomUUID();
-                              const { error } = await supabase.from("offertes").update({
-                                share_token: token,
-                                share_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                              } as any).eq("id", o.id);
-                              if (!error) {
-                                setShareLink(`${window.location.origin}/offerte/${token}`);
-                                queryClient.invalidateQueries({ queryKey: ["offertes"] });
-                              } else {
-                                toast.error("Link genereren mislukt");
-                              }
-                              setGeneratingLink(false);
-                            }
-                          }} title="Deel link">
-                            <Link2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setViewDialog(o)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {o.status === "concept" && (
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(o)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canDelete && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Offerte verwijderen</AlertDialogTitle>
-                                  <AlertDialogDescription>Weet je zeker dat je offerte {o.offertenummer} wilt verwijderen?</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteMutation.mutate(o.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nummer</TableHead>
+                      <TableHead>Klant</TableHead>
+                      <TableHead>Totaal</TableHead>
+                      <TableHead>Geldig tot</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Acties</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map(o => (
+                      <TableRow key={o.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/offertes/${o.id}`)}>
+                        <TableCell className="font-mono text-sm">{o.offertenummer}</TableCell>
+                        <TableCell className="font-medium">{o.klant_naam}</TableCell>
+                        <TableCell>{formatCurrency(o.totaal_bedrag)}</TableCell>
+                        <TableCell>{new Date(o.geldig_tot).toLocaleDateString("nl-NL")}</TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          {o.status === "geaccepteerd" ? (
+                            <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
+                          ) : (
+                            <Select value={o.status} onValueChange={v => statusMutation.mutate({ id: o.id, status: v as OfferteStatus })}>
+                              <SelectTrigger className="w-40 h-8">
+                                <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(Object.keys(statusLabels) as OfferteStatus[]).filter(s => s !== "geaccepteerd").map(s => (
+                                  <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${o.id}/pdf`)} title="PDF">
+                              <FileDown className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => { setEmailDialog(o); setEmailTo(o.klant_email); }} title="Verstuur per e-mail">
+                              <Send className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={async () => {
+                              setShareDialog(o);
+                              if ((o as any).share_token) {
+                                setShareLink(`${window.location.origin}/offerte/${(o as any).share_token}`);
+                              } else {
+                                setGeneratingLink(true);
+                                const token = crypto.randomUUID();
+                                const { error } = await supabase.from("offertes").update({
+                                  share_token: token,
+                                  share_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                                } as any).eq("id", o.id);
+                                if (!error) {
+                                  setShareLink(`${window.location.origin}/offerte/${token}`);
+                                  queryClient.invalidateQueries({ queryKey: ["offertes"] });
+                                } else {
+                                  toast.error("Link genereren mislukt");
+                                }
+                                setGeneratingLink(false);
+                              }
+                            }} title="Deel link">
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setViewDialog(o)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {o.status === "concept" && (
+                              <Button variant="ghost" size="icon" onClick={() => openEdit(o)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Offerte verwijderen</AlertDialogTitle>
+                                    <AlertDialogDescription>Weet je zeker dat je offerte {o.offertenummer} wilt verwijderen?</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteMutation.mutate(o.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {filtered.map(o => (
+                  <div
+                    key={o.id}
+                    className="rounded-xl border border-border p-4 bg-card cursor-pointer active:scale-[0.98] transition-transform"
+                    onClick={() => navigate(`/offertes/${o.id}`)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground truncate">{o.klant_naam}</p>
+                        <p className="text-xs font-mono text-muted-foreground">{o.offertenummer}</p>
+                      </div>
+                      <Badge className={`${statusColors[o.status]} ml-2 flex-shrink-0`}>{statusLabels[o.status]}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm mb-3">
+                      <span className="font-semibold text-foreground">{formatCurrency(o.totaal_bedrag)}</span>
+                      <span className="text-xs text-muted-foreground">Geldig t/m {new Date(o.geldig_tot).toLocaleDateString("nl-NL")}</span>
+                    </div>
+                    <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/offertes/${o.id}/pdf`)}>
+                        <FileDown className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEmailDialog(o); setEmailTo(o.klant_email); }}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewDialog(o)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {canDelete && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Offerte verwijderen</AlertDialogTitle>
+                              <AlertDialogDescription>Weet je zeker dat je offerte {o.offertenummer} wilt verwijderen?</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteMutation.mutate(o.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
