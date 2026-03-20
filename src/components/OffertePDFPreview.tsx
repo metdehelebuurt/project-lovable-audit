@@ -500,6 +500,8 @@ export default function OffertePDFPreview() {
             btwBedrag={offerte.btw_bedrag}
             totaalBedrag={offerte.totaal_bedrag}
             formatCurrency={formatCurrency}
+            offerteKortingType={templateConfig?.offerte_korting_type || null}
+            offerteKortingWaarde={templateConfig?.offerte_korting_waarde || 0}
           />
 
           {/* Dynamic terms & signature */}
