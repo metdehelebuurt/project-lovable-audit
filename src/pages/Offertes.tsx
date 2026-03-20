@@ -405,10 +405,10 @@ const Offertes = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Offertes</h1>
-          <p className="text-muted-foreground mt-1">Offertes aanmaken en beheren</p>
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground">Offertes</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Offertes aanmaken en beheren</p>
         </div>
         <div className="flex gap-2">
           <ImportExportButtons
@@ -426,7 +426,7 @@ const Offertes = () => {
           />
           {canCreate && (
             <Button onClick={openCreate} className="rounded-pill gap-2">
-              <Plus className="h-4 w-4" /> Nieuwe Offerte
+              <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nieuwe Offerte</span><span className="sm:hidden">Nieuw</span>
             </Button>
           )}
         </div>
