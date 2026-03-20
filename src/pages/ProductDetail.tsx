@@ -97,7 +97,8 @@ const ProductDetail = () => {
     if (product?.datasheet_type === "gegenereerd" && !partner) {
       loadPartner();
     }
-  }, [product?.datasheet_type]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.datasheet_type, product?.id]);
 
   const { data: partnerTekstData } = useQuery({
     queryKey: ["partner-product-tekst", id, profile?.partner_id],
