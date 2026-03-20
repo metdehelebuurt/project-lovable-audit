@@ -53,6 +53,7 @@ const ProductDetail = () => {
   const [savingTekst, setSavingTekst] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading } = useQuery({
@@ -129,33 +130,55 @@ const ProductDetail = () => {
     if (!product) return;
     setAiLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-verify-product-specs", {
-        body: {
-          naam: product.naam, merk: product.merk, model: product.model,
-          categorie: product.categorie, specs, certificeringen: product.certificeringen,
-          omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
-        },
-      });
-      if (error) throw error;
-      if (data?.error) { toast.error(data.error); return; }
+      // If a manufacturer PDF is uploaded, use PDF parser instead of web search
+      const hasPdf = product.datasheet_type === "fabrikant" && product.datasheet_url;
+      
+      let corrected: Record<string, string> = {};
+      let description = "";
 
-      const corrected = data.corrected_specs || {};
-      const newCount = Object.keys(corrected).length;
-      const allSpecs: Record<string, string> = { ...specs, ...corrected };
+      if (hasPdf) {
+        const { data, error } = await supabase.functions.invoke("ai-parse-datasheet", {
+          body: { product_id: product.id, categorie: product.categorie },
+        });
+        if (error) throw error;
+        if (data?.error) { toast.error(data.error); return; }
+        corrected = data.extracted_specs || {};
+        description = `Geëxtraheerd uit geüploade PDF`;
+        
+        const updateData: any = { specs: { ...specs, ...corrected } };
+        if (data.product_merk && !product.merk) updateData.merk = data.product_merk;
+        if (data.product_model && !product.model) updateData.model = data.product_model;
+        
+        const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
+        if (updateErr) throw updateErr;
+      } else {
+        const { data, error } = await supabase.functions.invoke("ai-verify-product-specs", {
+          body: {
+            naam: product.naam, merk: product.merk, model: product.model,
+            categorie: product.categorie, specs, certificeringen: product.certificeringen,
+            omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
+          },
+        });
+        if (error) throw error;
+        if (data?.error) { toast.error(data.error); return; }
+        corrected = data.corrected_specs || {};
+        const bronnen = data.bronnen as string[] | undefined;
+        description = bronnen?.length ? `Bronnen: ${bronnen.length} webpagina's` : "Gebaseerd op AI trainingsdata";
 
-      const updateData: any = { specs: allSpecs };
-      if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
-      if (data.regelgeving) updateData.certificeringen = data.regelgeving;
+        const allSpecs: Record<string, string> = { ...specs, ...corrected };
+        const updateData: any = { specs: allSpecs };
+        if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
+        if (data.regelgeving) updateData.certificeringen = data.regelgeving;
 
-      const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
-      if (updateErr) throw updateErr;
+        const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
+        if (updateErr) throw updateErr;
+      }
 
       queryClient.invalidateQueries({ queryKey: ["product", id] });
 
-      const bronnen = data.bronnen as string[] | undefined;
-      const bronnenTekst = bronnen?.length ? `Bronnen: ${bronnen.length} webpagina's` : "Gebaseerd op AI trainingsdata";
+      const newCount = Object.keys(corrected).length;
       toast.success(`${newCount} specificaties gevonden & ingevuld`, {
-        description: bronnenTekst,
+        description,
         duration: 6000,
       });
     } catch (err: any) {
@@ -206,6 +229,11 @@ const ProductDetail = () => {
     if (!file || !product) return;
     if (file.type !== "application/pdf") { toast.error("Alleen PDF-bestanden zijn toegestaan"); return; }
     if (file.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
+    
+    // Create local blob URL for instant preview
+    const blobUrl = URL.createObjectURL(file);
+    setLocalPdfUrl(blobUrl);
+    
     setUploading(true);
     try {
       const path = `datasheets/${product.id}.pdf`;
@@ -221,6 +249,7 @@ const ProductDetail = () => {
       toast.success("Datasheet geüpload");
     } catch (err: any) {
       toast.error("Upload mislukt", { description: err.message });
+      setLocalPdfUrl(null);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -547,7 +576,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Current datasheet display */}
-              {datasheetPublicUrl ? (
+              {(datasheetPublicUrl || localPdfUrl) ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
                     <FileText className="h-6 w-6 text-primary" />
@@ -566,14 +595,16 @@ const ProductDetail = () => {
                         {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanSearch className="h-4 w-4" />}
                         Specs uit PDF halen
                       </Button>
-                      <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" className="gap-2 rounded-lg">
-                          <Download className="h-4 w-4" /> Download PDF
-                        </Button>
-                      </a>
+                      {datasheetPublicUrl && (
+                        <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" className="gap-2 rounded-lg">
+                            <Download className="h-4 w-4" /> Download PDF
+                          </Button>
+                        </a>
+                      )}
                     </div>
                   </div>
-                  <iframe src={datasheetPublicUrl} className="w-full h-[600px] rounded-xl border" />
+                  <iframe src={localPdfUrl || datasheetPublicUrl!} className="w-full h-[600px] rounded-xl border" />
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">

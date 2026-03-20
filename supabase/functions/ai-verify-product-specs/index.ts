@@ -261,12 +261,13 @@ ${categoryGuide}
 
 KRITISCHE INSTRUCTIES:
 1. Gebruik EXACT de machine-keys uit bovenstaande lijst als keys in corrected_specs. NIET de labels, NIET de eenheden in de key.
-2. corrected_specs MAG NOOIT LEEG ZIJN. Vul altijd minstens 10-20 specs in.
-3. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
-4. Alle waarden in het Nederlands waar van toepassing.
-5. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
-6. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT.
+2. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
+3. Alle waarden in het Nederlands waar van toepassing.
+4. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
+5. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT als je ze kunt vinden.
 ${sourceInstruction}
+6. Als het exacte model niet in de bronnen staat maar er WEL data is van hetzelfde merk of productlijn, gebruik die data en vermeld in suggestions dat het van een gerelateerd model komt.
+7. corrected_specs mag NIET leeg zijn als er bruikbare bronnen zijn — zoek altijd naar de meest relevante data.
 
 Antwoord ALTIJD via de tool call.`
           },
