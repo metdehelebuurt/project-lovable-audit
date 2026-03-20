@@ -210,6 +210,7 @@ const App = () => (
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
             </Route>
+            <Route path="/offertes/:id/pdf/print" element={<OffertePDFPrint />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
