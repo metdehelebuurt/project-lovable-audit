@@ -154,72 +154,44 @@ const ProductDetail = () => {
     if (!product) return;
     setAiLoading(true);
     try {
-      // If a manufacturer PDF is uploaded, always use PDF parser
-      const hasPdf = (product.datasheet_type === "fabrikant" && product.datasheet_url) || localPdfUrl;
-      
-      let corrected: Record<string, string> = {};
-      let description = "";
+      // Always use web-only pipeline (user chose "Alleen web")
+      const { data, error } = await supabase.functions.invoke("ai-verify-product-specs", {
+        body: {
+          naam: product.naam, merk: product.merk, model: product.model,
+          categorie: product.categorie, specs, certificeringen: product.certificeringen,
+          omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
 
-      if (hasPdf) {
-        const { data, error } = await supabase.functions.invoke("ai-parse-datasheet", {
-          body: { product_id: product.id, categorie: product.categorie },
-        });
-        if (error) throw error;
-        
-        // Handle 422 / empty results with clear feedback
-        if (data?.error && (!data?.extracted_specs || Object.keys(data.extracted_specs).length === 0)) {
-          toast.warning("Geen specs gevonden in PDF", {
-            description: data.error,
-            duration: 8000,
-          });
-          return;
-        }
-        if (data?.error) { toast.error(data.error); return; }
-        
-        corrected = data.extracted_specs || {};
-        const method = data.extraction_method === "firecrawl_text" ? "tekst-extractie" : "PDF-scan";
-        description = `${data.filled_count || Object.keys(corrected).length} specs via ${method} uit PDF`;
-        
-        const updateData: any = { specs: { ...specs, ...corrected } };
-        if (data.product_merk && !product.merk) updateData.merk = data.product_merk;
-        if (data.product_model && !product.model) updateData.model = data.product_model;
-        
-        const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
-        if (updateErr) throw updateErr;
-      } else {
-        const { data, error } = await supabase.functions.invoke("ai-verify-product-specs", {
-          body: {
-            naam: product.naam, merk: product.merk, model: product.model,
-            categorie: product.categorie, specs, certificeringen: product.certificeringen,
-            omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
-          },
-        });
-        if (error) throw error;
-        if (data?.error) { toast.error(data.error); return; }
-        corrected = data.corrected_specs || {};
-        const bronnen = data.bronnen as string[] | undefined;
-        description = bronnen?.length ? `Bronnen: ${bronnen.length} webpagina's` : "Gebaseerd op AI trainingsdata";
+      const corrected = data.corrected_specs || {};
+      const dataSource = data.data_source as string;
+      const bronnen = data.bronnen as string[] | undefined;
+      const filledCount = data.filled_count || Object.keys(corrected).length;
 
-        const allSpecs: Record<string, string> = { ...specs, ...corrected };
-        const updateData: any = { specs: allSpecs };
-        if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
-        if (data.regelgeving) updateData.certificeringen = data.regelgeving;
+      const sourceLabel = dataSource === "web" && bronnen?.length
+        ? `Bron: ${bronnen.length} webpagina's`
+        : "Bron: AI kennisbank";
 
-        const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
-        if (updateErr) throw updateErr;
-      }
+      const allSpecs: Record<string, string> = { ...specs, ...corrected };
+      const updateData: any = { specs: allSpecs };
+      if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
+      if (data.regelgeving) updateData.certificeringen = data.regelgeving;
+
+      const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
+      if (updateErr) throw updateErr;
 
       queryClient.invalidateQueries({ queryKey: ["product", id] });
 
-      const newCount = Object.keys(corrected).length;
-      if (newCount === 0) {
+      if (filledCount === 0) {
         toast.warning("Geen nieuwe specificaties gevonden", {
-          description: "Probeer een gedetailleerdere datasheet te uploaden.",
+          description: "Dit product kon niet worden herkend. Controleer productnaam en merk.",
           duration: 6000,
         });
       } else {
-        toast.success(`${newCount} specificaties gevonden & ingevuld`, {
-          description,
+        toast.success(`${filledCount} specificaties gevonden & ingevuld`, {
+          description: sourceLabel,
           duration: 6000,
         });
       }
