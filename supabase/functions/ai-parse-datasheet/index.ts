@@ -7,17 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Realistic price ranges per category (EUR excl. BTW, per unit)
-const priceRanges: Record<string, { min: number; max: number }> = {
-  zonnepanelen: { min: 40, max: 800 },
-  thuisbatterij: { min: 1500, max: 30000 },
-  warmtepomp: { min: 1500, max: 25000 },
-  laadpaal: { min: 300, max: 5000 },
-  omvormer: { min: 200, max: 8000 },
-  accessoires: { min: 1, max: 3000 },
-  installatiemateriaal: { min: 1, max: 5000 },
-};
-
 // Machine-key definitions per category — mirrors categorySpecDefinitions.ts
 const categoryMachineKeys: Record<string, Record<string, string[]>> = {
   zonnepanelen: {
@@ -89,9 +78,9 @@ const keyLabelMap: Record<string, string> = {
   temp_coeff_isc: "Temp.coëff. Isc (%/°C)", noct_c: "NOCT (°C)",
   lengte_mm: "Lengte (mm)", breedte_mm: "Breedte (mm)", hoogte_mm: "Hoogte/Diepte (mm)",
   gewicht_kg: "Gewicht (kg)", ip_rating: "IP-rating", kleur: "Kleur",
-  bedrijfstemperatuur_bereik: "Bedrijfstemperatuur (°C)",
-  connectortype: "Connectortype", kabellengte_mm: "Kabellengte (mm)", kleur_frame: "Kleur frame",
-  kleur_backsheet: "Kleur backsheet", glastype: "Glastype", glasdikte_mm: "Glasdikte (mm)",
+  bedrijfstemperatuur_bereik: "Bedrijfstemperatuur (°C)", connectortype: "Connectortype",
+  kabellengte_mm: "Kabellengte (mm)", kleur_frame: "Kleur frame", kleur_backsheet: "Kleur backsheet",
+  glastype: "Glastype", glasdikte_mm: "Glasdikte (mm)",
   windbelasting_pa: "Windbelasting (Pa)", sneeuwbelasting_pa: "Sneeuwbelasting (Pa)", brandklasse: "Brandklasse",
   degradatie_jaar1_pct: "Degradatie jaar 1 (%)", degradatie_jaarlijks_pct: "Degradatie jaarlijks (%)",
   productgarantie_jaar: "Productgarantie (jaar)", vermogensgarantie_jaar: "Vermogensgarantie (jaar)",
@@ -150,52 +139,15 @@ const keyLabelMap: Record<string, string> = {
   max_batterij_stroom_a: "Max batterijstroom (A)",
 };
 
-function buildSpecPromptForImport(categorie: string): string {
+function buildSpecPrompt(categorie: string): string {
   const specs = categoryMachineKeys[categorie];
-  if (!specs) return "";
-  const lines = [`\n\nVERPLICHTE SPEC-KEYS voor categorie "${categorie}" — gebruik EXACT deze machine-keys als keys in het specs object:`];
+  if (!specs) return "Gebruik je expertise om alle relevante specificaties te bepalen. Gebruik snake_case keys.";
+  const lines = [`Specificatielijst voor ${categorie} — gebruik EXACT deze machine-keys:`];
   for (const [group, keys] of Object.entries(specs)) {
     const items = keys.map(k => `${k} (= ${keyLabelMap[k] || k})`).join(", ");
     lines.push(`  ${group}: ${items}`);
   }
-  lines.push(`\nVOORBEELD specs object: { "vermogen_wp": "410", "efficiency_pct": "21.3", "gewicht_kg": "21.5", "bifacial": "Ja" }`);
-  lines.push(`Gebruik NOOIT menselijk-leesbare labels als keys (bijv. "Vermogen (Wp)" is FOUT, "vermogen_wp" is GOED).`);
-  lines.push(`Voor boolean velden: gebruik "Ja" of "Nee" als waarde. Geef waarden ZONDER eenheid.`);
   return lines.join("\n");
-}
-
-interface AIProduct {
-  naam: string;
-  model: string;
-  merk: string;
-  omschrijving: string;
-  prijs_excl_btw: number;
-  garantie_jaren?: number;
-  certificeringen?: string;
-  specs?: Record<string, string>;
-  categorie?: string;
-  warnings?: string[];
-}
-
-function validateProduct(p: AIProduct, categorie: string): string[] {
-  const warnings: string[] = [];
-
-  if (!p.naam || p.naam.trim().length < 3) warnings.push("Productnaam is te kort of ontbreekt");
-  if (!p.model || p.model.trim().length < 1) warnings.push("Model ontbreekt");
-  if (!p.merk || p.merk.trim().length < 1) warnings.push("Merk ontbreekt");
-  if (!p.prijs_excl_btw || p.prijs_excl_btw <= 0) warnings.push("Prijs ontbreekt of is 0");
-
-  const range = priceRanges[categorie];
-  if (range && p.prijs_excl_btw) {
-    if (p.prijs_excl_btw < range.min || p.prijs_excl_btw > range.max) {
-      warnings.push(`Prijs €${p.prijs_excl_btw} lijkt onrealistisch (verwacht €${range.min}-€${range.max})`);
-    }
-  }
-
-  const specCount = p.specs ? Object.keys(p.specs).length : 0;
-  if (specCount < 2) warnings.push("Onvoldoende technische specificaties (min. 2)");
-
-  return warnings;
 }
 
 serve(async (req) => {
@@ -211,54 +163,48 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Verify user
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-
-    // Verify user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { merk, categorie } = await req.json();
-    if (!merk || !categorie) {
-      return new Response(JSON.stringify({ error: "merk en categorie zijn verplicht" }), {
+    const { product_id, categorie } = await req.json();
+    if (!product_id || !categorie) {
+      return new Response(JSON.stringify({ error: "product_id en categorie zijn verplicht" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch existing products for duplicate checking (use service role to bypass RLS)
+    // Fetch PDF from storage using service role
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: existingProducts } = await adminClient
-      .from("producten")
-      .select("naam, model, merk")
-      .ilike("merk", `%${merk}%`)
-      .eq("categorie", categorie);
+    const path = `datasheets/${product_id}.pdf`;
+    const { data: fileData, error: downloadError } = await adminClient.storage
+      .from("product-images")
+      .download(path);
 
-    const existingNames = (existingProducts || []).map(
-      (p: any) => `${p.naam} (${p.model || "geen model"})`
-    );
+    if (downloadError || !fileData) {
+      return new Response(JSON.stringify({ error: "PDF niet gevonden in storage. Upload eerst een datasheet." }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Convert to base64
+    const arrayBuffer = await fileData.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < uint8.length; i++) {
+      binary += String.fromCharCode(uint8[i]);
+    }
+    const pdfBase64 = btoa(binary);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const categorieMap: Record<string, string> = {
-      zonnepanelen: "zonnepanelen / solar panels",
-      thuisbatterij: "thuisbatterijen / home batteries",
-      warmtepomp: "warmtepompen / heat pumps",
-      laadpaal: "laadpalen / EV chargers",
-      omvormer: "omvormers / inverters",
-      accessoires: "accessoires",
-      installatiemateriaal: "installatiemateriaal",
-    };
-
-    const catLabel = categorieMap[categorie] || categorie;
-    const specKeyGuide = buildSpecPromptForImport(categorie);
-
-    const existingNote = existingNames.length > 0
-      ? `\n\nDeze producten bestaan al in de catalogus en mogen NIET opnieuw worden geretourneerd:\n${existingNames.join("\n")}`
-      : "";
+    const categoryGuide = buildSpecPrompt(categorie);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -267,83 +213,80 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
-            content: `Je bent een productdata-expert voor de verduurzamingsbranche in Nederland en België. Je taak is om een zo COMPLEET mogelijk overzicht te geven van ALLE beschikbare producten van een merk in een categorie.
+            content: `Je bent een expert in het extraheren van technische specificaties uit product-datasheets (PDF's) voor duurzame energieproducten.
 
-BELANGRIJKE REGELS:
-1. Geef ALLEEN echte, bestaande producten die daadwerkelijk op de markt verkrijgbaar zijn.
-2. Geef MINIMAAL 15 en MAXIMAAL 50 producten. Zoek ALLE modelvarianten, vermogensvarianten, kleuren, en configuraties.
-3. Gebruik realistische MARKTPRIJZEN in EUR excl. BTW (dealerprijzen, niet consumentenprijzen).
-4. Elke product MOET minimaal 15 technische specificaties hebben in het specs object.
-5. Gebruik Nederlandse taal voor omschrijvingen.
-6. Vermeld bij elk product de garantieduur in jaren.
-7. Als een product in meerdere vermogensvarianten bestaat (bijv. 370W, 400W, 405W, 410W), geef dan ELKE variant als apart product.
-8. Geef ook eventuele kleurvarianten (zwart/zilver frame) als aparte producten.
-9. KRITISCH: De specs keys MOETEN exact de machine-keys zijn uit onderstaande lijst. Gebruik NOOIT menselijk-leesbare labels als keys.
-${specKeyGuide}
+${categoryGuide}
 
-Antwoord ALTIJD via de import_products tool.`,
+KRITISCHE INSTRUCTIES:
+1. Lees de PDF zorgvuldig en extraheer ALLE technische specificaties die je kunt vinden.
+2. Map elke gevonden specificatie naar de EXACTE machine-key uit bovenstaande lijst.
+3. Gebruik ALLEEN de machine-keys als key in extracted_specs. NIET de labels of eenheden in de key.
+4. Voor boolean velden: gebruik "Ja" of "Nee".
+5. Geef waarden ZONDER eenheid (de eenheid zit al in de key-naam). Bijvoorbeeld: vermogen_wp: "410" (niet "410 Wp").
+6. Als een waarde niet in de PDF staat, sla die key dan over — vul NIET in met verzonnen data.
+7. Extraheer ook de productnaam, merk, model als je die kunt vinden.
+
+Antwoord ALTIJD via de tool call.`,
           },
           {
             role: "user",
-            content: `Geef het VOLLEDIGE productassortiment van het merk "${merk}" in de categorie "${catLabel}". 
-
-Ik wil ALLE modelvarianten inclusief:
-- Alle vermogensvarianten (bijv. 370W, 380W, 400W, 405W, 410W, 415W, 420W, 430W etc.)
-- Alle framekleuren (zwart frame, zilver frame)
-- Alle series en productlijnen
-- Discontinued maar nog verkrijgbare modellen
-
-Geef voor elk product:
-- Volledige productnaam met modelnummer
-- Indicatieve dealerprijs excl. BTW
-- Minimaal 15 technische specificaties met de EXACTE machine-keys (bijv. vermogen_wp, efficiency_pct, gewicht_kg — NIET "Vermogen (Wp)")
-- Garantie-informatie
-- Relevante certificeringen${existingNote}`,
+            content: [
+              {
+                type: "text",
+                text: `Extraheer alle technische specificaties uit deze product-datasheet PDF voor de categorie "${categorie}". Map alle waarden naar de exacte machine-keys.`,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${pdfBase64}`,
+                },
+              },
+            ],
           },
         ],
         tools: [
           {
             type: "function",
             function: {
-              name: "import_products",
-              description: "Importeer een lijst van 15-50 producten met alle specs",
+              name: "extract_specs",
+              description: "Return extracted product specifications from PDF using exact machine-keys",
               parameters: {
                 type: "object",
                 properties: {
-                  products: {
+                  extracted_specs: {
+                    type: "object",
+                    additionalProperties: { type: "string" },
+                    description: "Extracted specifications using machine-keys (e.g. vermogen_wp, gewicht_kg). Values as strings without units.",
+                  },
+                  product_naam: {
+                    type: "string",
+                    description: "Product name found in the PDF",
+                  },
+                  product_merk: {
+                    type: "string",
+                    description: "Brand/manufacturer found in the PDF",
+                  },
+                  product_model: {
+                    type: "string",
+                    description: "Model number found in the PDF",
+                  },
+                  notes: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        naam: { type: "string", description: "Volledige productnaam inclusief modelnummer" },
-                        model: { type: "string", description: "Model aanduiding / typenummer" },
-                        merk: { type: "string" },
-                        omschrijving: { type: "string", description: "Korte productomschrijving in het Nederlands" },
-                        prijs_excl_btw: { type: "number", description: "Indicatieve dealerprijs excl. BTW in EUR" },
-                        garantie_jaren: { type: "number", description: "Productgarantie in jaren" },
-                        certificeringen: { type: "string", description: "Relevante certificeringen (bijv. IEC, MCS, TÜV)" },
-                        specs: {
-                          type: "object",
-                          description: "Technische specificaties als key-value pairs. Minimaal 3 specs per product. Bijv: vermogen, gewicht, afmetingen, efficiency, spanning, stroom, celtype etc.",
-                          additionalProperties: { type: "string" },
-                        },
-                      },
-                      required: ["naam", "model", "merk", "omschrijving", "prijs_excl_btw", "specs"],
-                      additionalProperties: false,
-                    },
+                    items: { type: "string" },
+                    description: "Notes about the extraction (e.g. values that were unclear, specs not found)",
                   },
                 },
-                required: ["products"],
+                required: ["extracted_specs"],
                 additionalProperties: false,
               },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "import_products" } },
+        tool_choice: { type: "function", function: { name: "extract_specs" } },
       }),
     });
 
@@ -354,47 +297,26 @@ Geef voor elk product:
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Krediet onvoldoende. Voeg credits toe aan je workspace." }), {
+        return new Response(JSON.stringify({ error: "Krediet op, voeg tegoed toe." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI service fout" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const text = await response.text();
+      console.error("AI gateway error:", response.status, text);
+      throw new Error("AI PDF extractie mislukt");
     }
 
-    const result = await response.json();
-    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+    const data = await response.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) throw new Error("Geen AI respons ontvangen");
 
-    if (!toolCall?.function?.arguments) {
-      return new Response(JSON.stringify({ error: "Geen productdata ontvangen van AI", products: [], bestaande_producten: existingNames }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const result = JSON.parse(toolCall.function.arguments);
 
-    const parsed = JSON.parse(toolCall.function.arguments);
-    const products: AIProduct[] = parsed.products || [];
-
-    // Validate and enrich each product
-    const enriched = products.map((p: AIProduct) => {
-      const warnings = validateProduct(p, categorie);
-      return {
-        ...p,
-        categorie,
-        warnings: warnings.length > 0 ? warnings : undefined,
-      };
-    });
-
-    return new Response(JSON.stringify({
-      products: enriched,
-      bestaande_producten: existingNames,
-    }), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("ai-product-import error:", e);
+    console.error("ai-parse-datasheet error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Onbekende fout" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

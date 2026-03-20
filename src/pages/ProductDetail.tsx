@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Download, Eye, FileText, CheckCircle,
-  Package, Pencil, Save, X, Upload,
+  Package, Pencil, Save, X, Upload, ScanSearch,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProductImage from "@/components/producten/ProductImage";
@@ -52,6 +52,7 @@ const ProductDetail = () => {
   const [editingTekst, setEditingTekst] = useState(false);
   const [savingTekst, setSavingTekst] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading } = useQuery({
@@ -217,6 +218,38 @@ const ProductDetail = () => {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleExtractFromPdf = async () => {
+    if (!product) return;
+    setExtracting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-parse-datasheet", {
+        body: { product_id: product.id, categorie: product.categorie },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+
+      const extracted = data.extracted_specs || {};
+      const mergedSpecs = { ...specs, ...extracted };
+
+      const updateData: any = { specs: mergedSpecs };
+      if (data.product_merk && !product.merk) updateData.merk = data.product_merk;
+      if (data.product_model && !product.model) updateData.model = data.product_model;
+
+      const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
+      if (updateErr) throw updateErr;
+
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      const count = Object.keys(extracted).length;
+      toast.success(`${count} specificaties geëxtraheerd uit PDF`, {
+        description: data.notes?.length ? data.notes.join("; ") : undefined,
+      });
+    } catch (err: any) {
+      toast.error("Extractie mislukt", { description: err.message });
+    } finally {
+      setExtracting(false);
     }
   };
 
@@ -516,11 +549,23 @@ const ProductDetail = () => {
                       <p className="text-sm font-medium">Fabrikant datasheet beschikbaar</p>
                       <p className="text-xs text-muted-foreground">PDF van de fabrikant</p>
                     </div>
-                    <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" className="gap-2 rounded-lg">
-                        <Download className="h-4 w-4" /> Download PDF
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2 rounded-lg"
+                        onClick={handleExtractFromPdf}
+                        disabled={extracting}
+                      >
+                        {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanSearch className="h-4 w-4" />}
+                        Specs uit PDF halen
                       </Button>
-                    </a>
+                      <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="gap-2 rounded-lg">
+                          <Download className="h-4 w-4" /> Download PDF
+                        </Button>
+                      </a>
+                    </div>
                   </div>
                   <iframe src={datasheetPublicUrl} className="w-full h-[600px] rounded-xl border" />
                 </div>
