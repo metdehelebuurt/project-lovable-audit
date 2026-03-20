@@ -306,6 +306,15 @@ const ProductDetail = () => {
         body: { product_id: product.id, categorie: product.categorie },
       });
       if (error) throw error;
+      
+      // Handle empty results
+      if (data?.error && (!data?.extracted_specs || Object.keys(data.extracted_specs).length === 0)) {
+        toast.warning("Geen specs gevonden in PDF", {
+          description: data.error,
+          duration: 8000,
+        });
+        return;
+      }
       if (data?.error) { toast.error(data.error); return; }
 
       const extracted = data.extracted_specs || {};
@@ -320,9 +329,15 @@ const ProductDetail = () => {
 
       queryClient.invalidateQueries({ queryKey: ["product", id] });
       const count = Object.keys(extracted).length;
-      toast.success(`${count} specificaties geëxtraheerd uit PDF`, {
-        description: data.notes?.length ? data.notes.join("; ") : undefined,
-      });
+      if (count === 0) {
+        toast.warning("Geen specificaties gevonden", {
+          description: "De PDF bevatte geen herkenbare technische data.",
+        });
+      } else {
+        toast.success(`${count} specificaties geëxtraheerd uit PDF`, {
+          description: data.notes?.length ? data.notes.join("; ") : undefined,
+        });
+      }
     } catch (err: any) {
       toast.error("Extractie mislukt", { description: err.message });
     } finally {
