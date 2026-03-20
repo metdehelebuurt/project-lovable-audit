@@ -229,6 +229,11 @@ const ProductDetail = () => {
     if (!file || !product) return;
     if (file.type !== "application/pdf") { toast.error("Alleen PDF-bestanden zijn toegestaan"); return; }
     if (file.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
+    
+    // Create local blob URL for instant preview
+    const blobUrl = URL.createObjectURL(file);
+    setLocalPdfUrl(blobUrl);
+    
     setUploading(true);
     try {
       const path = `datasheets/${product.id}.pdf`;
@@ -244,6 +249,7 @@ const ProductDetail = () => {
       toast.success("Datasheet geüpload");
     } catch (err: any) {
       toast.error("Upload mislukt", { description: err.message });
+      setLocalPdfUrl(null);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
