@@ -178,7 +178,7 @@ const Dashboard = () => {
   const { data: statusData } = useQuery({
     queryKey: ["dashboard-status-chart", rol, profile?.id],
     queryFn: async () => {
-      const statuses = ["concept", "verzonden", "geaccepteerd", "afgewezen", "verlopen"];
+      const statuses = ["concept", "verzonden", "geaccepteerd", "afgewezen", "verlopen"] as const;
       const results = await Promise.all(
         statuses.map(s => supabase.from("offertes").select("id", { count: "exact", head: true }).eq("status", s))
       );
