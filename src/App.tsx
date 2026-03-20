@@ -21,6 +21,7 @@ import SchouwDetail from "@/pages/SchouwDetail";
 import SchouwNieuw from "@/pages/SchouwNieuw";
 import SchouwUitvoeren from "@/pages/SchouwUitvoeren";
 import Offertes from "@/pages/Offertes";
+import OfferteDetail from "@/pages/OfferteDetail";
 import Opdrachten from "@/pages/Opdrachten";
 import OpdrachtDetail from "@/pages/OpdrachtDetail";
 import Installaties from "@/pages/Installaties";
@@ -155,6 +156,9 @@ const App = () => (
               } />
               <Route path="/offertes" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"]}><Offertes /></ProtectedRoute>
+              } />
+              <Route path="/offertes/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"]}><OfferteDetail /></ProtectedRoute>
               } />
               <Route path="/opdrachten" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Opdrachten /></ProtectedRoute>

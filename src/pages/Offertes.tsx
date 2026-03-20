@@ -473,12 +473,12 @@ const Offertes = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(o => (
-                    <TableRow key={o.id}>
+                    <TableRow key={o.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/offertes/${o.id}`)}>
                       <TableCell className="font-mono text-sm">{o.offertenummer}</TableCell>
                       <TableCell className="font-medium">{o.klant_naam}</TableCell>
                       <TableCell>{formatCurrency(o.totaal_bedrag)}</TableCell>
                       <TableCell>{new Date(o.geldig_tot).toLocaleDateString("nl-NL")}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
                         {o.status === "geaccepteerd" ? (
                           <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
                         ) : (
@@ -494,7 +494,7 @@ const Offertes = () => {
                           </Select>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${o.id}/pdf`)} title="PDF">
                             <FileDown className="h-4 w-4" />
