@@ -212,6 +212,10 @@ export default function OffertePDF() {
   const [expandedSectie, setExpandedSectie] = useState<string | null>("voorblad");
   const [showCustomization, setShowCustomization] = useState(false);
   const [zoom, setZoom] = useState(45);
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [heroGallery, setHeroGallery] = useState<string[]>([]);
+  const [showGallery, setShowGallery] = useState(false);
+  const heroFileRef = useRef<HTMLInputElement>(null);
 
   // Drag & drop state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
