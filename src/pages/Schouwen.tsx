@@ -169,6 +169,11 @@ const Schouwen = () => {
   const [snelstartLeadSearch, setSnelstartLeadSearch] = useState("");
   const [snelstartCreating, setSnelstartCreating] = useState(false);
 
+  const isSuperadmin = profile?.rol === "superadmin";
+  const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const canDelete = isSuperadmin || isAdmin;
+  const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
+
   const { data: schouwen = [], isLoading } = useQuery({
     queryKey: ["schouwen"],
     queryFn: async () => {
