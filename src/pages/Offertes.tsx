@@ -473,7 +473,7 @@ const Offertes = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(o => (
-                    <TableRow key={o.id}>
+                    <TableRow key={o.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/offertes/${o.id}`)}>
                       <TableCell className="font-mono text-sm">{o.offertenummer}</TableCell>
                       <TableCell className="font-medium">{o.klant_naam}</TableCell>
                       <TableCell>{formatCurrency(o.totaal_bedrag)}</TableCell>
