@@ -402,11 +402,35 @@ export default function OfferteTemplatePage() {
                 className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
                 onClick={() => setShowCustomization(!showCustomization)}
               >
-                <span className="text-sm font-semibold text-foreground">Tekst aanpassen</span>
+                <span className="text-sm font-semibold text-foreground">Tekst & Voorblad aanpassen</span>
                 {showCustomization ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </button>
               {showCustomization && (
                 <div className="p-3 pt-0 space-y-3">
+                  <div>
+                    <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Voorblad titel</Label>
+                    <Input
+                      value={config.hero_title || ""}
+                      onChange={e => setConfig(p => ({ ...p, hero_title: e.target.value }))}
+                      className="h-8 text-xs rounded-lg"
+                      placeholder="Offerte"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Hero afbeelding URL</Label>
+                    <Input
+                      value={config.hero_image_url || ""}
+                      onChange={e => setConfig(p => ({ ...p, hero_image_url: e.target.value }))}
+                      className="h-8 text-xs rounded-lg"
+                      placeholder="https://voorbeeld.nl/afbeelding.jpg"
+                    />
+                    {config.hero_image_url && (
+                      <div className="mt-1.5 rounded-lg overflow-hidden border border-border h-16">
+                        <img src={config.hero_image_url} alt="Hero preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    )}
+                  </div>
+                  <Separator />
                   <div>
                     <Label className="text-xs">Badge 1</Label>
                     <Input
