@@ -29,6 +29,8 @@ interface OfferteRegel {
   prijs_per_stuk: number;
   btw_percentage: number;
   korting_percentage: number;
+  korting_bedrag: number;
+  korting_type: "percentage" | "bedrag";
 }
 
 const emptyRegel: OfferteRegel = {
@@ -37,6 +39,8 @@ const emptyRegel: OfferteRegel = {
   prijs_per_stuk: 0,
   btw_percentage: 21,
   korting_percentage: 0,
+  korting_bedrag: 0,
+  korting_type: "percentage",
 };
 
 interface SelectedLead {
@@ -98,6 +102,8 @@ const OfferteNieuw = () => {
     return defaultTemplateConfig;
   });
   const [generatingIntro, setGeneratingIntro] = useState(false);
+  const [offerteKortingType, setOfferteKortingType] = useState<"percentage" | "bedrag">("percentage");
+  const [offerteKortingWaarde, setOfferteKortingWaarde] = useState(0);
 
   // Reload template config when returning from template page
   useEffect(() => {
@@ -178,16 +184,41 @@ const OfferteNieuw = () => {
     setSelectedLead(null);
   };
 
+  const regelSubtotaal = (r: OfferteRegel) => {
+    const bruto = r.aantal * r.prijs_per_stuk;
+    if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
+    return bruto * (1 - (r.korting_percentage || 0) / 100);
+  };
+
   const totals = useMemo(() => {
     let subtotaal = 0;
     let btwBedrag = 0;
     regels.forEach(r => {
-      const s = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
+      const s = regelSubtotaal(r);
       subtotaal += s;
       btwBedrag += s * (r.btw_percentage / 100);
     });
-    return { subtotaal, btwBedrag, totaal: subtotaal + btwBedrag };
-  }, [regels]);
+    // Offerte-level korting
+    let offerteKorting = 0;
+    if (offerteKortingWaarde > 0) {
+      if (offerteKortingType === "percentage") {
+        offerteKorting = subtotaal * (offerteKortingWaarde / 100);
+      } else {
+        offerteKorting = offerteKortingWaarde;
+      }
+    }
+    const subtotaalNaKorting = subtotaal - offerteKorting;
+    // Herbereken BTW over subtotaal na korting (proportioneel)
+    const btwFactor = subtotaal > 0 ? btwBedrag / subtotaal : 0;
+    const btwNaKorting = subtotaalNaKorting * btwFactor;
+    return {
+      subtotaal,
+      offerteKorting,
+      subtotaalNaKorting,
+      btwBedrag: btwNaKorting,
+      totaal: subtotaalNaKorting + btwNaKorting,
+    };
+  }, [regels, offerteKortingType, offerteKortingWaarde]);
 
   const addRegel = () => setRegels(p => [...p, { ...emptyRegel }]);
   const removeRegel = (idx: number) => setRegels(p => p.filter((_, i) => i !== idx));
@@ -229,8 +260,12 @@ const OfferteNieuw = () => {
         lead_id: selectedLead?.id || null,
         schouw_id: schouwId || null,
         regels: regels as unknown as Json,
-        template_config: templateConfig as unknown as Json,
-        subtotaal: totals.subtotaal,
+        template_config: {
+          ...templateConfig,
+          offerte_korting_type: offerteKortingType,
+          offerte_korting_waarde: offerteKortingWaarde,
+        } as unknown as Json,
+        subtotaal: totals.subtotaalNaKorting,
         btw_bedrag: totals.btwBedrag,
         totaal_bedrag: totals.totaal,
         include_schouw: includeSchouw,
@@ -398,17 +433,64 @@ const OfferteNieuw = () => {
                   </Select>
                 </div>
                 <div><Label>Omschrijving *</Label><Input value={regel.omschrijving} onChange={e => updateRegel(idx, "omschrijving", e.target.value)} required className="rounded-xl" /></div>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-5 gap-3">
                   <div><Label>Aantal</Label><Input type="number" min={1} value={regel.aantal} onChange={e => updateRegel(idx, "aantal", Number(e.target.value))} className="rounded-xl" /></div>
                   <div><Label>Prijs excl. BTW</Label><Input type="number" step="0.01" min={0} value={regel.prijs_per_stuk} onChange={e => updateRegel(idx, "prijs_per_stuk", Number(e.target.value))} className="rounded-xl" /></div>
                   <div><Label>BTW %</Label><Input type="number" min={0} max={100} value={regel.btw_percentage} onChange={e => updateRegel(idx, "btw_percentage", Number(e.target.value))} className="rounded-xl" /></div>
-                  <div><Label>Korting %</Label><Input type="number" min={0} max={100} value={regel.korting_percentage} onChange={e => updateRegel(idx, "korting_percentage", Number(e.target.value))} className="rounded-xl" /></div>
+                  <div>
+                    <Label>Korting type</Label>
+                    <Select value={regel.korting_type || "percentage"} onValueChange={v => {
+                      setRegels(p => p.map((r, i) => i === idx ? { ...r, korting_type: v as "percentage" | "bedrag", korting_percentage: 0, korting_bedrag: 0 } : r));
+                    }}>
+                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="bedrag">Bedrag (€)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{regel.korting_type === "bedrag" ? "Korting €" : "Korting %"}</Label>
+                    {regel.korting_type === "bedrag" ? (
+                      <Input type="number" step="0.01" min={0} value={regel.korting_bedrag || 0} onChange={e => updateRegel(idx, "korting_bedrag", Number(e.target.value))} className="rounded-xl" />
+                    ) : (
+                      <Input type="number" min={0} max={100} value={regel.korting_percentage || 0} onChange={e => updateRegel(idx, "korting_percentage", Number(e.target.value))} className="rounded-xl" />
+                    )}
+                  </div>
                 </div>
                 <div className="text-right text-sm text-muted-foreground">
-                  Subtotaal: {formatCurrency(regel.aantal * regel.prijs_per_stuk * (1 - regel.korting_percentage / 100))}
+                  Subtotaal: {formatCurrency(regelSubtotaal(regel))}
                 </div>
               </div>
             ))}
+
+            <Separator />
+
+            {/* Offerte-level korting */}
+            <div className="border rounded-xl p-4 bg-muted/20">
+              <Label className="text-sm font-medium">Korting over hele offerte</Label>
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <Select value={offerteKortingType} onValueChange={v => { setOfferteKortingType(v as "percentage" | "bedrag"); setOfferteKortingWaarde(0); }}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="bedrag">Vast bedrag (€)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={offerteKortingWaarde}
+                  onChange={e => setOfferteKortingWaarde(Number(e.target.value))}
+                  placeholder={offerteKortingType === "percentage" ? "bijv. 5" : "bijv. 250"}
+                  className="rounded-xl"
+                />
+                <div className="flex items-center text-sm text-muted-foreground">
+                  {offerteKortingWaarde > 0 && <>Korting: -{formatCurrency(totals.offerteKorting)}</>}
+                </div>
+              </div>
+            </div>
 
             <Separator />
             <div className="space-y-2">
@@ -416,6 +498,12 @@ const OfferteNieuw = () => {
                 <span className="text-muted-foreground">Subtotaal excl. BTW</span>
                 <span>{formatCurrency(totals.subtotaal)}</span>
               </div>
+              {totals.offerteKorting > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Korting ({offerteKortingType === "percentage" ? `${offerteKortingWaarde}%` : "vast bedrag"})</span>
+                  <span>-{formatCurrency(totals.offerteKorting)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">BTW</span>
                 <span>{formatCurrency(totals.btwBedrag)}</span>

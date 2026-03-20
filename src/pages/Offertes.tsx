@@ -49,6 +49,8 @@ interface OfferteRegel {
   prijs_per_stuk: number;
   btw_percentage: number;
   korting_percentage: number;
+  korting_bedrag?: number;
+  korting_type?: "percentage" | "bedrag";
 }
 
 interface OfferteFormData {
@@ -69,6 +71,8 @@ interface OfferteFormData {
   regels: OfferteRegel[];
   include_schouw: boolean;
   include_energieadvies: boolean;
+  offerte_korting_type: "percentage" | "bedrag";
+  offerte_korting_waarde: number;
 }
 
 const emptyRegel: OfferteRegel = {
@@ -77,6 +81,8 @@ const emptyRegel: OfferteRegel = {
   prijs_per_stuk: 0,
   btw_percentage: 21,
   korting_percentage: 0,
+  korting_bedrag: 0,
+  korting_type: "percentage",
 };
 
 const emptyForm: OfferteFormData = {
@@ -97,6 +103,8 @@ const emptyForm: OfferteFormData = {
   regels: [{ ...emptyRegel }],
   include_schouw: false,
   include_energieadvies: false,
+  offerte_korting_type: "percentage",
+  offerte_korting_waarde: 0,
 };
 
 const generateOfferteNummer = () => {
@@ -200,17 +208,33 @@ const Offertes = () => {
     enabled: !!profile?.partner_id,
   });
 
-  // Calculate totals
+  const regelSub = (r: OfferteRegel) => {
+    const bruto = r.aantal * r.prijs_per_stuk;
+    if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
+    return bruto * (1 - (r.korting_percentage || 0) / 100);
+  };
+
   const totals = useMemo(() => {
     let subtotaal = 0;
     let btwBedrag = 0;
     form.regels.forEach(r => {
-      const regelSubtotaal = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
-      subtotaal += regelSubtotaal;
-      btwBedrag += regelSubtotaal * (r.btw_percentage / 100);
+      const s = regelSub(r);
+      subtotaal += s;
+      btwBedrag += s * (r.btw_percentage / 100);
     });
-    return { subtotaal, btwBedrag, totaal: subtotaal + btwBedrag };
-  }, [form.regels]);
+    let offerteKorting = 0;
+    if (form.offerte_korting_waarde > 0) {
+      if (form.offerte_korting_type === "percentage") {
+        offerteKorting = subtotaal * (form.offerte_korting_waarde / 100);
+      } else {
+        offerteKorting = form.offerte_korting_waarde;
+      }
+    }
+    const subtotaalNaKorting = subtotaal - offerteKorting;
+    const btwFactor = subtotaal > 0 ? btwBedrag / subtotaal : 0;
+    const btwNaKorting = subtotaalNaKorting * btwFactor;
+    return { subtotaal, offerteKorting, subtotaalNaKorting, btwBedrag: btwNaKorting, totaal: subtotaalNaKorting + btwNaKorting };
+  }, [form.regels, form.offerte_korting_type, form.offerte_korting_waarde]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string } & OfferteFormData) => {
@@ -231,7 +255,11 @@ const Offertes = () => {
         lead_id: rest.lead_id || null,
         schouw_id: rest.schouw_id || null,
         regels: regels as unknown as Json,
-        subtotaal: totals.subtotaal,
+        template_config: {
+          offerte_korting_type: rest.offerte_korting_type,
+          offerte_korting_waarde: rest.offerte_korting_waarde,
+        } as unknown as Json,
+        subtotaal: totals.subtotaalNaKorting,
         btw_bedrag: totals.btwBedrag,
         totaal_bedrag: totals.totaal,
         include_schouw: rest.include_schouw,
@@ -291,6 +319,7 @@ const Offertes = () => {
   const openEdit = (o: Offerte) => {
     setEditingOfferte(o);
     const regels = Array.isArray(o.regels) ? (o.regels as unknown as OfferteRegel[]) : [{ ...emptyRegel }];
+    const tc = o.template_config && typeof o.template_config === "object" ? o.template_config as any : {};
     setForm({
       lead_id: o.lead_id || "",
       schouw_id: o.schouw_id || "",
@@ -309,6 +338,8 @@ const Offertes = () => {
       regels,
       include_schouw: (o as any).include_schouw ?? false,
       include_energieadvies: (o as any).include_energieadvies ?? false,
+      offerte_korting_type: tc.offerte_korting_type || "percentage",
+      offerte_korting_waarde: tc.offerte_korting_waarde || 0,
     });
     setDialogOpen(true);
   };
@@ -610,17 +641,62 @@ const Offertes = () => {
                     </Select>
                   </div>
                   <div><Label>Omschrijving *</Label><Input value={regel.omschrijving} onChange={e => updateRegel(idx, "omschrijving", e.target.value)} required className="rounded-xl" /></div>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-5 gap-3">
                     <div><Label>Aantal</Label><Input type="number" min={1} value={regel.aantal} onChange={e => updateRegel(idx, "aantal", Number(e.target.value))} className="rounded-xl" /></div>
                     <div><Label>Prijs excl. BTW</Label><Input type="number" step="0.01" min={0} value={regel.prijs_per_stuk} onChange={e => updateRegel(idx, "prijs_per_stuk", Number(e.target.value))} className="rounded-xl" /></div>
                     <div><Label>BTW %</Label><Input type="number" min={0} max={100} value={regel.btw_percentage} onChange={e => updateRegel(idx, "btw_percentage", Number(e.target.value))} className="rounded-xl" /></div>
-                    <div><Label>Korting %</Label><Input type="number" min={0} max={100} value={regel.korting_percentage} onChange={e => updateRegel(idx, "korting_percentage", Number(e.target.value))} className="rounded-xl" /></div>
+                    <div>
+                      <Label>Korting type</Label>
+                      <Select value={regel.korting_type || "percentage"} onValueChange={v => {
+                        setForm(p => ({ ...p, regels: p.regels.map((r, i) => i === idx ? { ...r, korting_type: v as "percentage" | "bedrag", korting_percentage: 0, korting_bedrag: 0 } : r) }));
+                      }}>
+                        <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentage">Percentage (%)</SelectItem>
+                          <SelectItem value="bedrag">Bedrag (€)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>{regel.korting_type === "bedrag" ? "Korting €" : "Korting %"}</Label>
+                      {regel.korting_type === "bedrag" ? (
+                        <Input type="number" step="0.01" min={0} value={regel.korting_bedrag || 0} onChange={e => updateRegel(idx, "korting_bedrag", Number(e.target.value))} className="rounded-xl" />
+                      ) : (
+                        <Input type="number" min={0} max={100} value={regel.korting_percentage || 0} onChange={e => updateRegel(idx, "korting_percentage", Number(e.target.value))} className="rounded-xl" />
+                      )}
+                    </div>
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
-                    Subtotaal: {formatCurrency(regel.aantal * regel.prijs_per_stuk * (1 - regel.korting_percentage / 100))}
+                    Subtotaal: {formatCurrency(regelSub(regel))}
                   </div>
                 </div>
               ))}
+
+              {/* Offerte-level korting */}
+              <div className="border rounded-xl p-4 bg-muted/20">
+                <Label className="text-sm font-medium">Korting over hele offerte</Label>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  <Select value={form.offerte_korting_type} onValueChange={v => setForm(p => ({ ...p, offerte_korting_type: v as "percentage" | "bedrag", offerte_korting_waarde: 0 }))}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                      <SelectItem value="bedrag">Vast bedrag (€)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={form.offerte_korting_waarde}
+                    onChange={e => setForm(p => ({ ...p, offerte_korting_waarde: Number(e.target.value) }))}
+                    placeholder={form.offerte_korting_type === "percentage" ? "bijv. 5" : "bijv. 250"}
+                    className="rounded-xl"
+                  />
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    {form.offerte_korting_waarde > 0 && <>Korting: -{formatCurrency(totals.offerteKorting)}</>}
+                  </div>
+                </div>
+              </div>
 
               {/* Totalen */}
               <div className="border-t pt-4 space-y-2">
@@ -628,6 +704,12 @@ const Offertes = () => {
                   <span className="text-muted-foreground">Subtotaal excl. BTW</span>
                   <span>{formatCurrency(totals.subtotaal)}</span>
                 </div>
+                {totals.offerteKorting > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Korting ({form.offerte_korting_type === "percentage" ? `${form.offerte_korting_waarde}%` : "vast bedrag"})</span>
+                    <span>-{formatCurrency(totals.offerteKorting)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">BTW</span>
                   <span>{formatCurrency(totals.btwBedrag)}</span>
