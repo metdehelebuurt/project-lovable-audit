@@ -383,6 +383,12 @@ const ProductDetail = () => {
         </div>
         <Badge className={statusColors[product.status] || ""}>{product.status.replace(/_/g, " ")}</Badge>
         <Badge variant="outline">{categorieLabels[product.categorie] || product.categorie}</Badge>
+        {isDirty && (
+          <Button size="sm" className="gap-1.5 rounded-lg" disabled={savingProduct} onClick={handleSaveProduct}>
+            {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Wijzigingen opslaan
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="overzicht">
