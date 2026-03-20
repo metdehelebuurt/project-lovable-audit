@@ -238,6 +238,9 @@ export default function OffertePDFPreview() {
     badge_2: templateConfig?.badge_2 ?? "Persoonlijk advies",
     badge_3: templateConfig?.badge_3 ?? "Professionele installatie",
     akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
+    // Hero customization
+    hero_image_url: templateConfig?.hero_image_url ?? "",
+    hero_title: templateConfig?.hero_title ?? "Offerte",
     // Design variant keys
     voorblad_variant: (templateConfig?.voorblad as string) || "hero-dark",
     producten_variant: (templateConfig?.producten as string) || "product-cards",
