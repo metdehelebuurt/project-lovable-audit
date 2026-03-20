@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -12,11 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Check, Save, Eye, ZoomIn, ImageIcon, Download, Mail,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, GripVertical,
 } from "lucide-react";
 import {
   templateSecties,
   defaultTemplateConfig,
+  DEFAULT_SECTION_ORDER,
   type TemplateConfig,
 } from "@/components/offertes/templates/templateRegistry";
 import {
@@ -30,11 +31,12 @@ import {
   prijstabelTemplates, PriceModern, PriceClassic, PriceCompact, PriceDetailed,
 } from "@/components/offertes/templates/PrijstabelTemplates";
 import {
-  energieadviesTemplates, EnergyCards, EnergyInfographic, EnergyMinimal,
+  energieadviesTemplates, EnergyCards, EnergyInfographic, EnergyMinimal, EnergyDashboard, EnergyTimeline,
 } from "@/components/offertes/templates/EnergieadviesTemplates";
 import {
   voorwaardenTemplates, TermsSimple, TermsBoxed, TermsSidebar,
 } from "@/components/offertes/templates/VoorwaardenTemplates";
+import { categoryFields } from "@/components/schouwen/SchouwCategoryFields";
 import { toast } from "sonner";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
@@ -77,6 +79,7 @@ interface SchouwData {
   gegevens: Json | null;
   notities: string | null;
   aandachtspunten: string | null;
+  fotos: Json | null;
 }
 
 const CONFIG = {
@@ -86,6 +89,7 @@ const CONFIG = {
   batterij_rendement: 0.90,
   zelfconsumptie_zonder_batterij: 0.30,
   zelfconsumptie_met_batterij: 0.70,
+  levensduur_jaren: 15,
 };
 
 const formatCurrency = (n: number) =>
@@ -107,6 +111,16 @@ const categoryLabels: Record<string, string> = {
   installatiemateriaal: "Installatiemateriaal", isolatie_dak: "Dakisolatie",
   isolatie_muur: "Muurisolatie", isolatie_vloer: "Vloerisolatie",
   hr_glas: "HR++ Glas", ventilatie: "Ventilatie",
+};
+
+const sectionLabels: Record<string, string> = {
+  voorblad: "Voorblad",
+  inhoudsopgave: "Inhoudsopgave",
+  producten: "Producten",
+  prijstabel: "Offerte & Voorwaarden",
+  energieadvies: "Besparing & Rendement",
+  schouwrapport: "Schouwrapport",
+  datasheets: "Technische specificaties",
 };
 
 /* ─── Thumbnail maps for left panel ─── */
@@ -160,6 +174,8 @@ const thumbnailMap: Record<string, React.ReactNode> = {
   "energy-cards": <EnergyCards pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
   "energy-infographic": <EnergyInfographic pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
   "energy-minimal": <EnergyMinimal pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
+  "energy-dashboard": <EnergyDashboard pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail co2Reductie={340} maandBesparing={71} besparingLevensduur={12750} />,
+  "energy-timeline": <EnergyTimeline pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
   "terms-simple": <TermsSimple pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} pcTint2={pcTint2Sample} partnerNaam="Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="1 jan 2025" garantieVw="Conform fabrikant" installTermijn="4 weken" betalingsvoorwaarden="30 dagen" notities={null} akkoordTekst="" isThumbnail />,
   "terms-boxed": <TermsBoxed pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} pcTint2={pcTint2Sample} partnerNaam="Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="1 jan 2025" garantieVw="Conform fabrikant" installTermijn="4 weken" betalingsvoorwaarden="30 dagen" notities={null} akkoordTekst="" isThumbnail />,
   "terms-sidebar": <TermsSidebar pc={sampleVoorblad.pc} sc={sampleVoorblad.sc} pcTint={sampleVoorblad.pcTint} pcTint2={pcTint2Sample} partnerNaam="Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="1 jan 2025" garantieVw="Conform fabrikant" installTermijn="4 weken" betalingsvoorwaarden="30 dagen" notities={null} akkoordTekst="" isThumbnail />,
@@ -169,6 +185,7 @@ const sectionToggleKeys: Record<string, keyof TemplateConfig> = {
   voorblad: "secties_voorblad",
   producten: "secties_producten",
   energieadvies: "secties_energieadvies",
+  schouwrapport: "secties_schouwrapport",
 };
 
 const platformBranding: PartnerBranding = {
@@ -196,6 +213,12 @@ export default function OffertePDF() {
   const [showCustomization, setShowCustomization] = useState(false);
   const [zoom, setZoom] = useState(45);
 
+  // Drag & drop state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const sectionOrder = config.section_order || DEFAULT_SECTION_ORDER;
+
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -203,12 +226,10 @@ export default function OffertePDF() {
       if (!o) { setLoading(false); return; }
       setOfferte(o);
 
-      // Load template config from offerte
       if (o.template_config && typeof o.template_config === "object") {
         setConfig(prev => ({ ...prev, ...(o.template_config as Record<string, any>) }));
       }
 
-      // Partner
       if (o.partner_id) {
         const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
         if (p) {
@@ -226,7 +247,7 @@ export default function OffertePDF() {
       if (adv) setAdviseur(adv);
 
       if (o.include_schouw && o.schouw_id) {
-        const { data: s } = await supabase.from("schouwen").select("schouw_nummer, categorie, geplande_datum, status, consument_naam, gegevens, notities, aandachtspunten").eq("id", o.schouw_id).single();
+        const { data: s } = await supabase.from("schouwen").select("schouw_nummer, categorie, geplande_datum, status, consument_naam, gegevens, notities, aandachtspunten, fotos").eq("id", o.schouw_id).single();
         if (s) setSchouw(s as SchouwData);
       }
 
@@ -250,7 +271,6 @@ export default function OffertePDF() {
   };
 
   const handlePrint = () => {
-    // Open the standalone PDF preview in a new tab for printing
     window.open(`/offertes/${id}/pdf/print`, "_blank");
   };
 
@@ -262,6 +282,35 @@ export default function OffertePDF() {
     const key = sectionToggleKeys[sectieId];
     if (key) setConfig(prev => ({ ...prev, [key]: enabled }));
   };
+
+  // Drag & drop handlers
+  const handleDragStart = useCallback((index: number) => {
+    setDragIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  }, []);
+
+  const handleDrop = useCallback((index: number) => {
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const newOrder = [...sectionOrder];
+    const [moved] = newOrder.splice(dragIndex, 1);
+    newOrder.splice(index, 0, moved);
+    setConfig(prev => ({ ...prev, section_order: newOrder }));
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, [dragIndex, sectionOrder]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, []);
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Laden...</div>;
   if (!offerte || !partner) return <div className="flex items-center justify-center h-64 text-muted-foreground">Offerte niet gevonden</div>;
@@ -279,7 +328,12 @@ export default function OffertePDF() {
   const mainCategory = producten.length > 0 ? producten[0].categorie : null;
   const categoryLabel = mainCategory ? (categoryLabels[mainCategory] || mainCategory) : null;
 
-  let energieadvies: { capaciteit: number; besparing: number; terugverdientijd: number; investering: number } | null = null;
+  // Energieadvies berekening met uitgebreide data
+  let energieadvies: {
+    capaciteit: number; besparing: number; terugverdientijd: number; investering: number;
+    co2Reductie: number; maandBesparing: number; besparingLevensduur: number; zelfvoorzieningsgraad: number;
+  } | null = null;
+
   if (offerte.include_energieadvies) {
     if (schouw?.gegevens) {
       const g = schouw.gegevens as any;
@@ -294,7 +348,14 @@ export default function OffertePDF() {
         const besparing = Math.round(extraZelf * prijsverschil);
         const investering = capaciteit * CONFIG.batterij_prijs_per_kwh;
         const terugverdientijd = besparing > 0 ? Math.round((investering / besparing) * 10) / 10 : 0;
-        if (capaciteit >= 1) energieadvies = { capaciteit, besparing, terugverdientijd, investering };
+        const co2Reductie = Math.round(extraZelf * 0.4);
+        const zelfvoorzieningsgraad = verbruik > 0 ? Math.round((jaarOpwekking * CONFIG.zelfconsumptie_met_batterij / verbruik) * 100) : 0;
+        if (capaciteit >= 1) energieadvies = {
+          capaciteit, besparing, terugverdientijd, investering,
+          co2Reductie, maandBesparing: Math.round(besparing / 12),
+          besparingLevensduur: besparing * CONFIG.levensduur_jaren,
+          zelfvoorzieningsgraad,
+        };
       }
     }
     if (!energieadvies && producten.length > 0) {
@@ -302,7 +363,13 @@ export default function OffertePDF() {
       if (totalInvestering > 0) {
         const estBesparing = Math.round(totalInvestering * 0.12);
         const terugverdientijd = estBesparing > 0 ? Math.round((totalInvestering / estBesparing) * 10) / 10 : 0;
-        energieadvies = { capaciteit: 0, besparing: estBesparing, terugverdientijd, investering: totalInvestering };
+        energieadvies = {
+          capaciteit: 0, besparing: estBesparing, terugverdientijd, investering: totalInvestering,
+          co2Reductie: Math.round(estBesparing * 0.4 / CONFIG.gemiddelde_stroomprijs_kwh * 0.4),
+          maandBesparing: Math.round(estBesparing / 12),
+          besparingLevensduur: estBesparing * CONFIG.levensduur_jaren,
+          zelfvoorzieningsgraad: 0,
+        };
       }
     }
   }
@@ -312,7 +379,6 @@ export default function OffertePDF() {
   const garantieVw = (offerte as any).garantie_voorwaarden as string | null;
   const installTermijn = (offerte as any).installatie_termijn as string | null;
 
-  // Resolve template components from config
   const VoorbladComp = voorbladTemplates[config.voorblad] || HeroDark;
   const ProductComp = productTemplates[config.producten] || ProductCards;
   const PrijsComp = prijstabelTemplates[config.prijstabel] || PriceModern;
@@ -362,170 +428,301 @@ export default function OffertePDF() {
     overflow: "hidden",
   };
 
-  /* ─── Live preview with real data ─── */
-  const renderLivePreview = () => (
-    <div style={{ transformOrigin: "top left" }}>
-      {/* Voorblad */}
-      {config.secties_voorblad !== false && (
-        <div style={{ ...pageStyle, padding: 0 }}>
-          <VoorbladComp
-            pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl}
-            partnerNaam={partner.naam} klantNaam={offerte.klant_naam}
-            offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam}
-            datum={formatDate(offerte.created_at)}
-            categoryLabel={categoryLabel || null}
-            productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null}
-            slogan={partner.bedrijfsslogan || null} introTekst={introTekst}
-            badges={badges}
-            telefoon={partner.telefoonnummer || null}
-            klantAdres={offerte.klant_adres || null}
-            klantPostcode={offerte.klant_postcode || null}
-            klantPlaats={offerte.klant_plaats || null}
-            heroImageUrl={config.hero_image_url || null}
-            heroTitle={config.hero_title || "Offerte"}
-          />
-        </div>
-      )}
+  /* ─── Grouped schouw data helper ─── */
+  const renderGroupedSchouw = () => {
+    if (!schouw?.gegevens || typeof schouw.gegevens !== "object") return null;
+    const gegevens = schouw.gegevens as Record<string, any>;
+    const cat = schouw.categorie as any;
+    const fields = categoryFields[cat] || [];
 
-      {/* Inhoudsopgave */}
-      <div style={{ ...pageStyle, padding: "15mm" }}>
-        <PageHeader />
-        <h2 style={{ fontSize: 28, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Inhoudsopgave</h2>
-        <div style={{ width: 64, height: 4, backgroundColor: pc, borderRadius: 2, marginBottom: 40 }} />
-        <div style={{ maxWidth: 500 }}>
-          {["Voorblad", "Producten", "Opdrachtbevestiging", "Besparing & Rendement", "Voorwaarden & Akkoord"].map((label, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "baseline", padding: "14px 0", borderBottom: `1px solid ${pcTint2}` }}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: pcTint, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: pc, flexShrink: 0, marginRight: 16 }}>{i + 1}</div>
-              <span style={{ fontSize: 15, fontWeight: 500, color: sc, flex: 1 }}>{label}</span>
-              <span style={{ fontSize: 12, color: "#aaa", marginLeft: 12 }}>p. {i + 1}</span>
+    // Group fields by section
+    const groups: Record<string, { key: string; label: string; value: any }[]> = {};
+    fields.forEach(f => {
+      const val = gegevens[f.key];
+      if (val === null || val === undefined || val === "") return;
+      const section = f.section || "Algemeen";
+      if (!groups[section]) groups[section] = [];
+      let displayVal = String(val);
+      if (f.type === "boolean" || val === true || val === false) displayVal = val ? "Ja" : "Nee";
+      if (val === "ja") displayVal = "Ja";
+      if (val === "nee") displayVal = "Nee";
+      groups[section].push({ key: f.key, label: f.label, value: displayVal });
+    });
+
+    // Also include unknown keys not in field definitions
+    const knownKeys = new Set(fields.map(f => f.key));
+    Object.entries(gegevens).forEach(([key, val]) => {
+      if (knownKeys.has(key) || val === null || val === undefined || val === "") return;
+      if (!groups["Overig"]) groups["Overig"] = [];
+      groups["Overig"].push({ key, label: key.replace(/_/g, " "), value: String(val) });
+    });
+
+    const sectionIcons: Record<string, string> = {
+      "Woning": "🏠", "Dak": "🏗", "Schaduw": "☁", "Elektra": "⚡",
+      "Huidig systeem": "🔧", "Afgiftesysteem": "🌡", "Buitenunit": "📦",
+      "Muur": "🧱", "Vloer": "🪵", "Constructie": "🔩", "Leidingen": "🔌",
+      "Staat": "📋", "Glas": "🪟", "Kozijnen": "🚪", "Bijzonderheden": "📝",
+      "Zonnepanelen": "☀", "Batterij locatie": "🔋", "Installatie": "🛠",
+      "Metingen": "📏", "Per gevel": "🏗", "Details": "🔍", "Overig": "📄",
+    };
+
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {Object.entries(groups).map(([section, items]) => (
+          <div key={section} style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 16 }}>{sectionIcons[section] || "📄"}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: pc, textTransform: "uppercase", letterSpacing: 0.5 }}>{section}</span>
             </div>
-          ))}
-        </div>
-        <PageFooter />
-      </div>
-
-      {/* Producten */}
-      {config.secties_producten !== false && producten.length > 0 && (
-        <div style={{ ...pageStyle, padding: "15mm" }}>
-          <PageHeader />
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>{producten.length === 1 ? "Uw product" : "Uw producten"}</h2>
-          <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-          <ProductComp pc={pc} sc={sc} pcTint={pcTint} producten={producten.map(p => ({
-            naam: p.naam, merk: p.merk, model: p.model, omschrijving: p.omschrijving,
-            afbeelding_url: p.afbeelding_url, garantie_jaren: p.garantie_jaren,
-            certificeringen: p.certificeringen,
-            specs: p.specs && typeof p.specs === "object" ? (p.specs as Record<string, any>) : null,
-            onderhoud: p.onderhoud,
-          }))} />
-          <PageFooter />
-        </div>
-      )}
-
-      {/* Datasheets */}
-      {producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd").map(p => {
-        if (p.datasheet_type === "gegenereerd") {
-          const specs = p.specs && typeof p.specs === "object" && !Array.isArray(p.specs) ? (p.specs as Record<string, string>) : null;
-          return (
-            <div key={`ds-${p.id}`} style={{ margin: "0 auto", marginBottom: 20 }}>
-              <ProductDatasheet
-                product={{ naam: p.naam, merk: p.merk, model: p.model, categorie: p.categorie, omschrijving: p.omschrijving, afbeelding_url: p.afbeelding_url, specs, certificeringen: p.certificeringen, garantie_jaren: p.garantie_jaren, prijs_excl_btw: p.prijs_excl_btw, onderhoud: p.onderhoud, installatie_instructies: p.installatie_instructies }}
-                partner={partner}
-              />
-            </div>
-          );
-        }
-        return null;
-      })}
-
-      {/* Energieadvies */}
-      {config.secties_energieadvies !== false && energieadvies && (
-        <div style={{ ...pageStyle, padding: "15mm" }}>
-          <PageHeader />
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Uw besparing & rendement</h2>
-          <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-          <EnergieComp pc={pc} sc={sc} pcTint={pcTint} capaciteit={energieadvies.capaciteit} besparing={energieadvies.besparing} terugverdientijd={energieadvies.terugverdientijd} investering={energieadvies.investering} formatCurrency={formatCurrency} />
-          <PageFooter />
-        </div>
-      )}
-
-      {/* Opdrachtbevestiging + Voorwaarden */}
-      <div style={{ ...pageStyle, padding: "15mm" }}>
-        <PageHeader />
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28 }}>
-            <div>
-              <h2 style={{ fontSize: 24, fontWeight: 800, color: sc, margin: 0 }}>Opdrachtbevestiging</h2>
-              <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginTop: 6 }} />
-            </div>
-            <div style={{ textAlign: "right" as const, fontSize: 12 }}>
-              <p style={{ margin: "2px 0", color: "#888" }}>Offertenummer: <strong style={{ color: sc }}>{offerte.offertenummer}</strong></p>
-              <p style={{ margin: "2px 0", color: "#888" }}>Datum: <strong style={{ color: sc }}>{formatDate(offerte.created_at)}</strong></p>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
-            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "16px 20px" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: pc, margin: "0 0 8px" }}>Opgesteld voor</p>
-              <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{offerte.klant_naam}</p>
-              {offerte.klant_adres && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{offerte.klant_adres}</p>}
-              <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{offerte.klant_email}</p>
-            </div>
-            <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "16px 20px" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: pc, margin: "0 0 8px" }}>Opgesteld door</p>
-              <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{partner.naam}</p>
-              {partner.email && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.email}</p>}
-            </div>
-          </div>
-
-          <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} />
-
-          <div style={{ marginTop: 28 }}>
-            <VoorwaardenComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} garantieVw={garantieVw} installTermijn={installTermijn} betalingsvoorwaarden={offerte.betalingsvoorwaarden || null} notities={offerte.notities || null} akkoordTekst={config.akkoord_tekst || ""} />
-          </div>
-        </div>
-        <PageFooter />
-      </div>
-
-      {/* Schouwrapport */}
-      {config.secties_schouwrapport !== false && offerte.include_schouw && schouw && (
-        <div style={{ ...pageStyle, padding: "15mm" }}>
-          <PageHeader />
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Schouwrapport</h2>
-          <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
-            {[
-              { label: "Schouwnummer", value: schouw.schouw_nummer },
-              { label: "Categorie", value: categoryLabels[schouw.categorie] || schouw.categorie },
-              { label: "Datum", value: formatDate(schouw.geplande_datum) },
-              { label: "Status", value: schouw.status },
-            ].map((item, i) => (
-              <div key={i} style={{ backgroundColor: pcTint, borderRadius: 8, padding: "12px 16px" }}>
-                <p style={{ fontSize: 10, fontWeight: 600, color: pc, margin: "0 0 4px", textTransform: "uppercase", letterSpacing: 0.5 }}>{item.label}</p>
-                <p style={{ fontSize: 14, fontWeight: 600, color: sc, margin: 0 }}>{item.value}</p>
+            {items.map(item => (
+              <div key={item.key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(0,0,0,0.05)", fontSize: 11 }}>
+                <span style={{ color: "#666" }}>{item.label}</span>
+                <span style={{ fontWeight: 600, color: sc }}>{item.value}</span>
               </div>
             ))}
           </div>
-          {schouw.gegevens && typeof schouw.gegevens === "object" && Object.keys(schouw.gegevens as object).length > 0 && (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 16 }}>
-              <tbody>
-                {Object.entries(schouw.gegevens as Record<string, any>).map(([key, val], si) => (
-                  <tr key={key} style={{ backgroundColor: si % 2 === 0 ? "#fff" : pcTint }}>
-                    <td style={{ padding: "8px 12px", fontWeight: 500, color: "#555", width: "40%", borderBottom: "1px solid #f0f0f0" }}>{key.replace(/_/g, " ")}</td>
-                    <td style={{ padding: "8px 12px", color: sc, fontWeight: 600, borderBottom: "1px solid #f0f0f0" }}>{String(val)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          {schouw.aandachtspunten && (
-            <div style={{ backgroundColor: "#FFF8E1", borderLeft: "4px solid #FFA000", borderRadius: 8, padding: "14px 18px", marginBottom: 16 }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "#E65100", margin: "0 0 6px" }}>⚠ Aandachtspunten</p>
-              <p style={{ fontSize: 12, color: "#555", margin: 0, whiteSpace: "pre-wrap" }}>{schouw.aandachtspunten}</p>
+        ))}
+      </div>
+    );
+  };
+
+  /* ─── Section renderers ─── */
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "voorblad":
+        if (config.secties_voorblad === false) return null;
+        return (
+          <div key="voorblad" style={{ ...pageStyle, padding: 0 }}>
+            <VoorbladComp
+              pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl}
+              partnerNaam={partner.naam} klantNaam={offerte.klant_naam}
+              offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam}
+              datum={formatDate(offerte.created_at)}
+              categoryLabel={categoryLabel || null}
+              productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null}
+              slogan={partner.bedrijfsslogan || null} introTekst={introTekst}
+              badges={badges}
+              telefoon={partner.telefoonnummer || null}
+              klantAdres={offerte.klant_adres || null}
+              klantPostcode={offerte.klant_postcode || null}
+              klantPlaats={offerte.klant_plaats || null}
+              heroImageUrl={config.hero_image_url || null}
+              heroTitle={config.hero_title || "Offerte"}
+            />
+          </div>
+        );
+
+      case "inhoudsopgave": {
+        const tocItems = sectionOrder
+          .filter(s => {
+            if (s === "inhoudsopgave") return false;
+            const toggleKey = sectionToggleKeys[s];
+            if (toggleKey && config[toggleKey] === false) return false;
+            if (s === "producten" && producten.length === 0) return false;
+            if (s === "energieadvies" && !energieadvies) return false;
+            if (s === "schouwrapport" && (!offerte.include_schouw || !schouw)) return false;
+            if (s === "datasheets" && producten.filter(p => p.datasheet_type).length === 0) return false;
+            return true;
+          })
+          .map(s => sectionLabels[s] || s);
+
+        return (
+          <div key="inhoudsopgave" style={{ ...pageStyle, padding: "15mm" }}>
+            <PageHeader />
+            <h2 style={{ fontSize: 28, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Inhoudsopgave</h2>
+            <div style={{ width: 64, height: 4, backgroundColor: pc, borderRadius: 2, marginBottom: 40 }} />
+            <div style={{ maxWidth: 500 }}>
+              {tocItems.map((label, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "baseline", padding: "14px 0", borderBottom: `1px solid ${pcTint2}` }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: pcTint, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: pc, flexShrink: 0, marginRight: 16 }}>{i + 1}</div>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: sc, flex: 1 }}>{label}</span>
+                  <span style={{ fontSize: 12, color: "#aaa", marginLeft: 12 }}>p. {i + 2}</span>
+                </div>
+              ))}
             </div>
-          )}
-          <PageFooter />
-        </div>
-      )}
+            <PageFooter />
+          </div>
+        );
+      }
+
+      case "producten":
+        if (config.secties_producten === false || producten.length === 0) return null;
+        return (
+          <div key="producten" style={{ ...pageStyle, padding: "15mm" }}>
+            <PageHeader />
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Producten</h2>
+            <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
+            <ProductComp pc={pc} sc={sc} pcTint={pcTint} producten={producten.map(p => ({
+              naam: p.naam, merk: p.merk, model: p.model, omschrijving: p.omschrijving,
+              afbeelding_url: p.afbeelding_url, garantie_jaren: p.garantie_jaren,
+              certificeringen: p.certificeringen,
+              specs: p.specs && typeof p.specs === "object" ? (p.specs as Record<string, any>) : null,
+              onderhoud: p.onderhoud,
+            }))} />
+            <PageFooter />
+          </div>
+        );
+
+      case "prijstabel":
+        return (
+          <div key="prijstabel" style={{ ...pageStyle, padding: "15mm" }}>
+            <PageHeader />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28 }}>
+                <div>
+                  <h2 style={{ fontSize: 24, fontWeight: 800, color: sc, margin: 0 }}>Offerte</h2>
+                  <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginTop: 6 }} />
+                </div>
+                <div style={{ textAlign: "right" as const, fontSize: 12 }}>
+                  <p style={{ margin: "2px 0", color: "#888" }}>Offertenummer: <strong style={{ color: sc }}>{offerte.offertenummer}</strong></p>
+                  <p style={{ margin: "2px 0", color: "#888" }}>Datum: <strong style={{ color: sc }}>{formatDate(offerte.created_at)}</strong></p>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
+                <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "16px 20px" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: pc, margin: "0 0 8px" }}>Opgesteld voor</p>
+                  <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{offerte.klant_naam}</p>
+                  {offerte.klant_adres && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{offerte.klant_adres}</p>}
+                  <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{offerte.klant_email}</p>
+                </div>
+                <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "16px 20px" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: pc, margin: "0 0 8px" }}>Opgesteld door</p>
+                  <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{partner.naam}</p>
+                  {partner.email && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.email}</p>}
+                </div>
+              </div>
+
+              <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} />
+
+              <div style={{ marginTop: 28 }}>
+                <VoorwaardenComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} garantieVw={garantieVw} installTermijn={installTermijn} betalingsvoorwaarden={offerte.betalingsvoorwaarden || null} notities={offerte.notities || null} akkoordTekst={config.akkoord_tekst || ""} />
+              </div>
+            </div>
+            <PageFooter />
+          </div>
+        );
+
+      case "energieadvies":
+        if (config.secties_energieadvies === false || !energieadvies) return null;
+        return (
+          <div key="energieadvies" style={{ ...pageStyle, padding: "15mm" }}>
+            <PageHeader />
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Uw besparing & rendement</h2>
+            <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
+            <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, marginBottom: 28 }}>
+              Op basis van de schouwgegevens en uw energieverbruik hebben wij berekend wat de geschatte besparing en terugverdientijd is van de voorgestelde oplossing.
+            </p>
+            <EnergieComp
+              pc={pc} sc={sc} pcTint={pcTint}
+              capaciteit={energieadvies.capaciteit} besparing={energieadvies.besparing}
+              terugverdientijd={energieadvies.terugverdientijd} investering={energieadvies.investering}
+              formatCurrency={formatCurrency}
+              co2Reductie={energieadvies.co2Reductie} maandBesparing={energieadvies.maandBesparing}
+              besparingLevensduur={energieadvies.besparingLevensduur} zelfvoorzieningsgraad={energieadvies.zelfvoorzieningsgraad}
+            />
+            <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 24 }}>
+              * Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen. Werkelijke resultaten kunnen afwijken.
+            </p>
+            <PageFooter />
+          </div>
+        );
+
+      case "schouwrapport":
+        if (config.secties_schouwrapport === false || !offerte.include_schouw || !schouw) return null;
+        return (
+          <div key="schouwrapport" style={{ ...pageStyle, padding: "15mm" }}>
+            <PageHeader />
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Schouwrapport</h2>
+            <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+              {[
+                { label: "Schouwnummer", value: schouw.schouw_nummer },
+                { label: "Categorie", value: categoryLabels[schouw.categorie] || schouw.categorie },
+                { label: "Datum", value: formatDate(schouw.geplande_datum) },
+                { label: "Status", value: schouw.status },
+                ...(schouw.consument_naam ? [{ label: "Consument", value: schouw.consument_naam }] : []),
+              ].map((item, i) => (
+                <div key={i} style={{ backgroundColor: pcTint, borderRadius: 8, padding: "12px 16px" }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: pc, margin: "0 0 4px", textTransform: "uppercase", letterSpacing: 0.5 }}>{item.label}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: sc, margin: 0 }}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+            {renderGroupedSchouw()}
+            {schouw.aandachtspunten && (
+              <div style={{ backgroundColor: "#FFF8E1", borderLeft: "4px solid #FFA000", borderRadius: 8, padding: "14px 18px", marginTop: 16 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "#E65100", margin: "0 0 6px" }}>⚠ Aandachtspunten</p>
+                <p style={{ fontSize: 12, color: "#555", margin: 0, whiteSpace: "pre-wrap" }}>{schouw.aandachtspunten}</p>
+              </div>
+            )}
+            {schouw.notities && (
+              <div style={{ marginTop: 12 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Opmerkingen</p>
+                <p style={{ fontSize: 12, color: "#555", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{schouw.notities}</p>
+              </div>
+            )}
+            <PageFooter />
+          </div>
+        );
+
+      case "datasheets": {
+        const dsProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd");
+        if (dsProducts.length === 0) return null;
+        return (
+          <div key="datasheets">
+            {/* Specs overview page */}
+            {producten.filter(p => p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0).map(p => {
+              const specs = p.specs as Record<string, any>;
+              // Group specs by section-like prefixes or flat
+              const specEntries = Object.entries(specs).filter(([, v]) => v !== null && v !== undefined && v !== "");
+              if (specEntries.length === 0) return null;
+              return (
+                <div key={`specs-${p.id}`} style={{ ...pageStyle, padding: "15mm" }}>
+                  <PageHeader />
+                  <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Technische specificaties</h2>
+                  <p style={{ fontSize: 14, color: "#666", margin: "0 0 4px" }}>{p.merk ? `${p.merk} ` : ""}{p.model || p.naam}</p>
+                  <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                    {specEntries.map(([key, val], i) => (
+                      <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", backgroundColor: i % 4 < 2 ? "#fff" : pcTint, borderBottom: "1px solid #f0f0f0" }}>
+                        <span style={{ fontSize: 11, color: "#666", fontWeight: 500 }}>{key.replace(/_/g, " ")}</span>
+                        <span style={{ fontSize: 11, color: sc, fontWeight: 700 }}>{String(val)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <PageFooter />
+                </div>
+              );
+            })}
+            {/* Datasheets */}
+            {dsProducts.map(p => {
+              if (p.datasheet_type === "gegenereerd") {
+                const specs = p.specs && typeof p.specs === "object" && !Array.isArray(p.specs) ? (p.specs as Record<string, string>) : null;
+                return (
+                  <div key={`ds-${p.id}`} style={{ margin: "0 auto", marginBottom: 20 }}>
+                    <ProductDatasheet
+                      product={{ naam: p.naam, merk: p.merk, model: p.model, categorie: p.categorie, omschrijving: p.omschrijving, afbeelding_url: p.afbeelding_url, specs, certificeringen: p.certificeringen, garantie_jaren: p.garantie_jaren, prijs_excl_btw: p.prijs_excl_btw, onderhoud: p.onderhoud, installatie_instructies: p.installatie_instructies }}
+                      partner={partner}
+                    />
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+        );
+      }
+
+      default:
+        return null;
+    }
+  };
+
+  /* ─── Live preview ─── */
+  const renderLivePreview = () => (
+    <div style={{ transformOrigin: "top left" }}>
+      {sectionOrder.map(sectionId => renderSection(sectionId))}
     </div>
   );
 
@@ -550,6 +747,50 @@ export default function OffertePDF() {
 
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-1">
+            {/* Drag & drop section ordering */}
+            <div className="rounded-xl border border-border overflow-hidden mb-3">
+              <div className="p-3 pb-2">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sectievolorde</span>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Sleep om de volgorde aan te passen</p>
+              </div>
+              <div className="px-2 pb-2 space-y-1">
+                {sectionOrder.map((sectionId, index) => {
+                  const toggleKey = sectionToggleKeys[sectionId];
+                  const isEnabled = toggleKey ? config[toggleKey] !== false : true;
+                  const label = sectionLabels[sectionId] || sectionId;
+                  const isDragging = dragIndex === index;
+                  const isDragOver = dragOverIndex === index;
+
+                  return (
+                    <div
+                      key={sectionId}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDrop={() => handleDrop(index)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-grab transition-all text-xs ${
+                        isDragging ? "opacity-40 scale-95" : ""
+                      } ${isDragOver ? "bg-primary/10 border-primary border" : "bg-muted/40 border border-transparent hover:bg-muted/80"} ${
+                        !isEnabled ? "opacity-50" : ""
+                      }`}
+                    >
+                      <GripVertical className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <span className="flex-1 font-medium text-foreground">{label}</span>
+                      {toggleKey && (
+                        <Switch
+                          checked={isEnabled}
+                          onCheckedChange={(v) => handleToggle(sectionId, v)}
+                          className="scale-[0.6]"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Template variant selection */}
             {templateSecties.map(sectie => {
               const isExpanded = expandedSectie === sectie.id;
               const toggleKey = sectionToggleKeys[sectie.id];
@@ -568,17 +809,7 @@ export default function OffertePDF() {
                         {sectie.varianten.find(v => v.id === config[sectie.id as keyof TemplateConfig])?.naam || "—"}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {toggleKey && (
-                        <Switch
-                          checked={isEnabled}
-                          onCheckedChange={(v) => handleToggle(sectie.id, v)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="scale-75"
-                        />
-                      )}
-                      {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                    </div>
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                   </button>
 
                   {isExpanded && (
@@ -596,13 +827,13 @@ export default function OffertePDF() {
                                 isSelected ? "border-primary ring-2 ring-primary/20 shadow-md" : "border-border hover:border-primary/40"
                               }`}
                             >
-                              <div className="w-full aspect-[4/3] rounded-t-md overflow-hidden bg-white relative">
+                              <div className="w-full aspect-[210/297] rounded-t-md overflow-hidden bg-white relative">
                                 {isSelected && (
                                   <div className="absolute top-1.5 right-1.5 z-10 bg-primary text-primary-foreground rounded-full p-0.5">
                                     <Check className="h-3 w-3" />
                                   </div>
                                 )}
-                                <div style={{ width: 794, height: 595, transform: "scale(0.22)", transformOrigin: "top left", pointerEvents: "none", overflow: "hidden" }}>
+                                <div style={{ width: 794, height: 1123, transform: "scale(0.155)", transformOrigin: "top left", pointerEvents: "none", overflow: "hidden" }}>
                                   {thumb || <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-xs">Preview</div>}
                                 </div>
                               </div>

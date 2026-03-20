@@ -49,6 +49,8 @@ export const templateSecties: TemplateSectie[] = [
       { id: "energy-cards", naam: "Kaarten", beschrijving: "Besparingskaarten met iconen" },
       { id: "energy-infographic", naam: "Infographic", beschrijving: "Visuele grafieken en bars" },
       { id: "energy-minimal", naam: "Minimaal", beschrijving: "Alleen kerncijfers" },
+      { id: "energy-dashboard", naam: "Dashboard", beschrijving: "KPI dashboard met progress bars" },
+      { id: "energy-timeline", naam: "Tijdlijn", beschrijving: "Cumulatieve besparing over 15 jaar" },
     ],
   },
   {
@@ -82,7 +84,19 @@ export type TemplateConfig = {
   // Hero customization
   hero_image_url?: string;
   hero_title?: string;
+  // Section ordering
+  section_order?: string[];
 };
+
+export const DEFAULT_SECTION_ORDER = [
+  "voorblad",
+  "inhoudsopgave",
+  "producten",
+  "prijstabel",
+  "energieadvies",
+  "schouwrapport",
+  "datasheets",
+];
 
 export const defaultTemplateConfig: TemplateConfig = {
   voorblad: "hero-dark",
@@ -100,4 +114,5 @@ export const defaultTemplateConfig: TemplateConfig = {
   akkoord_tekst: "",
   hero_image_url: "",
   hero_title: "Offerte",
+  section_order: DEFAULT_SECTION_ORDER,
 };
