@@ -467,13 +467,47 @@ const ProductDetail = () => {
           </Card>
         </TabsContent>
 
-        {/* ── DATASHEET ── */}
         <TabsContent value="datasheet">
           <Card className="rounded-2xl border-0 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Datasheet</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Upload section — always visible */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Fabrikant datasheet uploaden</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-lg"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    PDF uploaden
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-lg"
+                    onClick={handleGenerateDatasheet}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Datasheet genereren
+                  </Button>
+                </div>
+              </div>
+
+              {/* Current datasheet display */}
               {datasheetPublicUrl ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
@@ -491,23 +525,20 @@ const ProductDetail = () => {
                   <iframe src={datasheetPublicUrl} className="w-full h-[600px] rounded-xl border" />
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
-                      <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
-                    </div>
-                    <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
-                      <Eye className="h-4 w-4" /> Bekijk & Print
-                    </Button>
+                <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
+                    <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
                   </div>
+                  <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
+                    <Eye className="h-4 w-4" /> Bekijk & Print
+                  </Button>
                 </div>
               ) : (
-                <div className="text-center py-8 space-y-3">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto" />
-                  <p className="text-sm text-muted-foreground">Geen datasheet beschikbaar</p>
-                  <p className="text-xs text-muted-foreground">Gebruik de AI Controle tab om specificaties aan te vullen en een datasheet te genereren.</p>
+                <div className="text-center py-6">
+                  <Package className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Nog geen datasheet — upload een PDF of laat AI er een genereren.</p>
                 </div>
               )}
             </CardContent>
