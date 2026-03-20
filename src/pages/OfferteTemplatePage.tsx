@@ -475,15 +475,27 @@ export default function OfferteTemplatePage() {
       </div>
 
       {/* ═══ RIGHT PANEL: Live preview ═══ */}
-      <div className="flex-1 bg-muted/30 overflow-auto">
-        <div className="p-8">
-          <div className="mb-4 flex items-center gap-2">
-            <Eye className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Live preview — scrollbaar</span>
+      <div className="flex-1 bg-muted/30 overflow-auto flex flex-col">
+        <div className="flex items-center gap-3 p-3 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+          <Eye className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">Live preview</span>
+          <div className="ml-auto flex items-center gap-2">
+            <ZoomIn className="h-3.5 w-3.5 text-muted-foreground" />
+            <Slider
+              value={[zoom]}
+              onValueChange={([v]) => setZoom(v)}
+              min={25}
+              max={100}
+              step={1}
+              className="w-28"
+            />
+            <span className="text-xs text-muted-foreground w-8">{zoom}%</span>
           </div>
+        </div>
+        <div className="flex-1 p-8">
           <div
             style={{
-              transform: "scale(0.52)",
+              transform: `scale(${zoom / 100})`,
               transformOrigin: "top left",
               width: "210mm",
             }}
