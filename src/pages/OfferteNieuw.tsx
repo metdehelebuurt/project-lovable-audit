@@ -148,7 +148,7 @@ const OfferteNieuw = () => {
         .from("partner_product_teksten" as any)
         .select("product_id, offerte_tekst")
         .eq("partner_id", profile!.partner_id!);
-      return (data || []) as Array<{ product_id: string; offerte_tekst: string }>;
+      return ((data || []) as unknown) as Array<{ product_id: string; offerte_tekst: string }>;
     },
     enabled: !!profile?.partner_id,
   });
