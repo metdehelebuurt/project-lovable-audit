@@ -68,6 +68,16 @@ const categoryMachineKeys: Record<string, Record<string, string[]>> = {
   },
 };
 
+function getAllValidKeys(categorie: string): Set<string> {
+  const specs = categoryMachineKeys[categorie];
+  if (!specs) return new Set();
+  const keys = new Set<string>();
+  for (const group of Object.values(specs)) {
+    for (const k of group) keys.add(k);
+  }
+  return keys;
+}
+
 const keyLabelMap: Record<string, string> = {
   vermogen_wp: "Vermogen (Wp)", efficiency_pct: "Efficiency (%)", celtype: "Celtype", aantal_cellen: "Aantal cellen",
   voc_v: "Voc (V)", isc_a: "Isc (A)", vmpp_v: "Vmpp (V)", impp_a: "Impp (A)",
@@ -150,6 +160,120 @@ function buildSpecPrompt(categorie: string): string {
   return lines.join("\n");
 }
 
+// Strip units from values and normalize
+function stripUnits(val: string): string {
+  if (!val || typeof val !== "string") return val;
+  // Replace comma decimal with dot
+  let cleaned = val.replace(/(\d),(\d)/g, "$1.$2");
+  // Remove common units at end
+  cleaned = cleaned.replace(/\s*(kWh|kW|Wp|W|V|A|mm|cm|m|kg|g|°C|°|dB\(A\)|dBA|dB|Pa|Hz|%|jaar|cycles?|stuks?)\s*$/i, "").trim();
+  return cleaned;
+}
+
+// Post-process: remap unmatched keys via a second AI call
+async function remapUnmatchedKeys(
+  correctedSpecs: Record<string, string>,
+  categorie: string,
+  LOVABLE_API_KEY: string,
+): Promise<Record<string, string>> {
+  const validKeys = getAllValidKeys(categorie);
+  if (validKeys.size === 0) return correctedSpecs;
+
+  const matched: Record<string, string> = {};
+  const unmatched: Record<string, string> = {};
+
+  for (const [key, val] of Object.entries(correctedSpecs)) {
+    if (validKeys.has(key)) {
+      matched[key] = stripUnits(String(val));
+    } else {
+      unmatched[key] = String(val);
+    }
+  }
+
+  console.log(`Post-processing: ${Object.keys(matched).length} matched, ${Object.keys(unmatched).length} unmatched`);
+
+  if (Object.keys(unmatched).length === 0) return matched;
+
+  // Build valid keys list for the AI
+  const validKeysList = Array.from(validKeys).map(k => `${k} (${keyLabelMap[k] || k})`).join("\n");
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `Je bent een data-mapper voor productspecificaties. Je ontvangt key-value paren die NIET matchen op de standaard machine-keys.
+
+Jouw taak: map elke ongematchte key+value naar de JUISTE machine-key uit de lijst hieronder. 
+
+REGELS:
+1. Gebruik EXACT de machine-keys uit de lijst — geen nieuwe keys verzinnen.
+2. Als een waarde samengesteld is (bijv. afmetingen "540 x 258 x 540 mm"), split naar aparte keys:
+   - Eerste getal = breedte_mm OF lengte_mm
+   - Tweede getal = hoogte_mm  
+   - Derde getal = lengte_mm OF diepte
+3. Verwijder eenheden uit waarden: "45.3 kg" → "45.3", "4800 Wh" → "4.8" (als key kWh verwacht)
+4. Converteer eenheden waar nodig: Wh→kWh (/1000), W→kW (/1000)
+5. Decimale punt, niet komma
+6. Boolean: "Ja" of "Nee"
+7. Als een key niet gemapped kan worden, laat hem weg.
+
+GELDIGE MACHINE-KEYS:
+${validKeysList}
+
+Antwoord in JSON: {"mapped": {"machine_key": "waarde", ...}}`
+          },
+          {
+            role: "user",
+            content: `Map deze ongematchte specificaties naar de correcte machine-keys:\n${JSON.stringify(unmatched, null, 2)}`
+          }
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Remap AI call failed:", response.status);
+      return matched;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return matched;
+
+    let remapResult;
+    try {
+      remapResult = JSON.parse(content);
+    } catch {
+      const m = content.match(/```json?\s*([\s\S]*?)```/);
+      if (m) remapResult = JSON.parse(m[1]);
+      else return matched;
+    }
+
+    const remapped = remapResult.mapped || {};
+    let remapCount = 0;
+    for (const [key, val] of Object.entries(remapped)) {
+      if (validKeys.has(key) && !matched[key]) {
+        matched[key] = stripUnits(String(val));
+        remapCount++;
+      }
+    }
+    console.log(`Remapping: ${remapCount} additional specs mapped from ${Object.keys(unmatched).length} unmatched`);
+
+    return matched;
+  } catch (err) {
+    console.error("Remap failed:", err);
+    return matched;
+  }
+}
+
 // ── Cascading Firecrawl web search ──
 async function searchProductOnWeb(merk: string, model: string, naam: string): Promise<{ content: string; urls: string[]; source: "web" | "none" }> {
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
@@ -158,20 +282,16 @@ async function searchProductOnWeb(merk: string, model: string, naam: string): Pr
     return { content: "", urls: [], source: "none" };
   }
 
-  // Build up to 4 SHORT queries — stop as soon as we have enough results
   const queries: string[] = [];
   if (naam) queries.push(`${naam} specifications`);
   if (merk && model) queries.push(`${merk} ${model} datasheet`);
   if (merk && naam) {
-    // Short version of naam: take first 3-4 words
     const shortName = naam.split(/\s+/).slice(0, 4).join(" ");
     if (shortName !== naam) queries.push(`${merk} ${shortName} specs`);
   }
   if (naam) queries.push(`${naam} technical data`);
 
-  // Deduplicate
   const uniqueQueries = [...new Set(queries)];
-
   const allContent: string[] = [];
   const allUrls: string[] = [];
 
@@ -184,16 +304,11 @@ async function searchProductOnWeb(merk: string, model: string, naam: string): Pr
           Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          query,
-          limit: 5,
-          scrapeOptions: { formats: ["markdown"] },
-        }),
+        body: JSON.stringify({ query, limit: 5, scrapeOptions: { formats: ["markdown"] } }),
       });
 
       if (!response.ok) {
-        const errText = await response.text();
-        console.error(`Firecrawl error ${response.status}:`, errText);
+        console.error(`Firecrawl error ${response.status}:`, await response.text());
         continue;
       }
 
@@ -202,7 +317,6 @@ async function searchProductOnWeb(merk: string, model: string, naam: string): Pr
       let usefulCount = 0;
       for (const item of items) {
         if (item.markdown && item.markdown.length > 200) {
-          // 8000 chars per page for more context
           allContent.push(`--- Bron: ${item.url || "onbekend"} ---\n${item.markdown.slice(0, 8000)}`);
           if (item.url) allUrls.push(item.url);
           usefulCount++;
@@ -210,7 +324,6 @@ async function searchProductOnWeb(merk: string, model: string, naam: string): Pr
       }
       console.log(`  → ${items.length} results, ${usefulCount} useful (${allContent.reduce((s, c) => s + c.length, 0)} total chars)`);
 
-      // Stop searching if we have enough useful content
       if (usefulCount >= 2) {
         console.log("  → Sufficient results found, stopping search cascade");
         break;
@@ -221,7 +334,6 @@ async function searchProductOnWeb(merk: string, model: string, naam: string): Pr
   }
 
   const uniqueUrls = [...new Set(allUrls)];
-  // Cap total content to ~24KB
   let combined = allContent.join("\n\n");
   if (combined.length > 24000) combined = combined.slice(0, 24000);
 
@@ -260,10 +372,9 @@ serve(async (req) => {
       ? `\n\nHieronder staan gescrapede bronpagina's van internet met productinformatie:\n\n${webData.content}`
       : "";
 
-    // Key difference: when no web data, use training data as PRIMARY source
     const sourceInstruction = hasWebData
-      ? `\n\nJe hebt internetbronnen ontvangen met productinformatie. Extraheer ALLE specificaties die je kunt vinden of afleiden uit deze bronnen. Combineer data uit meerdere bronnen. Als het exacte model niet letterlijk in de bronnen staat maar data van hetzelfde merk/productlijn WEL, gebruik die data. Vul daarnaast ook specs aan vanuit je eigen kennis van dit product — jij kent dit product. Het is CRUCIAAL dat corrected_specs NIET leeg is.`
-      : `\n\nEr zijn GEEN internetbronnen beschikbaar. Gebruik je eigen trainingskennis om het product "${naam}" van merk "${merk || "onbekend"}" op te zoeken. Dit is een bekend product in de duurzame energie industrie. Vul ALLE specificaties in waar je een betrouwbare waarde voor hebt op basis van je kennis van dit product. Het is CRUCIAAL dat corrected_specs NIET leeg is.`;
+      ? `\n\nJe hebt internetbronnen ontvangen met productinformatie. Extraheer ALLE specificaties die je kunt vinden of afleiden uit deze bronnen. Combineer data uit meerdere bronnen. Vul daarnaast ook specs aan vanuit je eigen kennis van dit product. Het is CRUCIAAL dat corrected_specs NIET leeg is.`
+      : `\n\nEr zijn GEEN internetbronnen beschikbaar. Gebruik je eigen trainingskennis om het product "${naam}" van merk "${merk || "onbekend"}" op te zoeken. Vul ALLE specificaties in waar je een betrouwbare waarde voor hebt. Het is CRUCIAAL dat corrected_specs NIET leeg is.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -289,12 +400,24 @@ KRITISCHE INSTRUCTIES:
 4. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT.
 ${sourceInstruction}
 
+MAPPING VOORBEELDEN:
+- Afmetingen "540 x 258 x 540 mm" → split naar lengte_mm: "540", breedte_mm: "258", hoogte_mm: "540"
+- Dimensions WxHxD → breedte_mm, hoogte_mm, lengte_mm (diepte = lengte)
+- "Usable energy" / "bruikbare energie" → bruikbare_capaciteit_kwh
+- "Continuous output power" → nominaal_vermogen_kw
+- "Peak power" → piekvermogen_kw
+- Weight → gewicht_kg (zonder "kg")
+- "Round-trip efficiency" → roundtrip_efficiency_pct (zonder "%")
+- "Cycle life" → cycli
+- "Operating temperature" → bedrijfstemperatuur_bereik (als bereik, bijv. "-10~50")
+
 HEEL BELANGRIJK:
 - corrected_specs MOET gevuld worden met ALLE specs die je kent of kunt afleiden.
-- Je MOET minimaal 10 specs invullen. Bij minder dan 10 in bronnen, vul aan met je eigen kennis.
-- Een LEGE corrected_specs is FOUT. Dit product is bekend en heeft publieke specificaties.
-- Nummers als string zonder eenheid (bijv. "4.8" niet "4.8 kWh"), tenzij bereik (bijv. "40-58 V").
+- Je MOET minimaal 10 specs invullen.
+- Een LEGE corrected_specs is FOUT.
+- Nummers als string zonder eenheid (bijv. "4.8" niet "4.8 kWh"), tenzij bereik (bijv. "40-58 V" of "-10~50").
 - Decimale punt, niet komma (bijv. "4.8" niet "4,8").
+- Converteer Wh naar kWh (/1000), W naar kW (/1000) waar de key dat verwacht.
 
 Antwoord in JSON met EXACT dit formaat:
 {
@@ -337,7 +460,6 @@ Antwoord in JSON met EXACT dit formaat:
     try {
       result = JSON.parse(content);
     } catch {
-      // Try to extract JSON from markdown code block
       const match = content.match(/```json?\s*([\s\S]*?)```/);
       if (match) {
         result = JSON.parse(match[1]);
@@ -345,12 +467,22 @@ Antwoord in JSON met EXACT dit formaat:
         throw new Error("Kon AI respons niet parseren");
       }
     }
+
+    // Step 3: Post-process — remap unmatched keys via second AI call
+    const rawSpecs = result.corrected_specs || {};
+    const rawCount = Object.keys(rawSpecs).length;
+    console.log(`Raw AI specs: ${rawCount} keys`);
+
+    const normalizedSpecs = await remapUnmatchedKeys(rawSpecs, categorie, LOVABLE_API_KEY);
+    result.corrected_specs = normalizedSpecs;
+
     // Add source metadata
     result.bronnen = webData.urls;
     result.data_source = hasWebData ? "web" : "training_data";
-    result.filled_count = Object.keys(result.corrected_specs || {}).length;
+    result.filled_count = Object.keys(normalizedSpecs).length;
+    result.raw_count = rawCount;
 
-    console.log(`AI result: ${result.filled_count} specs, source: ${result.data_source}`);
+    console.log(`Final result: ${result.filled_count} valid specs (from ${rawCount} raw), source: ${result.data_source}`);
 
     // Save specs directly to DB using service role (bypasses RLS)
     if (product_id && result.corrected_specs && Object.keys(result.corrected_specs).length > 0) {

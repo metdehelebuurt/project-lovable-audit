@@ -56,6 +56,8 @@ const ProductDetail = () => {
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -196,8 +198,9 @@ const ProductDetail = () => {
           duration: 6000,
         });
       } else {
+        setIsDirty(true);
         toast.success(`${filledCount} specificaties gevonden & ingevuld`, {
-          description: sourceLabel,
+          description: `${sourceLabel}${data.raw_count && data.raw_count !== filledCount ? ` (${data.raw_count} raw → ${filledCount} gemapped)` : ""}`,
           duration: 6000,
         });
       }
@@ -337,6 +340,30 @@ const ProductDetail = () => {
     }
   };
 
+  const handleSaveProduct = async () => {
+    if (!product) return;
+    setSavingProduct(true);
+    try {
+      const { error } = await supabase.from("producten").update({
+        naam: product.naam,
+        merk: product.merk,
+        model: product.model,
+        omschrijving: product.omschrijving,
+        prijs_excl_btw: product.prijs_excl_btw,
+        certificeringen: product.certificeringen,
+        garantie_jaren: product.garantie_jaren,
+        specs: product.specs,
+      }).eq("id", product.id);
+      if (error) throw error;
+      setIsDirty(false);
+      toast.success("Product opgeslagen");
+    } catch (err: any) {
+      toast.error("Opslaan mislukt", { description: err.message });
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Laden...</div>;
   if (!product) return <div className="p-8 text-center text-muted-foreground">Product niet gevonden</div>;
 
@@ -356,6 +383,12 @@ const ProductDetail = () => {
         </div>
         <Badge className={statusColors[product.status] || ""}>{product.status.replace(/_/g, " ")}</Badge>
         <Badge variant="outline">{categorieLabels[product.categorie] || product.categorie}</Badge>
+        {isDirty && (
+          <Button size="sm" className="gap-1.5 rounded-lg" disabled={savingProduct} onClick={handleSaveProduct}>
+            {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Wijzigingen opslaan
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="overzicht">
