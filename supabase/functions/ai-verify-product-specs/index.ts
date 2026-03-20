@@ -470,10 +470,22 @@ Antwoord in JSON met EXACT dit formaat:
 
     // Step 3: Post-process — remap unmatched keys via second AI call
     const rawSpecs = result.corrected_specs || {};
+    // Strip "null", "undefined", empty values
+    for (const [k, v] of Object.entries(rawSpecs)) {
+      if (v === null || v === undefined || String(v).trim() === "" || String(v).toLowerCase() === "null" || String(v).toLowerCase() === "undefined") {
+        delete rawSpecs[k];
+      }
+    }
     const rawCount = Object.keys(rawSpecs).length;
     console.log(`Raw AI specs: ${rawCount} keys`);
 
     const normalizedSpecs = await remapUnmatchedKeys(rawSpecs, categorie, LOVABLE_API_KEY);
+    // Strip nulls again after remapping
+    for (const [k, v] of Object.entries(normalizedSpecs)) {
+      if (v === null || v === undefined || String(v).trim() === "" || String(v).toLowerCase() === "null") {
+        delete normalizedSpecs[k];
+      }
+    }
     result.corrected_specs = normalizedSpecs;
 
     // Add source metadata
