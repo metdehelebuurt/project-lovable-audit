@@ -1,67 +1,35 @@
 
 
-## Plan: Fix AI specificaties, verbeter specs-weergave, handmatige upload & offerte-integratie
+## Plan: Fix offerte-aanmaak vastlopen op datasheet-dialoog
 
-### Problemen geïdentificeerd
+### Probleem
 
-1. **AI specificaties invullen werkt niet** — De edge function `ai-verify-product-specs` bootet maar geeft geen zichtbare errors in logs, wat wijst op een runtime fout bij de AI-aanroep of response parsing. De CORS headers missen de nieuwe platform headers (`x-supabase-client-platform` etc.).
-2. **Specificaties-weergave niet leesbaar** — Lege groepen tonen "Nog geen waarden ingevuld" zonder context. De layout is functioneel maar kan compacter en overzichtelijker.
-3. **Geen handmatige datasheet upload op ProductDetail** — De Datasheet-tab toont alleen "Geen datasheet beschikbaar" zonder upload-optie. Upload werkt alleen via `DatasheetCheckDialog` (bij offerte-aanmaak).
-4. **Datasheet URL dubbelop** — `DatasheetCheckDialog` slaat de volledige `publicUrl` op, maar `ProductDetail.tsx` plakt er nogmaals de storage URL voor. Hierdoor is de URL gebroken.
-5. **Handmatig geüploade datasheets niet in offerte-PDF** — De offerte-PDF checkt `p.datasheet_url && p.datasheet_type` correct, maar door de dubbele URL bug worden fabrikant-datasheets niet correct getoond.
+De offerte-aanmaak loopt vast op het "Ontbrekende productdatasheets" dialoog. De knop "Doorgaan met offerte" is disabled totdat elk product individueel is afgehandeld (upload/genereer/overslaan). Dit blokkeert de gebruiker onnodig.
 
----
+### Oplossing
 
-### Oplossingen
+Twee aanpassingen om het niet-blokkerend te maken:
 
-#### 1. Fix CORS headers in edge function
+#### 1. "Alles overslaan" knop toevoegen
 
-**`supabase/functions/ai-verify-product-specs/index.ts`**
+**`src/components/offertes/DatasheetCheckDialog.tsx`**
 
-Update `corsHeaders` om de nieuwe Supabase client headers toe te voegen (dezelfde set als alle andere edge functions):
-```
-x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version
-```
+- Voeg een "Alles overslaan" knop toe naast de individuele opties
+- Zet alle pending producten op "skipped" in één klik
+- De "Doorgaan met offerte" knop wordt dan direct beschikbaar
 
-#### 2. Verbeterde specificaties read-only weergave
+#### 2. Maak de datasheet-check optioneel
 
-**`src/pages/ProductDetail.tsx`** — Specificaties tab
+**`src/pages/OfferteNieuw.tsx`**
 
-- Compactere layout: alle groepen (ook lege) tonen in een uniforme stijl
-- Lege velden tonen als grijs/dash zodat je ziet wat er ontbreekt
-- Betere visuele hiërarchie met kleur-accenten per groep
-
-#### 3. Handmatige datasheet upload op ProductDetail
-
-**`src/pages/ProductDetail.tsx`** — Datasheet tab
-
-- Voeg een file input + upload knop toe voor PDF-upload direct op de Datasheet tab
-- Bij upload: sla op als `datasheets/{productId}.pdf` in `product-images` bucket
-- Sla het **relatieve pad** op in `datasheet_url` (niet de volledige URL) voor consistentie
-- Na upload: invalidate query, toon preview
-
-#### 4. Fix datasheet URL logica
-
-**`src/pages/ProductDetail.tsx`** + **`src/components/offertes/DatasheetCheckDialog.tsx`**
-
-- Normaliseer de URL-constructie: sla altijd het **relatieve pad** op (`datasheets/{id}.pdf`)
-- Bij weergave: construeer de volledige URL vanuit het relatieve pad
-- Fix `datasheetPublicUrl` berekening: check of URL al met `http` begint
-
-#### 5. Genereer-functie direct werkend maken
-
-**`src/pages/ProductDetail.tsx`** — Datasheet tab
-
-- Voeg een "Genereer datasheet" knop toe die `datasheet_type = "gegenereerd"` zet en de preview dialog opent
-- Na genereren: sla `datasheet_type` op zodat het in de offerte-PDF meekomt
-
----
+- Verander de check zodat de dialoog puur informatief is — niet blokkerend
+- Voeg een directe "Overslaan & doorgaan" optie toe in de footer die alle items skipt en meteen de offerte opslaat
+- Dit voorkomt dat gebruikers vastlopen als ze geen datasheets willen beheren
 
 ### Bestanden
 
 | Bestand | Actie |
 |---------|-------|
-| `supabase/functions/ai-verify-product-specs/index.ts` | Fix CORS headers |
-| `src/pages/ProductDetail.tsx` | Verbeterde specs-weergave, handmatige upload, datasheet URL fix, genereer-knop |
-| `src/components/offertes/DatasheetCheckDialog.tsx` | Fix: sla relatief pad op i.p.v. volledige URL |
+| `src/components/offertes/DatasheetCheckDialog.tsx` | "Alles overslaan" knop, betere UX flow |
+| `src/pages/OfferteNieuw.tsx` | Geen wijziging nodig (callback werkt al correct) |
 
