@@ -549,11 +549,23 @@ const ProductDetail = () => {
                       <p className="text-sm font-medium">Fabrikant datasheet beschikbaar</p>
                       <p className="text-xs text-muted-foreground">PDF van de fabrikant</p>
                     </div>
-                    <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" className="gap-2 rounded-lg">
-                        <Download className="h-4 w-4" /> Download PDF
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2 rounded-lg"
+                        onClick={handleExtractFromPdf}
+                        disabled={extracting}
+                      >
+                        {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanSearch className="h-4 w-4" />}
+                        Specs uit PDF halen
                       </Button>
-                    </a>
+                      <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="gap-2 rounded-lg">
+                          <Download className="h-4 w-4" /> Download PDF
+                        </Button>
+                      </a>
+                    </div>
                   </div>
                   <iframe src={datasheetPublicUrl} className="w-full h-[600px] rounded-xl border" />
                 </div>
