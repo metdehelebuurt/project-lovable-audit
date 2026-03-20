@@ -272,6 +272,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
@@ -281,58 +282,33 @@ Je taak is om productspecificaties te extraheren en correct te mappen naar de ju
 ${categoryGuide}
 
 KRITISCHE INSTRUCTIES:
-1. Gebruik EXACT de machine-keys uit bovenstaande lijst als keys in corrected_specs. NIET de labels, NIET de eenheden in de key.
+1. Gebruik EXACT de machine-keys uit bovenstaande lijst als keys in corrected_specs.
 2. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
 3. Alle waarden in het Nederlands waar van toepassing.
-4. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
-5. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT.
+4. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT.
 ${sourceInstruction}
 
-HEEL BELANGRIJK - LEES DIT GOED:
+HEEL BELANGRIJK:
 - corrected_specs MOET gevuld worden met ALLE specs die je kent of kunt afleiden.
-- Je MOET minimaal 10 specs invullen. Als je minder dan 10 kunt vinden in de bronnen, vul de rest aan met je eigen kennis.
-- Voorbeeld voor een thuisbatterij: bruikbare_capaciteit_kwh, nominale_capaciteit_kwh, nominaal_vermogen_kw, gewicht_kg, lengte_mm, breedte_mm, hoogte_mm, celtype, roundtrip_efficiency_pct, productgarantie_jaar etc.
-- Een LEGE corrected_specs is FOUT en VERBODEN. Dit product is bekend en heeft publieke specificaties.
-- Nummers als string zonder eenheid (bijv. "4.8" niet "4.8 kWh"), tenzij het een bereik is (bijv. "40-58 V").
-- Gebruik decimale punt, niet komma (bijv. "4.8" niet "4,8").
+- Je MOET minimaal 10 specs invullen. Bij minder dan 10 in bronnen, vul aan met je eigen kennis.
+- Een LEGE corrected_specs is FOUT. Dit product is bekend en heeft publieke specificaties.
+- Nummers als string zonder eenheid (bijv. "4.8" niet "4.8 kWh"), tenzij bereik (bijv. "40-58 V").
+- Decimale punt, niet komma (bijv. "4.8" niet "4,8").
 
-Antwoord ALTIJD via de tool call met een GEVULDE corrected_specs.`
+Antwoord in JSON met EXACT dit formaat:
+{
+  "verified": true/false,
+  "suggestions": ["opmerking 1", "opmerking 2"],
+  "corrected_specs": {"machine_key": "waarde", ...},
+  "regelgeving": "certificeringen als komma-gescheiden tekst",
+  "omschrijving_suggestie": "Professionele Nederlandse productomschrijving (2-4 zinnen)"
+}`
           },
           {
             role: "user",
-            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan. JE MOET corrected_specs vullen met alle bekende waarden:\n\n${productInfo}${webContext}`
+            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan. corrected_specs MOET gevuld zijn:\n\n${productInfo}${webContext}`
           }
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "verify_specs",
-              description: "Return verified and complete product specifications using exact machine-keys",
-              parameters: {
-                type: "object",
-                properties: {
-                  verified: { type: "boolean", description: "Whether the existing specs appear correct" },
-                  suggestions: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "List of suggestions, warnings or notes about the specs (in Dutch). Include data source info."
-                  },
-                  corrected_specs: {
-                    type: "object",
-                    additionalProperties: { type: "string" },
-                    description: "Complete set of ALL product specifications using machine-keys. Keys must be snake_case identifiers. MUST NOT be empty."
-                  },
-                  regelgeving: { type: "string", description: "Certifications and standards as comma-separated string in Dutch" },
-                  omschrijving_suggestie: { type: "string", description: "Professional product description (2-4 sentences, in Dutch)" }
-                },
-                required: ["verified", "suggestions", "corrected_specs"],
-                additionalProperties: false
-              }
-            }
-          }
-        ],
-        tool_choice: { type: "function", function: { name: "verify_specs" } },
       }),
     });
 
@@ -353,11 +329,21 @@ Antwoord ALTIJD via de tool call met een GEVULDE corrected_specs.`
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) throw new Error("Geen AI respons ontvangen");
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error("Geen AI respons ontvangen");
 
-    const result = JSON.parse(toolCall.function.arguments);
-
+    let result;
+    try {
+      result = JSON.parse(content);
+    } catch {
+      // Try to extract JSON from markdown code block
+      const match = content.match(/```json?\s*([\s\S]*?)```/);
+      if (match) {
+        result = JSON.parse(match[1]);
+      } else {
+        throw new Error("Kon AI respons niet parseren");
+      }
+    }
     // Add source metadata
     result.bronnen = webData.urls;
     result.data_source = hasWebData ? "web" : "training_data";
