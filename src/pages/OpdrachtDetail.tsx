@@ -49,6 +49,7 @@ const OpdrachtDetail = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [installDialog, setInstallDialog] = useState(false);
   const [installForm, setInstallForm] = useState({ monteur_id: "", start: "", eind: "" });
+  const [orderPdfOpen, setOrderPdfOpen] = useState(false);
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
