@@ -1148,6 +1148,7 @@ export type Database = {
           afzender_email: string | null
           afzender_naam: string | null
           bedrijfsslogan: string | null
+          betalingsvoorwaarden_config: Json | null
           btw: string | null
           commissie_percentage: number | null
           contactpersoon_achternaam: string | null
@@ -1188,6 +1189,7 @@ export type Database = {
           afzender_email?: string | null
           afzender_naam?: string | null
           bedrijfsslogan?: string | null
+          betalingsvoorwaarden_config?: Json | null
           btw?: string | null
           commissie_percentage?: number | null
           contactpersoon_achternaam?: string | null
@@ -1228,6 +1230,7 @@ export type Database = {
           afzender_email?: string | null
           afzender_naam?: string | null
           bedrijfsslogan?: string | null
+          betalingsvoorwaarden_config?: Json | null
           btw?: string | null
           commissie_percentage?: number | null
           contactpersoon_achternaam?: string | null

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
 import DatasheetCheckDialog from "@/components/offertes/DatasheetCheckDialog";
+import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { defaultTemplateConfig, type TemplateConfig } from "@/components/offertes/templates/templateRegistry";
 import type { Database, Json } from "@/integrations/supabase/types";
 
@@ -77,7 +78,8 @@ const OfferteNieuw = () => {
     d.setDate(d.getDate() + 30);
     return d.toISOString().split("T")[0];
   });
-  const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("30 dagen netto");
+  const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("");
+  const [customBetalingsvoorwaarden, setCustomBetalingsvoorwaarden] = useState("");
   const [notities, setNotities] = useState("");
   const [introductieTekst, setIntroductieTekst] = useState("");
   const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
@@ -219,7 +221,7 @@ const OfferteNieuw = () => {
         klant_postcode: klantPostcode || null,
         klant_plaats: klantPlaats || null,
         geldig_tot: geldigTot,
-        betalingsvoorwaarden: betalingsvoorwaarden || null,
+        betalingsvoorwaarden: (betalingsvoorwaarden === "__custom__" ? customBetalingsvoorwaarden : betalingsvoorwaarden) || null,
         notities: notities || null,
         introductie_tekst: introductieTekst || null,
         garantie_voorwaarden: garantieVoorwaarden || null,
@@ -315,7 +317,16 @@ const OfferteNieuw = () => {
             <div className="grid grid-cols-3 gap-4">
               <div><Label>Plaats</Label><Input value={klantPlaats} onChange={e => setKlantPlaats(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Geldig tot *</Label><Input type="date" value={geldigTot} onChange={e => setGeldigTot(e.target.value)} required className="rounded-xl" /></div>
-              <div><Label>Betalingsvoorwaarden</Label><Input value={betalingsvoorwaarden} onChange={e => setBetalingsvoorwaarden(e.target.value)} className="rounded-xl" /></div>
+              <div>
+                <Label>Betalingsvoorwaarden</Label>
+                <BetalingsvoorwaardenSelect
+                  partnerId={profile?.partner_id}
+                  value={betalingsvoorwaarden}
+                  onChange={setBetalingsvoorwaarden}
+                  customValue={customBetalingsvoorwaarden}
+                  onCustomChange={setCustomBetalingsvoorwaarden}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
