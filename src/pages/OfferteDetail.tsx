@@ -21,6 +21,7 @@ import {
   User, Clock, StickyNote, FileText
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
+import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
