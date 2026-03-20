@@ -224,16 +224,16 @@ const SchouwUitvoeren = () => {
       )}
 
       {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={() => step > 0 ? setStep(step - 1) : navigate(`/schouwen/${id}`)} className="gap-2">
+      <div className="flex flex-col sm:flex-row justify-between gap-2">
+        <Button variant="outline" onClick={() => step > 0 ? setStep(step - 1) : navigate(`/schouwen/${id}`)} className="gap-2 w-full sm:w-auto">
           <ChevronLeft className="h-4 w-4" /> {step === 0 ? "Terug" : "Vorige"}
         </Button>
         {step < STEPS.length - 1 ? (
-          <Button onClick={() => setStep(step + 1)} className="gap-2">
+          <Button onClick={() => setStep(step + 1)} className="gap-2 w-full sm:w-auto">
             Volgende <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="gap-2">
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="gap-2 w-full sm:w-auto">
             <Check className="h-4 w-4" /> Schouw afronden
           </Button>
         )}
