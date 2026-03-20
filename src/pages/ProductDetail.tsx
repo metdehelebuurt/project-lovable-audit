@@ -334,15 +334,24 @@ const ProductDetail = () => {
 
   const handleGenerateDatasheet = async () => {
     if (!product) return;
-    // First run AI verify to fill specs, then mark as generated
-    await handleAiVerify();
-    const { error } = await supabase.from("producten")
-      .update({ datasheet_type: "gegenereerd" })
-      .eq("id", product.id);
-    if (!error) {
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
+    setAiLoading(true);
+    try {
+      // First run AI verify to fill specs
+      await handleAiVerify();
+      // Then mark as generated
+      const { error } = await supabase.from("producten")
+        .update({ datasheet_type: "gegenereerd" })
+        .eq("id", product.id);
+      if (error) throw error;
+      // Force refetch and wait for it
+      await queryClient.refetchQueries({ queryKey: ["product", id] });
+      // Ensure partner is loaded for inline preview
       const p = await loadPartner();
       if (p) setPreviewOpen(true);
+    } catch (err: any) {
+      toast.error("Datasheet generatie mislukt", { description: err.message });
+    } finally {
+      setAiLoading(false);
     }
   };
 
