@@ -572,29 +572,23 @@ const OfferteDetail = () => {
         </div>
       </div>
 
-      {/* E-mail dialog */}
-      <Dialog open={emailDialog} onOpenChange={setEmailDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Offerte per e-mail versturen</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSendEmail} className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Offerte <span className="font-medium text-foreground">{offerte.offertenummer}</span> wordt per e-mail verstuurd.
-            </p>
-            <div>
-              <Label>Ontvanger e-mail</Label>
-              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} required className="rounded-xl mt-1" />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEmailDialog(false)} className="rounded-pill">Annuleren</Button>
-              <Button type="submit" className="rounded-pill gap-2" disabled={sendingEmail}>
-                <Send className="h-4 w-4" /> {sendingEmail ? "Versturen..." : "Versturen"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* E-mail editor */}
+      {offerte && (
+        <OfferteEmailEditor
+          open={emailDialog}
+          onOpenChange={setEmailDialog}
+          offerte={{
+            id: offerte.id,
+            offertenummer: offerte.offertenummer,
+            klant_naam: offerte.klant_naam,
+            klant_email: offerte.klant_email,
+            totaal_bedrag: offerte.totaal_bedrag,
+            share_token: offerte.share_token,
+            partner_id: offerte.partner_id,
+          }}
+          onSent={() => queryClient.invalidateQueries({ queryKey: ["offerte", id] })}
+        />
+      )}
 
       {/* Share link dialog */}
       <Dialog open={shareDialog} onOpenChange={setShareDialog}>
