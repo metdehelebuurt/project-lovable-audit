@@ -415,35 +415,26 @@ const ProductDetail = () => {
                 <div className="space-y-6">
                   {Object.entries(grouped).map(([group, defs]) => {
                     const filledInGroup = defs.filter(d => specs[d.key] && String(specs[d.key]).trim() !== "");
-                    const emptyCount = defs.length - filledInGroup.length;
-                    if (filledInGroup.length === 0) {
-                      return (
-                        <div key={group}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-1 h-5 rounded bg-muted-foreground/30" />
-                            <h3 className="text-sm font-semibold text-muted-foreground">{group}</h3>
-                            <span className="text-xs text-muted-foreground">(0/{defs.length})</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground pl-3">Nog geen waarden ingevuld</p>
-                        </div>
-                      );
-                    }
                     return (
                       <div key={group}>
                         <div className="flex items-center gap-2 mb-3">
-                          <div className="w-1 h-5 rounded bg-primary" />
+                          <div className={`w-1 h-5 rounded ${filledInGroup.length > 0 ? "bg-primary" : "bg-muted-foreground/30"}`} />
                           <h3 className="text-sm font-semibold text-foreground">{group}</h3>
                           <span className="text-xs text-muted-foreground">({filledInGroup.length}/{defs.length})</span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
-                          {filledInGroup.map(def => (
-                            <div key={def.key} className="flex justify-between py-1.5 border-b border-border/50">
-                              <span className="text-sm text-muted-foreground">{def.label}</span>
-                              <span className="text-sm font-medium text-foreground">
-                                {specs[def.key]}{def.unit ? ` ${def.unit}` : ""}
-                              </span>
-                            </div>
-                          ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
+                          {defs.map(def => {
+                            const val = specs[def.key];
+                            const filled = val && String(val).trim() !== "";
+                            return (
+                              <div key={def.key} className="flex justify-between py-1.5 border-b border-border/40">
+                                <span className="text-sm text-muted-foreground">{def.label}</span>
+                                <span className={`text-sm ${filled ? "font-medium text-foreground" : "text-muted-foreground/50 italic"}`}>
+                                  {filled ? `${val}${def.unit ? ` ${def.unit}` : ""}` : "—"}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
