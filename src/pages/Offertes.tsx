@@ -575,7 +575,7 @@ const Offertes = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div><Label>Plaats</Label><Input value={form.klant_plaats} onChange={e => setForm(p => ({ ...p, klant_plaats: e.target.value }))} className="rounded-xl" /></div>
                 <div><Label>Geldig tot *</Label><Input type="date" value={form.geldig_tot} onChange={e => setForm(p => ({ ...p, geldig_tot: e.target.value }))} required className="rounded-xl" /></div>
-                <div><Label>Betalingsvoorwaarden</Label><Input value={form.betalingsvoorwaarden} onChange={e => setForm(p => ({ ...p, betalingsvoorwaarden: e.target.value }))} className="rounded-xl" /></div>
+                <div><Label>Betalingsvoorwaarden</Label><Input value={form.betalingsvoorwaarden} onChange={e => setForm(p => ({ ...p, betalingsvoorwaarden: e.target.value }))} className="rounded-xl" placeholder="bijv. 30 dagen netto" /></div>
               </div>
             </div>
 

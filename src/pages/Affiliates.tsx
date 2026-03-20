@@ -441,7 +441,7 @@ const Affiliates = () => {
             <Separator />
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Betalingsvoorwaarden</Label><Input value={betalingsvoorwaarden} onChange={e => setBetalingsvoorwaarden(e.target.value)} /></div>
+              <div className="space-y-1"><Label>Betalingsvoorwaarden</Label><Input value={betalingsvoorwaarden} onChange={e => setBetalingsvoorwaarden(e.target.value)} placeholder="bijv. 30 dagen netto" /></div>
             </div>
             <div className="space-y-1"><Label>Notities</Label><Textarea value={notities} onChange={e => setNotities(e.target.value)} rows={2} placeholder="Eventuele opmerkingen..." /></div>
           </div>

@@ -221,7 +221,7 @@ const OfferteNieuw = () => {
         klant_postcode: klantPostcode || null,
         klant_plaats: klantPlaats || null,
         geldig_tot: geldigTot,
-        betalingsvoorwaarden: betalingsvoorwaarden || null,
+        betalingsvoorwaarden: (betalingsvoorwaarden === "__custom__" ? customBetalingsvoorwaarden : betalingsvoorwaarden) || null,
         notities: notities || null,
         introductie_tekst: introductieTekst || null,
         garantie_voorwaarden: garantieVoorwaarden || null,
