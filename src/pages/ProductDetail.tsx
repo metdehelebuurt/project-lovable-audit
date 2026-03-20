@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +54,7 @@ const ProductDetail = () => {
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading } = useQuery({
@@ -66,7 +67,30 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
-  // Partner-specific offerte tekst
+  // Fetch PDF as blob for iframe display (avoids Chrome cross-origin blocking)
+  useEffect(() => {
+    if (localPdfUrl) return; // local upload preview takes priority
+    if (!product?.datasheet_url || product?.datasheet_type !== "fabrikant") {
+      setPdfBlobUrl(null);
+      return;
+    }
+    let revoked = false;
+    const fetchPdf = async () => {
+      const { data, error } = await supabase.storage
+        .from("product-images")
+        .download(product.datasheet_url!);
+      if (error || !data || revoked) return;
+      const url = URL.createObjectURL(data);
+      setPdfBlobUrl(url);
+    };
+    fetchPdf();
+    return () => {
+      revoked = true;
+      setPdfBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    };
+  }, [product?.datasheet_url, product?.datasheet_type, localPdfUrl]);
+
+
   const { data: partnerTekstData } = useQuery({
     queryKey: ["partner-product-tekst", id, profile?.partner_id],
     queryFn: async () => {
@@ -576,7 +600,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Current datasheet display */}
-              {(datasheetPublicUrl || localPdfUrl) ? (
+              {(localPdfUrl || pdfBlobUrl || datasheetPublicUrl) ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
                     <FileText className="h-6 w-6 text-primary" />
@@ -604,7 +628,11 @@ const ProductDetail = () => {
                       )}
                     </div>
                   </div>
-                  <iframe src={localPdfUrl || datasheetPublicUrl!} className="w-full h-[600px] rounded-xl border" />
+                  <iframe
+                    src={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                    className="w-full h-[600px] rounded-xl border"
+                    title="PDF Datasheet"
+                  />
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
