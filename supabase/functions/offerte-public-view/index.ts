@@ -56,7 +56,18 @@ serve(async (req) => {
       if (p) partner = p;
     }
 
-    return new Response(JSON.stringify({ offerte, partner }), {
+    // Fetch schouw data if linked
+    let schouw = null;
+    if (offerte.schouw_id) {
+      const { data: s } = await supabase
+        .from("schouwen")
+        .select("schouw_nummer, categorie, geplande_datum, status, consument_naam, gegevens, notities, aandachtspunten")
+        .eq("id", offerte.schouw_id)
+        .single();
+      if (s) schouw = s;
+    }
+
+    return new Response(JSON.stringify({ offerte, partner, schouw }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -174,7 +174,8 @@ Deno.serve(async (req) => {
     const formatCurrency = (n: number) =>
       new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
 
-    const html = `
+    // Use custom HTML body if provided (from WYSIWYG editor), otherwise use default template
+    const html = html_body || `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
         <div style="border-bottom:3px solid #5B58E1;padding-bottom:16px;margin-bottom:24px;">
           <h2 style="margin:0;color:#1a1a2e;">${partner.afzender_naam || partner.naam}</h2>
@@ -199,6 +200,8 @@ Deno.serve(async (req) => {
       </div>
     `;
 
+    const emailSubject = customSubject || `Offerte ${offerte.offertenummer} — ${partner.afzender_naam || partner.naam}`;
+
     await sendViaSMTP(
       partner.smtp_host,
       partner.smtp_port || 587,
@@ -207,7 +210,7 @@ Deno.serve(async (req) => {
       partner.afzender_email,
       partner.afzender_naam || partner.naam,
       ontvanger_email,
-      `Offerte ${offerte.offertenummer} — ${partner.afzender_naam || partner.naam}`,
+      emailSubject,
       html
     );
 
