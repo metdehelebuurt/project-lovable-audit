@@ -1,52 +1,72 @@
 
 
-## Plan: PDF Datasheet Scanner + Fix AI Import Specs
+## Plan: Echte web-zoek AI specificatie-invuller
 
-### Probleem 1: Geen PDF scan bij handmatige upload
-Wanneer een partner een fabrikant-datasheet PDF uploadt, worden de specificaties niet automatisch uitgelezen. De PDF wordt alleen opgeslagen als bestand.
+### Kernprobleem
+De huidige `ai-verify-product-specs` edge function vraagt een LLM om productspecificaties in te vullen, maar het model heeft **geen internettoegang**. Het kan alleen gokken op basis van trainingsdata — en retourneert daarom steeds `corrected_specs: {}`.
 
-### Probleem 2: AI Product Import vult verkeerde spec-keys in
-De `ai-product-import` edge function vraagt om "gewicht (kg), afmetingen (mm)" etc. maar specificeert NIET de exacte machine-keys (`vermogen_wp`, `gewicht_kg`). Hierdoor komen specs binnen met menselijk-leesbare keys die niet matchen met het `categorySpecDefinitions` schema. Ze worden opgeslagen maar niet getoond in de specs-tabel.
+### Oplossing: Firecrawl + AI pipeline
 
----
+Twee-staps aanpak:
+1. **Zoek het product op internet** via Firecrawl Search (bijv. "LONGi LR5-54HTH-435M datasheet specificaties")
+2. **Scrape de beste resultaten** voor de volledige content
+3. **Extraheer specs** uit de gescrapede content met Gemini, gemapped op de juiste machine-keys
 
-### Oplossing 1: Nieuwe edge function `ai-parse-datasheet`
+Alleen waarden die daadwerkelijk in de bronnen staan worden ingevuld.
 
-**`supabase/functions/ai-parse-datasheet/index.ts`** (nieuw)
+### Stap 1: Firecrawl connector linken
 
-Werking:
-1. Ontvangt `product_id` en `categorie` van de client
-2. Haalt de PDF op uit storage (`datasheets/{product_id}.pdf`)
-3. Converteert PDF naar base64 en stuurt het als document naar Gemini (vision/multimodal)
-4. AI extraheert alle specificaties en mapt ze naar de exacte machine-keys per categorie (hergebruikt dezelfde `categoryMachineKeys` + `keyLabelMap` die al in `ai-verify-product-specs` staan)
-5. Retourneert `corrected_specs` object
+Firecrawl is al beschikbaar in de workspace (`std_01kjfmtmw9fmrvqqnrjx9r39ch`) maar niet gelinkt aan het project. Dit moet eerst gelinkt worden zodat `FIRECRAWL_API_KEY` beschikbaar is als environment variable in edge functions.
 
-**`src/pages/ProductDetail.tsx`** — Na succesvolle PDF upload:
-- Toon een knop "Specificaties uit PDF extraheren" of trigger automatisch
-- Roep `ai-parse-datasheet` aan
-- Merge de gevonden specs met bestaande specs en sla op
+### Stap 2: Herschrijf `ai-verify-product-specs`
 
-### Oplossing 2: Fix AI Product Import spec-keys
+**`supabase/functions/ai-verify-product-specs/index.ts`**
 
-**`supabase/functions/ai-product-import/index.ts`**
+Nieuwe flow:
+```text
+[Client] → ai-verify-product-specs
+  │
+  ├─ 1. Bouw zoekquery: "{merk} {model} {naam} datasheet specificaties"
+  │
+  ├─ 2. Firecrawl Search API → top 3-5 resultaten met content
+  │
+  ├─ 3. Combineer alle gescrapede markdown content
+  │
+  ├─ 4. Stuur naar Gemini met prompt:
+  │     "Extraheer ALLEEN waarden die in de bronnen staan.
+  │      Gebruik EXACT deze machine-keys: [...]
+  │      Vul NIETS in dat niet expliciet in de bron staat."
+  │
+  └─ 5. Return corrected_specs + bronnen
+```
 
-- Voeg de `categoryMachineKeys` mapping toe aan het systeem-prompt (net zoals `ai-verify-product-specs` dat doet)
-- Instrueer de AI om EXACT de machine-keys te gebruiken als spec-keys
-- Dit zorgt ervoor dat geïmporteerde producten direct correcte spec-keys hebben die in de UI getoond worden
+Wijzigingen:
+- Voeg Firecrawl search + scrape toe als eerste stap
+- Geef de gescrapede content mee als context aan Gemini
+- Strict prompt: alleen brondata, geen schattingen
+- Voeg `bronnen` (source URLs) toe aan de response zodat de gebruiker kan zien waar data vandaan komt
+- Fallback: als Firecrawl niet beschikbaar is, geef duidelijke foutmelding
 
----
+### Stap 3: UI update — toon bronnen
+
+**`src/pages/ProductDetail.tsx`**
+
+- Na succesvolle AI-invulling: toon toast met aantal gevonden specs
+- Optioneel: toon de bron-URLs in een collapsible sectie zodat de partner kan verifiëren
 
 ### Bestanden
 
 | Bestand | Actie |
 |---------|-------|
-| `supabase/functions/ai-parse-datasheet/index.ts` | **Nieuw** — PDF scanner edge function |
-| `supabase/functions/ai-product-import/index.ts` | Fix: voeg machine-keys toe aan prompt |
-| `src/pages/ProductDetail.tsx` | Na upload: knop om specs uit PDF te extraheren |
+| Firecrawl connector | Linken aan project |
+| `supabase/functions/ai-verify-product-specs/index.ts` | Herschrijven: web search + extract pipeline |
+| `src/pages/ProductDetail.tsx` | Kleine update: bronnen tonen in toast/UI |
 
 ### Technische details
 
-- Gemini ondersteunt PDF als multimodal input via base64 inline_data met mime_type `application/pdf`
-- De edge function haalt de PDF op via Supabase Storage service role key
-- Dezelfde `categoryMachineKeys` structuur wordt gedeeld tussen alle drie de edge functions voor consistentie
+- Firecrawl Search API: `POST https://api.firecrawl.dev/v1/search` met `scrapeOptions: { formats: ['markdown'] }` om direct content te krijgen
+- Zoekquery strategie: `"{merk} {model} specificaties"` en `"{merk} {model} datasheet pdf"`
+- Gemini ontvangt de gescrapede content als user message, niet als vision/image
+- Max 3 pagina's scrapen om kosten/snelheid te beperken
+- Tijdslimiet: 25 seconden totaal (Firecrawl ~10s, Gemini ~10s, overhead ~5s)
 
