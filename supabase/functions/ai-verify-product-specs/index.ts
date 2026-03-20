@@ -190,22 +190,32 @@ ${categoryGuide}
 
 KRITISCHE INSTRUCTIES:
 1. Gebruik EXACT de machine-keys uit bovenstaande lijst als keys in corrected_specs. NIET de labels, NIET de eenheden in de key. Bijvoorbeeld: "vermogen_wp" (GOED), NIET "Vermogen (Wp)" (FOUT).
-2. Zoek het exacte product op basis van naam, merk en model. Gebruik ALLEEN correcte, verifieerbare specificaties.
-3. Als je het product niet kent, maak dan GEEN specs op maar geef dit aan in suggestions.
-4. Vul ALLE specificaties uit de lijst aan — een professioneel datasheet moet compleet zijn.
+2. Zoek het exacte product op basis van naam, merk en model.
+3. corrected_specs MAG NOOIT LEEG ZIJN. Je MOET altijd minstens 10-20 specs invullen. Als je het exacte product niet kent, gebruik dan je expertise om realistische waarden in te vullen op basis van vergelijkbare producten van hetzelfde merk, dezelfde categorie en hetzelfde marktsegment. Vermeld in suggestions welke waarden geschat zijn.
+4. Vul ALLE specs uit de lijst aan waar je een redelijke waarde voor kunt bepalen — een professioneel datasheet moet zo compleet mogelijk zijn. Sla GEEN specs over.
 5. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
 6. Alle waarden in het Nederlands waar van toepassing.
 7. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
+8. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT om in te vullen.
 
-VOORBEELD van correct corrected_specs formaat:
+VOORBEELD van correct corrected_specs formaat voor een thuisbatterij:
 {
-  "vermogen_wp": "410",
-  "efficiency_pct": "21.3",
-  "celtype": "Mono TOPCon",
-  "bifacial": "Ja",
-  "lengte_mm": "1722",
-  "gewicht_kg": "21.5"
+  "bruikbare_capaciteit_kwh": "2.84",
+  "nominale_capaciteit_kwh": "3.0",
+  "dod_pct": "95",
+  "nominaal_vermogen_kw": "2.5",
+  "celtype": "LFP",
+  "lengte_mm": "442",
+  "breedte_mm": "420",
+  "hoogte_mm": "132",
+  "gewicht_kg": "25",
+  "ip_rating": "IP20",
+  "productgarantie_jaar": "10",
+  "cycli": "6000",
+  "certificeringen": "CE, IEC 62619, UN38.3"
 }
+
+BELANGRIJK: Een leeg corrected_specs object is NIET ACCEPTABEL. Vul altijd zoveel mogelijk in.
 
 Antwoord ALTIJD via de tool call.`
           },
