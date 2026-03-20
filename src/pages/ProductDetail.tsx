@@ -53,6 +53,7 @@ const ProductDetail = () => {
   const [savingTekst, setSavingTekst] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading } = useQuery({
