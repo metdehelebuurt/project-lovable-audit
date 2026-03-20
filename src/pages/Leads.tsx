@@ -402,8 +402,8 @@ const Leads = () => {
             <div><Label>E-mailadres *</Label><Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required className="rounded-xl" /></div>
             <div><Label>Telefoon</Label><Input value={form.telefoon} onChange={e => setForm(p => ({ ...p, telefoon: e.target.value }))} className="rounded-xl" /></div>
             <div><Label>Bedrijfsnaam</Label><Input value={form.bedrijfsnaam} onChange={e => setForm(p => ({ ...p, bedrijfsnaam: e.target.value }))} className="rounded-xl" /></div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2"><Label>Adres</Label><Input value={form.adres} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} className="rounded-xl" /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2"><Label>Adres</Label><Input value={form.adres} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} className="rounded-xl" /></div>
               <div><Label>Postcode</Label><Input value={form.postcode} onChange={e => setForm(p => ({ ...p, postcode: e.target.value }))} className="rounded-xl" /></div>
             </div>
             <div><Label>Plaats</Label><Input value={form.plaats} onChange={e => setForm(p => ({ ...p, plaats: e.target.value }))} className="rounded-xl" /></div>
