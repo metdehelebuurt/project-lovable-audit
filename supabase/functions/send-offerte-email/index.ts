@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     }
 
     // Send offerte email
-    const { offerte_id, ontvanger_email } = body;
+    const { offerte_id, ontvanger_email, html_body, subject: customSubject } = body;
     if (!offerte_id || !ontvanger_email) {
       return new Response(
         JSON.stringify({ error: "offerte_id en ontvanger_email zijn verplicht" }),
