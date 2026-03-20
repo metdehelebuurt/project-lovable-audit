@@ -17,6 +17,7 @@ import Adviseurs from "@/pages/Adviseurs";
 import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
 import Schouwen from "@/pages/Schouwen";
+import SchouwSnelstart from "@/pages/SchouwSnelstart";
 import SchouwDetail from "@/pages/SchouwDetail";
 import SchouwNieuw from "@/pages/SchouwNieuw";
 import SchouwUitvoeren from "@/pages/SchouwUitvoeren";
@@ -148,6 +149,9 @@ const App = () => (
               } />
               <Route path="/schouwen/nieuw" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><SchouwNieuw /></ProtectedRoute>
+              } />
+              <Route path="/schouwen/snelstart" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><SchouwSnelstart /></ProtectedRoute>
               } />
               <Route path="/schouwen/:id" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><SchouwDetail /></ProtectedRoute>
