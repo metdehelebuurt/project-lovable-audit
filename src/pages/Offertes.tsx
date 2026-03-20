@@ -255,7 +255,11 @@ const Offertes = () => {
         lead_id: rest.lead_id || null,
         schouw_id: rest.schouw_id || null,
         regels: regels as unknown as Json,
-        subtotaal: totals.subtotaal,
+        template_config: {
+          offerte_korting_type: rest.offerte_korting_type,
+          offerte_korting_waarde: rest.offerte_korting_waarde,
+        } as unknown as Json,
+        subtotaal: totals.subtotaalNaKorting,
         btw_bedrag: totals.btwBedrag,
         totaal_bedrag: totals.totaal,
         include_schouw: rest.include_schouw,
