@@ -196,11 +196,13 @@ const OfferteNieuw = () => {
   const selectProduct = (idx: number, productId: string) => {
     const product = producten.find(p => p.id === productId);
     if (product) {
+      const partnerTekst = partnerTeksten.find(pt => pt.product_id === productId);
+      const offerteTekst = partnerTekst?.offerte_tekst || (product as any).offerte_tekst || "";
       setRegels(p => p.map((r, i) => i === idx ? {
         ...r,
         product_id: product.id,
         omschrijving: `${product.naam}${product.merk ? ` — ${product.merk}` : ""}${product.model ? ` ${product.model}` : ""}`,
-        offerte_tekst: (product as any).offerte_tekst || "",
+        offerte_tekst: offerteTekst,
         prijs_per_stuk: product.prijs_excl_btw,
         btw_percentage: product.btw_percentage ?? 21,
       } : r));
