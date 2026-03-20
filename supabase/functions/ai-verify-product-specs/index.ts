@@ -271,7 +271,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           {
             role: "system",
@@ -287,15 +287,20 @@ KRITISCHE INSTRUCTIES:
 4. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
 5. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT.
 ${sourceInstruction}
-6. corrected_specs mag NIET leeg zijn — vul minimaal de kernspecificaties in.
-7. Nummers als string zonder eenheid (bijv. "4.8" niet "4.8 kWh"), tenzij het een bereik is (bijv. "40-58 V").
-8. Gebruik decimale punt, niet komma (bijv. "4.8" niet "4,8").
 
-Antwoord ALTIJD via de tool call.`
+HEEL BELANGRIJK - LEES DIT GOED:
+- corrected_specs MOET gevuld worden met ALLE specs die je kent of kunt afleiden.
+- Je MOET minimaal 10 specs invullen. Als je minder dan 10 kunt vinden in de bronnen, vul de rest aan met je eigen kennis.
+- Voorbeeld voor een thuisbatterij: bruikbare_capaciteit_kwh, nominale_capaciteit_kwh, nominaal_vermogen_kw, gewicht_kg, lengte_mm, breedte_mm, hoogte_mm, celtype, roundtrip_efficiency_pct, productgarantie_jaar etc.
+- Een LEGE corrected_specs is FOUT en VERBODEN. Dit product is bekend en heeft publieke specificaties.
+- Nummers als string zonder eenheid (bijv. "4.8" niet "4.8 kWh"), tenzij het een bereik is (bijv. "40-58 V").
+- Gebruik decimale punt, niet komma (bijv. "4.8" niet "4,8").
+
+Antwoord ALTIJD via de tool call met een GEVULDE corrected_specs.`
           },
           {
             role: "user",
-            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan:\n\n${productInfo}${webContext}`
+            content: `Verifieer en vul de volgende productspecificaties VOLLEDIG aan. JE MOET corrected_specs vullen met alle bekende waarden:\n\n${productInfo}${webContext}`
           }
         ],
         tools: [
