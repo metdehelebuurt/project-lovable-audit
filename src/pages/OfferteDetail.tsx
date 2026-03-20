@@ -225,7 +225,7 @@ const OfferteDetail = () => {
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => navigate(`/offertes/${offerte.id}/pdf`)}>
             <FileDown className="h-4 w-4" /> PDF
           </Button>
-          <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => { setEmailDialog(true); setEmailTo(offerte.klant_email); }}>
+          <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => setEmailDialog(true)}>
             <Send className="h-4 w-4" /> Versturen
           </Button>
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={handleShareLink}>
