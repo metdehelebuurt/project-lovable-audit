@@ -48,6 +48,9 @@ const ProductDetail = () => {
   const [editingSpecs, setEditingSpecs] = useState(false);
   const [editedSpecs, setEditedSpecs] = useState<Record<string, string>>({});
   const [savingSpecs, setSavingSpecs] = useState(false);
+  const [partnerTekst, setPartnerTekst] = useState("");
+  const [editingTekst, setEditingTekst] = useState(false);
+  const [savingTekst, setSavingTekst] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
