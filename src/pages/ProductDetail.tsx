@@ -52,6 +52,7 @@ const ProductDetail = () => {
   const [editingTekst, setEditingTekst] = useState(false);
   const [savingTekst, setSavingTekst] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading } = useQuery({
