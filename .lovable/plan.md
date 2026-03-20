@@ -1,102 +1,42 @@
 
 
-## Plan: Mobiel/tablet optimalisatie + Video-opname in Schouwen
+## Plan: Fix logo upload + Snelstart schouw
 
-### 1) Mobiele/tablet responsiveness verbeteringen
+### Probleem 1: Logo upload werkt niet zichtbaar
+De upload-code (Instellingen.tsx:67-88) ziet er technisch correct uit, maar heeft twee problemen:
+- **Cache-busting ontbreekt**: Na upload wordt dezelfde Supabase Storage URL gebruikt. De browser kan een gecachte versie tonen. Oplossing: voeg een `?t=timestamp` query parameter toe aan de publicUrl.
+- **Geen visuele feedback bij "geen logo"**: Als `logoUrl` null is, wordt niets getoond — gebruiker ziet geen placeholder of upload-indicator. Voeg een default placeholder toe.
+- **Bestandsnaam conflict**: De upload gebruikt altijd `logo.{ext}` — als je eerst een PNG uploadt en dan een JPG, blijft de oude PNG URL in de DB terwijl de nieuwe JPG een andere URL heeft. Oplossing: gebruik een unieke bestandsnaam met timestamp.
+- **Error handling verbeteren**: Voeg expliciete console.log + toast toe bij elke stap zodat fouten zichtbaar worden.
 
-**Probleem**: Diverse pagina's gebruiken vaste breedte-tabellen en desktop-georiënteerde layouts die op mobiel niet goed werken.
+### Probleem 2: Snelstart schouw ontbreekt
+De Schouwen pagina heeft alleen "Schouw inplannen" (navigeert naar `/schouwen/nieuw`). Er is geen optie om direct een schouw te starten met categorie- en lead-selectie in een streamlined flow.
 
-#### A) Lijstpagina's (Leads, Offertes, Schouwen) — Card-weergave op mobiel
-**Bestanden:** `src/pages/Leads.tsx`, `src/pages/Offertes.tsx`, `src/pages/Schouwen.tsx`
+### Wijzigingen
 
-- Op `< md` breakpoint: vervang de `<Table>` door een gestapelde card-weergave (naam, status badge, key info)
-- Actieknoppen worden iconen in een horizontale rij onderaan elke card
-- Zoekbalk en filters worden full-width gestapeld op mobiel
-- Bulk-selectie toolbar wordt sticky onderaan het scherm op mobiel
+#### 1) Fix logo upload
+**Bestand:** `src/pages/Instellingen.tsx`
 
-#### B) Formulier-dialogen
-**Bestanden:** `src/pages/Leads.tsx`, `src/pages/Schouwen.tsx`, `src/pages/OfferteNieuw.tsx`
+- Upload path: `{partner_id}/logo_{Date.now()}.{ext}` (uniek per upload)
+- Na succesvolle upload: `setLogoUrl(publicUrl + "?t=" + Date.now())` voor cache-busting
+- Toon placeholder icoon als `logoUrl` null is
+- Voeg `try/catch` wrapper toe rond de hele upload flow
+- Toon loading state op de afbeelding tijdens upload
 
-- Dialogen op mobiel: `max-w-[95vw]` en `max-h-[90vh]`
-- Form grids (`grid-cols-2`, `grid-cols-3`) worden `grid-cols-1` op mobiel
-- Knoppen worden full-width op mobiel
+#### 2) Snelstart schouw vanuit Schouwen pagina
+**Bestand:** `src/pages/Schouwen.tsx`
 
-#### C) Dashboard
-**Bestand:** `src/pages/Dashboard.tsx`
+Voeg naast "Schouw inplannen" een "Direct starten" knop toe:
+- Opent een compact dialog met:
+  - Categorie selectie (8 categorieën als klikbare kaarten/knoppen)
+  - Lead/klant zoeken en selecteren (bestaande leads query)
+- Na selectie: navigeert direct naar `/schouwen/nieuw?categorie={cat}&lead_id={id}&mode=direct` of creëert de schouw en navigeert naar `/schouwen/{id}/uitvoeren`
+- De flow: selecteer categorie → selecteer lead → schouw wordt aangemaakt met status "gepland" → redirect naar uitvoer-wizard
 
-- StatCards: `grid-cols-1` op mobiel (nu al `sm:grid-cols-2` — controleren)
-- Activiteiten lijst: compactere spacing op mobiel
-
-#### D) SchouwUitvoeren (wizard)
-**Bestand:** `src/pages/SchouwUitvoeren.tsx`
-
-- Titel verkleinen op mobiel (`text-xl` i.p.v. `text-2xl`)
-- Navigatieknoppen: full-width stack op kleine schermen
-- Step indicator: compacter met alleen huidige step naam
-
-#### E) PDF Editor
-**Bestand:** `src/pages/OffertePDF.tsx`
-
-- Op mobiel: verberg het linker panel standaard, toon een toggle-knop (bottom sheet of overlay)
-- Preview schaalt naar full-width
-- Toolbar knoppen worden icoon-only op mobiel
-
-#### F) SignaturePad
-**Bestand:** `src/components/schouwen/SignaturePad.tsx`
-
-- Canvas hoogte aanpassen: 160px op mobiel, 200px op desktop
-- Touch events werken al correct (✓)
-
-#### G) AppLayout
-**Bestand:** `src/components/AppLayout.tsx`
-
-- Main padding: `p-3` op mobiel i.p.v. `p-4` (al `md:p-8`)
-
-### 2) Video-opname functionaliteit in SchouwMediaUpload
-
-**Bestand:** `src/components/schouwen/SchouwMediaUpload.tsx`
-
-Voeg een "Video opnemen" knop toe naast "Foto's toevoegen":
-
-- **MediaRecorder API** gebruiken om video op te nemen via de camera van het apparaat
-- Max **60 seconden** opnameduur (automatische stop + visuele countdown timer)
-- Max resolutie: **1280×720 (HD)** via `getUserMedia` constraints
-- Opnameformaat: **WebM** (native browser support, kleinste bestandsgrootte bij goede kwaliteit)
-- Na opname: toon preview met afspeelknop voordat de gebruiker bevestigt
-- Upload naar `schouw-media` bucket met bestaande upload-logica
-- Bestandslimiet verhogen naar **50MB** voor video (10MB blijft voor foto's)
-- Live camera preview tijdens opname in een modal/overlay
-- Start/Stop/Annuleer knoppen
-- Rode opname-indicator met timer
-
-**UI flow:**
-```text
-[Foto's toevoegen] [Video opnemen]
-         ↓
-   Modal opent met camera preview
-   [● REC 00:00/01:00]  [Stop] [Annuleer]
-         ↓ (na stop)
-   Preview met [Opslaan] [Opnieuw] [Annuleer]
-         ↓ (na opslaan)
-   Upload naar storage → verschijnt in media grid
-```
-
-**Video in media grid:**
-- Video thumbnails tonen een play-icoon overlay
-- Click opent video in een lightbox/modal met afspeelbesturing
-- Bestaande video-uploads (file picker) ook accepteren tot 50MB
-
-### Bestanden overzicht
+### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/schouwen/SchouwMediaUpload.tsx` | Video-opname component, 50MB limiet video, camera modal |
-| `src/pages/Leads.tsx` | Card-weergave op mobiel |
-| `src/pages/Offertes.tsx` | Card-weergave op mobiel |
-| `src/pages/Schouwen.tsx` | Card-weergave op mobiel |
-| `src/pages/SchouwUitvoeren.tsx` | Compactere mobiele layout |
-| `src/pages/OffertePDF.tsx` | Toggle panel op mobiel |
-| `src/pages/Dashboard.tsx` | Grid responsive check |
-| `src/pages/OfferteNieuw.tsx` | Form grids responsive |
-| `src/components/AppLayout.tsx` | Mobiele padding |
+| `src/pages/Instellingen.tsx` | Fix logo upload: unieke bestandsnaam, cache-busting, placeholder, betere error handling |
+| `src/pages/Schouwen.tsx` | Voeg "Direct starten" knop + dialog toe met categorie/lead selectie, creëert schouw en navigeert naar uitvoer-wizard |
 
