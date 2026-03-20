@@ -396,9 +396,14 @@ const Schouwen = () => {
           <p className="text-muted-foreground mt-1 text-sm">Woninginspecties inplannen en uitvoeren</p>
         </div>
         {canCreate && (
-          <Button onClick={() => navigate("/schouwen/nieuw")} className="rounded-pill gap-2">
-            <CalendarPlus className="h-4 w-4" /> <span className="hidden sm:inline">Schouw inplannen</span><span className="sm:hidden">Inplannen</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setSnelstartOpen(true)} className="rounded-pill gap-2">
+              <Zap className="h-4 w-4" /> <span className="hidden sm:inline">Direct starten</span><span className="sm:hidden">Start</span>
+            </Button>
+            <Button onClick={() => navigate("/schouwen/nieuw")} className="rounded-pill gap-2">
+              <CalendarPlus className="h-4 w-4" /> <span className="hidden sm:inline">Schouw inplannen</span><span className="sm:hidden">Inplannen</span>
+            </Button>
+          </div>
         )}
       </div>
 
