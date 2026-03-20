@@ -183,9 +183,56 @@ const ProductDetail = () => {
     }
   };
 
+  // Build datasheet URL — handle both relative paths and full URLs
+  const buildDatasheetUrl = (url: string | null) => {
+    if (!url) return null;
+    if (url.startsWith("http")) return url;
+    return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${url}`;
+  };
+
   const datasheetPublicUrl = product?.datasheet_url && product?.datasheet_type === "fabrikant"
-    ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${product.datasheet_url}`
+    ? buildDatasheetUrl(product.datasheet_url)
     : null;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !product) return;
+    if (file.type !== "application/pdf") { toast.error("Alleen PDF-bestanden zijn toegestaan"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
+    setUploading(true);
+    try {
+      const path = `datasheets/${product.id}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(path, file, { upsert: true, contentType: "application/pdf" });
+      if (uploadError) throw uploadError;
+      const { error: updateErr } = await supabase.from("producten")
+        .update({ datasheet_url: path, datasheet_type: "fabrikant" })
+        .eq("id", product.id);
+      if (updateErr) throw updateErr;
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      toast.success("Datasheet geüpload");
+    } catch (err: any) {
+      toast.error("Upload mislukt", { description: err.message });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleGenerateDatasheet = async () => {
+    if (!product) return;
+    // First run AI verify to fill specs, then mark as generated
+    await handleAiVerify();
+    const { error } = await supabase.from("producten")
+      .update({ datasheet_type: "gegenereerd" })
+      .eq("id", product.id);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      const p = await loadPartner();
+      if (p) setPreviewOpen(true);
+    }
+  };
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Laden...</div>;
   if (!product) return <div className="p-8 text-center text-muted-foreground">Product niet gevonden</div>;
