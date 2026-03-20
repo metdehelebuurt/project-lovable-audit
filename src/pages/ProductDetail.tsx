@@ -221,6 +221,38 @@ const ProductDetail = () => {
     }
   };
 
+  const handleExtractFromPdf = async () => {
+    if (!product) return;
+    setExtracting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-parse-datasheet", {
+        body: { product_id: product.id, categorie: product.categorie },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+
+      const extracted = data.extracted_specs || {};
+      const mergedSpecs = { ...specs, ...extracted };
+
+      const updateData: any = { specs: mergedSpecs };
+      if (data.product_merk && !product.merk) updateData.merk = data.product_merk;
+      if (data.product_model && !product.model) updateData.model = data.product_model;
+
+      const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
+      if (updateErr) throw updateErr;
+
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      const count = Object.keys(extracted).length;
+      toast.success(`${count} specificaties geëxtraheerd uit PDF`, {
+        description: data.notes?.length ? data.notes.join("; ") : undefined,
+      });
+    } catch (err: any) {
+      toast.error("Extractie mislukt", { description: err.message });
+    } finally {
+      setExtracting(false);
+    }
+  };
+
   const handleGenerateDatasheet = async () => {
     if (!product) return;
     // First run AI verify to fill specs, then mark as generated
