@@ -299,6 +299,7 @@ const Offertes = () => {
   const openEdit = (o: Offerte) => {
     setEditingOfferte(o);
     const regels = Array.isArray(o.regels) ? (o.regels as unknown as OfferteRegel[]) : [{ ...emptyRegel }];
+    const tc = o.template_config && typeof o.template_config === "object" ? o.template_config as any : {};
     setForm({
       lead_id: o.lead_id || "",
       schouw_id: o.schouw_id || "",
@@ -317,6 +318,8 @@ const Offertes = () => {
       regels,
       include_schouw: (o as any).include_schouw ?? false,
       include_energieadvies: (o as any).include_energieadvies ?? false,
+      offerte_korting_type: tc.offerte_korting_type || "percentage",
+      offerte_korting_waarde: tc.offerte_korting_waarde || 0,
     });
     setDialogOpen(true);
   };
