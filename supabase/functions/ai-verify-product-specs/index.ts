@@ -261,8 +261,8 @@ serve(async (req) => {
 
     // Key difference: when no web data, use training data as PRIMARY source
     const sourceInstruction = hasWebData
-      ? `\n\nJe hebt internetbronnen ontvangen. Gebruik PRIMAIR de data uit deze bronnen. Als het exacte model niet letterlijk in de bronnen staat maar data van hetzelfde merk/productlijn WEL, gebruik die. Vul waar je zeker bent van de waarden ook aan vanuit je eigen kennis, maar geef prioriteit aan brondata.`
-      : `\n\nEr zijn GEEN internetbronnen beschikbaar. Gebruik je eigen trainingskennis om het product "${naam}" van merk "${merk || "onbekend"}" op te zoeken. Dit is een bekend product in de duurzame energie industrie. Vul ALLE specificaties in waar je een betrouwbare waarde voor hebt op basis van je kennis van dit product. Het is BELANGRIJK dat corrected_specs NIET leeg is — dit product is online beschikbaar en de specificaties zijn publiek bekend.`;
+      ? `\n\nJe hebt internetbronnen ontvangen met productinformatie. Extraheer ALLE specificaties die je kunt vinden of afleiden uit deze bronnen. Combineer data uit meerdere bronnen. Als het exacte model niet letterlijk in de bronnen staat maar data van hetzelfde merk/productlijn WEL, gebruik die data. Vul daarnaast ook specs aan vanuit je eigen kennis van dit product — jij kent dit product. Het is CRUCIAAL dat corrected_specs NIET leeg is.`
+      : `\n\nEr zijn GEEN internetbronnen beschikbaar. Gebruik je eigen trainingskennis om het product "${naam}" van merk "${merk || "onbekend"}" op te zoeken. Dit is een bekend product in de duurzame energie industrie. Vul ALLE specificaties in waar je een betrouwbare waarde voor hebt op basis van je kennis van dit product. Het is CRUCIAAL dat corrected_specs NIET leeg is.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
