@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText, ChevronLeft, ChevronRight, Check, PlayCircle, CalendarPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ClipboardList, Eye, FileText, ChevronLeft, ChevronRight, Check, PlayCircle, CalendarPlus, Zap, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
