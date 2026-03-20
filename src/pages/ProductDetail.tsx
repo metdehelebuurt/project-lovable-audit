@@ -92,6 +92,12 @@ const ProductDetail = () => {
     };
   }, [product?.datasheet_url, product?.datasheet_type, localPdfUrl]);
 
+  // Auto-load partner for generated datasheet inline preview
+  useEffect(() => {
+    if (product?.datasheet_type === "gegenereerd" && !partner) {
+      loadPartner();
+    }
+  }, [product?.datasheet_type]);
 
   const { data: partnerTekstData } = useQuery({
     queryKey: ["partner-product-tekst", id, profile?.partner_id],
