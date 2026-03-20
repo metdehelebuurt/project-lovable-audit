@@ -1,72 +1,42 @@
 
 
-## Plan: Echte web-zoek AI specificatie-invuller
+## Plan: PDF Viewer + AI invullen via PDF
 
-### Kernprobleem
-De huidige `ai-verify-product-specs` edge function vraagt een LLM om productspecificaties in te vullen, maar het model heeft **geen internettoegang**. Het kan alleen gokken op basis van trainingsdata — en retourneert daarom steeds `corrected_specs: {}`.
+### Probleem 1: PDF niet live zichtbaar na upload
+Na het uploaden van een PDF-datasheet moet de PDF direct zichtbaar zijn als embedded viewer op het Datasheet-tabblad. De huidige code doet dit al via een iframe, maar er ontbreekt een directe lokale preview na upload (voordat de query-invalidatie klaar is).
 
-### Oplossing: Firecrawl + AI pipeline
+### Probleem 2: AI invullen retourneert 0 specs
+De oorzaak is nu helder: de web search vindt 5 bronnen, maar het exacte model "M4328" bestaat niet in die bronnen (alleen "SMILE-G3-BAT-4.8S" etc.). Door de strikte "alleen brondata" instructie retourneert de AI terecht `corrected_specs: {}`.
 
-Twee-staps aanpak:
-1. **Zoek het product op internet** via Firecrawl Search (bijv. "LONGi LR5-54HTH-435M datasheet specificaties")
-2. **Scrape de beste resultaten** voor de volledige content
-3. **Extraheer specs** uit de gescrapede content met Gemini, gemapped op de juiste machine-keys
+De gebruiker koos voor **"Alleen PDF"**: wanneer er een fabrikant-PDF is geupload, moet AI invullen de PDF scannen — niet het web doorzoeken.
 
-Alleen waarden die daadwerkelijk in de bronnen staan worden ingevuld.
+---
 
-### Stap 1: Firecrawl connector linken
+### Oplossing
 
-Firecrawl is al beschikbaar in de workspace (`std_01kjfmtmw9fmrvqqnrjx9r39ch`) maar niet gelinkt aan het project. Dit moet eerst gelinkt worden zodat `FIRECRAWL_API_KEY` beschikbaar is als environment variable in edge functions.
-
-### Stap 2: Herschrijf `ai-verify-product-specs`
-
-**`supabase/functions/ai-verify-product-specs/index.ts`**
-
-Nieuwe flow:
-```text
-[Client] → ai-verify-product-specs
-  │
-  ├─ 1. Bouw zoekquery: "{merk} {model} {naam} datasheet specificaties"
-  │
-  ├─ 2. Firecrawl Search API → top 3-5 resultaten met content
-  │
-  ├─ 3. Combineer alle gescrapede markdown content
-  │
-  ├─ 4. Stuur naar Gemini met prompt:
-  │     "Extraheer ALLEEN waarden die in de bronnen staan.
-  │      Gebruik EXACT deze machine-keys: [...]
-  │      Vul NIETS in dat niet expliciet in de bron staat."
-  │
-  └─ 5. Return corrected_specs + bronnen
-```
-
-Wijzigingen:
-- Voeg Firecrawl search + scrape toe als eerste stap
-- Geef de gescrapede content mee als context aan Gemini
-- Strict prompt: alleen brondata, geen schattingen
-- Voeg `bronnen` (source URLs) toe aan de response zodat de gebruiker kan zien waar data vandaan komt
-- Fallback: als Firecrawl niet beschikbaar is, geef duidelijke foutmelding
-
-### Stap 3: UI update — toon bronnen
-
+#### 1. Lokale PDF preview na upload
 **`src/pages/ProductDetail.tsx`**
+- Na succesvolle upload: sla een lokale blob-URL op via `URL.createObjectURL(file)` zodat de PDF direct in de iframe verschijnt zonder te wachten op query-refresh
+- Zorg dat het Datasheet-tabblad automatisch naar de PDF-viewer scrollt
 
-- Na succesvolle AI-invulling: toon toast met aantal gevonden specs
-- Optioneel: toon de bron-URLs in een collapsible sectie zodat de partner kan verifiëren
+#### 2. AI invullen routeert naar PDF-parser wanneer PDF beschikbaar
+**`src/pages/ProductDetail.tsx`** — `handleAiVerify` aanpassen:
+- Check of `product.datasheet_type === "fabrikant"` en `product.datasheet_url` bestaat
+- Zo ja: roep `ai-parse-datasheet` aan (PDF lezen) in plaats van `ai-verify-product-specs` (web zoeken)
+- Zo nee: val terug op de bestaande web-search pipeline
+- Toon duidelijk in de toast of de specs uit de PDF of van het web kwamen
+
+#### 3. Meer lenient web-search fallback
+**`supabase/functions/ai-verify-product-specs/index.ts`**
+- Als het exacte model niet gevonden wordt maar er WEL data is van hetzelfde merk/productlijn: gebruik die data en vermeld in `suggestions` dat het van een gerelateerd model komt
+- Verwijder de "corrected_specs MAG NOOIT LEEG ZIJN" instructie (die is tegenstrijdig met "alleen brondata")
+
+---
 
 ### Bestanden
 
 | Bestand | Actie |
 |---------|-------|
-| Firecrawl connector | Linken aan project |
-| `supabase/functions/ai-verify-product-specs/index.ts` | Herschrijven: web search + extract pipeline |
-| `src/pages/ProductDetail.tsx` | Kleine update: bronnen tonen in toast/UI |
-
-### Technische details
-
-- Firecrawl Search API: `POST https://api.firecrawl.dev/v1/search` met `scrapeOptions: { formats: ['markdown'] }` om direct content te krijgen
-- Zoekquery strategie: `"{merk} {model} specificaties"` en `"{merk} {model} datasheet pdf"`
-- Gemini ontvangt de gescrapede content als user message, niet als vision/image
-- Max 3 pagina's scrapen om kosten/snelheid te beperken
-- Tijdslimiet: 25 seconden totaal (Firecrawl ~10s, Gemini ~10s, overhead ~5s)
+| `src/pages/ProductDetail.tsx` | Lokale PDF preview + AI routing naar PDF-parser |
+| `supabase/functions/ai-verify-product-specs/index.ts` | Lenient fallback bij gerelateerd model |
 
