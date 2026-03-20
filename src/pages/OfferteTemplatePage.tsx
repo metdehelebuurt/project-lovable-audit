@@ -199,10 +199,27 @@ export default function OfferteTemplatePage() {
           const Comp = liveVoorbladMap[config.voorblad] || HeroDark;
           return (
             <div style={{ ...pageStyle, padding: 0 }}>
-              <Comp {...sampleVoorblad} badges={badges} />
+              <Comp {...sampleVoorblad} badges={badges} heroImageUrl={config.hero_image_url || null} heroTitle={config.hero_title || "Offerte"} />
             </div>
           );
         })()}
+
+        {/* Inhoudsopgave */}
+        <div style={{ ...pageStyle, padding: "15mm" }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Inhoudsopgave</h2>
+          <div style={{ width: 64, height: 4, backgroundColor: pc, borderRadius: 2, marginBottom: 40 }} />
+          <div style={{ maxWidth: 500 }}>
+            {["Voorblad", "Producten", "Opdrachtbevestiging", "Besparing & Rendement", "Voorwaarden & Akkoord"].map((label, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "baseline", padding: "14px 0", borderBottom: `1px solid ${pcTint2}` }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: pcTint, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: pc, flexShrink: 0, marginRight: 16 }}>
+                  {i + 1}
+                </div>
+                <span style={{ fontSize: 15, fontWeight: 500, color: sc, flex: 1 }}>{label}</span>
+                <span style={{ fontSize: 12, color: "#aaa", marginLeft: 12 }}>p. {i + 1}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Producten */}
         {config.secties_producten !== false && (() => {
