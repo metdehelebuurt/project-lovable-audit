@@ -72,8 +72,7 @@ const OfferteDetail = () => {
 
   const [feedbackText, setFeedbackText] = useState("");
   const [notitieText, setNotitieText] = useState("");
-  const [emailDialog, setEmailDialog] = useState(false);
-  const [shareDialog, setShareDialog] = useState(false);
+  const [emailDialog, setEmailDialog] = useState(searchParams.get("email") === "true");
   const [shareDialog, setShareDialog] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
