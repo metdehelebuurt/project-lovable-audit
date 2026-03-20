@@ -103,6 +103,8 @@ const emptyForm: OfferteFormData = {
   regels: [{ ...emptyRegel }],
   include_schouw: false,
   include_energieadvies: false,
+  offerte_korting_type: "percentage",
+  offerte_korting_waarde: 0,
 };
 
 const generateOfferteNummer = () => {
