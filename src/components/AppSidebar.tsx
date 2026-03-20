@@ -55,6 +55,7 @@ const getNavItems = (rol: string): NavItem[] => {
         { title: "Installaties", url: "/installaties", icon: Wrench },
         { title: "Planning", url: "/planning", icon: Calendar },
         { title: "Analytics", url: "/analytics", icon: BarChart3 },
+        { title: "Berichten", url: "/berichten", icon: MessageSquare },
         { title: "Documenten", url: "/documenten", icon: FolderOpen },
         { title: "Tools", url: "/tools", icon: PenTool },
         { title: "Instellingen", url: "/instellingen", icon: Settings },
