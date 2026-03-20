@@ -157,6 +157,7 @@ const ProductDetail = () => {
       // Always use web-only pipeline (user chose "Alleen web")
       const { data, error } = await supabase.functions.invoke("ai-verify-product-specs", {
         body: {
+          product_id: product.id,
           naam: product.naam, merk: product.merk, model: product.model,
           categorie: product.categorie, specs, certificeringen: product.certificeringen,
           omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
@@ -174,15 +175,20 @@ const ProductDetail = () => {
         ? `Bron: ${bronnen.length} webpagina's`
         : "Bron: AI kennisbank";
 
-      const allSpecs: Record<string, string> = { ...specs, ...corrected };
-      const updateData: any = { specs: allSpecs };
-      if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
-      if (data.regelgeving) updateData.certificeringen = data.regelgeving;
+      // If edge function already saved to DB, just refresh
+      if (data.saved_to_db) {
+        queryClient.invalidateQueries({ queryKey: ["product", id] });
+      } else {
+        // Fallback: client-side save
+        const allSpecs: Record<string, string> = { ...specs, ...corrected };
+        const updateData: any = { specs: allSpecs };
+        if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
+        if (data.regelgeving) updateData.certificeringen = data.regelgeving;
 
-      const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
-      if (updateErr) throw updateErr;
-
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
+        const { error: updateErr } = await supabase.from("producten").update(updateData).eq("id", product.id);
+        if (updateErr) throw updateErr;
+        queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
 
       if (filledCount === 0) {
         toast.warning("Geen nieuwe specificaties gevonden", {

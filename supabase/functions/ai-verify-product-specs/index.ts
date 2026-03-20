@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -231,7 +232,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { naam, merk, model, categorie, specs, certificeringen, omschrijving, garantie_jaren } = await req.json();
+    const { naam, merk, model, categorie, specs, certificeringen, omschrijving, garantie_jaren, product_id } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -350,6 +351,27 @@ Antwoord in JSON met EXACT dit formaat:
     result.filled_count = Object.keys(result.corrected_specs || {}).length;
 
     console.log(`AI result: ${result.filled_count} specs, source: ${result.data_source}`);
+
+    // Save specs directly to DB using service role (bypasses RLS)
+    if (product_id && result.corrected_specs && Object.keys(result.corrected_specs).length > 0) {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const mergedSpecs = { ...(specs || {}), ...result.corrected_specs };
+        const updateData: Record<string, unknown> = { specs: mergedSpecs };
+        if (result.omschrijving_suggestie && !omschrijving) updateData.omschrijving = result.omschrijving_suggestie;
+        if (result.regelgeving) updateData.certificeringen = result.regelgeving;
+
+        const { error: dbError } = await adminClient.from("producten").update(updateData).eq("id", product_id);
+        if (dbError) {
+          console.error("DB update error:", dbError.message);
+        } else {
+          console.log(`Specs saved to DB for product ${product_id}`);
+          result.saved_to_db = true;
+        }
+      }
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
