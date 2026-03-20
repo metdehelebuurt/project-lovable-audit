@@ -1,42 +1,98 @@
 
 
-## Plan: Fix logo upload + Snelstart schouw
+## Plan: Sidebar groepering, Dashboard redesign, Instellingen uitbreiding
 
-### Probleem 1: Logo upload werkt niet zichtbaar
-De upload-code (Instellingen.tsx:67-88) ziet er technisch correct uit, maar heeft twee problemen:
-- **Cache-busting ontbreekt**: Na upload wordt dezelfde Supabase Storage URL gebruikt. De browser kan een gecachte versie tonen. Oplossing: voeg een `?t=timestamp` query parameter toe aan de publicUrl.
-- **Geen visuele feedback bij "geen logo"**: Als `logoUrl` null is, wordt niets getoond — gebruiker ziet geen placeholder of upload-indicator. Voeg een default placeholder toe.
-- **Bestandsnaam conflict**: De upload gebruikt altijd `logo.{ext}` — als je eerst een PNG uploadt en dan een JPG, blijft de oude PNG URL in de DB terwijl de nieuwe JPG een andere URL heeft. Oplossing: gebruik een unieke bestandsnaam met timestamp.
-- **Error handling verbeteren**: Voeg expliciete console.log + toast toe bij elke stap zodat fouten zichtbaar worden.
+### 1) Sidebar — Gegroepeerde navigatie
 
-### Probleem 2: Snelstart schouw ontbreekt
-De Schouwen pagina heeft alleen "Schouw inplannen" (navigeert naar `/schouwen/nieuw`). Er is geen optie om direct een schouw te starten met categorie- en lead-selectie in een streamlined flow.
+**Bestand:** `src/components/AppSidebar.tsx`
 
-### Wijzigingen
+Herstructureer de flat list naar logische groepen met `SidebarGroupLabel`:
 
-#### 1) Fix logo upload
+```text
+OVERZICHT
+  Dashboard
+
+RELATIEBEHEER
+  Leads
+  Klanten
+  Berichten
+
+WERKPROCES
+  Schouwen
+  Offertes
+  Opdrachten
+  Installaties
+
+PLANNING & TOOLS
+  Planning
+  Producten
+  Tools
+  Analytics
+
+BEHEER
+  Partners (superadmin)
+  Adviseurs
+  Gebruikers
+  Documenten
+  Affiliate Beheer (superadmin)
+
+INSTELLINGEN
+  Instellingen
+```
+
+- Elke groep krijgt een `SidebarGroupLabel` met een subtiele uppercase label
+- Groepen gescheiden door een dunne separator
+- Zelfde rol-gebaseerde filtering behouden maar nu per groep
+- Op collapsed state: alleen iconen, geen groepslabels
+
+### 2) Dashboard redesign — Compacte stats + module tegels + notificaties
+
+**Bestand:** `src/pages/Dashboard.tsx`
+
+**Layout:**
+- **Bovenste rij**: Compacte stat-balk (horizontale rij van mini-stats met getal + label, geen grote kaarten)
+- **Midden**: Grid van **module-tegels** (6-8 stuks) — kleurrijke kaarten met groot icoon, titel en korte subtekst die direct naar de module navigeren (bijv. Leads, Offertes, Schouwen, Planning, Producten, Analytics). `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`
+- **Onderste rij**: Twee kolommen — links "Recente Activiteit" (bestaande lijst, compacter), rechts "Notificaties" (laatste 5 ongelezen notificaties uit `notificaties` tabel)
+
+Extra statistieken toevoegen:
+- **Openstaande offertes** (status = 'verstuurd')
+- **Vandaag geplande afspraken** (uit `afspraken` tabel, datum = vandaag)
+- **Conversieratio** (geaccepteerde offertes / totaal offertes als percentage)
+
+### 3) Instellingen redesign — Tab-navigatie + bedrijfsinfo + beveiliging
+
 **Bestand:** `src/pages/Instellingen.tsx`
 
-- Upload path: `{partner_id}/logo_{Date.now()}.{ext}` (uniek per upload)
-- Na succesvolle upload: `setLogoUrl(publicUrl + "?t=" + Date.now())` voor cache-busting
-- Toon placeholder icoon als `logoUrl` null is
-- Voeg `try/catch` wrapper toe rond de hele upload flow
-- Toon loading state op de afbeelding tijdens upload
+Vervang de verticale kaarten-stack door een **tab-layout** met zijnavigatie (links tabs, rechts content):
 
-#### 2) Snelstart schouw vanuit Schouwen pagina
-**Bestand:** `src/pages/Schouwen.tsx`
+**Tabs:**
+1. **Profiel** — Bestaande profielgegevens
+2. **Beveiliging** — Wachtwoord wijzigen + sessie-overzicht + 2FA info placeholder
+3. **Bedrijfsgegevens** (partner_admin) — NIEUW: Bedrijfsnaam, KVK, BTW, adres, postcode, plaats, website, contactpersoon gegevens. Laadt en slaat op vanuit `partners` tabel (kolommen bestaan al)
+4. **Huisstijl** (partner_admin) — Bestaande branding sectie
+5. **E-mail** (partner_admin) — Bestaande EmailConfiguratie
+6. **Offertes** (partner_admin) — Bestaande template + betalingsvoorwaarden + offerte template instellingen
+7. **Schouwen** (partner_admin) — Bestaande SchouwInstellingen
+8. **Privacy & Data** — Data export, account verwijderen, demogegevens
 
-Voeg naast "Schouw inplannen" een "Direct starten" knop toe:
-- Opent een compact dialog met:
-  - Categorie selectie (8 categorieën als klikbare kaarten/knoppen)
-  - Lead/klant zoeken en selecteren (bestaande leads query)
-- Na selectie: navigeert direct naar `/schouwen/nieuw?categorie={cat}&lead_id={id}&mode=direct` of creëert de schouw en navigeert naar `/schouwen/{id}/uitvoeren`
-- De flow: selecteer categorie → selecteer lead → schouw wordt aangemaakt met status "gepland" → redirect naar uitvoer-wizard
+**Nieuwe "Bedrijfsgegevens" tab inhoud:**
+- Formulier met velden: naam, email, telefoonnummer, website, adres, postcode, plaats, kvk, btw
+- Contactpersoon sectie: voornaam, achternaam, functie, email, telefoon
+- Alles uit de bestaande `partners` tabel kolommen — er is geen migratie nodig
+
+**Nieuwe "Beveiliging" tab:**
+- Wachtwoord wijzigen (verplaatst uit huidige pagina)
+- Informatieblok over tweefactorauthenticatie (placeholder — "Binnenkort beschikbaar")
+- Actieve sessie info (laatste login timestamp uit profiel)
+- Informatieblok over gegevensbescherming / AVG compliance
+
+**Layout:** Links een verticale navigatie (`flex` layout, niet tabs component), rechts de content. Op mobiel wordt de navigatie een horizontale scrollbare balk bovenaan.
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/pages/Instellingen.tsx` | Fix logo upload: unieke bestandsnaam, cache-busting, placeholder, betere error handling |
-| `src/pages/Schouwen.tsx` | Voeg "Direct starten" knop + dialog toe met categorie/lead selectie, creëert schouw en navigeert naar uitvoer-wizard |
+| `src/components/AppSidebar.tsx` | Gegroepeerde navigatie met labels en separators |
+| `src/pages/Dashboard.tsx` | Compacte stats, module tegels grid, notificatie panel, extra statistieken |
+| `src/pages/Instellingen.tsx` | Tab-navigatie layout, nieuwe Bedrijfsgegevens tab, Beveiliging tab |
 
