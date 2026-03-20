@@ -340,7 +340,7 @@ const OfferteNieuw = () => {
             <CardTitle className="text-base">Klantgegevens</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Klantnaam *</Label><Input value={klantNaam} onChange={e => setKlantNaam(e.target.value)} required className="rounded-xl" /></div>
               <div><Label>E-mail *</Label><Input type="email" value={klantEmail} onChange={e => setKlantEmail(e.target.value)} required className="rounded-xl" /></div>
             </div>
