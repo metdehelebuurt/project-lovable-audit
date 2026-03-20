@@ -198,8 +198,9 @@ const ProductDetail = () => {
           duration: 6000,
         });
       } else {
+        setIsDirty(true);
         toast.success(`${filledCount} specificaties gevonden & ingevuld`, {
-          description: sourceLabel,
+          description: `${sourceLabel}${data.raw_count && data.raw_count !== filledCount ? ` (${data.raw_count} raw → ${filledCount} gemapped)` : ""}`,
           duration: 6000,
         });
       }
