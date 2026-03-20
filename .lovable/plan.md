@@ -1,59 +1,50 @@
 
 
-## Plan: Fix AI specificaties, SpecsEditor layout & professionele PDF
+## Plan: Partner-specifieke offerte_tekst & Orderbevestiging PDF
 
-### Drie problemen
+### Probleem 1: offerte_tekst is niet per partner opgeslagen
+Het veld `offerte_tekst` staat op de `producten` tabel — globaal. Als meerdere partners hetzelfde product gebruiken, overschrijven ze elkaars tekst. De tekst verschijnt wel correct in de offerte-PDF (via de `regels` JSONB snapshot).
 
-1. **AI invullen werkt niet** — De edge function `ai-verify-product-specs` gebruikt label-gebaseerde keys (`"Vermogen (Wp)"`) maar de frontend verwacht machine-keys (`"vermogen_wp"`). De AI-output matcht nooit met de UI-definities.
-2. **Specificaties staan in accordions** — De SpecsEditor toont velden in dichtgeklapte accordions. Moet een platte, overzichtelijke lijst worden.
-3. **PDF datasheet ziet er niet professioneel uit** — Te krap, emoji-iconen, matige typografie, past niet bij de huisstijl (#5B58E1, Rubik font, moderne afgeronde stijl).
+### Probleem 2: Geen orderbevestiging PDF bij opdrachten
+De `OpdrachtDetail.tsx` pagina toont geen orderbevestiging-document. Er is wel een knop "Opdrachtbevestiging versturen" maar geen preview/download van het document.
 
 ---
 
-### 1. Fix AI edge function: gebruik machine-keys
+### Oplossing 1: Partner-specifieke offerte_tekst
 
-**`supabase/functions/ai-verify-product-specs/index.ts`**
+**Nieuwe tabel: `partner_product_teksten`**
+```sql
+CREATE TABLE public.partner_product_teksten (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  product_id uuid NOT NULL,
+  offerte_tekst text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(partner_id, product_id)
+);
+```
+Met RLS policies die het partner-isolatie patroon volgen.
 
-Vervang de hardcoded `categorySpecKeys` met een dynamische mapping gebouwd vanuit dezelfde spec-definities die de frontend gebruikt. De AI wordt gevraagd specs te retourneren met de exacte machine-keys (bijv. `vermogen_wp`, `bruikbare_capaciteit_kwh`).
+**Wijzigingen in code:**
+- `ProductDetail.tsx`: sectie toevoegen om de partner-specifieke offerte_tekst in te voeren/bewerken (opslaan in `partner_product_teksten` i.p.v. `producten.offerte_tekst`)
+- `OfferteNieuw.tsx` & `Offertes.tsx`: bij het selecteren van een product, eerst de partner-specifieke tekst ophalen uit `partner_product_teksten`, fallback naar `producten.offerte_tekst`
+- De snapshot in `regels` JSONB blijft hetzelfde — de juiste tekst wordt al bij aanmaak opgeslagen
 
-Concreet:
-- Bouw een key-mapping in de prompt: `vermogen_wp: Vermogen (Wp), efficiency_pct: Efficiency (%), ...`
-- Instrueer de AI om EXACT die keys te gebruiken in `corrected_specs`
-- Verwijder de aparte `installatie_specs` — alles gaat in één `corrected_specs` object met de juiste keys
-- De frontend hoeft dan alleen `data.corrected_specs` direct als specs op te slaan
+### Oplossing 2: Orderbevestiging PDF
 
-### 2. SpecsEditor: platte layout zonder accordions
+**Nieuw component: `src/components/OrderbevestigingPDF.tsx`**
+Een professioneel orderbevestigingsdocument met:
+- Bedrijfsbranding (logo, kleuren, contactgegevens)
+- Ordernummer, datum, klantgegevens
+- Producttabel met offerteregels (incl. offerte_tekst)
+- Totaalbedrag
+- Bevestigingsdatum en -status
 
-**`src/components/producten/SpecsEditor.tsx`**
-
-Vervang de accordion-layout met een platte gegroepeerde weergave:
-- Elke groep als een sectie met een kleur-accent lijn + header (zoals de read-only view)
-- Alle velden direct zichtbaar (geen open/dichtklappen)
-- Twee-koloms grid voor de velden
-- Compactere styling
-
-### 3. Professionele PDF datasheet
-
-**`src/components/producten/ProductDatasheet.tsx`**
-
-Volledig herontwerp van de PDF layout:
-- Verwijder emoji-iconen, gebruik typografische accenten
-- Moderne header met gradient-accent, logo en contactgegevens
-- Hero-sectie met product-afbeelding en key-specs als badges
-- Specificaties in een strakke twee-koloms tabel per groep
-- Subtielere kleuren, betere whitespace
-- Footer met bedrijfsgegevens in donkere balk
-- Font: Rubik (past bij platform), professionele typografie
-- Kleur: primaire kleur (#5B58E1) als accent, niet als achtergrond
-
-### 4. ProductDetail.tsx: fix AI save flow
-
-**`src/pages/ProductDetail.tsx`**
-
-In `handleAiVerify`:
-- Sla `corrected_specs` direct op (keys matchen nu met definities)
-- Geen aparte `installatie_specs` merge meer nodig
-- Na opslaan: invalidate query zodat read-only view direct bijwerkt
+**Wijzigingen in `OpdrachtDetail.tsx`:**
+- Knop "Orderbevestiging bekijken" toevoegen die een dialog opent met het PDF-preview component
+- Knop "PDF downloaden" via `window.print()`
+- Partner-branding ophalen voor de PDF
 
 ---
 
@@ -61,8 +52,10 @@ In `handleAiVerify`:
 
 | Bestand | Actie |
 |---------|-------|
-| `supabase/functions/ai-verify-product-specs/index.ts` | Fix: gebruik machine-keys uit definitie-schema |
-| `src/components/producten/SpecsEditor.tsx` | Refactor: platte layout zonder accordions |
-| `src/components/producten/ProductDatasheet.tsx` | Herontwerp: professionele moderne PDF |
-| `src/pages/ProductDetail.tsx` | Fix: AI save flow aanpassen |
+| Migratie | `partner_product_teksten` tabel + RLS |
+| `src/components/OrderbevestigingPDF.tsx` | **Nieuw** — orderbevestiging layout |
+| `src/pages/OpdrachtDetail.tsx` | Orderbevestiging preview/download toevoegen |
+| `src/pages/ProductDetail.tsx` | Partner-specifieke offerte_tekst editor |
+| `src/pages/OfferteNieuw.tsx` | Partner-tekst ophalen bij productselectie |
+| `src/pages/Offertes.tsx` | Idem |
 
