@@ -600,7 +600,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Current datasheet display */}
-              {(datasheetPublicUrl || localPdfUrl) ? (
+              {(localPdfUrl || pdfBlobUrl || datasheetPublicUrl) ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
                     <FileText className="h-6 w-6 text-primary" />
@@ -628,7 +628,11 @@ const ProductDetail = () => {
                       )}
                     </div>
                   </div>
-                  <iframe src={localPdfUrl || datasheetPublicUrl!} className="w-full h-[600px] rounded-xl border" />
+                  <iframe
+                    src={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                    className="w-full h-[600px] rounded-xl border"
+                    title="PDF Datasheet"
+                  />
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
