@@ -478,7 +478,7 @@ const Offertes = () => {
                       <TableCell className="font-medium">{o.klant_naam}</TableCell>
                       <TableCell>{formatCurrency(o.totaal_bedrag)}</TableCell>
                       <TableCell>{new Date(o.geldig_tot).toLocaleDateString("nl-NL")}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
                         {o.status === "geaccepteerd" ? (
                           <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
                         ) : (
