@@ -58,14 +58,10 @@ const DatasheetCheckDialog = ({
         .upload(path, file, { upsert: true, contentType: "application/pdf" });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(path);
-
       const { error: updateError } = await supabase
         .from("producten")
         .update({
-          datasheet_url: urlData.publicUrl,
+          datasheet_url: path,
           datasheet_type: "fabrikant",
         })
         .eq("id", productId);

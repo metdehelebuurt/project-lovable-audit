@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Download, Eye, FileText, CheckCircle,
-  Package, Pencil, Save, X,
+  Package, Pencil, Save, X, Upload,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProductImage from "@/components/producten/ProductImage";
@@ -51,6 +51,8 @@ const ProductDetail = () => {
   const [partnerTekst, setPartnerTekst] = useState("");
   const [editingTekst, setEditingTekst] = useState(false);
   const [savingTekst, setSavingTekst] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -181,9 +183,56 @@ const ProductDetail = () => {
     }
   };
 
+  // Build datasheet URL — handle both relative paths and full URLs
+  const buildDatasheetUrl = (url: string | null) => {
+    if (!url) return null;
+    if (url.startsWith("http")) return url;
+    return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${url}`;
+  };
+
   const datasheetPublicUrl = product?.datasheet_url && product?.datasheet_type === "fabrikant"
-    ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${product.datasheet_url}`
+    ? buildDatasheetUrl(product.datasheet_url)
     : null;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !product) return;
+    if (file.type !== "application/pdf") { toast.error("Alleen PDF-bestanden zijn toegestaan"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
+    setUploading(true);
+    try {
+      const path = `datasheets/${product.id}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(path, file, { upsert: true, contentType: "application/pdf" });
+      if (uploadError) throw uploadError;
+      const { error: updateErr } = await supabase.from("producten")
+        .update({ datasheet_url: path, datasheet_type: "fabrikant" })
+        .eq("id", product.id);
+      if (updateErr) throw updateErr;
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      toast.success("Datasheet geüpload");
+    } catch (err: any) {
+      toast.error("Upload mislukt", { description: err.message });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleGenerateDatasheet = async () => {
+    if (!product) return;
+    // First run AI verify to fill specs, then mark as generated
+    await handleAiVerify();
+    const { error } = await supabase.from("producten")
+      .update({ datasheet_type: "gegenereerd" })
+      .eq("id", product.id);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      const p = await loadPartner();
+      if (p) setPreviewOpen(true);
+    }
+  };
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Laden...</div>;
   if (!product) return <div className="p-8 text-center text-muted-foreground">Product niet gevonden</div>;
@@ -366,35 +415,26 @@ const ProductDetail = () => {
                 <div className="space-y-6">
                   {Object.entries(grouped).map(([group, defs]) => {
                     const filledInGroup = defs.filter(d => specs[d.key] && String(specs[d.key]).trim() !== "");
-                    const emptyCount = defs.length - filledInGroup.length;
-                    if (filledInGroup.length === 0) {
-                      return (
-                        <div key={group}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-1 h-5 rounded bg-muted-foreground/30" />
-                            <h3 className="text-sm font-semibold text-muted-foreground">{group}</h3>
-                            <span className="text-xs text-muted-foreground">(0/{defs.length})</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground pl-3">Nog geen waarden ingevuld</p>
-                        </div>
-                      );
-                    }
                     return (
                       <div key={group}>
                         <div className="flex items-center gap-2 mb-3">
-                          <div className="w-1 h-5 rounded bg-primary" />
+                          <div className={`w-1 h-5 rounded ${filledInGroup.length > 0 ? "bg-primary" : "bg-muted-foreground/30"}`} />
                           <h3 className="text-sm font-semibold text-foreground">{group}</h3>
                           <span className="text-xs text-muted-foreground">({filledInGroup.length}/{defs.length})</span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
-                          {filledInGroup.map(def => (
-                            <div key={def.key} className="flex justify-between py-1.5 border-b border-border/50">
-                              <span className="text-sm text-muted-foreground">{def.label}</span>
-                              <span className="text-sm font-medium text-foreground">
-                                {specs[def.key]}{def.unit ? ` ${def.unit}` : ""}
-                              </span>
-                            </div>
-                          ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
+                          {defs.map(def => {
+                            const val = specs[def.key];
+                            const filled = val && String(val).trim() !== "";
+                            return (
+                              <div key={def.key} className="flex justify-between py-1.5 border-b border-border/40">
+                                <span className="text-sm text-muted-foreground">{def.label}</span>
+                                <span className={`text-sm ${filled ? "font-medium text-foreground" : "text-muted-foreground/50 italic"}`}>
+                                  {filled ? `${val}${def.unit ? ` ${def.unit}` : ""}` : "—"}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -427,13 +467,47 @@ const ProductDetail = () => {
           </Card>
         </TabsContent>
 
-        {/* ── DATASHEET ── */}
         <TabsContent value="datasheet">
           <Card className="rounded-2xl border-0 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Datasheet</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Upload section — always visible */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Fabrikant datasheet uploaden</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-lg"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    PDF uploaden
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-lg"
+                    onClick={handleGenerateDatasheet}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Datasheet genereren
+                  </Button>
+                </div>
+              </div>
+
+              {/* Current datasheet display */}
               {datasheetPublicUrl ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
@@ -451,23 +525,20 @@ const ProductDetail = () => {
                   <iframe src={datasheetPublicUrl} className="w-full h-[600px] rounded-xl border" />
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
-                      <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
-                    </div>
-                    <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
-                      <Eye className="h-4 w-4" /> Bekijk & Print
-                    </Button>
+                <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
+                    <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
                   </div>
+                  <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
+                    <Eye className="h-4 w-4" /> Bekijk & Print
+                  </Button>
                 </div>
               ) : (
-                <div className="text-center py-8 space-y-3">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto" />
-                  <p className="text-sm text-muted-foreground">Geen datasheet beschikbaar</p>
-                  <p className="text-xs text-muted-foreground">Gebruik de AI Controle tab om specificaties aan te vullen en een datasheet te genereren.</p>
+                <div className="text-center py-6">
+                  <Package className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Nog geen datasheet — upload een PDF of laat AI er een genereren.</p>
                 </div>
               )}
             </CardContent>
