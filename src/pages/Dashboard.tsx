@@ -106,7 +106,7 @@ const Dashboard = () => {
           supabase.from("leads").select("id", { count: "exact", head: true }),
           supabase.from("schouwen").select("id", { count: "exact", head: true }),
           supabase.from("offertes").select("id", { count: "exact", head: true }),
-          supabase.from("offertes").select("id", { count: "exact", head: true }).eq("status", "verstuurd"),
+          supabase.from("offertes").select("id", { count: "exact", head: true }).eq("status", "verzonden"),
           supabase.from("afspraken").select("id", { count: "exact", head: true }).eq("datum", today),
         ]);
         counts.leads = leads.count ?? 0;
