@@ -369,8 +369,40 @@ export default function OffertePDFPreview() {
           klantAdres={offerte.klant_adres || null}
           klantPostcode={offerte.klant_postcode || null}
           klantPlaats={offerte.klant_plaats || null}
+          heroImageUrl={tc.hero_image_url || null}
+          heroTitle={tc.hero_title || "Offerte"}
         />
+        <PageNumber num={1} />
       </div>}
+
+      {/* ═══════════════ PAGE 2: INHOUDSOPGAVE ═══════════════ */}
+      <div className="pdf-page" style={pageStyle}>
+        <PageHeader />
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Inhoudsopgave</h2>
+          <div style={{ width: 64, height: 4, backgroundColor: pc, borderRadius: 2, marginBottom: 40 }} />
+          <div style={{ maxWidth: 500 }}>
+            {tocEntries.filter(e => e.label !== "Inhoudsopgave").map((entry, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "baseline", padding: "14px 0", borderBottom: `1px solid ${pcTint2}` }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: pcTint, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: pc, flexShrink: 0, marginRight: 16 }}>
+                  {entry.page}
+                </div>
+                <span style={{ fontSize: 15, fontWeight: 500, color: sc, flex: 1 }}>{entry.label}</span>
+                <span style={{ fontSize: 12, color: "#aaa", marginLeft: 12 }}>p. {entry.page}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 48, padding: "20px 24px", backgroundColor: pcTint, borderRadius: 12, borderLeft: `4px solid ${pc}` }}>
+            <p style={{ margin: 0, fontSize: 12, color: "#555", lineHeight: 1.7 }}>
+              <strong style={{ color: sc }}>Referentienummer:</strong> {offerte.offertenummer}<br />
+              <strong style={{ color: sc }}>Geldig tot:</strong> {formatDate(offerte.geldig_tot)}<br />
+              <strong style={{ color: sc }}>Adviseur:</strong> {adviseurNaam}
+            </p>
+          </div>
+        </div>
+        <PageFooter />
+        <PageNumber num={tocPage} />
+      </div>
 
       {/* ═══════════════ PAGE 2: PRODUCT INFO (dynamic template) ═══════════════ */}
       {tc.productpagina && producten.length > 0 && (
