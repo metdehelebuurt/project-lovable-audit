@@ -363,7 +363,7 @@ const OfferteDetail = () => {
                     : 0))}</span>
                 </div>
                 {offerteKortingWaarde > 0 && (
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between text-success">
                     <span>Korting ({offerteKortingType === "percentage" ? `${offerteKortingWaarde}%` : "vast bedrag"})</span>
                     <span>-{formatCurrency(
                       offerteKortingType === "percentage"
