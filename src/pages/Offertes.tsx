@@ -49,6 +49,8 @@ interface OfferteRegel {
   prijs_per_stuk: number;
   btw_percentage: number;
   korting_percentage: number;
+  korting_bedrag?: number;
+  korting_type?: "percentage" | "bedrag";
 }
 
 interface OfferteFormData {
@@ -69,6 +71,8 @@ interface OfferteFormData {
   regels: OfferteRegel[];
   include_schouw: boolean;
   include_energieadvies: boolean;
+  offerte_korting_type: "percentage" | "bedrag";
+  offerte_korting_waarde: number;
 }
 
 const emptyRegel: OfferteRegel = {
@@ -77,6 +81,8 @@ const emptyRegel: OfferteRegel = {
   prijs_per_stuk: 0,
   btw_percentage: 21,
   korting_percentage: 0,
+  korting_bedrag: 0,
+  korting_type: "percentage",
 };
 
 const emptyForm: OfferteFormData = {
