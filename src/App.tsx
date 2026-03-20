@@ -21,6 +21,7 @@ import SchouwDetail from "@/pages/SchouwDetail";
 import SchouwNieuw from "@/pages/SchouwNieuw";
 import SchouwUitvoeren from "@/pages/SchouwUitvoeren";
 import Offertes from "@/pages/Offertes";
+import OfferteDetail from "@/pages/OfferteDetail";
 import Opdrachten from "@/pages/Opdrachten";
 import OpdrachtDetail from "@/pages/OpdrachtDetail";
 import Installaties from "@/pages/Installaties";
