@@ -256,6 +256,13 @@ export default function OffertePDFPreview() {
   const EnergieComp = energieadviesTemplates[tc.energieadvies_variant] || EnergyCards;
   const VoorwaardenComp = voorwaardenTemplates[tc.voorwaarden_variant] || TermsSimple;
 
+  /* ─── Page number component ─── */
+  const PageNumber = ({ num }: { num: number }) => (
+    <div style={{ position: "absolute", bottom: 12, right: 20, fontSize: 9, color: "#bbb", fontFamily: "'Rubik', sans-serif" }}>
+      {num}
+    </div>
+  );
+
   /* ─── Shared components ─── */
   const PageHeader = () => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: `2px solid ${pc}`, marginBottom: 24 }}>
@@ -285,6 +292,19 @@ export default function OffertePDFPreview() {
       </p>
     </div>
   );
+
+  /* ─── Build TOC entries ─── */
+  const tocEntries: { label: string; page: number }[] = [];
+  let currentPage = 1;
+  if (tc.voorblad) { tocEntries.push({ label: "Voorblad", page: currentPage }); currentPage++; }
+  const tocPage = currentPage; currentPage++;
+  tocEntries.push({ label: "Inhoudsopgave", page: tocPage });
+  if (tc.productpagina && producten.length > 0) { tocEntries.push({ label: "Producten", page: currentPage }); currentPage++; }
+  const datasheetProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd");
+  datasheetProducts.forEach(p => { tocEntries.push({ label: `Datasheet: ${p.naam}`, page: currentPage }); currentPage++; });
+  if (tc.energieadvies && energieadvies) { tocEntries.push({ label: "Besparing & Rendement", page: currentPage }); currentPage++; }
+  tocEntries.push({ label: "Opdrachtbevestiging & Voorwaarden", page: currentPage }); currentPage++;
+  if (tc.schouwrapport && offerte.include_schouw && schouw) { tocEntries.push({ label: "Schouwrapport", page: currentPage }); currentPage++; }
 
   const pageStyle: React.CSSProperties = {
     width: "210mm",
