@@ -492,7 +492,7 @@ export default function OffertePDF() {
       case "voorblad":
         if (config.secties_voorblad === false) return null;
         return (
-          <div key="voorblad" style={{ ...pageStyle, padding: 0 }}>
+          <div key="voorblad" style={{ ...pageStyle, padding: 0, height: "297mm", minHeight: "297mm" }}>
             <VoorbladComp
               pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl}
               partnerNaam={partner.naam} klantNaam={offerte.klant_naam}
