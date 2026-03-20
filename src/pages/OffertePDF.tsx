@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Check, Save, Eye, ZoomIn, ImageIcon, Download, Mail,
-  ChevronDown, ChevronUp, GripVertical,
+  ChevronDown, ChevronUp, GripVertical, Upload, X, Loader2,
 } from "lucide-react";
 import {
   templateSecties,
@@ -212,6 +212,10 @@ export default function OffertePDF() {
   const [expandedSectie, setExpandedSectie] = useState<string | null>("voorblad");
   const [showCustomization, setShowCustomization] = useState(false);
   const [zoom, setZoom] = useState(45);
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [heroGallery, setHeroGallery] = useState<string[]>([]);
+  const [showGallery, setShowGallery] = useState(false);
+  const heroFileRef = useRef<HTMLInputElement>(null);
 
   // Drag & drop state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -260,6 +264,36 @@ export default function OffertePDF() {
       setLoading(false);
     })();
   }, [id]);
+
+  // Load hero gallery images
+  useEffect(() => {
+    if (!offerte?.partner_id) return;
+    (async () => {
+      const { data } = await supabase.storage.from("partner-assets").list(`${offerte.partner_id}/hero`, { limit: 50 });
+      if (data && data.length > 0) {
+        const urls = data
+          .filter(f => f.name && !f.name.startsWith("."))
+          .map(f => `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${offerte.partner_id}/hero/${f.name}`);
+        setHeroGallery(urls);
+      }
+    })();
+  }, [offerte?.partner_id]);
+
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !offerte?.partner_id) return;
+    setHeroUploading(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${offerte.partner_id}/hero/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
+    if (error) { toast.error("Upload mislukt"); setHeroUploading(false); return; }
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${path}`;
+    setConfig(prev => ({ ...prev, hero_image_url: url }));
+    setHeroGallery(prev => [url, ...prev]);
+    setHeroUploading(false);
+    toast.success("Afbeelding geüpload");
+    if (heroFileRef.current) heroFileRef.current.value = "";
+  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -492,7 +526,7 @@ export default function OffertePDF() {
       case "voorblad":
         if (config.secties_voorblad === false) return null;
         return (
-          <div key="voorblad" style={{ ...pageStyle, padding: 0 }}>
+          <div key="voorblad" style={{ ...pageStyle, padding: 0, height: "297mm", minHeight: "297mm" }}>
             <VoorbladComp
               pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl}
               partnerNaam={partner.naam} klantNaam={offerte.klant_naam}
@@ -869,15 +903,60 @@ export default function OffertePDF() {
                     <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Voorblad titel</Label>
                     <Input value={config.hero_title || ""} onChange={e => setConfig(p => ({ ...p, hero_title: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="Offerte" />
                   </div>
+
+                  {/* Hero image upload + gallery */}
                   <div>
-                    <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Hero afbeelding URL</Label>
-                    <Input value={config.hero_image_url || ""} onChange={e => setConfig(p => ({ ...p, hero_image_url: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="https://voorbeeld.nl/afbeelding.jpg" />
+                    <Label className="text-xs flex items-center gap-1 mb-1.5"><ImageIcon className="h-3 w-3" /> Voorblad afbeelding</Label>
+                    <input ref={heroFileRef} type="file" accept="image/*" onChange={handleHeroUpload} className="hidden" />
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => heroFileRef.current?.click()} disabled={heroUploading}>
+                        {heroUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                        {heroUploading ? "Uploaden..." : "Upload"}
+                      </Button>
+                      {heroGallery.length > 0 && (
+                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => setShowGallery(!showGallery)}>
+                          <ImageIcon className="h-3 w-3" /> Galerij ({heroGallery.length})
+                        </Button>
+                      )}
+                      {config.hero_image_url && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfig(p => ({ ...p, hero_image_url: "" }))}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Gallery grid */}
+                    {showGallery && heroGallery.length > 0 && (
+                      <div className="grid grid-cols-3 gap-1.5 mt-2">
+                        {heroGallery.map((url, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => { setConfig(p => ({ ...p, hero_image_url: url })); setShowGallery(false); }}
+                            className={`relative rounded-md overflow-hidden border-2 aspect-[3/2] transition-all hover:opacity-90 ${config.hero_image_url === url ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
+                          >
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            {config.hero_image_url === url && (
+                              <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                                <Check className="h-2.5 w-2.5" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Current preview */}
                     {config.hero_image_url && (
-                      <div className="mt-1.5 rounded-lg overflow-hidden border border-border h-16">
+                      <div className="mt-1.5 rounded-lg overflow-hidden border border-border h-20">
                         <img src={config.hero_image_url} alt="Hero preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       </div>
                     )}
+
+                    {/* Manual URL fallback */}
+                    <Input value={config.hero_image_url || ""} onChange={e => setConfig(p => ({ ...p, hero_image_url: e.target.value }))} className="h-7 text-[10px] rounded-lg mt-1.5" placeholder="Of plak een URL..." />
                   </div>
+
                   <Separator />
                   {(["badge_1", "badge_2", "badge_3"] as const).map((key, i) => (
                     <div key={key}>
