@@ -433,17 +433,64 @@ const OfferteNieuw = () => {
                   </Select>
                 </div>
                 <div><Label>Omschrijving *</Label><Input value={regel.omschrijving} onChange={e => updateRegel(idx, "omschrijving", e.target.value)} required className="rounded-xl" /></div>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-5 gap-3">
                   <div><Label>Aantal</Label><Input type="number" min={1} value={regel.aantal} onChange={e => updateRegel(idx, "aantal", Number(e.target.value))} className="rounded-xl" /></div>
                   <div><Label>Prijs excl. BTW</Label><Input type="number" step="0.01" min={0} value={regel.prijs_per_stuk} onChange={e => updateRegel(idx, "prijs_per_stuk", Number(e.target.value))} className="rounded-xl" /></div>
                   <div><Label>BTW %</Label><Input type="number" min={0} max={100} value={regel.btw_percentage} onChange={e => updateRegel(idx, "btw_percentage", Number(e.target.value))} className="rounded-xl" /></div>
-                  <div><Label>Korting %</Label><Input type="number" min={0} max={100} value={regel.korting_percentage} onChange={e => updateRegel(idx, "korting_percentage", Number(e.target.value))} className="rounded-xl" /></div>
+                  <div>
+                    <Label>Korting type</Label>
+                    <Select value={regel.korting_type || "percentage"} onValueChange={v => {
+                      setRegels(p => p.map((r, i) => i === idx ? { ...r, korting_type: v as "percentage" | "bedrag", korting_percentage: 0, korting_bedrag: 0 } : r));
+                    }}>
+                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="bedrag">Bedrag (€)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{regel.korting_type === "bedrag" ? "Korting €" : "Korting %"}</Label>
+                    {regel.korting_type === "bedrag" ? (
+                      <Input type="number" step="0.01" min={0} value={regel.korting_bedrag || 0} onChange={e => updateRegel(idx, "korting_bedrag", Number(e.target.value))} className="rounded-xl" />
+                    ) : (
+                      <Input type="number" min={0} max={100} value={regel.korting_percentage || 0} onChange={e => updateRegel(idx, "korting_percentage", Number(e.target.value))} className="rounded-xl" />
+                    )}
+                  </div>
                 </div>
                 <div className="text-right text-sm text-muted-foreground">
-                  Subtotaal: {formatCurrency(regel.aantal * regel.prijs_per_stuk * (1 - regel.korting_percentage / 100))}
+                  Subtotaal: {formatCurrency(regelSubtotaal(regel))}
                 </div>
               </div>
             ))}
+
+            <Separator />
+
+            {/* Offerte-level korting */}
+            <div className="border rounded-xl p-4 bg-muted/20">
+              <Label className="text-sm font-medium">Korting over hele offerte</Label>
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <Select value={offerteKortingType} onValueChange={v => { setOfferteKortingType(v as "percentage" | "bedrag"); setOfferteKortingWaarde(0); }}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="bedrag">Vast bedrag (€)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={offerteKortingWaarde}
+                  onChange={e => setOfferteKortingWaarde(Number(e.target.value))}
+                  placeholder={offerteKortingType === "percentage" ? "bijv. 5" : "bijv. 250"}
+                  className="rounded-xl"
+                />
+                <div className="flex items-center text-sm text-muted-foreground">
+                  {offerteKortingWaarde > 0 && <>Korting: -{formatCurrency(totals.offerteKorting)}</>}
+                </div>
+              </div>
+            </div>
 
             <Separator />
             <div className="space-y-2">
@@ -451,6 +498,12 @@ const OfferteNieuw = () => {
                 <span className="text-muted-foreground">Subtotaal excl. BTW</span>
                 <span>{formatCurrency(totals.subtotaal)}</span>
               </div>
+              {totals.offerteKorting > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Korting ({offerteKortingType === "percentage" ? `${offerteKortingWaarde}%` : "vast bedrag"})</span>
+                  <span>-{formatCurrency(totals.offerteKorting)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">BTW</span>
                 <span>{formatCurrency(totals.btwBedrag)}</span>
