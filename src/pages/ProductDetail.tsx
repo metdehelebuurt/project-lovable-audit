@@ -10,12 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Download, Eye, FileText, CheckCircle,
-  Package, ExternalLink,
+  Package, Pencil, Save, X,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProductImage from "@/components/producten/ProductImage";
 import ProductDatasheet from "@/components/producten/ProductDatasheet";
-import { getGroupedSpecs, categorySpecDefinitions, type SpecDefinition } from "@/components/producten/categorySpecDefinitions";
+import { getGroupedSpecs, categorySpecDefinitions } from "@/components/producten/categorySpecDefinitions";
+import SpecsEditor from "@/components/producten/SpecsEditor";
 import type { Database } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -43,6 +44,9 @@ const ProductDetail = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partner, setPartner] = useState<any>(null);
+  const [editingSpecs, setEditingSpecs] = useState(false);
+  const [editedSpecs, setEditedSpecs] = useState<Record<string, string>>({});
+  const [savingSpecs, setSavingSpecs] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -116,6 +120,26 @@ const ProductDetail = () => {
   const handlePreview = async () => {
     const p = await loadPartner();
     if (p) setPreviewOpen(true);
+  };
+
+  const handleSaveSpecs = async () => {
+    if (!product) return;
+    setSavingSpecs(true);
+    try {
+      const cleaned: Record<string, string> = {};
+      Object.entries(editedSpecs).forEach(([k, v]) => {
+        if (k.trim()) cleaned[k.trim()] = v;
+      });
+      const { error } = await supabase.from("producten").update({ specs: cleaned }).eq("id", product.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      setEditingSpecs(false);
+      toast.success("Specificaties opgeslagen");
+    } catch (err: any) {
+      toast.error("Opslaan mislukt", { description: err.message });
+    } finally {
+      setSavingSpecs(false);
+    }
   };
 
   const datasheetPublicUrl = product?.datasheet_url && product?.datasheet_type === "fabrikant"
@@ -223,7 +247,6 @@ const ProductDetail = () => {
                   )}
                 </CardContent>
               </Card>
-              {/* Product codes */}
               {(product.product_code || product.artikelnummer || product.ean_code) && (
                 <Card className="rounded-2xl border-0 shadow-sm">
                   <CardContent className="pt-4 pb-4">
@@ -243,19 +266,64 @@ const ProductDetail = () => {
         <TabsContent value="specificaties">
           <Card className="rounded-2xl border-0 shadow-sm">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-base">Technische Specificaties</CardTitle>
-                <Badge variant="outline">{filledSpecs.length} van {totalDefined} ingevuld</Badge>
+                <div className="flex items-center gap-2">
+                  {editingSpecs ? (
+                    <>
+                      <Button variant="ghost" size="sm" className="gap-1.5 rounded-lg" onClick={() => setEditingSpecs(false)}>
+                        <X className="h-4 w-4" /> Annuleren
+                      </Button>
+                      <Button size="sm" className="gap-1.5 rounded-lg" disabled={savingSpecs} onClick={handleSaveSpecs}>
+                        {savingSpecs ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Opslaan
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline" size="sm" className="gap-1.5 rounded-lg"
+                        onClick={() => { setEditedSpecs({ ...specs }); setEditingSpecs(true); }}
+                      >
+                        <Pencil className="h-4 w-4" /> Bewerken
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-lg" onClick={handleAiVerify} disabled={aiLoading}>
+                        {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        AI invullen
+                      </Button>
+                      <Button size="sm" className="gap-1.5 rounded-lg" onClick={handlePreview}>
+                        <Download className="h-4 w-4" /> Specificatieblad
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
+              {!editingSpecs && (
+                <Badge variant="outline" className="w-fit mt-1">{filledSpecs.length} van {totalDefined} ingevuld</Badge>
+              )}
             </CardHeader>
             <CardContent>
-              {Object.keys(grouped).length === 0 ? (
+              {editingSpecs ? (
+                <SpecsEditor specs={editedSpecs} onChange={setEditedSpecs} categorie={product.categorie} />
+              ) : Object.keys(grouped).length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">Geen specificatie-definitie beschikbaar voor deze categorie.</p>
               ) : (
                 <div className="space-y-6">
                   {Object.entries(grouped).map(([group, defs]) => {
                     const filledInGroup = defs.filter(d => specs[d.key] && String(specs[d.key]).trim() !== "");
-                    if (filledInGroup.length === 0) return null;
+                    const emptyCount = defs.length - filledInGroup.length;
+                    if (filledInGroup.length === 0) {
+                      return (
+                        <div key={group}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1 h-5 rounded bg-muted-foreground/30" />
+                            <h3 className="text-sm font-semibold text-muted-foreground">{group}</h3>
+                            <span className="text-xs text-muted-foreground">(0/{defs.length})</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground pl-3">Nog geen waarden ingevuld</p>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={group}>
                         <div className="flex items-center gap-2 mb-3">
@@ -276,7 +344,7 @@ const ProductDetail = () => {
                       </div>
                     );
                   })}
-                  {/* Custom specs (not in definitions) */}
+                  {/* Custom specs */}
                   {(() => {
                     const definedKeys = new Set((categorySpecDefinitions[product.categorie] || []).map(d => d.key));
                     const custom = Object.entries(specs).filter(([k, v]) => !definedKeys.has(k) && v && String(v).trim() !== "");
@@ -320,7 +388,7 @@ const ProductDetail = () => {
                       <p className="text-xs text-muted-foreground">PDF van de fabrikant</p>
                     </div>
                     <a href={datasheetPublicUrl} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" className="gap-2 rounded-pill">
+                      <Button size="sm" className="gap-2 rounded-lg">
                         <Download className="h-4 w-4" /> Download PDF
                       </Button>
                     </a>
@@ -335,7 +403,7 @@ const ProductDetail = () => {
                       <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
                       <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
                     </div>
-                    <Button size="sm" className="gap-2 rounded-pill" onClick={handlePreview}>
+                    <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
                       <Eye className="h-4 w-4" /> Bekijk & Print
                     </Button>
                   </div>
@@ -399,7 +467,7 @@ const ProductDetail = () => {
         <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
           <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
             <DialogHeader><DialogTitle>Specificatieblad Preview</DialogTitle></DialogHeader>
-            <Button size="sm" className="rounded-pill gap-2" onClick={() => window.print()}>
+            <Button size="sm" className="rounded-lg gap-2" onClick={() => window.print()}>
               <Download className="h-4 w-4" /> PDF downloaden
             </Button>
           </div>
