@@ -149,26 +149,34 @@ function buildSpecPrompt(categorie: string): string {
   return lines.join("\n");
 }
 
-// ── Firecrawl web search ──
-async function searchProductOnWeb(merk: string, model: string, naam: string): Promise<{ content: string; urls: string[] }> {
+// ── Cascading Firecrawl web search ──
+async function searchProductOnWeb(merk: string, model: string, naam: string): Promise<{ content: string; urls: string[]; source: "web" | "none" }> {
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL_API_KEY) {
     console.warn("FIRECRAWL_API_KEY not set — skipping web search");
-    return { content: "", urls: [] };
+    return { content: "", urls: [], source: "none" };
   }
 
-  const searchTerms = [merk, model, naam].filter(Boolean).join(" ");
-  const queries = [
-    `${searchTerms} datasheet specificaties`,
-    `${searchTerms} technical specifications`,
-  ];
+  // Build up to 4 SHORT queries — stop as soon as we have enough results
+  const queries: string[] = [];
+  if (naam) queries.push(`${naam} specifications`);
+  if (merk && model) queries.push(`${merk} ${model} datasheet`);
+  if (merk && naam) {
+    // Short version of naam: take first 3-4 words
+    const shortName = naam.split(/\s+/).slice(0, 4).join(" ");
+    if (shortName !== naam) queries.push(`${merk} ${shortName} specs`);
+  }
+  if (naam) queries.push(`${naam} technical data`);
+
+  // Deduplicate
+  const uniqueQueries = [...new Set(queries)];
 
   const allContent: string[] = [];
   const allUrls: string[] = [];
 
-  for (const query of queries) {
+  for (const query of uniqueQueries) {
     try {
-      console.log("Firecrawl search:", query);
+      console.log(`Firecrawl search: "${query}"`);
       const response = await fetch("https://api.firecrawl.dev/v1/search", {
         method: "POST",
         headers: {
@@ -177,7 +185,7 @@ async function searchProductOnWeb(merk: string, model: string, naam: string): Pr
         },
         body: JSON.stringify({
           query,
-          limit: 3,
+          limit: 5,
           scrapeOptions: { formats: ["markdown"] },
         }),
       });
@@ -190,21 +198,33 @@ async function searchProductOnWeb(merk: string, model: string, naam: string): Pr
 
       const result = await response.json();
       const items = result.data || [];
+      let usefulCount = 0;
       for (const item of items) {
-        if (item.markdown && item.markdown.length > 100) {
-          // Limit each page to 4000 chars to stay within token limits
-          allContent.push(`--- Bron: ${item.url || "onbekend"} ---\n${item.markdown.slice(0, 4000)}`);
+        if (item.markdown && item.markdown.length > 200) {
+          // 8000 chars per page for more context
+          allContent.push(`--- Bron: ${item.url || "onbekend"} ---\n${item.markdown.slice(0, 8000)}`);
           if (item.url) allUrls.push(item.url);
+          usefulCount++;
         }
+      }
+      console.log(`  → ${items.length} results, ${usefulCount} useful (${allContent.reduce((s, c) => s + c.length, 0)} total chars)`);
+
+      // Stop searching if we have enough useful content
+      if (usefulCount >= 2) {
+        console.log("  → Sufficient results found, stopping search cascade");
+        break;
       }
     } catch (err) {
       console.error("Firecrawl search failed:", err);
     }
   }
 
-  // Deduplicate URLs
   const uniqueUrls = [...new Set(allUrls)];
-  return { content: allContent.join("\n\n"), urls: uniqueUrls };
+  // Cap total content to ~24KB
+  let combined = allContent.join("\n\n");
+  if (combined.length > 24000) combined = combined.slice(0, 24000);
+
+  return { content: combined, urls: uniqueUrls, source: uniqueUrls.length > 0 ? "web" : "none" };
 }
 
 serve(async (req) => {
@@ -216,12 +236,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Step 1: Search the web for product data
+    // Step 1: Cascading web search
     const webData = await searchProductOnWeb(merk || "", model || "", naam || "");
     const hasWebData = webData.content.length > 200;
-    console.log(`Web search: ${hasWebData ? webData.urls.length + " sources found" : "no results"}`);
+    console.log(`Web search result: ${hasWebData ? webData.urls.length + " sources, " + webData.content.length + " chars" : "no results"}`);
 
-    // Step 2: Build prompt with web context
+    // Step 2: Build prompt
     const productInfo = [
       `Product: ${naam}`,
       merk && `Merk: ${merk}`,
@@ -236,12 +256,13 @@ serve(async (req) => {
     const categoryGuide = buildSpecPrompt(categorie);
 
     const webContext = hasWebData
-      ? `\n\nHieronder staan gescrapede bronpagina's van internet met productinformatie. Gebruik ALLEEN waarden die je hierin kunt vinden:\n\n${webData.content}`
+      ? `\n\nHieronder staan gescrapede bronpagina's van internet met productinformatie:\n\n${webData.content}`
       : "";
 
+    // Key difference: when no web data, use training data as PRIMARY source
     const sourceInstruction = hasWebData
-      ? `\n\nBELANGRIJK: Je hebt internetbronnen ontvangen. Extraheer ALLEEN waarden die LETTERLIJK in de bronnen staan. Vul NIETS in dat je niet in de bronnen kunt vinden. Als een spec niet in de bronnen staat, laat die key dan WEG uit corrected_specs.`
-      : `\n\nBELANGRIJK: Er zijn geen internetbronnen beschikbaar. Gebruik je trainingsdata om het product op te zoeken en vul ALLE specs in waar je een betrouwbare waarde voor hebt. Markeer in suggestions welke waarden gebaseerd zijn op trainingsdata.`;
+      ? `\n\nJe hebt internetbronnen ontvangen. Gebruik PRIMAIR de data uit deze bronnen. Als het exacte model niet letterlijk in de bronnen staat maar data van hetzelfde merk/productlijn WEL, gebruik die. Vul waar je zeker bent van de waarden ook aan vanuit je eigen kennis, maar geef prioriteit aan brondata.`
+      : `\n\nEr zijn GEEN internetbronnen beschikbaar. Gebruik je eigen trainingskennis om het product "${naam}" van merk "${merk || "onbekend"}" op te zoeken. Dit is een bekend product in de duurzame energie industrie. Vul ALLE specificaties in waar je een betrouwbare waarde voor hebt op basis van je kennis van dit product. Het is BELANGRIJK dat corrected_specs NIET leeg is — dit product is online beschikbaar en de specificaties zijn publiek bekend.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -255,7 +276,7 @@ serve(async (req) => {
           {
             role: "system",
             content: `Je bent een expert in duurzame energieproducten (zonnepanelen, thuisbatterijen, warmtepompen, laadpalen, omvormers).
-Je taak is om productspecificaties te extraheren en correct te mappen.
+Je taak is om productspecificaties te extraheren en correct te mappen naar de juiste machine-keys.
 
 ${categoryGuide}
 
@@ -264,10 +285,11 @@ KRITISCHE INSTRUCTIES:
 2. Voor boolean velden: gebruik "Ja" of "Nee" als waarde.
 3. Alle waarden in het Nederlands waar van toepassing.
 4. Geef een professionele Nederlandse productomschrijving als die ontbreekt of verbeterd kan worden.
-5. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT als je ze kunt vinden.
+5. Fysieke specs (lengte, breedte, hoogte, gewicht), garantie, certificeringen en prestatie-specs zijn VERPLICHT.
 ${sourceInstruction}
-6. Als het exacte model niet in de bronnen staat maar er WEL data is van hetzelfde merk of productlijn, gebruik die data en vermeld in suggestions dat het van een gerelateerd model komt.
-7. corrected_specs mag NIET leeg zijn als er bruikbare bronnen zijn — zoek altijd naar de meest relevante data.
+6. corrected_specs mag NIET leeg zijn — vul minimaal de kernspecificaties in.
+7. Nummers als string zonder eenheid (bijv. "4.8" niet "4.8 kWh"), tenzij het een bereik is (bijv. "40-58 V").
+8. Gebruik decimale punt, niet komma (bijv. "4.8" niet "4,8").
 
 Antwoord ALTIJD via de tool call.`
           },
@@ -289,12 +311,12 @@ Antwoord ALTIJD via de tool call.`
                   suggestions: {
                     type: "array",
                     items: { type: "string" },
-                    description: "List of suggestions, warnings or notes about the specs (in Dutch)"
+                    description: "List of suggestions, warnings or notes about the specs (in Dutch). Include data source info."
                   },
                   corrected_specs: {
                     type: "object",
                     additionalProperties: { type: "string" },
-                    description: "Complete set of ALL product specifications using machine-keys. Keys must be snake_case identifiers."
+                    description: "Complete set of ALL product specifications using machine-keys. Keys must be snake_case identifiers. MUST NOT be empty."
                   },
                   regelgeving: { type: "string", description: "Certifications and standards as comma-separated string in Dutch" },
                   omschrijving_suggestie: { type: "string", description: "Professional product description (2-4 sentences, in Dutch)" }
@@ -331,8 +353,12 @@ Antwoord ALTIJD via de tool call.`
 
     const result = JSON.parse(toolCall.function.arguments);
 
-    // Add source URLs to the response
+    // Add source metadata
     result.bronnen = webData.urls;
+    result.data_source = hasWebData ? "web" : "training_data";
+    result.filled_count = Object.keys(result.corrected_specs || {}).length;
+
+    console.log(`AI result: ${result.filled_count} specs, source: ${result.data_source}`);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
