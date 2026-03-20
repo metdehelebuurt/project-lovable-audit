@@ -181,10 +181,10 @@ const Leads = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Leads</h1>
-          <p className="text-muted-foreground mt-1">Beheer leads en prospects</p>
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground">Leads</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Beheer leads en prospects</p>
         </div>
         <div className="flex gap-2">
           <ImportExportButtons
@@ -201,7 +201,7 @@ const Leads = () => {
             queryKey={["leads"]}
           />
           <Button onClick={openCreate} className="rounded-pill gap-2">
-            <Plus className="h-4 w-4" /> Nieuwe Lead
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nieuwe Lead</span><span className="sm:hidden">Nieuw</span>
           </Button>
         </div>
       </div>
