@@ -101,7 +101,7 @@ const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
         <canvas
           ref={canvasRef}
           className="w-full touch-none cursor-crosshair"
-          style={{ height: 200 }}
+          style={{ height: "clamp(160px, 25vw, 200px)" }}
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={endDraw}

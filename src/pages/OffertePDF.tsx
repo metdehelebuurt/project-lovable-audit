@@ -761,9 +761,9 @@ export default function OffertePDF() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden -m-4 md:-m-8">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden -m-3 md:-m-8">
       {/* ═══ LEFT PANEL ═══ */}
-      <div className="w-[400px] flex-shrink-0 border-r border-border bg-background flex flex-col">
+      <div className="hidden md:flex w-[400px] flex-shrink-0 border-r border-border bg-background flex-col">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${id}`)} className="h-8 w-8">

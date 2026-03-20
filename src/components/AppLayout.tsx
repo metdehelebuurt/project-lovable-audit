@@ -10,7 +10,7 @@ export function AppLayout() {
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <AppHeader />
-          <main className="flex-1 p-4 md:p-8 bg-background overflow-auto">
+          <main className="flex-1 p-3 md:p-8 bg-background overflow-auto">
             <Outlet />
           </main>
         </div>
