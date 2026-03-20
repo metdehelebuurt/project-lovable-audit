@@ -184,16 +184,41 @@ const OfferteNieuw = () => {
     setSelectedLead(null);
   };
 
+  const regelSubtotaal = (r: OfferteRegel) => {
+    const bruto = r.aantal * r.prijs_per_stuk;
+    if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
+    return bruto * (1 - (r.korting_percentage || 0) / 100);
+  };
+
   const totals = useMemo(() => {
     let subtotaal = 0;
     let btwBedrag = 0;
     regels.forEach(r => {
-      const s = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
+      const s = regelSubtotaal(r);
       subtotaal += s;
       btwBedrag += s * (r.btw_percentage / 100);
     });
-    return { subtotaal, btwBedrag, totaal: subtotaal + btwBedrag };
-  }, [regels]);
+    // Offerte-level korting
+    let offerteKorting = 0;
+    if (offerteKortingWaarde > 0) {
+      if (offerteKortingType === "percentage") {
+        offerteKorting = subtotaal * (offerteKortingWaarde / 100);
+      } else {
+        offerteKorting = offerteKortingWaarde;
+      }
+    }
+    const subtotaalNaKorting = subtotaal - offerteKorting;
+    // Herbereken BTW over subtotaal na korting (proportioneel)
+    const btwFactor = subtotaal > 0 ? btwBedrag / subtotaal : 0;
+    const btwNaKorting = subtotaalNaKorting * btwFactor;
+    return {
+      subtotaal,
+      offerteKorting,
+      subtotaalNaKorting,
+      btwBedrag: btwNaKorting,
+      totaal: subtotaalNaKorting + btwNaKorting,
+    };
+  }, [regels, offerteKortingType, offerteKortingWaarde]);
 
   const addRegel = () => setRegels(p => [...p, { ...emptyRegel }]);
   const removeRegel = (idx: number) => setRegels(p => p.filter((_, i) => i !== idx));
