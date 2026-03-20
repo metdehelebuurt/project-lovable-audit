@@ -340,6 +340,30 @@ const ProductDetail = () => {
     }
   };
 
+  const handleSaveProduct = async () => {
+    if (!product) return;
+    setSavingProduct(true);
+    try {
+      const { error } = await supabase.from("producten").update({
+        naam: product.naam,
+        merk: product.merk,
+        model: product.model,
+        omschrijving: product.omschrijving,
+        prijs_excl_btw: product.prijs_excl_btw,
+        certificeringen: product.certificeringen,
+        garantie_jaren: product.garantie_jaren,
+        specs: product.specs,
+      }).eq("id", product.id);
+      if (error) throw error;
+      setIsDirty(false);
+      toast.success("Product opgeslagen");
+    } catch (err: any) {
+      toast.error("Opslaan mislukt", { description: err.message });
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Laden...</div>;
   if (!product) return <div className="p-8 text-center text-muted-foreground">Product niet gevonden</div>;
 
