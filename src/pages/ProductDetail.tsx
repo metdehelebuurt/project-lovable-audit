@@ -154,8 +154,8 @@ const ProductDetail = () => {
     if (!product) return;
     setAiLoading(true);
     try {
-      // If a manufacturer PDF is uploaded, use PDF parser instead of web search
-      const hasPdf = product.datasheet_type === "fabrikant" && product.datasheet_url;
+      // If a manufacturer PDF is uploaded, always use PDF parser
+      const hasPdf = (product.datasheet_type === "fabrikant" && product.datasheet_url) || localPdfUrl;
       
       let corrected: Record<string, string> = {};
       let description = "";
@@ -165,9 +165,20 @@ const ProductDetail = () => {
           body: { product_id: product.id, categorie: product.categorie },
         });
         if (error) throw error;
+        
+        // Handle 422 / empty results with clear feedback
+        if (data?.error && (!data?.extracted_specs || Object.keys(data.extracted_specs).length === 0)) {
+          toast.warning("Geen specs gevonden in PDF", {
+            description: data.error,
+            duration: 8000,
+          });
+          return;
+        }
         if (data?.error) { toast.error(data.error); return; }
+        
         corrected = data.extracted_specs || {};
-        description = `Geëxtraheerd uit geüploade PDF`;
+        const method = data.extraction_method === "firecrawl_text" ? "tekst-extractie" : "PDF-scan";
+        description = `${data.filled_count || Object.keys(corrected).length} specs via ${method} uit PDF`;
         
         const updateData: any = { specs: { ...specs, ...corrected } };
         if (data.product_merk && !product.merk) updateData.merk = data.product_merk;
@@ -201,10 +212,17 @@ const ProductDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["product", id] });
 
       const newCount = Object.keys(corrected).length;
-      toast.success(`${newCount} specificaties gevonden & ingevuld`, {
-        description,
-        duration: 6000,
-      });
+      if (newCount === 0) {
+        toast.warning("Geen nieuwe specificaties gevonden", {
+          description: "Probeer een gedetailleerdere datasheet te uploaden.",
+          duration: 6000,
+        });
+      } else {
+        toast.success(`${newCount} specificaties gevonden & ingevuld`, {
+          description,
+          duration: 6000,
+        });
+      }
     } catch (err: any) {
       toast.error("AI verificatie mislukt", { description: err.message });
     } finally {
@@ -288,6 +306,15 @@ const ProductDetail = () => {
         body: { product_id: product.id, categorie: product.categorie },
       });
       if (error) throw error;
+      
+      // Handle empty results
+      if (data?.error && (!data?.extracted_specs || Object.keys(data.extracted_specs).length === 0)) {
+        toast.warning("Geen specs gevonden in PDF", {
+          description: data.error,
+          duration: 8000,
+        });
+        return;
+      }
       if (data?.error) { toast.error(data.error); return; }
 
       const extracted = data.extracted_specs || {};
@@ -302,9 +329,15 @@ const ProductDetail = () => {
 
       queryClient.invalidateQueries({ queryKey: ["product", id] });
       const count = Object.keys(extracted).length;
-      toast.success(`${count} specificaties geëxtraheerd uit PDF`, {
-        description: data.notes?.length ? data.notes.join("; ") : undefined,
-      });
+      if (count === 0) {
+        toast.warning("Geen specificaties gevonden", {
+          description: "De PDF bevatte geen herkenbare technische data.",
+        });
+      } else {
+        toast.success(`${count} specificaties geëxtraheerd uit PDF`, {
+          description: data.notes?.length ? data.notes.join("; ") : undefined,
+        });
+      }
     } catch (err: any) {
       toast.error("Extractie mislukt", { description: err.message });
     } finally {
@@ -628,11 +661,26 @@ const ProductDetail = () => {
                       )}
                     </div>
                   </div>
-                  <iframe
-                    src={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                  <object
+                    data={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                    type="application/pdf"
                     className="w-full h-[600px] rounded-xl border"
                     title="PDF Datasheet"
-                  />
+                  >
+                    <div className="flex flex-col items-center justify-center h-[200px] bg-muted/30 rounded-xl border border-dashed">
+                      <FileText className="h-10 w-10 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">PDF kan niet in de browser worden weergegeven</p>
+                      <a
+                        href={localPdfUrl || pdfBlobUrl || datasheetPublicUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button size="sm" variant="outline" className="gap-2 rounded-lg">
+                          <Eye className="h-4 w-4" /> Open PDF in nieuw tabblad
+                        </Button>
+                      </a>
+                    </div>
+                  </object>
                 </div>
               ) : product.datasheet_type === "gegenereerd" ? (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">

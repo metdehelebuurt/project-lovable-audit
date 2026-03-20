@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.offerte-public-view]
 verify_jwt = false
+
+[functions.ai-parse-datasheet]
+verify_jwt = false
