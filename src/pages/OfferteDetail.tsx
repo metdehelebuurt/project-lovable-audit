@@ -66,6 +66,7 @@ const regelSub = (r: OfferteRegel) => {
 const OfferteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
 
