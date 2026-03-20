@@ -62,6 +62,44 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
+  // Partner-specific offerte tekst
+  const { data: partnerTekstData } = useQuery({
+    queryKey: ["partner-product-tekst", id, profile?.partner_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partner_product_teksten" as any)
+        .select("*")
+        .eq("partner_id", profile!.partner_id!)
+        .eq("product_id", id!)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!id && !!profile?.partner_id,
+  });
+
+  const effectiveOfferteTekst = partnerTekstData?.offerte_tekst || product?.offerte_tekst || "";
+
+  const handleSavePartnerTekst = async () => {
+    if (!profile?.partner_id || !id) return;
+    setSavingTekst(true);
+    try {
+      const { error } = await supabase.from("partner_product_teksten" as any).upsert({
+        partner_id: profile.partner_id,
+        product_id: id,
+        offerte_tekst: partnerTekst,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "partner_id,product_id" });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["partner-product-tekst", id, profile.partner_id] });
+      setEditingTekst(false);
+      toast.success("Offerte tekst opgeslagen");
+    } catch (err: any) {
+      toast.error("Opslaan mislukt", { description: err.message });
+    } finally {
+      setSavingTekst(false);
+    }
+  };
+
   const specs: Record<string, string> = product?.specs && typeof product.specs === "object" && !Array.isArray(product.specs)
     ? (product.specs as Record<string, string>) : {};
 
