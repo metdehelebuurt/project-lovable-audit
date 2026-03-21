@@ -506,7 +506,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         );
 
       case "datasheets": {
-        const dsProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd");
+        const dsProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd" || (p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0));
         if (dsProducts.length === 0) return null;
         return (
           <div key="datasheets">
