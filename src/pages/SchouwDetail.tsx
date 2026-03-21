@@ -122,20 +122,41 @@ const SchouwDetail = () => {
         );
       })}
 
-      {/* Foto's */}
+      {/* Foto's & Video's */}
       {fotos.length > 0 && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Foto's & Media ({fotos.length})</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {fotos.map((f: any, i: number) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-                  <img src={f.url} alt={f.beschrijving || `Foto ${i + 1}`} className="w-full h-full object-cover" />
-                  {f.beschrijving && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-background/80 px-2 py-1 text-xs">{f.beschrijving}</div>
-                  )}
-                </div>
-              ))}
+              {fotos.map((f: any, i: number) => {
+                const isVideo = f.url?.endsWith(".webm") || f.url?.endsWith(".mp4") || f.url?.includes("video");
+                const label = f.label || f.beschrijving || "";
+                return (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
+                    {isVideo ? (
+                      <video
+                        src={f.url}
+                        controls
+                        className="w-full h-full object-cover"
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={f.url}
+                        alt={label || `Foto ${i + 1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/placeholder.svg";
+                        }}
+                      />
+                    )}
+                    {label && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm px-2 py-1.5 text-xs font-medium">{label}</div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
