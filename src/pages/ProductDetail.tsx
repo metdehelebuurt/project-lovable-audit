@@ -275,8 +275,8 @@ const ProductDetail = () => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${url}`;
   };
 
-  const datasheetPublicUrl = product?.datasheet_url && product?.datasheet_type === "fabrikant"
-    ? buildDatasheetUrl(product.datasheet_url)
+  const datasheetPublicUrl = effectiveDatasheetUrl && effectiveDatasheetType === "fabrikant"
+    ? buildDatasheetUrl(effectiveDatasheetUrl)
     : null;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
