@@ -429,12 +429,10 @@ const Planning = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} size="sm">
-            <ToggleGroupItem value="dag">Dag</ToggleGroupItem>
-            <ToggleGroupItem value="week">Week</ToggleGroupItem>
-            <ToggleGroupItem value="maand">Maand</ToggleGroupItem>
-            <ToggleGroupItem value="jaar">Jaar</ToggleGroupItem>
-          </ToggleGroup>
+          <Button variant="outline" size="sm" onClick={() => setShowNewForm(!showNewForm)}>
+            {showNewForm ? <X className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+            {showNewForm ? "Annuleren" : "Nieuwe afspraak"}
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
