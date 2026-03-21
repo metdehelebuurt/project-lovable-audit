@@ -82,12 +82,57 @@ function downloadICS(events: CalendarEvent[]) {
 }
 
 const Planning = () => {
+  const { profile } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>("maand");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newAfspraak, setNewAfspraak] = useState({
+    titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"),
+    start_tijd: "", eind_tijd: "", locatie: "", notities: "",
+  });
+  const updateField = (k: string, v: string) => setNewAfspraak(prev => ({ ...prev, [k]: v }));
+
+  const handleCreateAfspraak = async () => {
+    if (!newAfspraak.titel || !newAfspraak.datum) {
+      toast.error("Titel en datum zijn verplicht");
+      return;
+    }
+    if (!profile?.partner_id) {
+      toast.error("Geen partner gekoppeld");
+      return;
+    }
+    setSaving(true);
+    const { data, error } = await supabase.from("afspraken" as any).insert({
+      partner_id: profile.partner_id,
+      adviseur_id: profile.id,
+      titel: newAfspraak.titel,
+      type: newAfspraak.type,
+      datum: newAfspraak.datum,
+      start_tijd: newAfspraak.start_tijd || null,
+      eind_tijd: newAfspraak.eind_tijd || null,
+      locatie: newAfspraak.locatie || null,
+      notities: newAfspraak.notities || null,
+      status: "gepland",
+    } as any).select().single();
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Afspraak ingepland");
+    // Add to local events
+    if (data) {
+      const d = data as any;
+      setEvents(prev => [...prev, {
+        id: d.id, date: d.datum, title: d.titel, type: "afspraak",
+        status: "gepland", extra: { type: d.type, start_tijd: d.start_tijd, eind_tijd: d.eind_tijd, locatie: d.locatie },
+      }]);
+    }
+    setNewAfspraak({ titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"), start_tijd: "", eind_tijd: "", locatie: "", notities: "" });
+    setShowNewForm(false);
+  };
 
   // Compute date range based on viewMode
   const dateRange = useMemo(() => {
