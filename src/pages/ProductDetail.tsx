@@ -846,7 +846,7 @@ const ProductDetail = () => {
                     </div>
                   </object>
                 </div>
-              ) : product.datasheet_type === "gegenereerd" ? (
+              ) : effectiveDatasheetType === "gegenereerd" ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
                     <CheckCircle className="h-5 w-5 text-primary" />
@@ -854,17 +854,24 @@ const ProductDetail = () => {
                       <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
                       <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
                     </div>
-                    <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
-                      <Eye className="h-4 w-4" /> Bekijk & Print
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="gap-2 rounded-lg" onClick={handlePreview}>
+                        <Eye className="h-4 w-4" /> Bekijk & Print
+                      </Button>
+                      <Button size="sm" className="gap-2 rounded-lg" onClick={handleSavePdf} disabled={savingPdf}>
+                        {savingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        PDF opslaan
+                      </Button>
+                    </div>
                   </div>
                   {partner && (
-                    <div className="border rounded-xl overflow-hidden">
+                    <div ref={datasheetRef} className="border rounded-xl overflow-hidden">
                       <ProductDatasheet
                         product={{
                           naam: product.naam, merk: product.merk, model: product.model,
                           categorie: product.categorie, omschrijving: product.omschrijving,
-                          afbeelding_url: product.afbeelding_url, specs,
+                          afbeelding_url: product.afbeelding_url,
+                          specs: (partnerDatasheet?.generated_specs as Record<string, string>) || specs,
                           certificeringen: product.certificeringen, garantie_jaren: product.garantie_jaren,
                           prijs_excl_btw: Number(product.prijs_excl_btw),
                           onderhoud: product.onderhoud, installatie_instructies: product.installatie_instructies,
