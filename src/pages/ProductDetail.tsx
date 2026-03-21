@@ -337,18 +337,41 @@ const ProductDetail = () => {
     if (!product) return;
     setAiLoading(true);
     try {
-      // First run AI verify to fill specs
-      await handleAiVerify();
-      // Then mark as generated
+      // Run AI verify to fill specs (inline, don't call handleAiVerify which manages its own loading state)
+      const { data, error: aiError } = await supabase.functions.invoke("ai-verify-product-specs", {
+        body: {
+          product_id: product.id,
+          naam: product.naam, merk: product.merk, model: product.model,
+          categorie: product.categorie, specs, certificeringen: product.certificeringen,
+          omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
+        },
+      });
+      if (aiError) throw aiError;
+
+      if (data && !data.error) {
+        const corrected = data.corrected_specs || {};
+        if (!data.saved_to_db) {
+          const allSpecs: Record<string, string> = { ...specs, ...corrected };
+          const updateData: any = { specs: allSpecs };
+          if (data.omschrijving_suggestie && !product.omschrijving) updateData.omschrijving = data.omschrijving_suggestie;
+          if (data.regelgeving) updateData.certificeringen = data.regelgeving;
+          await supabase.from("producten").update(updateData).eq("id", product.id);
+        }
+      }
+
+      // Mark as generated
       const { error } = await supabase.from("producten")
         .update({ datasheet_type: "gegenereerd" })
         .eq("id", product.id);
       if (error) throw error;
+
+      // Ensure partner is loaded for inline preview
+      await loadPartner();
+
       // Force refetch and wait for it
       await queryClient.refetchQueries({ queryKey: ["product", id] });
-      // Ensure partner is loaded for inline preview
-      const p = await loadPartner();
-      if (p) setPreviewOpen(true);
+
+      toast.success("Datasheet gegenereerd");
     } catch (err: any) {
       toast.error("Datasheet generatie mislukt", { description: err.message });
     } finally {
