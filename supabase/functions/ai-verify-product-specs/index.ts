@@ -514,6 +514,26 @@ Antwoord in JSON met EXACT dit formaat:
           console.log(`Specs saved to DB for product ${product_id}`);
           result.saved_to_db = true;
         }
+
+        // Upsert partner_product_datasheets if partner_id is provided
+        if (partner_id) {
+          const datasheetRecord = {
+            partner_id,
+            product_id,
+            datasheet_type: "gegenereerd",
+            generated_specs: mergedSpecs,
+            updated_at: new Date().toISOString(),
+          };
+          const { error: dsError } = await adminClient
+            .from("partner_product_datasheets")
+            .upsert(datasheetRecord, { onConflict: "partner_id,product_id" });
+          if (dsError) {
+            console.error("Datasheet upsert error:", dsError.message);
+          } else {
+            console.log(`Partner datasheet record upserted for partner ${partner_id}, product ${product_id}`);
+            result.datasheet_saved = true;
+          }
+        }
       }
     }
 
