@@ -511,7 +511,7 @@ const Planning = () => {
             </div>
           </CardContent>
         </Card>
-      )
+      )}
 
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
