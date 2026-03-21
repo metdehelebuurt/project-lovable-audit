@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -14,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone,
+  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, X,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths,
