@@ -71,18 +71,41 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
+  // Fetch partner-specific datasheet record
+  const { data: partnerDatasheet, refetch: refetchDatasheet } = useQuery({
+    queryKey: ["partner-datasheet", id, profile?.partner_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partner_product_datasheets" as any)
+        .select("*")
+        .eq("partner_id", profile!.partner_id!)
+        .eq("product_id", id!)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!id && !!profile?.partner_id,
+  });
+
+  // Determine effective datasheet type: partner-specific takes precedence
+  const effectiveDatasheetType = partnerDatasheet?.datasheet_type || product?.datasheet_type || null;
+  const effectiveDatasheetUrl = partnerDatasheet?.datasheet_url || product?.datasheet_url || null;
+
   // Fetch PDF as blob for iframe display (avoids Chrome cross-origin blocking)
   useEffect(() => {
     if (localPdfUrl) return; // local upload preview takes priority
-    if (!product?.datasheet_url || product?.datasheet_type !== "fabrikant") {
+    const dsUrl = effectiveDatasheetUrl;
+    const dsType = effectiveDatasheetType;
+    if (!dsUrl || dsType !== "fabrikant") {
       setPdfBlobUrl(null);
       return;
     }
     let revoked = false;
+    const bucket = dsUrl.startsWith("partner-assets/") ? "partner-assets" : "product-images";
+    const path = dsUrl.startsWith("partner-assets/") ? dsUrl.replace("partner-assets/", "") : dsUrl;
     const fetchPdf = async () => {
       const { data, error } = await supabase.storage
-        .from("product-images")
-        .download(product.datasheet_url!);
+        .from(bucket)
+        .download(path);
       if (error || !data || revoked) return;
       const url = URL.createObjectURL(data);
       setPdfBlobUrl(url);
@@ -92,15 +115,15 @@ const ProductDetail = () => {
       revoked = true;
       setPdfBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
     };
-  }, [product?.datasheet_url, product?.datasheet_type, localPdfUrl]);
+  }, [effectiveDatasheetUrl, effectiveDatasheetType, localPdfUrl]);
 
   // Auto-load partner for generated datasheet inline preview
   useEffect(() => {
-    if (product?.datasheet_type === "gegenereerd" && !partner) {
+    if (effectiveDatasheetType === "gegenereerd" && !partner) {
       loadPartner();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.datasheet_type, product?.id]);
+  }, [effectiveDatasheetType, product?.id]);
 
   const { data: partnerTekstData } = useQuery({
     queryKey: ["partner-product-tekst", id, profile?.partner_id],
