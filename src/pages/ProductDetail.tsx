@@ -56,8 +56,10 @@ const ProductDetail = () => {
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const datasheetRef = useRef<HTMLDivElement>(null);
   const [savingProduct, setSavingProduct] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [savingPdf, setSavingPdf] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -69,18 +71,41 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
+  // Fetch partner-specific datasheet record
+  const { data: partnerDatasheet, refetch: refetchDatasheet } = useQuery({
+    queryKey: ["partner-datasheet", id, profile?.partner_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partner_product_datasheets" as any)
+        .select("*")
+        .eq("partner_id", profile!.partner_id!)
+        .eq("product_id", id!)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!id && !!profile?.partner_id,
+  });
+
+  // Determine effective datasheet type: partner-specific takes precedence
+  const effectiveDatasheetType = partnerDatasheet?.datasheet_type || product?.datasheet_type || null;
+  const effectiveDatasheetUrl = partnerDatasheet?.datasheet_url || product?.datasheet_url || null;
+
   // Fetch PDF as blob for iframe display (avoids Chrome cross-origin blocking)
   useEffect(() => {
     if (localPdfUrl) return; // local upload preview takes priority
-    if (!product?.datasheet_url || product?.datasheet_type !== "fabrikant") {
+    const dsUrl = effectiveDatasheetUrl;
+    const dsType = effectiveDatasheetType;
+    if (!dsUrl || dsType !== "fabrikant") {
       setPdfBlobUrl(null);
       return;
     }
     let revoked = false;
+    const bucket = dsUrl.startsWith("partner-assets/") ? "partner-assets" : "product-images";
+    const path = dsUrl.startsWith("partner-assets/") ? dsUrl.replace("partner-assets/", "") : dsUrl;
     const fetchPdf = async () => {
       const { data, error } = await supabase.storage
-        .from("product-images")
-        .download(product.datasheet_url!);
+        .from(bucket)
+        .download(path);
       if (error || !data || revoked) return;
       const url = URL.createObjectURL(data);
       setPdfBlobUrl(url);
@@ -90,15 +115,15 @@ const ProductDetail = () => {
       revoked = true;
       setPdfBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
     };
-  }, [product?.datasheet_url, product?.datasheet_type, localPdfUrl]);
+  }, [effectiveDatasheetUrl, effectiveDatasheetType, localPdfUrl]);
 
   // Auto-load partner for generated datasheet inline preview
   useEffect(() => {
-    if (product?.datasheet_type === "gegenereerd" && !partner) {
+    if (effectiveDatasheetType === "gegenereerd" && !partner) {
       loadPartner();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.datasheet_type, product?.id]);
+  }, [effectiveDatasheetType, product?.id]);
 
   const { data: partnerTekstData } = useQuery({
     queryKey: ["partner-product-tekst", id, profile?.partner_id],
@@ -250,8 +275,8 @@ const ProductDetail = () => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${url}`;
   };
 
-  const datasheetPublicUrl = product?.datasheet_url && product?.datasheet_type === "fabrikant"
-    ? buildDatasheetUrl(product.datasheet_url)
+  const datasheetPublicUrl = effectiveDatasheetUrl && effectiveDatasheetType === "fabrikant"
+    ? buildDatasheetUrl(effectiveDatasheetUrl)
     : null;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,16 +291,37 @@ const ProductDetail = () => {
     
     setUploading(true);
     try {
-      const path = `datasheets/${product.id}.pdf`;
+      const partnerId = profile?.partner_id;
+      const bucket = partnerId ? "partner-assets" : "product-images";
+      const path = partnerId
+        ? `${partnerId}/datasheets/${product.id}.pdf`
+        : `datasheets/${product.id}.pdf`;
+      const storagePath = partnerId ? `partner-assets/${path}` : path;
+
       const { error: uploadError } = await supabase.storage
-        .from("product-images")
+        .from(bucket)
         .upload(path, file, { upsert: true, contentType: "application/pdf" });
       if (uploadError) throw uploadError;
-      const { error: updateErr } = await supabase.from("producten")
-        .update({ datasheet_url: path, datasheet_type: "fabrikant" })
-        .eq("id", product.id);
-      if (updateErr) throw updateErr;
+
+      // Upsert into partner_product_datasheets if partner
+      if (partnerId) {
+        await supabase.from("partner_product_datasheets" as any).upsert({
+          partner_id: partnerId,
+          product_id: product.id,
+          datasheet_type: "fabrikant",
+          datasheet_url: storagePath,
+          generated_specs: null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "partner_id,product_id" });
+      } else {
+        // Fallback: update product directly (for superadmin / own products)
+        await supabase.from("producten")
+          .update({ datasheet_url: path, datasheet_type: "fabrikant" })
+          .eq("id", product.id);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["product", id] });
+      refetchDatasheet();
       toast.success("Datasheet geüpload");
     } catch (err: any) {
       toast.error("Upload mislukt", { description: err.message });
@@ -337,10 +383,10 @@ const ProductDetail = () => {
     if (!product) return;
     setAiLoading(true);
     try {
-      // Run AI verify to fill specs (inline, don't call handleAiVerify which manages its own loading state)
       const { data, error: aiError } = await supabase.functions.invoke("ai-verify-product-specs", {
         body: {
           product_id: product.id,
+          partner_id: profile?.partner_id || null,
           naam: product.naam, merk: product.merk, model: product.model,
           categorie: product.categorie, specs, certificeringen: product.certificeringen,
           omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
@@ -357,25 +403,93 @@ const ProductDetail = () => {
           if (data.regelgeving) updateData.certificeringen = data.regelgeving;
           await supabase.from("producten").update(updateData).eq("id", product.id);
         }
-      }
 
-      // Mark as generated
-      const { error } = await supabase.from("producten")
-        .update({ datasheet_type: "gegenereerd" })
-        .eq("id", product.id);
-      if (error) throw error;
+        // If edge function didn't save partner datasheet, do it client-side
+        if (!data.datasheet_saved && profile?.partner_id) {
+          await supabase.from("partner_product_datasheets" as any).upsert({
+            partner_id: profile.partner_id,
+            product_id: product.id,
+            datasheet_type: "gegenereerd",
+            generated_specs: { ...(specs || {}), ...(corrected || {}) },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "partner_id,product_id" });
+        }
+      }
 
       // Ensure partner is loaded for inline preview
       await loadPartner();
 
-      // Force refetch and wait for it
+      // Force refetch
       await queryClient.refetchQueries({ queryKey: ["product", id] });
+      await refetchDatasheet();
 
       toast.success("Datasheet gegenereerd");
     } catch (err: any) {
       toast.error("Datasheet generatie mislukt", { description: err.message });
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const handleSavePdf = async () => {
+    if (!datasheetRef.current || !product) return;
+    setSavingPdf(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const element = datasheetRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let yOffset = 0;
+      let pageCount = 0;
+      while (yOffset < pdfHeight) {
+        if (pageCount > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, -yOffset, pdfWidth, pdfHeight);
+        yOffset += 297;
+        pageCount++;
+      }
+
+      const pdfBlob = pdf.output("blob");
+      const partnerId = profile?.partner_id;
+      const bucket = partnerId ? "partner-assets" : "product-images";
+      const path = partnerId
+        ? `${partnerId}/datasheets/${product.id}-generated.pdf`
+        : `datasheets/${product.id}-generated.pdf`;
+      const storagePath = partnerId ? `partner-assets/${path}` : path;
+
+      await supabase.storage.from(bucket).upload(path, pdfBlob, {
+        upsert: true,
+        contentType: "application/pdf",
+      });
+
+      // Update the datasheet_url
+      if (partnerId) {
+        await supabase.from("partner_product_datasheets" as any).upsert({
+          partner_id: partnerId,
+          product_id: product.id,
+          datasheet_type: "gegenereerd",
+          datasheet_url: storagePath,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "partner_id,product_id" });
+      }
+
+      refetchDatasheet();
+      toast.success("PDF opgeslagen in storage");
+    } catch (err: any) {
+      toast.error("PDF opslaan mislukt", { description: err.message });
+    } finally {
+      setSavingPdf(false);
     }
   };
 
@@ -732,7 +846,7 @@ const ProductDetail = () => {
                     </div>
                   </object>
                 </div>
-              ) : product.datasheet_type === "gegenereerd" ? (
+              ) : effectiveDatasheetType === "gegenereerd" ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
                     <CheckCircle className="h-5 w-5 text-primary" />
@@ -740,17 +854,24 @@ const ProductDetail = () => {
                       <p className="text-sm font-medium">Gegenereerd specificatieblad</p>
                       <p className="text-xs text-muted-foreground">Automatisch gegenereerd op basis van productgegevens</p>
                     </div>
-                    <Button size="sm" className="gap-2 rounded-lg" onClick={handlePreview}>
-                      <Eye className="h-4 w-4" /> Bekijk & Print
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="gap-2 rounded-lg" onClick={handlePreview}>
+                        <Eye className="h-4 w-4" /> Bekijk & Print
+                      </Button>
+                      <Button size="sm" className="gap-2 rounded-lg" onClick={handleSavePdf} disabled={savingPdf}>
+                        {savingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        PDF opslaan
+                      </Button>
+                    </div>
                   </div>
                   {partner && (
-                    <div className="border rounded-xl overflow-hidden">
+                    <div ref={datasheetRef} className="border rounded-xl overflow-hidden">
                       <ProductDatasheet
                         product={{
                           naam: product.naam, merk: product.merk, model: product.model,
                           categorie: product.categorie, omschrijving: product.omschrijving,
-                          afbeelding_url: product.afbeelding_url, specs,
+                          afbeelding_url: product.afbeelding_url,
+                          specs: (partnerDatasheet?.generated_specs as Record<string, string>) || specs,
                           certificeringen: product.certificeringen, garantie_jaren: product.garantie_jaren,
                           prijs_excl_btw: Number(product.prijs_excl_btw),
                           onderhoud: product.onderhoud, installatie_instructies: product.installatie_instructies,

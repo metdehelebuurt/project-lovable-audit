@@ -1185,6 +1185,61 @@ export type Database = {
           },
         ]
       }
+      partner_product_datasheets: {
+        Row: {
+          created_at: string
+          datasheet_type: string
+          datasheet_url: string | null
+          generated_specs: Json | null
+          id: string
+          partner_id: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          datasheet_type?: string
+          datasheet_url?: string | null
+          generated_specs?: Json | null
+          id?: string
+          partner_id: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          datasheet_type?: string
+          datasheet_url?: string | null
+          generated_specs?: Json | null
+          id?: string
+          partner_id?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_product_datasheets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_product_datasheets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_product_datasheets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_product_teksten: {
         Row: {
           created_at: string | null
