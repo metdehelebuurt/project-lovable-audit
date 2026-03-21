@@ -492,6 +492,8 @@ const ProductDetail = () => {
       setSavingPdf(false);
     }
   };
+
+  const handleSaveProduct = async () => {
     if (!product) return;
     setSavingProduct(true);
     try {
