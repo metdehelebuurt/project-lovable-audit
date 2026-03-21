@@ -291,16 +291,37 @@ const ProductDetail = () => {
     
     setUploading(true);
     try {
-      const path = `datasheets/${product.id}.pdf`;
+      const partnerId = profile?.partner_id;
+      const bucket = partnerId ? "partner-assets" : "product-images";
+      const path = partnerId
+        ? `${partnerId}/datasheets/${product.id}.pdf`
+        : `datasheets/${product.id}.pdf`;
+      const storagePath = partnerId ? `partner-assets/${path}` : path;
+
       const { error: uploadError } = await supabase.storage
-        .from("product-images")
+        .from(bucket)
         .upload(path, file, { upsert: true, contentType: "application/pdf" });
       if (uploadError) throw uploadError;
-      const { error: updateErr } = await supabase.from("producten")
-        .update({ datasheet_url: path, datasheet_type: "fabrikant" })
-        .eq("id", product.id);
-      if (updateErr) throw updateErr;
+
+      // Upsert into partner_product_datasheets if partner
+      if (partnerId) {
+        await supabase.from("partner_product_datasheets" as any).upsert({
+          partner_id: partnerId,
+          product_id: product.id,
+          datasheet_type: "fabrikant",
+          datasheet_url: storagePath,
+          generated_specs: null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "partner_id,product_id" });
+      } else {
+        // Fallback: update product directly (for superadmin / own products)
+        await supabase.from("producten")
+          .update({ datasheet_url: path, datasheet_type: "fabrikant" })
+          .eq("id", product.id);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["product", id] });
+      refetchDatasheet();
       toast.success("Datasheet geüpload");
     } catch (err: any) {
       toast.error("Upload mislukt", { description: err.message });
