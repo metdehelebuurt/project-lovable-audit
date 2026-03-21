@@ -383,10 +383,10 @@ const ProductDetail = () => {
     if (!product) return;
     setAiLoading(true);
     try {
-      // Run AI verify to fill specs (inline, don't call handleAiVerify which manages its own loading state)
       const { data, error: aiError } = await supabase.functions.invoke("ai-verify-product-specs", {
         body: {
           product_id: product.id,
+          partner_id: profile?.partner_id || null,
           naam: product.naam, merk: product.merk, model: product.model,
           categorie: product.categorie, specs, certificeringen: product.certificeringen,
           omschrijving: product.omschrijving, garantie_jaren: product.garantie_jaren,
@@ -403,19 +403,25 @@ const ProductDetail = () => {
           if (data.regelgeving) updateData.certificeringen = data.regelgeving;
           await supabase.from("producten").update(updateData).eq("id", product.id);
         }
-      }
 
-      // Mark as generated
-      const { error } = await supabase.from("producten")
-        .update({ datasheet_type: "gegenereerd" })
-        .eq("id", product.id);
-      if (error) throw error;
+        // If edge function didn't save partner datasheet, do it client-side
+        if (!data.datasheet_saved && profile?.partner_id) {
+          await supabase.from("partner_product_datasheets" as any).upsert({
+            partner_id: profile.partner_id,
+            product_id: product.id,
+            datasheet_type: "gegenereerd",
+            generated_specs: { ...(specs || {}), ...(corrected || {}) },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "partner_id,product_id" });
+        }
+      }
 
       // Ensure partner is loaded for inline preview
       await loadPartner();
 
-      // Force refetch and wait for it
+      // Force refetch
       await queryClient.refetchQueries({ queryKey: ["product", id] });
+      await refetchDatasheet();
 
       toast.success("Datasheet gegenereerd");
     } catch (err: any) {
@@ -425,7 +431,67 @@ const ProductDetail = () => {
     }
   };
 
-  const handleSaveProduct = async () => {
+  const handleSavePdf = async () => {
+    if (!datasheetRef.current || !product) return;
+    setSavingPdf(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const element = datasheetRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let yOffset = 0;
+      let pageCount = 0;
+      while (yOffset < pdfHeight) {
+        if (pageCount > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, -yOffset, pdfWidth, pdfHeight);
+        yOffset += 297;
+        pageCount++;
+      }
+
+      const pdfBlob = pdf.output("blob");
+      const partnerId = profile?.partner_id;
+      const bucket = partnerId ? "partner-assets" : "product-images";
+      const path = partnerId
+        ? `${partnerId}/datasheets/${product.id}-generated.pdf`
+        : `datasheets/${product.id}-generated.pdf`;
+      const storagePath = partnerId ? `partner-assets/${path}` : path;
+
+      await supabase.storage.from(bucket).upload(path, pdfBlob, {
+        upsert: true,
+        contentType: "application/pdf",
+      });
+
+      // Update the datasheet_url
+      if (partnerId) {
+        await supabase.from("partner_product_datasheets" as any).upsert({
+          partner_id: partnerId,
+          product_id: product.id,
+          datasheet_type: "gegenereerd",
+          datasheet_url: storagePath,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "partner_id,product_id" });
+      }
+
+      refetchDatasheet();
+      toast.success("PDF opgeslagen in storage");
+    } catch (err: any) {
+      toast.error("PDF opslaan mislukt", { description: err.message });
+    } finally {
+      setSavingPdf(false);
+    }
+  };
     if (!product) return;
     setSavingProduct(true);
     try {
