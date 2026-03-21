@@ -1,98 +1,60 @@
 
 
-## Plan: Sidebar groepering, Dashboard redesign, Instellingen uitbreiding
+## Plan: Fix gegenereerde datasheet opslag + per-partner datasheet support
 
-### 1) Sidebar — Gegroepeerde navigatie
+### Probleem gevonden
 
-**Bestand:** `src/components/AppSidebar.tsx`
+De gegenereerde datasheet wordt **niet opgeslagen** omdat het product een catalogusproduct is (`partner_id = null`). De RLS-policy op `producten` staat alleen updates toe als `partner_id = get_user_partner_id(auth.uid())`, maar `null != jouw_partner_id` is altijd false. De PATCH wordt dus stilletjes geweigerd door de database.
 
-Herstructureer de flat list naar logische groepen met `SidebarGroupLabel`:
+Daarnaast: je wilt per partner een eigen datasheet, maar `datasheet_type` zit op de gedeelde `producten` rij — dat werkt niet voor meerdere partners.
+
+### Oplossing
+
+**1) Nieuwe tabel `partner_product_datasheets`**
+
+Slaat per partner/product-combinatie op of er een datasheet is gegenereerd of geüpload.
 
 ```text
-OVERZICHT
-  Dashboard
-
-RELATIEBEHEER
-  Leads
-  Klanten
-  Berichten
-
-WERKPROCES
-  Schouwen
-  Offertes
-  Opdrachten
-  Installaties
-
-PLANNING & TOOLS
-  Planning
-  Producten
-  Tools
-  Analytics
-
-BEHEER
-  Partners (superadmin)
-  Adviseurs
-  Gebruikers
-  Documenten
-  Affiliate Beheer (superadmin)
-
-INSTELLINGEN
-  Instellingen
+partner_product_datasheets
+├── id (uuid PK)
+├── partner_id (uuid, FK → partners)
+├── product_id (uuid, FK → producten)
+├── datasheet_type ('fabrikant' | 'gegenereerd')
+├── datasheet_url (text, nullable — pad naar PDF in storage)
+├── generated_specs (jsonb, nullable — snapshot van specs bij generatie)
+├── created_at / updated_at
+└── UNIQUE(partner_id, product_id)
 ```
 
-- Elke groep krijgt een `SidebarGroupLabel` met een subtiele uppercase label
-- Groepen gescheiden door een dunne separator
-- Zelfde rol-gebaseerde filtering behouden maar nu per groep
-- Op collapsed state: alleen iconen, geen groepslabels
+RLS: partner users zien/bewerken alleen eigen partner records.
 
-### 2) Dashboard redesign — Compacte stats + module tegels + notificaties
+**2) Update edge function `ai-verify-product-specs`**
 
-**Bestand:** `src/pages/Dashboard.tsx`
+Na het opslaan van specs, ook een record upserten in `partner_product_datasheets` met `datasheet_type = 'gegenereerd'` en de gegenereerde specs als snapshot. Dit gebruikt service role, dus geen RLS-probleem.
 
-**Layout:**
-- **Bovenste rij**: Compacte stat-balk (horizontale rij van mini-stats met getal + label, geen grote kaarten)
-- **Midden**: Grid van **module-tegels** (6-8 stuks) — kleurrijke kaarten met groot icoon, titel en korte subtekst die direct naar de module navigeren (bijv. Leads, Offertes, Schouwen, Planning, Producten, Analytics). `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`
-- **Onderste rij**: Twee kolommen — links "Recente Activiteit" (bestaande lijst, compacter), rechts "Notificaties" (laatste 5 ongelezen notificaties uit `notificaties` tabel)
+**3) Update `ProductDetail.tsx` — Datasheet tab**
 
-Extra statistieken toevoegen:
-- **Openstaande offertes** (status = 'verstuurd')
-- **Vandaag geplande afspraken** (uit `afspraken` tabel, datum = vandaag)
-- **Conversieratio** (geaccepteerde offertes / totaal offertes als percentage)
+- Bij laden: check `partner_product_datasheets` voor de huidige partner + product combinatie
+- `handleGenerateDatasheet`: stuur `partner_id` mee naar de edge function, na succes refetch de partner-datasheet data
+- `handleFileUpload`: upload naar `partner-assets/{partner_id}/datasheets/{product_id}.pdf` en upsert in `partner_product_datasheets`
+- Inline preview: toon `ProductDatasheet` component direct als `datasheet_type === 'gegenereerd'` (geen apart PDF-bestand nodig voor preview, de specs staan in de snapshot)
+- Voor "echte PDF": voeg een "PDF opslaan" knop toe die via `html2canvas` + `jsPDF` de React-component rendert naar een PDF en uploadt naar storage
 
-### 3) Instellingen redesign — Tab-navigatie + bedrijfsinfo + beveiliging
+**4) Installeer `html2canvas` + `jspdf`**
 
-**Bestand:** `src/pages/Instellingen.tsx`
+Voor het genereren van echte PDF-bestanden vanuit de ProductDatasheet React-component.
 
-Vervang de verticale kaarten-stack door een **tab-layout** met zijnavigatie (links tabs, rechts content):
+**5) Update `OffertePDFPreview.tsx`**
 
-**Tabs:**
-1. **Profiel** — Bestaande profielgegevens
-2. **Beveiliging** — Wachtwoord wijzigen + sessie-overzicht + 2FA info placeholder
-3. **Bedrijfsgegevens** (partner_admin) — NIEUW: Bedrijfsnaam, KVK, BTW, adres, postcode, plaats, website, contactpersoon gegevens. Laadt en slaat op vanuit `partners` tabel (kolommen bestaan al)
-4. **Huisstijl** (partner_admin) — Bestaande branding sectie
-5. **E-mail** (partner_admin) — Bestaande EmailConfiguratie
-6. **Offertes** (partner_admin) — Bestaande template + betalingsvoorwaarden + offerte template instellingen
-7. **Schouwen** (partner_admin) — Bestaande SchouwInstellingen
-8. **Privacy & Data** — Data export, account verwijderen, demogegevens
-
-**Nieuwe "Bedrijfsgegevens" tab inhoud:**
-- Formulier met velden: naam, email, telefoonnummer, website, adres, postcode, plaats, kvk, btw
-- Contactpersoon sectie: voornaam, achternaam, functie, email, telefoon
-- Alles uit de bestaande `partners` tabel kolommen — er is geen migratie nodig
-
-**Nieuwe "Beveiliging" tab:**
-- Wachtwoord wijzigen (verplaatst uit huidige pagina)
-- Informatieblok over tweefactorauthenticatie (placeholder — "Binnenkort beschikbaar")
-- Actieve sessie info (laatste login timestamp uit profiel)
-- Informatieblok over gegevensbescherming / AVG compliance
-
-**Layout:** Links een verticale navigatie (`flex` layout, niet tabs component), rechts de content. Op mobiel wordt de navigatie een horizontale scrollbare balk bovenaan.
+Bij het renderen van datasheets in offertes: check `partner_product_datasheets` in plaats van `producten.datasheet_type`.
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/AppSidebar.tsx` | Gegroepeerde navigatie met labels en separators |
-| `src/pages/Dashboard.tsx` | Compacte stats, module tegels grid, notificatie panel, extra statistieken |
-| `src/pages/Instellingen.tsx` | Tab-navigatie layout, nieuwe Bedrijfsgegevens tab, Beveiliging tab |
+| SQL migratie | Nieuwe tabel `partner_product_datasheets` + RLS |
+| `supabase/functions/ai-verify-product-specs/index.ts` | Upsert in `partner_product_datasheets` na specs-opslag |
+| `src/pages/ProductDetail.tsx` | Gebruik nieuwe tabel, fix inline preview, PDF-export |
+| `src/components/OffertePDFPreview.tsx` | Check partner-datasheets tabel |
+| `package.json` | Toevoegen `html2canvas` + `jspdf` |
 
