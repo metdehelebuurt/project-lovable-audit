@@ -46,6 +46,8 @@ const getNavGroups = (rol: string): NavGroup[] => {
     werk.push({ title: rol === "consument" ? "Mijn Schouwen" : "Schouwen", url: "/schouwen", icon: ClipboardList });
   if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"].includes(rol))
     werk.push({ title: rol === "consument" ? "Mijn Offertes" : "Offertes", url: "/offertes", icon: FileText });
+  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
+    werk.push({ title: "Offerte Feedback", url: "/offertes/feedback", icon: MessageCircleWarning });
   if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))
     werk.push({ title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck });
   if (["partner_admin", "partner_staff", "installateur"].includes(rol))
