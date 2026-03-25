@@ -14,8 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Users, FileText, ClipboardCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, FileText, ClipboardCheck, LayoutList, Columns3, GripVertical, Phone, Mail, MapPin } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -38,6 +39,21 @@ const statusColors: Record<LeadStatus, string> = {
   offerte_verzonden: "bg-warning-light text-warning-foreground", klant: "bg-success text-success-foreground",
   verloren: "bg-error-light text-error",
 };
+
+// Kanban kolommen — logisch gegroepeerde statussen
+const kanbanColumns: { status: LeadStatus; color: string }[] = [
+  { status: "nieuw", color: "border-t-primary" },
+  { status: "contact_geprobeerd", color: "border-t-sky-500" },
+  { status: "geen_gehoor", color: "border-t-orange-500" },
+  { status: "terugbellen", color: "border-t-yellow-500" },
+  { status: "gesproken", color: "border-t-teal-500" },
+  { status: "afspraak_gepland", color: "border-t-indigo-500" },
+  { status: "gekwalificeerd", color: "border-t-emerald-500" },
+  { status: "offerte_verzonden", color: "border-t-amber-500" },
+  { status: "klant", color: "border-t-green-600" },
+  { status: "verloren", color: "border-t-red-500" },
+];
+
 const bronOptions = ["website", "telefoon", "referral", "advertentie", "beurs", "overig"];
 
 interface LeadFormData {
@@ -56,11 +72,13 @@ const Leads = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("alle");
+  const [viewMode, setViewMode] = useState<"tabel" | "kanban">("tabel");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [form, setForm] = useState<LeadFormData>(emptyForm);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
+  const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
@@ -185,6 +203,28 @@ const Leads = () => {
 
   const canDelete = isSuperadmin || isAdmin;
 
+  // Drag & drop handlers for kanban
+  const handleDragStart = (e: React.DragEvent, leadId: string) => {
+    setDraggedLeadId(leadId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetStatus: LeadStatus) => {
+    e.preventDefault();
+    if (draggedLeadId) {
+      const lead = leads.find(l => l.id === draggedLeadId);
+      if (lead && lead.lead_status !== targetStatus) {
+        statusMutation.mutate({ id: draggedLeadId, status: targetStatus });
+      }
+    }
+    setDraggedLeadId(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -206,194 +246,302 @@ const Leads = () => {
             exportFilename="leads-export"
             queryKey={["leads"]}
           />
+          {/* View toggle */}
+          <div className="flex rounded-xl border overflow-hidden">
+            <button
+              onClick={() => setViewMode("tabel")}
+              className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${viewMode === "tabel" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}
+            >
+              <LayoutList className="h-4 w-4" />
+              <span className="hidden sm:inline">Lijst</span>
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${viewMode === "kanban" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}
+            >
+              <Columns3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Kanban</span>
+            </button>
+          </div>
           <Button onClick={openCreate} className="rounded-pill gap-2">
             <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nieuwe Lead</span><span className="sm:hidden">Nieuw</span>
           </Button>
         </div>
       </div>
 
-      <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Zoek leads..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 rounded-xl" />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48 rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="alle">Alle statussen</SelectItem>
-                {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
-                  <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Search + filters (shared) */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Zoek leads..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 rounded-xl" />
+        </div>
+        {viewMode === "tabel" && (
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-48 rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="alle">Alle statussen</SelectItem>
+              {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
+                <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
-          {selected.size > 0 && (
-            <div className="flex items-center gap-3 mt-3 p-3 bg-muted rounded-xl">
-              <span className="text-sm font-medium">{selected.size} geselecteerd</span>
-              <Select value={bulkStatus} onValueChange={v => setBulkStatus(v as LeadStatus)}>
-                <SelectTrigger className="w-44 h-8 rounded-lg"><SelectValue placeholder="Nieuwe status..." /></SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
-                    <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button size="sm" onClick={handleBulkUpdate} disabled={!bulkStatus || bulkStatusMutation.isPending} className="rounded-pill">
-                {bulkStatusMutation.isPending ? "Bijwerken..." : "Status wijzigen"}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="rounded-pill">Deselecteer</Button>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="text-muted-foreground text-sm">Laden...</p>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Geen leads gevonden</p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop table */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <Checkbox checked={selected.size === filtered.length && filtered.length > 0} onCheckedChange={toggleAll} />
-                      </TableHead>
-                      <TableHead>Naam</TableHead>
-                      <TableHead>E-mail</TableHead>
-                      <TableHead>Telefoon</TableHead>
-                      <TableHead>Plaats</TableHead>
-                      <TableHead>Bron</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map(lead => (
-                      <TableRow key={lead.id} className={`${selected.has(lead.id) ? "bg-muted/50" : ""} cursor-pointer hover:bg-muted/30`} onClick={() => navigate(`/leads/${lead.id}`)}>
-                        <TableCell onClick={e => e.stopPropagation()}>
-                          <Checkbox checked={selected.has(lead.id)} onCheckedChange={() => toggleSelect(lead.id)} />
-                        </TableCell>
-                        <TableCell className="font-medium text-primary hover:underline">{lead.voornaam} {lead.achternaam}</TableCell>
-                        <TableCell>{lead.email}</TableCell>
-                        <TableCell>{lead.telefoon || "—"}</TableCell>
-                        <TableCell>{lead.plaats || "—"}</TableCell>
-                        <TableCell className="capitalize">{lead.bron || "—"}</TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
-                          <Select value={lead.lead_status} onValueChange={v => statusMutation.mutate({ id: lead.id, status: v as LeadStatus })}>
-                            <SelectTrigger className="w-40 h-8">
-                              <Badge className={statusColors[lead.lead_status]}>{statusLabels[lead.lead_status]}</Badge>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
-                                <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" title="Offerte maken" onClick={() => {
-                              sessionStorage.setItem("offerte-prefill", JSON.stringify({
-                                lead: { id: lead.id, voornaam: lead.voornaam, achternaam: lead.achternaam, email: lead.email, telefoon: lead.telefoon, adres: lead.adres, postcode: lead.postcode, plaats: lead.plaats },
-                              }));
-                              navigate("/offertes/nieuw");
-                            }}>
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" title="Schouw plannen" onClick={() => navigate("/schouwen")}>
-                              <ClipboardCheck className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(lead)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            {canDelete && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Lead verwijderen</AlertDialogTitle>
-                                    <AlertDialogDescription>Weet je zeker dat je {lead.voornaam} {lead.achternaam} wilt verwijderen?</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteMutation.mutate(lead.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+      {/* Bulk actions */}
+      {viewMode === "tabel" && selected.size > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+          <span className="text-sm font-medium">{selected.size} geselecteerd</span>
+          <Select value={bulkStatus} onValueChange={v => setBulkStatus(v as LeadStatus)}>
+            <SelectTrigger className="w-44 h-8 rounded-lg"><SelectValue placeholder="Nieuwe status..." /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
+                <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={handleBulkUpdate} disabled={!bulkStatus || bulkStatusMutation.isPending} className="rounded-pill">
+            {bulkStatusMutation.isPending ? "Bijwerken..." : "Status wijzigen"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="rounded-pill">Deselecteer</Button>
+        </div>
+      )}
 
-              {/* Mobile cards */}
-              <div className="md:hidden space-y-3">
-                {filtered.map(lead => (
-                  <div
-                    key={lead.id}
-                    className="rounded-xl border border-border p-4 bg-card cursor-pointer active:scale-[0.98] transition-transform"
-                    onClick={() => navigate(`/leads/${lead.id}`)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground truncate">{lead.voornaam} {lead.achternaam}</p>
-                        <p className="text-sm text-muted-foreground truncate">{lead.email}</p>
-                      </div>
-                      <Badge className={`${statusColors[lead.lead_status]} ml-2 flex-shrink-0`}>{statusLabels[lead.lead_status]}</Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                      {lead.telefoon && <span>{lead.telefoon}</span>}
-                      {lead.plaats && <span>{lead.plaats}</span>}
-                      {lead.bron && <span className="capitalize">{lead.bron}</span>}
-                    </div>
-                    <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                        sessionStorage.setItem("offerte-prefill", JSON.stringify({ lead: { id: lead.id, voornaam: lead.voornaam, achternaam: lead.achternaam, email: lead.email, telefoon: lead.telefoon, adres: lead.adres, postcode: lead.postcode, plaats: lead.plaats } }));
-                        navigate("/offertes/nieuw");
-                      }}>
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(lead)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      {canDelete && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Lead verwijderen</AlertDialogTitle>
-                              <AlertDialogDescription>Weet je zeker dat je {lead.voornaam} {lead.achternaam} wilt verwijderen?</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteMutation.mutate(lead.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Laden...</p>
+      ) : viewMode === "kanban" ? (
+        /* ==================== KANBAN VIEW ==================== */
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4" style={{ minWidth: kanbanColumns.length * 280 }}>
+            {kanbanColumns.map(col => {
+              const colLeads = filtered.filter(l => l.lead_status === col.status);
+              return (
+                <div
+                  key={col.status}
+                  className={`flex-1 min-w-[260px] max-w-[320px] rounded-2xl bg-muted/30 border border-border/50 border-t-4 ${col.color} flex flex-col`}
+                  onDragOver={handleDragOver}
+                  onDrop={e => handleDrop(e, col.status)}
+                >
+                  {/* Column header */}
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-sm text-foreground">{statusLabels[col.status]}</h3>
+                      <span className="text-xs bg-background border rounded-full px-2 py-0.5 text-muted-foreground font-medium">
+                        {colLeads.length}
+                      </span>
                     </div>
                   </div>
-                ))}
+
+                  {/* Cards */}
+                  <div className="px-3 pb-3 space-y-2 flex-1 overflow-y-auto max-h-[calc(100vh-320px)]">
+                    {colLeads.length === 0 ? (
+                      <div className="text-center py-8 text-xs text-muted-foreground">
+                        Sleep leads hierheen
+                      </div>
+                    ) : (
+                      colLeads.map(lead => (
+                        <div
+                          key={lead.id}
+                          draggable
+                          onDragStart={e => handleDragStart(e, lead.id)}
+                          onClick={() => navigate(`/leads/${lead.id}`)}
+                          className={`bg-background rounded-xl border shadow-sm p-3 cursor-pointer hover:shadow-md transition-all group ${
+                            draggedLeadId === lead.id ? "opacity-50 scale-95" : ""
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm text-foreground truncate">
+                                {lead.voornaam} {lead.achternaam}
+                              </p>
+                              {lead.bedrijfsnaam && (
+                                <p className="text-xs text-muted-foreground truncate">{lead.bedrijfsnaam}</p>
+                              )}
+                            </div>
+                            <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0 cursor-grab" />
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            {lead.email && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                                <Mail className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{lead.email}</span>
+                              </div>
+                            )}
+                            {lead.telefoon && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Phone className="h-3 w-3 shrink-0" />
+                                <span>{lead.telefoon}</span>
+                              </div>
+                            )}
+                            {lead.plaats && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span>{lead.plaats}</span>
+                              </div>
+                            )}
+                          </div>
+                          {lead.bron && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="text-xs bg-muted rounded-md px-1.5 py-0.5 text-muted-foreground capitalize">{lead.bron}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* ==================== TABLE VIEW ==================== */
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="pt-6">
+            {filtered.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Geen leads gevonden</p>
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox checked={selected.size === filtered.length && filtered.length > 0} onCheckedChange={toggleAll} />
+                        </TableHead>
+                        <TableHead>Naam</TableHead>
+                        <TableHead>E-mail</TableHead>
+                        <TableHead>Telefoon</TableHead>
+                        <TableHead>Plaats</TableHead>
+                        <TableHead>Bron</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Acties</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map(lead => (
+                        <TableRow key={lead.id} className={`${selected.has(lead.id) ? "bg-muted/50" : ""} cursor-pointer hover:bg-muted/30`} onClick={() => navigate(`/leads/${lead.id}`)}>
+                          <TableCell onClick={e => e.stopPropagation()}>
+                            <Checkbox checked={selected.has(lead.id)} onCheckedChange={() => toggleSelect(lead.id)} />
+                          </TableCell>
+                          <TableCell className="font-medium text-primary hover:underline">{lead.voornaam} {lead.achternaam}</TableCell>
+                          <TableCell>{lead.email}</TableCell>
+                          <TableCell>{lead.telefoon || "—"}</TableCell>
+                          <TableCell>{lead.plaats || "—"}</TableCell>
+                          <TableCell className="capitalize">{lead.bron || "—"}</TableCell>
+                          <TableCell onClick={e => e.stopPropagation()}>
+                            <Select value={lead.lead_status} onValueChange={v => statusMutation.mutate({ id: lead.id, status: v as LeadStatus })}>
+                              <SelectTrigger className="w-40 h-8">
+                                <Badge className={statusColors[lead.lead_status]}>{statusLabels[lead.lead_status]}</Badge>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
+                                  <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" title="Offerte maken" onClick={() => {
+                                sessionStorage.setItem("offerte-prefill", JSON.stringify({
+                                  lead: { id: lead.id, voornaam: lead.voornaam, achternaam: lead.achternaam, email: lead.email, telefoon: lead.telefoon, adres: lead.adres, postcode: lead.postcode, plaats: lead.plaats },
+                                }));
+                                navigate("/offertes/nieuw");
+                              }}>
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" title="Schouw plannen" onClick={() => navigate("/schouwen")}>
+                                <ClipboardCheck className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => openEdit(lead)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {canDelete && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Lead verwijderen</AlertDialogTitle>
+                                      <AlertDialogDescription>Weet je zeker dat je {lead.voornaam} {lead.achternaam} wilt verwijderen?</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => deleteMutation.mutate(lead.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-3">
+                  {filtered.map(lead => (
+                    <div
+                      key={lead.id}
+                      className="rounded-xl border border-border p-4 bg-card cursor-pointer active:scale-[0.98] transition-transform"
+                      onClick={() => navigate(`/leads/${lead.id}`)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground truncate">{lead.voornaam} {lead.achternaam}</p>
+                          <p className="text-sm text-muted-foreground truncate">{lead.email}</p>
+                        </div>
+                        <Badge className={`${statusColors[lead.lead_status]} ml-2 flex-shrink-0`}>{statusLabels[lead.lead_status]}</Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                        {lead.telefoon && <span>{lead.telefoon}</span>}
+                        {lead.plaats && <span>{lead.plaats}</span>}
+                        {lead.bron && <span className="capitalize">{lead.bron}</span>}
+                      </div>
+                      <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                          sessionStorage.setItem("offerte-prefill", JSON.stringify({ lead: { id: lead.id, voornaam: lead.voornaam, achternaam: lead.achternaam, email: lead.email, telefoon: lead.telefoon, adres: lead.adres, postcode: lead.postcode, plaats: lead.plaats } }));
+                          navigate("/offertes/nieuw");
+                        }}>
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(lead)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {canDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Lead verwijderen</AlertDialogTitle>
+                                <AlertDialogDescription>Weet je zeker dat je {lead.voornaam} {lead.achternaam} wilt verwijderen?</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteMutation.mutate(lead.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-w-[95vw] max-h-[90vh] overflow-y-auto">
