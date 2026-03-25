@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import SchouwInstellingen from "@/components/instellingen/SchouwInstellingen";
+import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
 import BetalingsvoorwaardenConfig from "@/components/instellingen/BetalingsvoorwaardenConfig";
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
 import { useAuth } from "@/contexts/AuthContext";
