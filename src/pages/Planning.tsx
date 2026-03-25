@@ -85,21 +85,15 @@ function downloadICS(events: CalendarEvent[]) {
 
 const Planning = () => {
   const { profile } = useAuth();
+  const planningNavigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("maand");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
-  const [showNewForm, setShowNewForm] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [mijnAgenda, setMijnAgenda] = useState(true);
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
-  const [newAfspraak, setNewAfspraak] = useState({
-    titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"),
-    start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile?.id || "",
-  });
-  const updateField = (k: string, v: string) => setNewAfspraak(prev => ({ ...prev, [k]: v }));
 
   // Fetch team users
   useEffect(() => {
