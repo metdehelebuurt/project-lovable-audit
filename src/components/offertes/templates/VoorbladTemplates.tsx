@@ -68,7 +68,7 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
       <div style={{ backgroundColor: hasImage ? "transparent" : sc, color: "#fff", padding: "70px 56px 48px", position: "relative", flex: "0 0 50%", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
         <div style={{ position: "absolute", top: 0, right: 0, width: 240, height: "100%", background: `linear-gradient(135deg, ${pc}, ${hexToTint(pc, 0.6)})`, clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
         <div style={{ position: "relative", zIndex: 1 }}>
-          {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 52, marginBottom: 32, objectFit: "contain" }} />}
+          {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 52, marginBottom: 32, objectFit: "contain" }} />}
           <p style={{ fontSize: 14, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>Verduurzaam je huis</h1>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.15, color: pc }}>
