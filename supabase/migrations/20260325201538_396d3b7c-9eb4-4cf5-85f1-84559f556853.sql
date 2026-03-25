@@ -1,0 +1,1 @@
+ALTER TABLE public.partners ADD COLUMN lead_bronnen jsonb DEFAULT '["website", "telefoon", "referral", "advertentie", "beurs", "social media", "overig"]'::jsonb;

@@ -71,7 +71,7 @@ interface AiSignal {
   prioriteit: "hoog" | "middel" | "laag";
 }
 
-const bronOptions = ["website", "telefoon", "referral", "advertentie", "beurs", "overig"];
+const DEFAULT_BRONNEN = ["website", "telefoon", "referral", "advertentie", "beurs", "social media", "overig"];
 const woningtypeOptions = ["vrijstaand", "twee_onder_een_kap", "hoekwoning", "tussenwoning", "appartement", "bungalow", "overig"];
 const daktypeOptions = ["schuin_pannen", "schuin_leien", "plat", "gemengd", "overig"];
 const energielabelOptions = ["A++++", "A+++", "A++", "A+", "A", "B", "C", "D", "E", "F", "G"];
@@ -105,6 +105,17 @@ const LeadDetail = () => {
   const [contactForm, setContactForm] = useState({ type: "call", richting: "uitgaand", resultaat: "", notitie: "" });
 
   /* ─── Queries ─── */
+  const { data: bronOptions = DEFAULT_BRONNEN } = useQuery({
+    queryKey: ["partner-lead-bronnen", profile?.partner_id],
+    queryFn: async () => {
+      if (!profile?.partner_id) return DEFAULT_BRONNEN;
+      const { data } = await supabase.from("partners").select("lead_bronnen").eq("id", profile.partner_id).single();
+      if (data?.lead_bronnen && Array.isArray(data.lead_bronnen)) return data.lead_bronnen as string[];
+      return DEFAULT_BRONNEN;
+    },
+    enabled: !!profile,
+  });
+
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
     queryFn: async () => {
