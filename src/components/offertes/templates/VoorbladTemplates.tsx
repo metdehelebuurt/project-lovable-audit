@@ -244,7 +244,7 @@ export const HeroPhoto: React.FC<VoorbladProps> = (props) => {
       {/* Top image area — 45% */}
       <div style={{ height: "45%", flexShrink: 0, background: heroImageUrl ? "none" : `linear-gradient(135deg, ${sc}, ${pc})`, display: "flex", alignItems: "flex-end", padding: "0 56px 36px", position: "relative", overflow: "hidden" }}>
         {heroImageUrl && <HeroImageBg url={heroImageUrl} overlay={`${sc}bb`} />}
-        {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ position: "absolute", top: 36, left: 56, height: 40, objectFit: "contain", zIndex: 2 }} />}
+        {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ position: "absolute", top: 36, left: 56, height: 40, objectFit: "contain", zIndex: 2 }} />}
         <div style={{ position: "relative", zIndex: 2 }}>
           <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 6, opacity: 0.9 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 40, fontWeight: 800, color: "#fff", margin: 0 }}>
