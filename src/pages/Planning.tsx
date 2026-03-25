@@ -392,11 +392,27 @@ const Planning = () => {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Mijn Agenda toggle */}
           <div className="flex items-center gap-2 mr-2">
-            <Switch checked={mijnAgenda} onCheckedChange={setMijnAgenda} id="mijn-agenda" />
+            <Switch checked={mijnAgenda} onCheckedChange={(v) => { setMijnAgenda(v); if (v) setSelectedAdviseur("alle"); }} id="mijn-agenda" />
             <Label htmlFor="mijn-agenda" className="text-sm cursor-pointer whitespace-nowrap">
               {mijnAgenda ? "Mijn agenda" : "Alle afspraken"}
             </Label>
           </div>
+
+          {/* Adviseur filter - only for admins when not in "mijn agenda" mode */}
+          {isAdmin && !mijnAgenda && teamUsers.length > 0 && (
+            <Select value={selectedAdviseur} onValueChange={setSelectedAdviseur}>
+              <SelectTrigger className="w-[180px] h-9">
+                <User className="h-4 w-4 mr-1 shrink-0" />
+                <SelectValue placeholder="Filter adviseur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="alle">Alle adviseurs</SelectItem>
+                {teamUsers.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.voornaam} {u.achternaam}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} size="sm">
             <ToggleGroupItem value="dag">Dag</ToggleGroupItem>
