@@ -543,7 +543,7 @@ export default function OffertePDF() {
         return (
           <div key="voorblad" style={{ ...pageStyle, padding: 0, height: "297mm", minHeight: "297mm" }}>
             <VoorbladComp
-              pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl}
+              pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl} logoUrlDark={logoUrlDonker}
               partnerNaam={partner.naam} klantNaam={offerte.klant_naam}
               offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam}
               datum={formatDate(offerte.created_at)}
