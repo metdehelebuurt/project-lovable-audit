@@ -42,6 +42,14 @@ const statusColors: Record<OfferteStatus, string> = {
   verlopen: "bg-warning-light text-warning-foreground",
 };
 
+const categorieLabelsMap: Record<string, string> = {
+  prijs: "Prijs te hoog",
+  concurrent: "Concurrent gekozen",
+  geen_behoefte: "Geen behoefte meer",
+  timing: "Timing niet goed",
+  overig: "Overig",
+};
+
 interface OfferteRegel {
   product_id?: string;
   omschrijving: string;
@@ -77,6 +85,12 @@ const OfferteDetail = () => {
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
 
+  // Afwijzing dialog state
+  const [afwijzingDialog, setAfwijzingDialog] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<OfferteStatus | null>(null);
+  const [afwijzingCategorie, setAfwijzingCategorie] = useState("");
+  const [afwijzingReden, setAfwijzingReden] = useState("");
+
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
   const isConsument = profile?.rol === "consument";
@@ -98,8 +112,11 @@ const OfferteDetail = () => {
   });
 
   const statusMutation = useMutation({
-    mutationFn: async ({ status }: { status: OfferteStatus }) => {
-      const { error } = await supabase.from("offertes").update({ status }).eq("id", id!);
+    mutationFn: async ({ status, afwijzing_reden, afwijzing_categorie }: { status: OfferteStatus; afwijzing_reden?: string; afwijzing_categorie?: string }) => {
+      const update: any = { status };
+      if (afwijzing_reden !== undefined) update.afwijzing_reden = afwijzing_reden;
+      if (afwijzing_categorie !== undefined) update.afwijzing_categorie = afwijzing_categorie;
+      const { error } = await supabase.from("offertes").update(update).eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -109,6 +126,28 @@ const OfferteDetail = () => {
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
+
+  const handleStatusChange = (newStatus: OfferteStatus) => {
+    if (newStatus === "afgewezen" || newStatus === "verlopen") {
+      setPendingStatus(newStatus);
+      setAfwijzingCategorie("");
+      setAfwijzingReden("");
+      setAfwijzingDialog(true);
+    } else {
+      statusMutation.mutate({ status: newStatus });
+    }
+  };
+
+  const handleAfwijzingConfirm = () => {
+    if (!pendingStatus) return;
+    statusMutation.mutate({
+      status: pendingStatus,
+      afwijzing_reden: afwijzingReden || undefined,
+      afwijzing_categorie: afwijzingCategorie || undefined,
+    });
+    setAfwijzingDialog(false);
+    setPendingStatus(null);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -476,7 +515,7 @@ const OfferteDetail = () => {
               ) : (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Status wijzigen</p>
-                  <Select value={offerte.status} onValueChange={v => statusMutation.mutate({ status: v as OfferteStatus })}>
+                  <Select value={offerte.status} onValueChange={v => handleStatusChange(v as OfferteStatus)}>
                     <SelectTrigger className="rounded-xl">
                       <Badge className={statusColors[offerte.status]}>{statusLabels[offerte.status]}</Badge>
                     </SelectTrigger>
@@ -510,6 +549,19 @@ const OfferteDetail = () => {
 
               <Separator />
 
+              {/* Afwijzingsreden tonen */}
+              {(offerte.status === "afgewezen" || offerte.status === "verlopen") && (offerte as any).afwijzing_categorie && (
+                <div className="bg-destructive/5 rounded-xl p-3 space-y-1">
+                  <p className="text-xs font-medium text-destructive">Afwijzingsreden</p>
+                  <Badge variant="outline" className="text-xs">{categorieLabelsMap[(offerte as any).afwijzing_categorie] || (offerte as any).afwijzing_categorie}</Badge>
+                  {(offerte as any).afwijzing_reden && (
+                    <p className="text-sm text-muted-foreground mt-1">{(offerte as any).afwijzing_reden}</p>
+                  )}
+                </div>
+              )}
+
+              {(offerte.status === "afgewezen" || offerte.status === "verlopen") && (offerte as any).afwijzing_categorie && <Separator />}
+
               {/* Consument acties */}
               {isConsument && offerte.status === "verzonden" && (
                 <div className="space-y-2">
@@ -526,7 +578,7 @@ const OfferteDetail = () => {
                       size="sm"
                       variant="destructive"
                       className="rounded-pill gap-1 flex-1"
-                      onClick={() => statusMutation.mutate({ status: "afgewezen" })}
+                      onClick={() => handleStatusChange("afgewezen")}
                     >
                       <XCircle className="h-4 w-4" /> Afwijzen
                     </Button>
@@ -615,6 +667,51 @@ const OfferteDetail = () => {
             ) : null}
             <p className="text-xs text-muted-foreground">De link is 30 dagen geldig. De klant kan de offerte bekijken en direct online accepteren.</p>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Afwijzing reden dialog */}
+      <Dialog open={afwijzingDialog} onOpenChange={setAfwijzingDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {pendingStatus === "verlopen" ? "Reden voor verlopen" : "Reden voor afwijzing"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Geef aan waarom deze offerte {pendingStatus === "verlopen" ? "is verlopen" : "is afgewezen"}. Dit helpt bij het verbeteren van toekomstige offertes.
+            </p>
+            <div>
+              <Label className="text-sm">Categorie</Label>
+              <Select value={afwijzingCategorie} onValueChange={setAfwijzingCategorie}>
+                <SelectTrigger className="rounded-xl mt-1">
+                  <SelectValue placeholder="Selecteer een categorie..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categorieLabelsMap).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm">Toelichting (optioneel)</Label>
+              <Textarea
+                value={afwijzingReden}
+                onChange={e => setAfwijzingReden(e.target.value)}
+                placeholder="Voeg extra context toe..."
+                className="rounded-xl mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAfwijzingDialog(false)} className="rounded-pill">Annuleren</Button>
+            <Button onClick={handleAfwijzingConfirm} className="rounded-pill" variant="destructive">
+              Bevestigen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

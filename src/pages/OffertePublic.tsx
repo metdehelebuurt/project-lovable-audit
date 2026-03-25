@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const formatCurrency = (n: number) =>
@@ -43,6 +46,10 @@ export default function OffertePublic() {
   const [error, setError] = useState<string | null>(null);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [rejectDialog, setRejectDialog] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectCategorie, setRejectCategorie] = useState("");
+  const [rejectReden, setRejectReden] = useState("");
 
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -137,6 +144,33 @@ export default function OffertePublic() {
       toast.error("Er is een fout opgetreden");
     }
     setAccepting(false);
+  };
+
+  const handleReject = async () => {
+    setRejecting(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("offerte-reject", {
+        body: { share_token: token, reden: rejectReden, categorie: rejectCategorie },
+      });
+      if (fnErr || data?.error) {
+        toast.error(data?.error || fnErr?.message || "Er is een fout opgetreden");
+      } else {
+        setOfferte((prev: any) => ({ ...prev, status: "afgewezen" }));
+        toast.success("Offerte afgewezen");
+        setRejectDialog(false);
+      }
+    } catch {
+      toast.error("Er is een fout opgetreden");
+    }
+    setRejecting(false);
+  };
+
+  const categorieOptions: Record<string, string> = {
+    prijs: "Prijs te hoog",
+    concurrent: "Concurrent gekozen",
+    geen_behoefte: "Geen behoefte meer",
+    timing: "Timing niet goed",
+    overig: "Overig",
   };
 
   if (loading) {
@@ -314,9 +348,14 @@ export default function OffertePublic() {
                       <Clock className="h-3 w-3" /> Geldig tot {formatDate(offerte.geldig_tot)}
                     </p>
                   </div>
-                  <Button onClick={() => setAcceptDialog(true)} className="rounded-pill gap-2" style={{ backgroundColor: pc }}>
-                    <Check className="h-4 w-4" /> Offerte accepteren
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setRejectDialog(true)} className="rounded-pill gap-2">
+                      <XCircle className="h-4 w-4" /> Afwijzen
+                    </Button>
+                    <Button onClick={() => setAcceptDialog(true)} className="rounded-pill gap-2" style={{ backgroundColor: pc }}>
+                      <Check className="h-4 w-4" /> Offerte accepteren
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -497,6 +536,50 @@ export default function OffertePublic() {
             <Button onClick={handleAccept} disabled={accepting} className="rounded-pill gap-2" style={{ backgroundColor: pc }}>
               {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               Bevestig acceptatie
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject dialog */}
+      <Dialog open={rejectDialog} onOpenChange={setRejectDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Offerte afwijzen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              We vinden het jammer dat u de offerte afwijst. Kunt u aangeven waarom? Dit helpt ons om onze dienstverlening te verbeteren.
+            </p>
+            <div>
+              <Label className="text-sm">Reden</Label>
+              <Select value={rejectCategorie} onValueChange={setRejectCategorie}>
+                <SelectTrigger className="rounded-xl mt-1">
+                  <SelectValue placeholder="Selecteer een reden..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categorieOptions).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm">Toelichting (optioneel)</Label>
+              <Textarea
+                value={rejectReden}
+                onChange={(e) => setRejectReden(e.target.value)}
+                placeholder="Vertel ons meer..."
+                className="rounded-xl mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialog(false)} className="rounded-pill">Annuleren</Button>
+            <Button onClick={handleReject} disabled={rejecting} variant="destructive" className="rounded-pill gap-2">
+              {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              Bevestig afwijzing
             </Button>
           </DialogFooter>
         </DialogContent>
