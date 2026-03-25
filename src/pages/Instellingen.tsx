@@ -574,6 +574,7 @@ interface OfferteTemplate {
   voorblad: boolean; productpagina: boolean; energieadvies: boolean; schouwrapport: boolean;
   standaard_garantievoorwaarden: string; standaard_betalingsvoorwaarden: string;
   standaard_installatietermijn: string; badge_1: string; badge_2: string; badge_3: string; akkoord_tekst: string;
+  voorwaarden_standaard_bijvoegen: boolean;
 }
 
 const defaultTemplate: OfferteTemplate = {
