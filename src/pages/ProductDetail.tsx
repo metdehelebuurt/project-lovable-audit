@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Download, Eye, FileText, CheckCircle,
-  Package, Pencil, Save, X, Upload, ScanSearch,
+  Package, Pencil, Save, X, Upload, ScanSearch, AlertTriangle,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
