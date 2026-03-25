@@ -46,6 +46,7 @@ import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import LeadDetail from "@/pages/LeadDetail";
+import AfspraakNieuw from "@/pages/AfspraakNieuw";
 import Klanten from "@/pages/Klanten";
 import KlantDetail from "@/pages/KlantDetail";
 import NotFound from "@/pages/NotFound";
@@ -176,6 +177,9 @@ const App = () => (
               } />
               <Route path="/planning" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><Planning /></ProtectedRoute>
+              } />
+              <Route path="/planning/nieuw" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><AfspraakNieuw /></ProtectedRoute>
               } />
               <Route path="/analytics" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Analytics /></ProtectedRoute>

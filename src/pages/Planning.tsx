@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -19,7 +18,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, X, User,
+  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, User,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths,
@@ -84,21 +83,15 @@ function downloadICS(events: CalendarEvent[]) {
 
 const Planning = () => {
   const { profile } = useAuth();
+  const planningNavigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("maand");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
-  const [showNewForm, setShowNewForm] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [mijnAgenda, setMijnAgenda] = useState(true);
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
-  const [newAfspraak, setNewAfspraak] = useState({
-    titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"),
-    start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile?.id || "",
-  });
-  const updateField = (k: string, v: string) => setNewAfspraak(prev => ({ ...prev, [k]: v }));
 
   // Fetch team users
   useEffect(() => {
@@ -115,48 +108,7 @@ const Planning = () => {
     fetchTeam();
   }, [profile?.partner_id]);
 
-  // Set default adviseur_id when profile loads
-  useEffect(() => {
-    if (profile?.id) setNewAfspraak(prev => ({ ...prev, adviseur_id: prev.adviseur_id || profile.id }));
-  }, [profile?.id]);
 
-  const handleCreateAfspraak = async () => {
-    if (!newAfspraak.titel || !newAfspraak.datum) {
-      toast.error("Titel en datum zijn verplicht"); return;
-    }
-    if (!profile?.partner_id) {
-      toast.error("Geen partner gekoppeld"); return;
-    }
-    setSaving(true);
-    const adviseurId = newAfspraak.adviseur_id || profile.id;
-    const adviseur = teamUsers.find(u => u.id === adviseurId);
-    const { data, error } = await supabase.from("afspraken" as any).insert({
-      partner_id: profile.partner_id,
-      adviseur_id: adviseurId,
-      titel: newAfspraak.titel,
-      type: newAfspraak.type,
-      datum: newAfspraak.datum,
-      start_tijd: newAfspraak.start_tijd || null,
-      eind_tijd: newAfspraak.eind_tijd || null,
-      locatie: newAfspraak.locatie || null,
-      notities: newAfspraak.notities || null,
-      status: "gepland",
-    } as any).select().single();
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Afspraak ingepland");
-    if (data) {
-      const d = data as any;
-      setEvents(prev => [...prev, {
-        id: d.id, date: d.datum, title: d.titel, type: "afspraak",
-        status: "gepland", adviseur_id: adviseurId,
-        adviseur_naam: adviseur ? `${adviseur.voornaam} ${adviseur.achternaam}` : undefined,
-        extra: { type: d.type, start_tijd: d.start_tijd, eind_tijd: d.eind_tijd, locatie: d.locatie },
-      }]);
-    }
-    setNewAfspraak({ titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"), start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile.id });
-    setShowNewForm(false);
-  };
 
   const dateRange = useMemo(() => {
     switch (viewMode) {
@@ -443,9 +395,8 @@ const Planning = () => {
             <ToggleGroupItem value="jaar">Jaar</ToggleGroupItem>
           </ToggleGroup>
 
-          <Button size="sm" onClick={() => setShowNewForm(!showNewForm)}>
-            {showNewForm ? <X className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-            {showNewForm ? "Annuleren" : "Nieuwe afspraak"}
+          <Button size="sm" onClick={() => planningNavigate("/planning/nieuw")}>
+            <Plus className="h-4 w-4 mr-1" /> Nieuwe afspraak
           </Button>
 
           <DropdownMenu>
@@ -466,72 +417,7 @@ const Planning = () => {
         </div>
       </div>
 
-      {/* Inline nieuwe afspraak formulier */}
-      {showNewForm && (
-        <Card className="rounded-2xl border-0 shadow-sm bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <Label className="text-xs">Titel *</Label>
-                <Input value={newAfspraak.titel} onChange={e => updateField("titel", e.target.value)} placeholder="Bijv. Adviesgesprek zonnepanelen" />
-              </div>
-              <div>
-                <Label className="text-xs">Adviseur</Label>
-                <Select value={newAfspraak.adviseur_id} onValueChange={v => updateField("adviseur_id", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecteer adviseur" /></SelectTrigger>
-                  <SelectContent>
-                    {teamUsers.map(u => (
-                      <SelectItem key={u.id} value={u.id}>
-                        <span className="flex items-center gap-2"><User className="h-3.5 w-3.5" />{u.voornaam} {u.achternaam}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Type</Label>
-                <Select value={newAfspraak.type} onValueChange={v => updateField("type", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="thuisbezoek"><span className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> Thuisbezoek</span></SelectItem>
-                    <SelectItem value="op_afstand"><span className="flex items-center gap-2"><Video className="h-3.5 w-3.5" /> Op afstand</span></SelectItem>
-                    <SelectItem value="belafspraak"><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Belafspraak</span></SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Datum *</Label>
-                <Input type="date" value={newAfspraak.datum} onChange={e => updateField("datum", e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">Van</Label>
-                  <Input type="time" value={newAfspraak.start_tijd} onChange={e => updateField("start_tijd", e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs">Tot</Label>
-                  <Input type="time" value={newAfspraak.eind_tijd} onChange={e => updateField("eind_tijd", e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Locatie</Label>
-                <Input value={newAfspraak.locatie} onChange={e => updateField("locatie", e.target.value)} placeholder="Adres of videocall link" />
-              </div>
-              <div>
-                <Label className="text-xs">Notities</Label>
-                <Input value={newAfspraak.notities} onChange={e => updateField("notities", e.target.value)} placeholder="Eventuele notities..." />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={handleCreateAfspraak} disabled={saving} className="w-full">
-                  {saving ? "Opslaan..." : "Inplannen"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
