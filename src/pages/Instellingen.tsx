@@ -692,6 +692,36 @@ function OfferteTemplateInstellingen({ partnerId }: { partnerId: string }) {
           <Label>Akkoordsectie tekst (optioneel)</Label>
           <Textarea value={template.akkoord_tekst} onChange={e => update("akkoord_tekst", e.target.value)} className="rounded-xl mt-1" rows={2} placeholder="Extra tekst boven de handtekeningsectie..." />
         </div>
+        <div className="border-t pt-4 space-y-4">
+          <p className="text-sm font-medium text-foreground">Algemene voorwaarden</p>
+          <p className="text-xs text-muted-foreground">Upload uw algemene voorwaarden als PDF. Deze kunnen bij het versturen van offertes automatisch worden bijgevoegd als downloadlink.</p>
+          <div className="flex items-center gap-4">
+            {voorwaardenUrl ? (
+              <div className="flex items-center gap-3 rounded-xl border p-3 flex-1">
+                <FileText className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Algemene voorwaarden.pdf</p>
+                  <a href={voorwaardenUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Bekijken →</a>
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleRemoveVoorwaarden} className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex-1">
+                <Input type="file" accept="application/pdf" onChange={handleVoorwaardenUpload} disabled={uploadingVoorwaarden} className="text-sm" />
+                <p className="text-xs text-muted-foreground mt-1">Max 10MB, alleen PDF</p>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <p className="text-sm font-medium">Standaard bijvoegen bij offertes</p>
+              <p className="text-xs text-muted-foreground">Automatisch een link naar de voorwaarden toevoegen bij het versturen</p>
+            </div>
+            <Switch checked={template.voorwaarden_standaard_bijvoegen} onCheckedChange={v => update("voorwaarden_standaard_bijvoegen", v)} disabled={!voorwaardenUrl} />
+          </div>
+        </div>
         <Button onClick={handleSave} disabled={saving}>{saving ? "Opslaan..." : "Template opslaan"}</Button>
       </CardContent>
     </Card>
