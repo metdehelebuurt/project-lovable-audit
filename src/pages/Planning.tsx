@@ -110,48 +110,7 @@ const Planning = () => {
     fetchTeam();
   }, [profile?.partner_id]);
 
-  // Set default adviseur_id when profile loads
-  useEffect(() => {
-    if (profile?.id) setNewAfspraak(prev => ({ ...prev, adviseur_id: prev.adviseur_id || profile.id }));
-  }, [profile?.id]);
 
-  const handleCreateAfspraak = async () => {
-    if (!newAfspraak.titel || !newAfspraak.datum) {
-      toast.error("Titel en datum zijn verplicht"); return;
-    }
-    if (!profile?.partner_id) {
-      toast.error("Geen partner gekoppeld"); return;
-    }
-    setSaving(true);
-    const adviseurId = newAfspraak.adviseur_id || profile.id;
-    const adviseur = teamUsers.find(u => u.id === adviseurId);
-    const { data, error } = await supabase.from("afspraken" as any).insert({
-      partner_id: profile.partner_id,
-      adviseur_id: adviseurId,
-      titel: newAfspraak.titel,
-      type: newAfspraak.type,
-      datum: newAfspraak.datum,
-      start_tijd: newAfspraak.start_tijd || null,
-      eind_tijd: newAfspraak.eind_tijd || null,
-      locatie: newAfspraak.locatie || null,
-      notities: newAfspraak.notities || null,
-      status: "gepland",
-    } as any).select().single();
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Afspraak ingepland");
-    if (data) {
-      const d = data as any;
-      setEvents(prev => [...prev, {
-        id: d.id, date: d.datum, title: d.titel, type: "afspraak",
-        status: "gepland", adviseur_id: adviseurId,
-        adviseur_naam: adviseur ? `${adviseur.voornaam} ${adviseur.achternaam}` : undefined,
-        extra: { type: d.type, start_tijd: d.start_tijd, eind_tijd: d.eind_tijd, locatie: d.locatie },
-      }]);
-    }
-    setNewAfspraak({ titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"), start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile.id });
-    setShowNewForm(false);
-  };
 
   const dateRange = useMemo(() => {
     switch (viewMode) {
