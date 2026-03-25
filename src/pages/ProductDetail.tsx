@@ -971,6 +971,28 @@ const ProductDetail = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AI Disclaimer Dialog */}
+      <AlertDialog open={aiDisclaimerOpen} onOpenChange={setAiDisclaimerOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              Handmatige controle vereist
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              De specificaties zijn automatisch gegenereerd door AI op basis van publiek beschikbare bronnen.
+              <br /><br />
+              <strong>Controleer alle waarden handmatig</strong> voordat u deze gebruikt in offertes of communicatie naar klanten. AI-gegenereerde data kan onvolledig of onjuist zijn.
+              <br /><br />
+              <span className="text-xs text-muted-foreground">Aan AI-gegenereerde specificaties kunnen geen rechten worden ontleend.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>Ik heb het begrepen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
