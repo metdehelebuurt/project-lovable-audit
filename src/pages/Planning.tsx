@@ -169,12 +169,20 @@ const Planning = () => {
 
   // Filter events for "mijn agenda"
   const filteredEvents = useMemo(() => {
-    if (!mijnAgenda || !profile?.id) return events;
-    return events.filter(e => {
-      if (e.type === "installatie") return true; // installaties have no adviseur_id in this context
-      return e.adviseur_id === profile.id;
-    });
-  }, [events, mijnAgenda, profile?.id]);
+    if (mijnAgenda && profile?.id) {
+      return events.filter(e => {
+        if (e.type === "installatie") return true;
+        return e.adviseur_id === profile.id;
+      });
+    }
+    if (selectedAdviseur !== "alle") {
+      return events.filter(e => {
+        if (e.type === "installatie") return true;
+        return e.adviseur_id === selectedAdviseur;
+      });
+    }
+    return events;
+  }, [events, mijnAgenda, selectedAdviseur, profile?.id]);
 
   const getEventsForDay = useCallback(
     (day: Date) => filteredEvents.filter((e) => isSameDay(parseISO(e.date), day)),
