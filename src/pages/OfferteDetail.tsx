@@ -104,8 +104,11 @@ const OfferteDetail = () => {
   });
 
   const statusMutation = useMutation({
-    mutationFn: async ({ status }: { status: OfferteStatus }) => {
-      const { error } = await supabase.from("offertes").update({ status }).eq("id", id!);
+    mutationFn: async ({ status, afwijzing_reden, afwijzing_categorie }: { status: OfferteStatus; afwijzing_reden?: string; afwijzing_categorie?: string }) => {
+      const update: any = { status };
+      if (afwijzing_reden !== undefined) update.afwijzing_reden = afwijzing_reden;
+      if (afwijzing_categorie !== undefined) update.afwijzing_categorie = afwijzing_categorie;
+      const { error } = await supabase.from("offertes").update(update).eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -115,6 +118,28 @@ const OfferteDetail = () => {
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
+
+  const handleStatusChange = (newStatus: OfferteStatus) => {
+    if (newStatus === "afgewezen" || newStatus === "verlopen") {
+      setPendingStatus(newStatus);
+      setAfwijzingCategorie("");
+      setAfwijzingReden("");
+      setAfwijzingDialog(true);
+    } else {
+      statusMutation.mutate({ status: newStatus });
+    }
+  };
+
+  const handleAfwijzingConfirm = () => {
+    if (!pendingStatus) return;
+    statusMutation.mutate({
+      status: pendingStatus,
+      afwijzing_reden: afwijzingReden || undefined,
+      afwijzing_categorie: afwijzingCategorie || undefined,
+    });
+    setAfwijzingDialog(false);
+    setPendingStatus(null);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
