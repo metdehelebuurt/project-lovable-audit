@@ -540,6 +540,50 @@ export default function OffertePublic() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reject dialog */}
+      <Dialog open={rejectDialog} onOpenChange={setRejectDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Offerte afwijzen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              We vinden het jammer dat u de offerte afwijst. Kunt u aangeven waarom? Dit helpt ons om onze dienstverlening te verbeteren.
+            </p>
+            <div>
+              <Label className="text-sm">Reden</Label>
+              <Select value={rejectCategorie} onValueChange={setRejectCategorie}>
+                <SelectTrigger className="rounded-xl mt-1">
+                  <SelectValue placeholder="Selecteer een reden..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categorieOptions).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm">Toelichting (optioneel)</Label>
+              <Textarea
+                value={rejectReden}
+                onChange={(e) => setRejectReden(e.target.value)}
+                placeholder="Vertel ons meer..."
+                className="rounded-xl mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialog(false)} className="rounded-pill">Annuleren</Button>
+            <Button onClick={handleReject} disabled={rejecting} variant="destructive" className="rounded-pill gap-2">
+              {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              Bevestig afwijzing
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
