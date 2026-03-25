@@ -354,89 +354,150 @@ const Leads = () => {
         <p className="text-muted-foreground text-sm">Laden...</p>
       ) : viewMode === "kanban" ? (
         /* ==================== KANBAN VIEW ==================== */
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-4" style={{ minWidth: kanbanColumns.length * 280 }}>
-            {kanbanColumns.map(col => {
-              const colLeads = filtered.filter(l => l.lead_status === col.status);
-              return (
-                <div
-                  key={col.status}
-                  className={`flex-1 min-w-[260px] max-w-[320px] rounded-2xl bg-muted/30 border border-border/50 border-t-4 ${col.color} flex flex-col`}
-                  onDragOver={handleDragOver}
-                  onDrop={e => handleDrop(e, col.status)}
-                >
-                  {/* Column header */}
-                  <div className="px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-sm text-foreground">{statusLabels[col.status]}</h3>
-                      <span className="text-xs bg-background border rounded-full px-2 py-0.5 text-muted-foreground font-medium">
-                        {colLeads.length}
-                      </span>
+        <TooltipProvider delayDuration={300}>
+          <div className="flex gap-3">
+            {kanbanMode === "grouped" ? (
+              /* --- GROUPED: 5 kolommen --- */
+              kanbanGroups.map(group => {
+                const colLeads = filtered.filter(l => group.statuses.includes(l.lead_status));
+                return (
+                  <div
+                    key={group.label}
+                    className={`flex-1 min-w-0 rounded-2xl bg-muted/30 border border-border/50 border-t-4 ${group.color} flex flex-col`}
+                    onDragOver={handleDragOver}
+                    onDrop={e => {
+                      e.preventDefault();
+                      if (draggedLeadId) {
+                        const lead = leads.find(l => l.id === draggedLeadId);
+                        if (lead) {
+                          // Als lead al in deze groep zit, niet wijzigen
+                          if (!group.statuses.includes(lead.lead_status)) {
+                            if (group.statuses.length === 1) {
+                              statusMutation.mutate({ id: draggedLeadId, status: group.statuses[0] });
+                            } else {
+                              setDropTargetGroup(group.label);
+                              // Toon substatus keuze — voor nu default
+                              statusMutation.mutate({ id: draggedLeadId, status: group.defaultDrop });
+                            }
+                          }
+                        }
+                        setDraggedLeadId(null);
+                      }
+                    }}
+                  >
+                    <div className="px-3 py-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm text-foreground">{group.label}</h3>
+                        <span className="text-xs bg-background border rounded-full px-2 py-0.5 text-muted-foreground font-medium">
+                          {colLeads.length}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="px-2 pb-2 space-y-1.5 flex-1 overflow-y-auto max-h-[calc(100vh-320px)]">
+                      {colLeads.length === 0 ? (
+                        <div className="text-center py-6 text-xs text-muted-foreground">Sleep hierheen</div>
+                      ) : colLeads.map(lead => (
+                        <Tooltip key={lead.id}>
+                          <TooltipTrigger asChild>
+                            <div
+                              draggable
+                              onDragStart={e => handleDragStart(e, lead.id)}
+                              onClick={() => navigate(`/leads/${lead.id}`)}
+                              className={`bg-background rounded-lg border shadow-sm px-3 py-2 cursor-pointer hover:shadow-md transition-all group ${
+                                draggedLeadId === lead.id ? "opacity-50 scale-95" : ""
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-sm text-foreground truncate">
+                                    {lead.voornaam} {lead.achternaam}
+                                  </p>
+                                </div>
+                                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground shrink-0 cursor-grab" />
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                {lead.bedrijfsnaam && (
+                                  <span className="text-xs text-muted-foreground truncate">{lead.bedrijfsnaam}</span>
+                                )}
+                                {group.statuses.length > 1 && (
+                                  <Badge className={`${statusColors[lead.lead_status]} text-[10px] px-1.5 py-0 ml-auto shrink-0`}>
+                                    {statusLabels[lead.lead_status]}
+                                  </Badge>
+                                )}
+                                {lead.bron && group.statuses.length <= 1 && (
+                                  <span className="text-[10px] bg-muted rounded px-1.5 py-0 text-muted-foreground capitalize ml-auto shrink-0">{lead.bron}</span>
+                                )}
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs space-y-1 max-w-[200px]">
+                            {lead.email && <div className="flex items-center gap-1.5"><Mail className="h-3 w-3 shrink-0" /><span className="truncate">{lead.email}</span></div>}
+                            {lead.telefoon && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" />{lead.telefoon}</div>}
+                            {lead.plaats && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3 shrink-0" />{lead.plaats}</div>}
+                            {lead.bron && <div className="capitalize">Bron: {lead.bron}</div>}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
                     </div>
                   </div>
-
-                  {/* Cards */}
-                  <div className="px-3 pb-3 space-y-2 flex-1 overflow-y-auto max-h-[calc(100vh-320px)]">
-                    {colLeads.length === 0 ? (
-                      <div className="text-center py-8 text-xs text-muted-foreground">
-                        Sleep leads hierheen
+                );
+              })
+            ) : (
+              /* --- EXTENDED: alle 10 kolommen --- */
+              kanbanColumnsAll.map(col => {
+                const colLeads = filtered.filter(l => l.lead_status === col.status);
+                return (
+                  <div
+                    key={col.status}
+                    className={`flex-1 min-w-0 rounded-2xl bg-muted/30 border border-border/50 border-t-4 ${col.color} flex flex-col`}
+                    onDragOver={handleDragOver}
+                    onDrop={e => handleDrop(e, col.status)}
+                  >
+                    <div className="px-2 py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-semibold text-xs text-foreground truncate">{statusLabels[col.status]}</h3>
+                        <span className="text-[10px] bg-background border rounded-full px-1.5 py-0 text-muted-foreground font-medium">
+                          {colLeads.length}
+                        </span>
                       </div>
-                    ) : (
-                      colLeads.map(lead => (
-                        <div
-                          key={lead.id}
-                          draggable
-                          onDragStart={e => handleDragStart(e, lead.id)}
-                          onClick={() => navigate(`/leads/${lead.id}`)}
-                          className={`bg-background rounded-xl border shadow-sm p-3 cursor-pointer hover:shadow-md transition-all group ${
-                            draggedLeadId === lead.id ? "opacity-50 scale-95" : ""
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm text-foreground truncate">
+                    </div>
+                    <div className="px-1.5 pb-1.5 space-y-1 flex-1 overflow-y-auto max-h-[calc(100vh-320px)]">
+                      {colLeads.length === 0 ? (
+                        <div className="text-center py-4 text-[10px] text-muted-foreground">Sleep hierheen</div>
+                      ) : colLeads.map(lead => (
+                        <Tooltip key={lead.id}>
+                          <TooltipTrigger asChild>
+                            <div
+                              draggable
+                              onDragStart={e => handleDragStart(e, lead.id)}
+                              onClick={() => navigate(`/leads/${lead.id}`)}
+                              className={`bg-background rounded-lg border shadow-sm px-2 py-1.5 cursor-pointer hover:shadow-md transition-all group ${
+                                draggedLeadId === lead.id ? "opacity-50 scale-95" : ""
+                              }`}
+                            >
+                              <p className="font-medium text-xs text-foreground truncate">
                                 {lead.voornaam} {lead.achternaam}
                               </p>
                               {lead.bedrijfsnaam && (
-                                <p className="text-xs text-muted-foreground truncate">{lead.bedrijfsnaam}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{lead.bedrijfsnaam}</p>
                               )}
                             </div>
-                            <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0 cursor-grab" />
-                          </div>
-                          <div className="mt-2 space-y-1">
-                            {lead.email && (
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
-                                <Mail className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{lead.email}</span>
-                              </div>
-                            )}
-                            {lead.telefoon && (
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Phone className="h-3 w-3 shrink-0" />
-                                <span>{lead.telefoon}</span>
-                              </div>
-                            )}
-                            {lead.plaats && (
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <MapPin className="h-3 w-3 shrink-0" />
-                                <span>{lead.plaats}</span>
-                              </div>
-                            )}
-                          </div>
-                          {lead.bron && (
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="text-xs bg-muted rounded-md px-1.5 py-0.5 text-muted-foreground capitalize">{lead.bron}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs space-y-1 max-w-[200px]">
+                            {lead.email && <div className="flex items-center gap-1.5"><Mail className="h-3 w-3 shrink-0" /><span className="truncate">{lead.email}</span></div>}
+                            {lead.telefoon && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" />{lead.telefoon}</div>}
+                            {lead.plaats && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3 shrink-0" />{lead.plaats}</div>}
+                            {lead.bron && <div className="capitalize">Bron: {lead.bron}</div>}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
-        </div>
+        </TooltipProvider>
       ) : (
         /* ==================== TABLE VIEW ==================== */
         <Card className="rounded-2xl border-0 shadow-sm">
