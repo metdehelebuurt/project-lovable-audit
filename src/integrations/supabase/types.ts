@@ -1468,6 +1468,7 @@ export type Database = {
           feature_flags_json: Json | null
           id: string
           kvk: string | null
+          lead_bronnen: Json | null
           licentie_adviseurs: number | null
           licentie_installateurs: number | null
           logo_url: string | null
@@ -1511,6 +1512,7 @@ export type Database = {
           feature_flags_json?: Json | null
           id?: string
           kvk?: string | null
+          lead_bronnen?: Json | null
           licentie_adviseurs?: number | null
           licentie_installateurs?: number | null
           logo_url?: string | null
@@ -1554,6 +1556,7 @@ export type Database = {
           feature_flags_json?: Json | null
           id?: string
           kvk?: string | null
+          lead_bronnen?: Json | null
           licentie_adviseurs?: number | null
           licentie_installateurs?: number | null
           logo_url?: string | null
