@@ -238,6 +238,7 @@ const ProductDetail = () => {
           description: `${sourceLabel}${data.raw_count && data.raw_count !== filledCount ? ` (${data.raw_count} raw → ${filledCount} gemapped)` : ""}`,
           duration: 6000,
         });
+        setAiDisclaimerOpen(true);
       }
     } catch (err: any) {
       toast.error("AI verificatie mislukt", { description: err.message });
