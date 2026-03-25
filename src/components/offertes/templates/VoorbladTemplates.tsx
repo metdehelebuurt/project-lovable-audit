@@ -5,6 +5,7 @@ interface VoorbladProps {
   sc: string;
   pcTint: string;
   logoUrl: string | null;
+  logoUrlDark: string | null;
   partnerNaam: string;
   klantNaam: string;
   offertenummer: string;
