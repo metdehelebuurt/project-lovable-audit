@@ -90,7 +90,9 @@ const Planning = () => {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
-  const [mijnAgenda, setMijnAgenda] = useState(true);
+  const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const [mijnAgenda, setMijnAgenda] = useState(!isAdmin);
+  const [selectedAdviseur, setSelectedAdviseur] = useState<string>("alle");
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
 
   // Fetch team users
@@ -167,12 +169,20 @@ const Planning = () => {
 
   // Filter events for "mijn agenda"
   const filteredEvents = useMemo(() => {
-    if (!mijnAgenda || !profile?.id) return events;
-    return events.filter(e => {
-      if (e.type === "installatie") return true; // installaties have no adviseur_id in this context
-      return e.adviseur_id === profile.id;
-    });
-  }, [events, mijnAgenda, profile?.id]);
+    if (mijnAgenda && profile?.id) {
+      return events.filter(e => {
+        if (e.type === "installatie") return true;
+        return e.adviseur_id === profile.id;
+      });
+    }
+    if (selectedAdviseur !== "alle") {
+      return events.filter(e => {
+        if (e.type === "installatie") return true;
+        return e.adviseur_id === selectedAdviseur;
+      });
+    }
+    return events;
+  }, [events, mijnAgenda, selectedAdviseur, profile?.id]);
 
   const getEventsForDay = useCallback(
     (day: Date) => filteredEvents.filter((e) => isSameDay(parseISO(e.date), day)),
@@ -382,11 +392,27 @@ const Planning = () => {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Mijn Agenda toggle */}
           <div className="flex items-center gap-2 mr-2">
-            <Switch checked={mijnAgenda} onCheckedChange={setMijnAgenda} id="mijn-agenda" />
+            <Switch checked={mijnAgenda} onCheckedChange={(v) => { setMijnAgenda(v); if (v) setSelectedAdviseur("alle"); }} id="mijn-agenda" />
             <Label htmlFor="mijn-agenda" className="text-sm cursor-pointer whitespace-nowrap">
               {mijnAgenda ? "Mijn agenda" : "Alle afspraken"}
             </Label>
           </div>
+
+          {/* Adviseur filter - only for admins when not in "mijn agenda" mode */}
+          {isAdmin && !mijnAgenda && teamUsers.length > 0 && (
+            <Select value={selectedAdviseur} onValueChange={setSelectedAdviseur}>
+              <SelectTrigger className="w-[180px] h-9">
+                <User className="h-4 w-4 mr-1 shrink-0" />
+                <SelectValue placeholder="Filter adviseur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="alle">Alle adviseurs</SelectItem>
+                {teamUsers.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.voornaam} {u.achternaam}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} size="sm">
             <ToggleGroupItem value="dag">Dag</ToggleGroupItem>
