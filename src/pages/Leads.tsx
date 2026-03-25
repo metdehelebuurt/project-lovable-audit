@@ -311,6 +311,24 @@ const Leads = () => {
             </SelectContent>
           </Select>
         )}
+        {viewMode === "kanban" && (
+          <div className="flex rounded-lg border overflow-hidden">
+            <button
+              onClick={() => setKanbanMode("grouped")}
+              className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${kanbanMode === "grouped" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              Gegroepeerd
+            </button>
+            <button
+              onClick={() => setKanbanMode("extended")}
+              className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${kanbanMode === "extended" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}
+            >
+              <List className="h-3.5 w-3.5" />
+              Uitgebreid
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bulk actions */}
