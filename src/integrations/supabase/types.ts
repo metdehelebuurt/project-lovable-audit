@@ -689,6 +689,156 @@ export type Database = {
           },
         ]
       }
+      lead_contactmomenten: {
+        Row: {
+          created_at: string | null
+          id: string
+          lead_id: string
+          notitie: string | null
+          partner_id: string
+          resultaat: string | null
+          richting: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          notitie?: string | null
+          partner_id: string
+          resultaat?: string | null
+          richting?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          notitie?: string | null
+          partner_id?: string
+          resultaat?: string | null
+          richting?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_contactmomenten_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_contactmomenten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_contactmomenten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_contactmomenten_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_eigenschappen: {
+        Row: {
+          aantal_panelen: number | null
+          batterij_interesse: boolean | null
+          bouwjaar: number | null
+          created_at: string | null
+          dakrichting: string | null
+          daktype: string | null
+          extra_json: Json | null
+          gewenst_energielabel: string | null
+          huidig_verbruik_kwh: number | null
+          huidige_energielabel: string | null
+          id: string
+          isolatie_interesse: boolean | null
+          laadpaal_interesse: boolean | null
+          lead_id: string
+          partner_id: string
+          updated_at: string | null
+          warmtepomp_interesse: boolean | null
+          woningtype: string | null
+        }
+        Insert: {
+          aantal_panelen?: number | null
+          batterij_interesse?: boolean | null
+          bouwjaar?: number | null
+          created_at?: string | null
+          dakrichting?: string | null
+          daktype?: string | null
+          extra_json?: Json | null
+          gewenst_energielabel?: string | null
+          huidig_verbruik_kwh?: number | null
+          huidige_energielabel?: string | null
+          id?: string
+          isolatie_interesse?: boolean | null
+          laadpaal_interesse?: boolean | null
+          lead_id: string
+          partner_id: string
+          updated_at?: string | null
+          warmtepomp_interesse?: boolean | null
+          woningtype?: string | null
+        }
+        Update: {
+          aantal_panelen?: number | null
+          batterij_interesse?: boolean | null
+          bouwjaar?: number | null
+          created_at?: string | null
+          dakrichting?: string | null
+          daktype?: string | null
+          extra_json?: Json | null
+          gewenst_energielabel?: string | null
+          huidig_verbruik_kwh?: number | null
+          huidige_energielabel?: string | null
+          id?: string
+          isolatie_interesse?: boolean | null
+          laadpaal_interesse?: boolean | null
+          lead_id?: string
+          partner_id?: string
+          updated_at?: string | null
+          warmtepomp_interesse?: boolean | null
+          woningtype?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_eigenschappen_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_eigenschappen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_eigenschappen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_notities: {
         Row: {
           created_at: string
@@ -1899,6 +2049,12 @@ export type Database = {
         | "offerte_verzonden"
         | "klant"
         | "verloren"
+        | "contact_geprobeerd"
+        | "geen_gehoor"
+        | "voicemail"
+        | "terugbellen"
+        | "gesproken"
+        | "afspraak_gepland"
       offerte_status:
         | "concept"
         | "verzonden"
@@ -2098,6 +2254,12 @@ export const Constants = {
         "offerte_verzonden",
         "klant",
         "verloren",
+        "contact_geprobeerd",
+        "geen_gehoor",
+        "voicemail",
+        "terugbellen",
+        "gesproken",
+        "afspraak_gepland",
       ],
       offerte_status: [
         "concept",

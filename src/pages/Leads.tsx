@@ -24,11 +24,17 @@ type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
 
 const statusLabels: Record<LeadStatus, string> = {
-  nieuw: "Nieuw", gekwalificeerd: "Gekwalificeerd", offerte_verzonden: "Offerte verzonden",
-  klant: "Klant", verloren: "Verloren",
+  nieuw: "Nieuw", contact_geprobeerd: "Contact geprobeerd", geen_gehoor: "Geen gehoor",
+  voicemail: "Voicemail", terugbellen: "Terugbellen", gesproken: "Gesproken",
+  afspraak_gepland: "Afspraak gepland", gekwalificeerd: "Gekwalificeerd",
+  offerte_verzonden: "Offerte verzonden", klant: "Klant", verloren: "Verloren",
 };
 const statusColors: Record<LeadStatus, string> = {
-  nieuw: "bg-primary/10 text-primary", gekwalificeerd: "bg-success-light text-success",
+  nieuw: "bg-primary/10 text-primary", contact_geprobeerd: "bg-sky-100 text-sky-700",
+  geen_gehoor: "bg-orange-100 text-orange-700", voicemail: "bg-amber-100 text-amber-700",
+  terugbellen: "bg-yellow-100 text-yellow-700", gesproken: "bg-teal-100 text-teal-700",
+  afspraak_gepland: "bg-indigo-100 text-indigo-700",
+  gekwalificeerd: "bg-success-light text-success",
   offerte_verzonden: "bg-warning-light text-warning-foreground", klant: "bg-success text-success-foreground",
   verloren: "bg-error-light text-error",
 };
