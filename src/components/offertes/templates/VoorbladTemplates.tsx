@@ -200,7 +200,8 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
    4 — HERO GRADIENT
    ════════════════════════════════════════════════════════════ */
 export const HeroGradient: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const darkLogo = logoUrlDark || logoUrl;
 
   return (
     <div style={{ ...rootStyle, background: heroImageUrl ? "none" : `linear-gradient(160deg, ${sc} 0%, ${hexToTint(pc, 0.9)} 100%)`, color: "#fff", padding: "64px 56px" }}>
