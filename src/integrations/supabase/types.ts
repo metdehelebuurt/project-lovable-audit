@@ -1071,6 +1071,8 @@ export type Database = {
           accepted_at: string | null
           accepted_ip: string | null
           adviseur_id: string
+          afwijzing_categorie: string | null
+          afwijzing_reden: string | null
           annulering_reden: string | null
           betalingsvoorwaarden: string | null
           btw_bedrag: number
@@ -1107,6 +1109,8 @@ export type Database = {
           accepted_at?: string | null
           accepted_ip?: string | null
           adviseur_id: string
+          afwijzing_categorie?: string | null
+          afwijzing_reden?: string | null
           annulering_reden?: string | null
           betalingsvoorwaarden?: string | null
           btw_bedrag?: number
@@ -1143,6 +1147,8 @@ export type Database = {
           accepted_at?: string | null
           accepted_ip?: string | null
           adviseur_id?: string
+          afwijzing_categorie?: string | null
+          afwijzing_reden?: string | null
           annulering_reden?: string | null
           betalingsvoorwaarden?: string | null
           btw_bedrag?: number

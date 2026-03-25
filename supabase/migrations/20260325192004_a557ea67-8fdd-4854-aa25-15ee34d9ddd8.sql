@@ -1,0 +1,1 @@
+ALTER TABLE public.offertes ADD COLUMN afwijzing_reden TEXT, ADD COLUMN afwijzing_categorie TEXT;
