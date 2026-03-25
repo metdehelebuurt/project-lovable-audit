@@ -109,6 +109,9 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
       if (includePortalLink && portalUrl) {
         linksHtml += `<p><a href="${portalUrl}" style="color:#5B58E1;text-decoration:underline;">Bekijk uw interactieve offertepagina →</a></p>`;
       }
+      if (includeVoorwaarden && voorwaardenUrl) {
+        linksHtml += `<hr style="border:none;border-top:1px solid #eee;margin:16px 0;" /><p style="font-size:13px;color:#666;">📎 <a href="${voorwaardenUrl}" target="_blank" style="color:#5B58E1;text-decoration:underline;">Download onze algemene voorwaarden (PDF)</a></p>`;
+      }
 
       const fullHtml = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">${htmlBody}${linksHtml}</div>`;
 
