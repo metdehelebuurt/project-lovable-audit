@@ -35,10 +35,30 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
   const [subject, setSubject] = useState(`Offerte ${offerte.offertenummer} — ${partnerNaam || "Uw adviseur"}`);
   const [includeAcceptLink, setIncludeAcceptLink] = useState(true);
   const [includePortalLink, setIncludePortalLink] = useState(true);
+  const [includeVoorwaarden, setIncludeVoorwaarden] = useState(false);
+  const [voorwaardenUrl, setVoorwaardenUrl] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
+
+  // Load partner voorwaarden settings
+  useState(() => {
+    if (!offerte.partner_id) return;
+    supabase.from("partners").select("voorwaarden_pdf_url, feature_flags_json").eq("id", offerte.partner_id).single()
+      .then(({ data }) => {
+        if (data) {
+          const url = (data as any).voorwaarden_pdf_url || null;
+          setVoorwaardenUrl(url);
+          if (url && data.feature_flags_json && typeof data.feature_flags_json === "object") {
+            const flags = data.feature_flags_json as Record<string, any>;
+            if (flags.offerte_template?.voorwaarden_standaard_bijvoegen) {
+              setIncludeVoorwaarden(true);
+            }
+          }
+        }
+      });
+  });
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
