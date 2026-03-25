@@ -54,7 +54,7 @@ const kanbanColumns: { status: LeadStatus; color: string }[] = [
   { status: "verloren", color: "border-t-red-500" },
 ];
 
-const bronOptions = ["website", "telefoon", "referral", "advertentie", "beurs", "overig"];
+const DEFAULT_BRONNEN = ["website", "telefoon", "referral", "advertentie", "beurs", "social media", "overig"];
 
 interface LeadFormData {
   voornaam: string; achternaam: string; email: string; telefoon: string;
