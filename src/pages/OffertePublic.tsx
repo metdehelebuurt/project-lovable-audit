@@ -348,9 +348,14 @@ export default function OffertePublic() {
                       <Clock className="h-3 w-3" /> Geldig tot {formatDate(offerte.geldig_tot)}
                     </p>
                   </div>
-                  <Button onClick={() => setAcceptDialog(true)} className="rounded-pill gap-2" style={{ backgroundColor: pc }}>
-                    <Check className="h-4 w-4" /> Offerte accepteren
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setRejectDialog(true)} className="rounded-pill gap-2">
+                      <XCircle className="h-4 w-4" /> Afwijzen
+                    </Button>
+                    <Button onClick={() => setAcceptDialog(true)} className="rounded-pill gap-2" style={{ backgroundColor: pc }}>
+                      <Check className="h-4 w-4" /> Offerte accepteren
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
