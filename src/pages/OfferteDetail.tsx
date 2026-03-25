@@ -541,6 +541,19 @@ const OfferteDetail = () => {
 
               <Separator />
 
+              {/* Afwijzingsreden tonen */}
+              {(offerte.status === "afgewezen" || offerte.status === "verlopen") && (offerte as any).afwijzing_categorie && (
+                <div className="bg-destructive/5 rounded-xl p-3 space-y-1">
+                  <p className="text-xs font-medium text-destructive">Afwijzingsreden</p>
+                  <Badge variant="outline" className="text-xs">{categorieLabelsMap[(offerte as any).afwijzing_categorie] || (offerte as any).afwijzing_categorie}</Badge>
+                  {(offerte as any).afwijzing_reden && (
+                    <p className="text-sm text-muted-foreground mt-1">{(offerte as any).afwijzing_reden}</p>
+                  )}
+                </div>
+              )}
+
+              {(offerte.status === "afgewezen" || offerte.status === "verlopen") && (offerte as any).afwijzing_categorie && <Separator />}
+
               {/* Consument acties */}
               {isConsument && offerte.status === "verzonden" && (
                 <div className="space-y-2">
@@ -557,7 +570,7 @@ const OfferteDetail = () => {
                       size="sm"
                       variant="destructive"
                       className="rounded-pill gap-1 flex-1"
-                      onClick={() => statusMutation.mutate({ status: "afgewezen" })}
+                      onClick={() => handleStatusChange("afgewezen")}
                     >
                       <XCircle className="h-4 w-4" /> Afwijzen
                     </Button>
