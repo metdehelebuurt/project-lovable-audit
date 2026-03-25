@@ -149,7 +149,6 @@ export function berekenAdviezen(data: WizardData): AdviesResultaat[] {
       geschatteInvestering: isFullElectricMogelijk ? "€ 8.000 - € 15.000" : "€ 4.000 - € 8.000",
       terugverdientijd: netBesparing > 0 ? `${Math.round(10000 / netBesparing)} - ${Math.round(14000 / netBesparing)} jaar` : "n.v.t.",
       co2BesparingKg: Math.max(0, co2),
-      prioriteit: gasVoorVerwarming > 1200 ? "hoog" : gasVoorVerwarming > 800 ? "middel" : "laag",
     });
   }
 
