@@ -17,8 +17,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Switch } from "@/components/ui/switch";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, X,
+  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, X, User,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths,
@@ -36,31 +37,33 @@ interface CalendarEvent {
   title: string;
   type: "schouw" | "installatie" | "afspraak";
   status: string;
+  adviseur_naam?: string;
+  adviseur_id?: string;
   extra?: Record<string, string | null>;
+}
+
+interface TeamUser {
+  id: string;
+  voornaam: string;
+  achternaam: string;
+  rol: string;
 }
 
 const schouwStatuses = ["gepland", "uitgevoerd", "geannuleerd"];
 const installatieStatuses = ["gepland", "in_uitvoering", "afgerond", "geannuleerd"];
 const afspraakStatuses = ["gepland", "afgerond", "geannuleerd"];
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00–20:00
+const HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
 
 function generateICS(events: CalendarEvent[]): string {
   const now = new Date();
   const stamp = format(now, "yyyyMMdd'T'HHmmss'Z'");
   const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Lovable//Planning//NL",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Lovable//Planning//NL", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
   ];
   for (const ev of events) {
     const dt = ev.date.replace(/-/g, "");
     lines.push(
-      "BEGIN:VEVENT",
-      `UID:${ev.id}@planning`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${dt}`,
+      "BEGIN:VEVENT", `UID:${ev.id}@planning`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${dt}`,
       `SUMMARY:${ev.type === "schouw" ? "Schouw" : ev.type === "installatie" ? "Installatie" : "Afspraak"} - ${ev.title}`,
       `DESCRIPTION:Status: ${ev.status}${ev.extra?.type ? "\\nType: " + ev.extra.type : ""}`,
       "END:VEVENT",
@@ -75,9 +78,7 @@ function downloadICS(events: CalendarEvent[]) {
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = "planning.ics";
-  a.click();
+  a.href = url; a.download = "planning.ics"; a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -91,25 +92,47 @@ const Planning = () => {
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [mijnAgenda, setMijnAgenda] = useState(true);
+  const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
   const [newAfspraak, setNewAfspraak] = useState({
     titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"),
-    start_tijd: "", eind_tijd: "", locatie: "", notities: "",
+    start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile?.id || "",
   });
   const updateField = (k: string, v: string) => setNewAfspraak(prev => ({ ...prev, [k]: v }));
 
+  // Fetch team users
+  useEffect(() => {
+    if (!profile?.partner_id) return;
+    const fetchTeam = async () => {
+      const { data } = await supabase
+        .from("users")
+        .select("id, voornaam, achternaam, rol")
+        .eq("partner_id", profile.partner_id!)
+        .in("rol", ["adviseur", "partner_staff", "partner_admin"])
+        .eq("status", "actief");
+      if (data) setTeamUsers(data as TeamUser[]);
+    };
+    fetchTeam();
+  }, [profile?.partner_id]);
+
+  // Set default adviseur_id when profile loads
+  useEffect(() => {
+    if (profile?.id) setNewAfspraak(prev => ({ ...prev, adviseur_id: prev.adviseur_id || profile.id }));
+  }, [profile?.id]);
+
   const handleCreateAfspraak = async () => {
     if (!newAfspraak.titel || !newAfspraak.datum) {
-      toast.error("Titel en datum zijn verplicht");
-      return;
+      toast.error("Titel en datum zijn verplicht"); return;
     }
     if (!profile?.partner_id) {
-      toast.error("Geen partner gekoppeld");
-      return;
+      toast.error("Geen partner gekoppeld"); return;
     }
     setSaving(true);
+    const adviseurId = newAfspraak.adviseur_id || profile.id;
+    const adviseur = teamUsers.find(u => u.id === adviseurId);
     const { data, error } = await supabase.from("afspraken" as any).insert({
       partner_id: profile.partner_id,
-      adviseur_id: profile.id,
+      adviseur_id: adviseurId,
       titel: newAfspraak.titel,
       type: newAfspraak.type,
       datum: newAfspraak.datum,
@@ -122,31 +145,28 @@ const Planning = () => {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Afspraak ingepland");
-    // Add to local events
     if (data) {
       const d = data as any;
       setEvents(prev => [...prev, {
         id: d.id, date: d.datum, title: d.titel, type: "afspraak",
-        status: "gepland", extra: { type: d.type, start_tijd: d.start_tijd, eind_tijd: d.eind_tijd, locatie: d.locatie },
+        status: "gepland", adviseur_id: adviseurId,
+        adviseur_naam: adviseur ? `${adviseur.voornaam} ${adviseur.achternaam}` : undefined,
+        extra: { type: d.type, start_tijd: d.start_tijd, eind_tijd: d.eind_tijd, locatie: d.locatie },
       }]);
     }
-    setNewAfspraak({ titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"), start_tijd: "", eind_tijd: "", locatie: "", notities: "" });
+    setNewAfspraak({ titel: "", type: "thuisbezoek", datum: format(new Date(), "yyyy-MM-dd"), start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile.id });
     setShowNewForm(false);
   };
 
-  // Compute date range based on viewMode
   const dateRange = useMemo(() => {
     switch (viewMode) {
-      case "dag":
-        return { start: currentDate, end: currentDate };
+      case "dag": return { start: currentDate, end: currentDate };
       case "week": {
         const ws = startOfWeek(currentDate, { weekStartsOn: 1 });
         return { start: ws, end: endOfWeek(currentDate, { weekStartsOn: 1 }) };
       }
-      case "maand":
-        return { start: startOfMonth(currentDate), end: endOfMonth(currentDate) };
-      case "jaar":
-        return { start: startOfYear(currentDate), end: endOfYear(currentDate) };
+      case "maand": return { start: startOfMonth(currentDate), end: endOfMonth(currentDate) };
+      case "jaar": return { start: startOfYear(currentDate), end: endOfYear(currentDate) };
     }
   }, [viewMode, currentDate]);
 
@@ -157,20 +177,22 @@ const Planning = () => {
       const rangeEnd = format(dateRange.end, "yyyy-MM-dd");
 
       const [schouwen, installaties, afsprakenRes] = await Promise.all([
-        supabase.from("schouwen").select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie")
+        supabase.from("schouwen").select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie, adviseur_id")
           .gte("geplande_datum", rangeStart).lte("geplande_datum", rangeEnd),
         supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status")
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
-        supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
-          .gte("datum", rangeStart).lte("datum", rangeEnd),
-        supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities")
+        supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities, adviseur_id")
           .gte("datum", rangeStart).lte("datum", rangeEnd),
       ]);
+
+      // Build user name map from teamUsers
+      const userMap = new Map(teamUsers.map(u => [u.id, `${u.voornaam} ${u.achternaam}`]));
 
       const mapped: CalendarEvent[] = [
         ...(schouwen.data ?? []).map((s) => ({
           id: s.id, date: s.geplande_datum,
           title: s.consument_naam ?? s.schouw_nummer, type: "schouw" as const, status: s.status,
+          adviseur_id: s.adviseur_id, adviseur_naam: userMap.get(s.adviseur_id),
           extra: { schouw_nummer: s.schouw_nummer, categorie: s.categorie },
         })),
         ...(installaties.data ?? []).map((i) => ({
@@ -181,6 +203,7 @@ const Planning = () => {
         ...((afsprakenRes.data as any[]) ?? []).map((a: any) => ({
           id: a.id, date: a.datum,
           title: a.titel, type: "afspraak" as const, status: a.status,
+          adviseur_id: a.adviseur_id, adviseur_naam: userMap.get(a.adviseur_id),
           extra: { type: a.type, start_tijd: a.start_tijd, eind_tijd: a.eind_tijd, locatie: a.locatie },
         })),
       ];
@@ -188,11 +211,20 @@ const Planning = () => {
       setLoading(false);
     };
     fetchEvents();
-  }, [dateRange]);
+  }, [dateRange, teamUsers]);
+
+  // Filter events for "mijn agenda"
+  const filteredEvents = useMemo(() => {
+    if (!mijnAgenda || !profile?.id) return events;
+    return events.filter(e => {
+      if (e.type === "installatie") return true; // installaties have no adviseur_id in this context
+      return e.adviseur_id === profile.id;
+    });
+  }, [events, mijnAgenda, profile?.id]);
 
   const getEventsForDay = useCallback(
-    (day: Date) => events.filter((e) => isSameDay(parseISO(e.date), day)),
-    [events],
+    (day: Date) => filteredEvents.filter((e) => isSameDay(parseISO(e.date), day)),
+    [filteredEvents],
   );
 
   const navigate = (dir: -1 | 1) => {
@@ -245,7 +277,6 @@ const Planning = () => {
     }
   };
 
-  // ── Event chip component ──
   const EventChip = ({ ev }: { ev: CalendarEvent }) => (
     <button
       onClick={() => setSelectedEvent(ev)}
@@ -260,31 +291,13 @@ const Planning = () => {
        ev.type === "installatie" ? <Wrench className="h-2.5 w-2.5 shrink-0" /> :
        ev.extra?.type === "belafspraak" ? <Phone className="h-2.5 w-2.5 shrink-0" /> :
        ev.extra?.type === "op_afstand" ? <Video className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
-      {ev.title}
+      <span className="truncate">{ev.title}</span>
+      {ev.adviseur_naam && !mijnAgenda && (
+        <span className="text-[8px] opacity-70 ml-auto shrink-0">• {ev.adviseur_naam.split(" ")[0]}</span>
+      )}
     </button>
   );
 
-  // ── DAY VIEW ──
-  const DayView = () => {
-    const dayEvents = getEventsForDay(currentDate);
-    return (
-      <div className="grid grid-cols-[60px_1fr] divide-x divide-border">
-        {HOURS.map((h) => (
-          <div key={h} className="contents">
-            <div className="h-16 flex items-start justify-end pr-2 pt-1 text-xs text-muted-foreground">
-              {`${String(h).padStart(2, "0")}:00`}
-            </div>
-            <div className="h-16 border-b border-border p-1 space-y-0.5">
-              {dayEvents.map((ev) => <EventChip key={ev.id} ev={ev} />)}
-              {/* Show events only in the 09:00 slot to keep it simple (all-day events) */}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Show events only once in day view (not per hour)
   const DayViewSimple = () => {
     const dayEvents = getEventsForDay(currentDate);
     return (
@@ -308,22 +321,18 @@ const Planning = () => {
     );
   };
 
-  // ── WEEK VIEW ──
   const WeekView = () => {
     const ws = startOfWeek(currentDate, { weekStartsOn: 1 });
     const weekDays = eachDayOfInterval({ start: ws, end: endOfWeek(currentDate, { weekStartsOn: 1 }) });
-
     return (
       <div className="overflow-x-auto">
         <div className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[700px]">
-          {/* Header */}
           <div className="bg-muted p-2" />
           {weekDays.map((d) => (
             <div key={d.toISOString()} className={`bg-muted p-2 text-center text-xs font-medium ${isToday(d) ? "text-primary font-bold" : "text-muted-foreground"}`}>
               {format(d, "EEE d", { locale: nl })}
             </div>
           ))}
-          {/* Time rows */}
           {HOURS.map((h) => (
             <div key={h} className="contents">
               <div className="h-14 flex items-start justify-end pr-2 pt-1 text-xs text-muted-foreground border-b border-border">
@@ -345,52 +354,42 @@ const Planning = () => {
     );
   };
 
-  // ── MONTH VIEW (existing) ──
   const MonthView = () => {
     const days = eachDayOfInterval({ start: startOfMonth(currentDate), end: endOfMonth(currentDate) });
     const startDayOfWeek = (getDay(startOfMonth(currentDate)) + 6) % 7;
-
     return (
-      <>
-        <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden">
-          {["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"].map((d) => (
-            <div key={d} className="bg-muted p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
-          ))}
-          {Array.from({ length: startDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} className="bg-card p-2 min-h-[80px]" />
-          ))}
-          {days.map((day) => {
-            const dayEvents = getEventsForDay(day);
-            return (
-              <div key={day.toISOString()} className={`bg-card p-2 min-h-[80px] ${isToday(day) ? "ring-2 ring-primary ring-inset" : ""}`}>
-                <span className={`text-xs font-medium ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</span>
-                <div className="mt-1 space-y-1">
-                  {dayEvents.slice(0, 3).map((ev) => <EventChip key={ev.id} ev={ev} />)}
-                  {dayEvents.length > 3 && <span className="text-[10px] text-muted-foreground">+{dayEvents.length - 3} meer</span>}
-                </div>
+      <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden">
+        {["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"].map((d) => (
+          <div key={d} className="bg-muted p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
+        ))}
+        {Array.from({ length: startDayOfWeek }).map((_, i) => (
+          <div key={`empty-${i}`} className="bg-card p-2 min-h-[80px]" />
+        ))}
+        {days.map((day) => {
+          const dayEvents = getEventsForDay(day);
+          return (
+            <div key={day.toISOString()} className={`bg-card p-2 min-h-[80px] ${isToday(day) ? "ring-2 ring-primary ring-inset" : ""}`}>
+              <span className={`text-xs font-medium ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</span>
+              <div className="mt-1 space-y-1">
+                {dayEvents.slice(0, 3).map((ev) => <EventChip key={ev.id} ev={ev} />)}
+                {dayEvents.length > 3 && <span className="text-[10px] text-muted-foreground">+{dayEvents.length - 3} meer</span>}
               </div>
-            );
-          })}
-        </div>
-      </>
+            </div>
+          );
+        })}
+      </div>
     );
   };
 
-  // ── YEAR VIEW ──
   const YearView = () => {
     const months = Array.from({ length: 12 }, (_, i) => new Date(currentDate.getFullYear(), i, 1));
-
     return (
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
         {months.map((monthDate) => {
           const mDays = eachDayOfInterval({ start: startOfMonth(monthDate), end: endOfMonth(monthDate) });
           const offset = (getDay(startOfMonth(monthDate)) + 6) % 7;
           return (
-            <div
-              key={monthDate.toISOString()}
-              className="cursor-pointer hover:bg-muted/50 rounded-lg p-2 transition-colors"
-              onClick={() => { setCurrentDate(monthDate); setViewMode("maand"); }}
-            >
+            <div key={monthDate.toISOString()} className="cursor-pointer hover:bg-muted/50 rounded-lg p-2 transition-colors" onClick={() => { setCurrentDate(monthDate); setViewMode("maand"); }}>
               <p className={`text-xs font-semibold mb-1 capitalize ${isSameMonth(monthDate, new Date()) ? "text-primary" : "text-foreground"}`}>
                 {format(monthDate, "MMMM", { locale: nl })}
               </p>
@@ -400,7 +399,7 @@ const Planning = () => {
                 ))}
                 {Array.from({ length: offset }).map((_, i) => <div key={`o-${i}`} />)}
                 {mDays.map((day) => {
-                  const hasEvents = events.some((e) => isSameDay(parseISO(e.date), day));
+                  const hasEvents = filteredEvents.some((e) => isSameDay(parseISO(e.date), day));
                   return (
                     <div key={day.toISOString()} className="flex items-center justify-center h-4">
                       <span className={`text-[9px] w-4 h-4 flex items-center justify-center rounded-full ${
@@ -429,6 +428,14 @@ const Planning = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Mijn Agenda toggle */}
+          <div className="flex items-center gap-2 mr-2">
+            <Switch checked={mijnAgenda} onCheckedChange={setMijnAgenda} id="mijn-agenda" />
+            <Label htmlFor="mijn-agenda" className="text-sm cursor-pointer whitespace-nowrap">
+              {mijnAgenda ? "Mijn agenda" : "Alle afspraken"}
+            </Label>
+          </div>
+
           <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} size="sm">
             <ToggleGroupItem value="dag">Dag</ToggleGroupItem>
             <ToggleGroupItem value="week">Week</ToggleGroupItem>
@@ -448,7 +455,7 @@ const Planning = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => downloadICS(events)}>
+              <DropdownMenuItem onClick={() => downloadICS(filteredEvents)}>
                 <CalendarIcon className="h-4 w-4 mr-2" /> Download .ics bestand
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSubscribe}>
@@ -469,6 +476,19 @@ const Planning = () => {
                 <Input value={newAfspraak.titel} onChange={e => updateField("titel", e.target.value)} placeholder="Bijv. Adviesgesprek zonnepanelen" />
               </div>
               <div>
+                <Label className="text-xs">Adviseur</Label>
+                <Select value={newAfspraak.adviseur_id} onValueChange={v => updateField("adviseur_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer adviseur" /></SelectTrigger>
+                  <SelectContent>
+                    {teamUsers.map(u => (
+                      <SelectItem key={u.id} value={u.id}>
+                        <span className="flex items-center gap-2"><User className="h-3.5 w-3.5" />{u.voornaam} {u.achternaam}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-xs">Type</Label>
                 <Select value={newAfspraak.type} onValueChange={v => updateField("type", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -483,6 +503,8 @@ const Planning = () => {
                 <Label className="text-xs">Datum *</Label>
                 <Input type="date" value={newAfspraak.datum} onChange={e => updateField("datum", e.target.value)} />
               </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Van</Label>
@@ -493,13 +515,11 @@ const Planning = () => {
                   <Input type="time" value={newAfspraak.eind_tijd} onChange={e => updateField("eind_tijd", e.target.value)} />
                 </div>
               </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
               <div>
                 <Label className="text-xs">Locatie</Label>
                 <Input value={newAfspraak.locatie} onChange={e => updateField("locatie", e.target.value)} placeholder="Adres of videocall link" />
               </div>
-              <div className="sm:col-span-2">
+              <div>
                 <Label className="text-xs">Notities</Label>
                 <Input value={newAfspraak.notities} onChange={e => updateField("notities", e.target.value)} placeholder="Eventuele notities..." />
               </div>
@@ -546,16 +566,10 @@ const Planning = () => {
       {/* Feed URL dialog */}
       <Dialog open={!!feedUrl} onOpenChange={(o) => !o && setFeedUrl(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Agenda abonnement</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Agenda abonnement</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Kopieer onderstaande URL en voeg deze toe in je agenda-app:
-            </p>
-            <div className="bg-muted rounded-lg p-3 text-xs font-mono break-all select-all">
-              {feedUrl}
-            </div>
+            <p className="text-sm text-muted-foreground">Kopieer onderstaande URL en voeg deze toe in je agenda-app:</p>
+            <div className="bg-muted rounded-lg p-3 text-xs font-mono break-all select-all">{feedUrl}</div>
             <div className="space-y-2 text-sm">
               <p className="font-medium">Instructies:</p>
               <p><strong>Google Calendar:</strong> Instellingen → Overige agenda's → Via URL abonneren → plak de URL</p>
@@ -587,6 +601,12 @@ const Planning = () => {
                   <p className="text-muted-foreground">Datum</p>
                   <p className="font-medium text-foreground">{format(parseISO(selectedEvent.date), "d MMMM yyyy", { locale: nl })}</p>
                 </div>
+                {selectedEvent.adviseur_naam && (
+                  <div>
+                    <p className="text-muted-foreground">Adviseur</p>
+                    <p className="font-medium text-foreground">{selectedEvent.adviseur_naam}</p>
+                  </div>
+                )}
                 {selectedEvent.extra?.schouw_nummer && (
                   <div>
                     <p className="text-muted-foreground">Schouw nr.</p>
@@ -630,9 +650,7 @@ const Planning = () => {
               <div>
                 <p className="text-muted-foreground text-sm mb-1">Status</p>
                 <Select value={selectedEvent.status} onValueChange={(v) => handleStatusUpdate(selectedEvent, v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(selectedEvent.type === "schouw" ? schouwStatuses : selectedEvent.type === "installatie" ? installatieStatuses : afspraakStatuses).map((s) => (
                       <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>

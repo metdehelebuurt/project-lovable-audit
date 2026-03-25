@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarIcon, Video, MapPin, Phone } from "lucide-react";
+import { CalendarIcon, Video, MapPin, Phone, User } from "lucide-react";
 
 interface AfspraakDialogProps {
   open: boolean;
@@ -23,9 +23,17 @@ interface AfspraakDialogProps {
   onSuccess?: () => void;
 }
 
+interface TeamUser {
+  id: string;
+  voornaam: string;
+  achternaam: string;
+  rol: string;
+}
+
 export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTitle, onSuccess }: AfspraakDialogProps) {
   const { profile } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
   const [form, setForm] = useState({
     titel: defaultTitle || "",
     type: "thuisbezoek",
@@ -34,7 +42,41 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
     eind_tijd: "",
     locatie: "",
     notities: "",
+    adviseur_id: profile?.id || "",
   });
+
+  // Fetch team users (adviseurs + staff + admin) for partner
+  useEffect(() => {
+    if (!open || !profile?.partner_id) return;
+    const fetchTeam = async () => {
+      const { data } = await supabase
+        .from("users")
+        .select("id, voornaam, achternaam, rol")
+        .eq("partner_id", profile.partner_id!)
+        .in("rol", ["adviseur", "partner_staff", "partner_admin"])
+        .eq("status", "actief");
+      if (data) setTeamUsers(data as TeamUser[]);
+    };
+    fetchTeam();
+  }, [open, profile?.partner_id]);
+
+  // If leadId provided, try to default adviseur to lead owner
+  useEffect(() => {
+    if (!open || !leadId) return;
+    const fetchLeadOwner = async () => {
+      const { data } = await supabase.from("leads").select("owner_user_id, toegewezen_aan").eq("id", leadId).single();
+      if (data) {
+        const ownerId = data.toegewezen_aan || data.owner_user_id;
+        setForm(prev => ({ ...prev, adviseur_id: ownerId }));
+      }
+    };
+    fetchLeadOwner();
+  }, [open, leadId]);
+
+  // Reset title when defaultTitle changes
+  useEffect(() => {
+    if (defaultTitle) setForm(prev => ({ ...prev, titel: defaultTitle }));
+  }, [defaultTitle]);
 
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -50,7 +92,7 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
     setSaving(true);
     const { error } = await supabase.from("afspraken" as any).insert({
       partner_id: profile.partner_id,
-      adviseur_id: profile.id,
+      adviseur_id: form.adviseur_id || profile.id,
       lead_id: leadId || null,
       klant_id: klantId || null,
       titel: form.titel,
@@ -68,7 +110,7 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
       return;
     }
     toast.success("Afspraak ingepland");
-    setForm({ titel: "", type: "thuisbezoek", datum: "", start_tijd: "", eind_tijd: "", locatie: "", notities: "" });
+    setForm({ titel: "", type: "thuisbezoek", datum: "", start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile?.id || "" });
     onOpenChange(false);
     onSuccess?.();
   };
@@ -86,6 +128,24 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
           <div>
             <Label>Titel *</Label>
             <Input value={form.titel} onChange={e => update("titel", e.target.value)} placeholder="Bijv. Adviesgesprek zonnepanelen" />
+          </div>
+          <div>
+            <Label>Adviseur</Label>
+            <Select value={form.adviseur_id} onValueChange={v => update("adviseur_id", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer adviseur" />
+              </SelectTrigger>
+              <SelectContent>
+                {teamUsers.map(u => (
+                  <SelectItem key={u.id} value={u.id}>
+                    <span className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5" />
+                      {u.voornaam} {u.achternaam}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>Type</Label>
