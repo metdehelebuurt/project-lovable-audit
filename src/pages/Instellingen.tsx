@@ -295,15 +295,17 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingDark, setUploadingDark] = useState(false);
   const [primaireKleur, setPrimaireKleur] = useState("#5B58E1");
   const [secundaireKleur, setSecundaireKleur] = useState("#1a1a2e");
   const [bedrijfsslogan, setBedrijfsslogan] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrlDonker, setLogoUrlDonker] = useState<string | null>(null);
   const [partnerNaam, setPartnerNaam] = useState("");
 
   useEffect(() => {
     supabase.from("partners")
-      .select("naam, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan")
+      .select("naam, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan")
       .eq("id", partnerId).single()
       .then(({ data }) => {
         if (data) {
@@ -312,6 +314,7 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
           setSecundaireKleur(data.secundaire_kleur || "#1a1a2e");
           setBedrijfsslogan(data.bedrijfsslogan || "");
           setLogoUrl(data.logo_url);
+          setLogoUrlDonker((data as any).logo_url_donker || null);
         }
         setLoading(false);
       });
