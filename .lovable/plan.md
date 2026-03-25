@@ -1,99 +1,50 @@
 
 
-## Plan: 6 feedbackpunten verwerken
+## Plan: Planning & Afspraken fixes
+
+### Problemen gevonden
+
+1. **Adviseurs kunnen geen teamleden zien in dropdown**: De `users` tabel RLS laat adviseurs alleen hun eigen profiel zien (`id = auth.uid()`). De query in AfspraakNieuw/Planning die teamleden ophaalt retourneert daarom een lege lijst voor adviseurs. Oplossing: voeg een RLS policy toe zodat adviseurs andere users binnen hun partner kunnen zien (beperkt tot naam/rol).
+
+2. **"Mijn agenda" default verkeerd voor partner_admin**: `mijnAgenda` staat standaard op `true` voor iedereen. Partner_admins moeten standaard alle afspraken zien.
+
+3. **Geen adviseur-filter voor partner_admin**: Partner_admin kan alleen schakelen tussen "alles" en "mijn agenda", maar kan niet filteren op een specifieke adviseur.
+
+4. **Afspraken niet in types**: `afspraken` wordt als `as any` benaderd. Dit werkt maar maakt debugging lastig.
 
 ---
 
-### 1. Product bewerken lukt niet — foto blijft staan
+### Wijzigingen
 
-**Probleem:** In `Producten.tsx` (regel 192-228) wordt `saveMutation` aangeroepen, maar de `afbeelding_url` wordt correct meegegeven via het destructured `data` object. Het probleem zit waarschijnlijk in de RLS policy: `producten` UPDATE vereist `partner_id = get_user_partner_id(auth.uid())`, maar catalogusproducten hebben `partner_id = null`. Partner users kunnen die producten dus niet updaten.
-
-**Oplossing:**
-- Catalogusproducten (partner_id = null) mogen niet direct bewerkt worden door partners. De edit-knop moet alleen verschijnen voor eigen producten of als superadmin.
-- Alternativ: als een partner een catalogusproduct wil aanpassen, dupliceer het naar een partner-specifiek product.
-- Zorg dat na een succesvolle save de `queryClient` correct geïnvalideerd wordt en het form sluit.
-
-**Bestanden:** `src/pages/Producten.tsx`
-
----
-
-### 2. Disclaimer bij AI-gegenereerde specificaties
-
-**Oplossing:**
-- **Inline disclaimer**: In `ProductDetail.tsx` bij het specificaties-tabblad, wanneer specs door AI zijn ingevuld, een gele disclaimerbanner tonen: "⚠ Deze specificaties zijn automatisch gegenereerd door AI en kunnen fouten bevatten. Controleer de gegevens handmatig. Aan deze specificaties kunnen geen rechten worden ontleend."
-- **Pop-up na generatie**: Na succesvol AI-invullen (`handleAiVerify` en `handleGenerateDatasheet`), toon een AlertDialog met de waarschuwing dat specificaties handmatig gecontroleerd moeten worden, met een "Ik heb het begrepen" knop.
-- **Op datasheets**: Kleine disclaimer onderaan de `ProductDatasheet` component.
-
-**Bestanden:** `src/pages/ProductDetail.tsx`, `src/components/producten/ProductDatasheet.tsx`
-
----
-
-### 3. PDF template uitlijning en adres in voetnoot
-
-**Probleem:** `PageFooter` in `OffertePDF.tsx` (regel 442-446) toont `partner.adres` maar dat veld bevat mogelijk alleen de straatnaam zonder huisnummer. Het adresveld is één tekstfield, dus het hangt af van de invoer. De footer is nu:
+#### 1. Database: RLS policy voor adviseurs om teamleden te zien
+SQL migratie — voeg een SELECT policy toe op `users`:
+```sql
+CREATE POLICY "Adviseur ziet partner teamleden"
+ON public.users FOR SELECT TO authenticated
+USING (
+  get_user_role(auth.uid()) = 'adviseur'
+  AND partner_id = get_user_partner_id(auth.uid())
+);
 ```
-partner.naam • partner.adres • postcode plaats
-```
+Dit geeft adviseurs leestoegang tot collega's binnen hun partner. Hiermee werkt de team-dropdown.
 
-**Oplossing:**
-- Footer verbeteren met volledige adresweergave. Voeg ook KVK/BTW toe indien beschikbaar.
-- Controleer dat alle secties consistent uitgelinjd zijn (padding, marges).
+#### 2. Planning.tsx — Slim default voor mijnAgenda + adviseur-filter
+- Default `mijnAgenda` op `false` wanneer `profile.rol` = `partner_admin` of `partner_staff`.
+- Voeg een adviseur-filter dropdown toe (alleen zichtbaar voor partner_admin/partner_staff) waarmee gefilterd kan worden op een specifieke adviseur of "Alle adviseurs".
+- Pas `filteredEvents` aan om de geselecteerde adviseur-filter te respecteren.
 
-**Bestanden:** `src/pages/OffertePDF.tsx`
+#### 3. Planning.tsx — Adviseur-naam duidelijker tonen
+- Bij "Alle afspraken" modus: toon adviseur-voornaam bij elke event chip (al geïmplementeerd, maar verifiëren dat userMap correct gevuld wordt na RLS fix).
 
----
-
-### 4. "Opgesteld door" persoonlijker maken — adviseur naam
-
-**Probleem:** Bij "Opgesteld door" (regel 623-627) staat nu `partner.naam`. De adviseur naam is beschikbaar via `adviseurNaam`.
-
-**Oplossing:** Toon adviseur naam als primair, bedrijfsnaam als secundair:
-```
-Opgesteld door
-Piet Jansen
-Bedrijfsnaam
-email@bedrijf.nl
-```
-
-**Bestanden:** `src/pages/OffertePDF.tsx`
+#### 4. AfspraakNieuw.tsx — Geen wijzigingen nodig
+De code is correct, het probleem is puur RLS (punt 1).
 
 ---
 
-### 5. Dynamische velden — garantievoorwaarden hard-coded op 2 jaar
-
-**Probleem:** In `OfferteNieuw.tsx` (regel 89) staat de default waarde: `"Productgarantie conform fabrikant. Installatiegarantie: 2 jaar."`. Dit wordt correct opgeslagen in de offerte. In de PDF wordt `(offerte as any).garantie_voorwaarden` gebruikt (regel 413), dus dit zou de juiste waarde moeten tonen.
-
-**Oplossing:**
-- Controleer of de offerte record daadwerkelijk de garantie_voorwaarden bevat — mogelijk is het veld null bij oudere offertes. Als dat zo is, toon de default niet als fallback.
-- Maak de default slimmer: baseer op de garantie_jaren van de geselecteerde producten (bijv. "Productgarantie: 25 jaar conform fabrikant. Installatiegarantie: 2 jaar.").
-- In de PDF: zorg ervoor dat `garantie_voorwaarden` niet als type-cast `as any` wordt benaderd maar als typed field.
-
-**Bestanden:** `src/pages/OfferteNieuw.tsx`, `src/pages/OffertePDF.tsx`
-
----
-
-### 6. Extra logo-versie voor donkere achtergrond
-
-**Oplossing:**
-- **Database**: Voeg `logo_url_donker` kolom toe aan de `partners` tabel.
-- **Instellingen**: In partner-instellingen een upload-optie voor het donkere logo.
-- **PDF templates**: In `VoorbladTemplates.tsx` bij dark/gradient templates, gebruik `logo_url_donker` als beschikbaar, anders val terug op standaard logo.
-- **OffertePDF.tsx**: Pass `logoUrlDark` door als extra prop.
-
-**Bestanden:** SQL migratie, `src/pages/OffertePDF.tsx`, `src/components/offertes/templates/VoorbladTemplates.tsx`, `src/pages/Instellingen.tsx`
-
----
-
-### Bestanden overzicht
+### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| SQL migratie | `logo_url_donker` kolom op `partners` |
-| `src/pages/Producten.tsx` | Fix edit-rechten voor catalogusproducten |
-| `src/pages/ProductDetail.tsx` | AI-disclaimer pop-up + banner |
-| `src/components/producten/ProductDatasheet.tsx` | Disclaimer footer |
-| `src/pages/OffertePDF.tsx` | Footer adres, "Opgesteld door" adviseur, typed garantie velden, logo_url_donker support |
-| `src/components/offertes/templates/VoorbladTemplates.tsx` | Dark logo prop + fallback |
-| `src/pages/OfferteNieuw.tsx` | Slimmere garantie default op basis van producten |
-| `src/pages/Instellingen.tsx` | Upload voor donker logo |
+| SQL migratie | Adviseur-leestoegang op users tabel |
+| `src/pages/Planning.tsx` | Slim default mijnAgenda, adviseur-filter dropdown |
 
