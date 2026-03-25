@@ -90,6 +90,8 @@ const Leads = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
+  const [kanbanMode, setKanbanMode] = useState<"grouped" | "extended">("grouped");
+  const [dropTargetGroup, setDropTargetGroup] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
