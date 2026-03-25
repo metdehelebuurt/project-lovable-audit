@@ -77,6 +77,12 @@ const OfferteDetail = () => {
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
 
+  // Afwijzing dialog state
+  const [afwijzingDialog, setAfwijzingDialog] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<OfferteStatus | null>(null);
+  const [afwijzingCategorie, setAfwijzingCategorie] = useState("");
+  const [afwijzingReden, setAfwijzingReden] = useState("");
+
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
   const isConsument = profile?.rol === "consument";
