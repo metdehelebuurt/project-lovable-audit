@@ -428,6 +428,7 @@ const ProductDetail = () => {
       await refetchDatasheet();
 
       toast.success("Datasheet gegenereerd");
+      setAiDisclaimerOpen(true);
     } catch (err: any) {
       toast.error("Datasheet generatie mislukt", { description: err.message });
     } finally {

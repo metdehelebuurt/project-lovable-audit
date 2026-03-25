@@ -410,7 +410,12 @@ export default function OffertePDF() {
 
   const adviseurNaam = adviseur ? `${adviseur.voornaam} ${adviseur.achternaam}` : "Uw adviseur";
   const introTekst = (offerte as any).introductie_tekst as string | null;
-  const garantieVw = (offerte as any).garantie_voorwaarden as string | null;
+  const garantieVw = ((offerte as any).garantie_voorwaarden as string | null) || (() => {
+    // Dynamic fallback based on product warranty
+    const maxGarantie = producten.reduce((max, p) => Math.max(max, p.garantie_jaren || 0), 0);
+    if (maxGarantie > 0) return `Productgarantie: ${maxGarantie} jaar conform fabrikant. Installatiegarantie: 2 jaar.`;
+    return "Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.";
+  })();
   const installTermijn = (offerte as any).installatie_termijn as string | null;
 
   const VoorbladComp = voorbladTemplates[config.voorblad] || HeroDark;
