@@ -264,6 +264,18 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
                 Interactieve offertepagina bijvoegen
               </Label>
             </div>
+            {voorwaardenUrl && (
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="voorwaarden-link"
+                  checked={includeVoorwaarden}
+                  onCheckedChange={(c) => setIncludeVoorwaarden(!!c)}
+                />
+                <Label htmlFor="voorwaarden-link" className="text-sm cursor-pointer">
+                  Algemene voorwaarden bijvoegen (PDF-link)
+                </Label>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Paperclip className="h-3.5 w-3.5" />
               <span>PDF offerte wordt als bijlage bijgevoegd</span>
