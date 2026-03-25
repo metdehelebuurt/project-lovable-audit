@@ -591,17 +591,51 @@ function OfferteTemplateInstellingen({ partnerId }: { partnerId: string }) {
   const [template, setTemplate] = useState<OfferteTemplate>(defaultTemplate);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [voorwaardenUrl, setVoorwaardenUrl] = useState<string | null>(null);
+  const [uploadingVoorwaarden, setUploadingVoorwaarden] = useState(false);
 
   useEffect(() => {
-    supabase.from("partners").select("feature_flags_json").eq("id", partnerId).single()
+    supabase.from("partners").select("feature_flags_json, voorwaarden_pdf_url").eq("id", partnerId).single()
       .then(({ data }) => {
-        if (data?.feature_flags_json && typeof data.feature_flags_json === "object") {
-          const flags = data.feature_flags_json as Record<string, any>;
-          if (flags.offerte_template) setTemplate({ ...defaultTemplate, ...flags.offerte_template });
+        if (data) {
+          if (data.feature_flags_json && typeof data.feature_flags_json === "object") {
+            const flags = data.feature_flags_json as Record<string, any>;
+            if (flags.offerte_template) setTemplate({ ...defaultTemplate, ...flags.offerte_template });
+          }
+          setVoorwaardenUrl((data as any).voorwaarden_pdf_url || null);
         }
         setLoading(false);
       });
   }, [partnerId]);
+
+  const handleVoorwaardenUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") { toast.error("Selecteer een PDF-bestand"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
+    setUploadingVoorwaarden(true);
+    try {
+      const path = `${partnerId}/voorwaarden_${Date.now()}.pdf`;
+      const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
+      if (error) { toast.error("Upload mislukt: " + error.message); setUploadingVoorwaarden(false); return; }
+      const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
+      const { error: updateError } = await supabase.from("partners").update({ voorwaarden_pdf_url: publicUrl } as any).eq("id", partnerId);
+      if (updateError) { toast.error("Fout bij opslaan: " + updateError.message); } else {
+        setVoorwaardenUrl(publicUrl);
+        toast.success("Algemene voorwaarden geüpload");
+      }
+    } catch {
+      toast.error("Onverwachte fout bij uploaden");
+    }
+    setUploadingVoorwaarden(false);
+  };
+
+  const handleRemoveVoorwaarden = async () => {
+    const { error } = await supabase.from("partners").update({ voorwaarden_pdf_url: null } as any).eq("id", partnerId);
+    if (error) { toast.error(error.message); return; }
+    setVoorwaardenUrl(null);
+    toast.success("Algemene voorwaarden verwijderd");
+  };
 
   const handleSave = async () => {
     setSaving(true);
