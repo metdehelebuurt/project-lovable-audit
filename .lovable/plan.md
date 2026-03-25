@@ -1,75 +1,66 @@
 
 
-## Plan: Afwijzingsredenen & Feedback-analyse module
+## Plan: Redesign LeadDetail + nieuwe KlantDetail pagina
 
-### Overzicht
-Drie samenhangende features: (1) reden-invoer bij status "afgewezen"/"verlopen", (2) afwijzen vanuit het klantportaal met reden, (3) een feedback-analyse pagina met stats en AI-rapport voor partner_admin.
+### Analyse huidige situatie
 
----
+**LeadDetail** (1184 regels): Goed opgebouwd met pipeline, tabs, sidebar (contactmomenten-logger, AI signalen, samenvatting, snelle acties). Gebruikt custom `TabButton` component en 3-kolom grid (2+1 sidebar). Ruimtegebruik is redelijk maar kan cleaner.
 
-### 1. Database: kolommen toevoegen aan `offertes`
+**KlantDetail** (293 regels): Veel simpeler, gebruikt Radix Tabs, 3-kolom grid (1+2). Mist: opdrachten-query haalt alleen op basis van `offerte_id` (1 offerte), geen installaties, geen notities-systeem zoals bij leads, geen sidebar, geen activiteiten-tijdlijn.
 
-SQL migratie — twee nieuwe kolommen:
-```sql
-ALTER TABLE public.offertes 
-  ADD COLUMN afwijzing_reden TEXT,
-  ADD COLUMN afwijzing_categorie TEXT;
-```
+### Wijzigingen
 
-Categorien: `prijs`, `concurrent`, `geen_behoefte`, `timing`, `overig` (opgeslagen als vrije tekst, UI biedt presets).
+#### 1. LeadDetail.tsx -- Redesign voor betere ruimtebenutting
 
----
+- **Contactgegevens in de header**: Verplaats email/telefoon/adres naar een compacte inline rij direct onder de naam (naast badges), in plaats van een apart "Overzicht" tab met contactkaart. Bespaart een hele tab.
+- **Verwijder "Overzicht" tab**: Merge contactgegevens in header, notities krijgen eigen tab (al zo). De edit-modus wordt via de header "Bewerken" knop getriggerd en opent een slide-over of inline sectie onder de header.
+- **Sidebar compacter**: Contact-logger krijgt een collapsible design. AI-signalen en samenvatting blijven.
+- **Tabs cleaner**: Gebruik dezelfde custom `TabButton` maar met icoontjes en betere spacing. Verwijder "Documenten" tab als die leeg is (lazy load).
+- **Full-width content area**: Verwijder de 2+1 sidebar layout op mobiel, sidebar gaat onder de tabs content.
 
-### 2. OfferteDetail.tsx — Reden-dialog bij status "afgewezen" of "verlopen"
+#### 2. KlantDetail.tsx -- Volledige herschrijving naar LeadDetail-patroon
 
-Wanneer een partner de status wijzigt naar `afgewezen` of `verlopen`:
-- Onderschep de `statusMutation` — in plaats van direct te updaten, open een Dialog.
-- Dialog bevat: categorie-select (Prijs te hoog, Concurrent gekozen, Geen behoefte meer, Timing niet goed, Overig) + vrije tekst Textarea voor toelichting.
-- Bij bevestiging: update status + `afwijzing_reden` + `afwijzing_categorie` in één call.
-- Toon de reden op de detailpagina als de offerte afgewezen/verlopen is.
+Bouw KlantDetail op met dezelfde structuur als LeadDetail maar zonder pipeline/substatus:
 
----
+**Header:**
+- Terug-knop, naam + "Klant" badge
+- Inline contactinfo (email, telefoon, adres, bedrijf)
+- Actieknoppen: Bewerken, Afspraak, Offerte
 
-### 3. Klantportaal — Afwijzen met reden (OffertePublic.tsx + edge function)
+**Quick Stats rij:**
+- Offertes, Opdrachten, Schouwen, Afspraken (4 cards)
+- Totale opdrachtwaarde
 
-**OffertePublic.tsx:**
-- Voeg een "Offerte afwijzen" knop toe naast de accepteer-knop.
-- Bij klik: open een Dialog met dezelfde categorie-opties + vrije tekst.
-- Roep een nieuwe edge function aan: `offerte-reject`.
+**Tabs (custom TabButton, zelfde stijl als LeadDetail):**
+- Overzicht (contactgegevens met inline edit)
+- Offertes (lijst met link naar offerte PDF)
+- Opdrachten (NIEUW -- haal ALLE opdrachten op via `lead_id`, niet alleen via `offerte_id`; toon: status, bedrag, klant_adres, toegewezen monteur, geplande datum)
+- Schouwen
+- Afspraken
+- Activiteit (tijdlijn van alle events)
 
-**Edge function `offerte-reject`:**
-- Ontvangt `share_token`, `reden`, `categorie`.
-- Valideert token, zet status op `afgewezen`, slaat reden + categorie op.
-- Maakt een notificatie aan voor de adviseur: "Klant X heeft offerte Y afgewezen. Reden: ..."
+**Sidebar (rechts, 1/3 breedte):**
+- Samenvatting card (totalen + waarden)
+- Snelle acties (afspraak, offerte, schouw, bellen, mailen)
 
----
+**Opdrachten-query fix:**
+- Haal opdrachten op via `lead_id` (niet `offerte_id`) zodat alle opdrachten van deze klant getoond worden
+- Of haal via alle offerte IDs van de klant: eerst offertes ophalen, dan opdrachten `.in("offerte_id", offerteIds)`
 
-### 4. Feedback-analyse pagina (nieuw: `OfferteFeedback.tsx`)
+**Notities:**
+- Gebruik hetzelfde notitie-systeem als LeadDetail (inline notities met auteur + timestamp) via `klanten.notities` veld (beperkt) of maak een aparte sectie
 
-Nieuwe pagina `/offertes/feedback` — alleen toegankelijk voor `partner_admin` en `partner_staff`.
+#### 3. Gedeelde componenten
 
-**Stats sectie (Recharts):**
-- Pie chart: verdeling afwijzingscategorieen
-- Bar chart: afwijzingen per maand (trend)
-- Stat cards: totaal afgewezen, conversieratio (geaccepteerd vs totaal verzonden), meest voorkomende reden, gemiddelde offertewaarde bij afwijzing
+Extraheer herbruikbare componenten die beide pagina's gebruiken:
+- `QuickStat` component (al in LeadDetail, verplaats naar apart bestand)
+- `TabButton` component
+- `InfoRow` component
+- Offerte-lijst renderer
+- Schouw-lijst renderer
+- Afspraken-lijst renderer
 
-**Tabel:**
-- Lijst van afgewezen/verlopen offertes met kolommen: offertenummer, klant, bedrag, categorie, reden, datum.
-
-**AI-rapport knop:**
-- "Genereer analyse" knop roept een edge function `ai-offerte-feedback-analyse` aan.
-- Die function haalt alle afgewezen offertes op (laatste 90 dagen), stuurt de redenen naar Lovable AI, en vraagt om een rapport met:
-  - Hoofdredenen voor afwijzing
-  - Patronen en trends
-  - Concrete verbeterpunten
-- Het rapport wordt als markdown weergegeven in een Card.
-
----
-
-### 5. Routing & Navigatie
-
-- `App.tsx`: route `/offertes/feedback` toevoegen met ProtectedRoute voor admin rollen.
-- Sidebar/Offertes pagina: link toevoegen naar de feedback-analyse pagina.
+Deze worden in een shared file `src/components/detail/DetailComponents.tsx` gezet.
 
 ---
 
@@ -77,12 +68,7 @@ Nieuwe pagina `/offertes/feedback` — alleen toegankelijk voor `partner_admin` 
 
 | Bestand | Wijziging |
 |---------|-----------|
-| SQL migratie | `afwijzing_reden`, `afwijzing_categorie` op `offertes` |
-| `src/pages/OfferteDetail.tsx` | Reden-dialog bij statuswijziging naar afgewezen/verlopen |
-| `src/pages/OffertePublic.tsx` | Afwijzen-knop + reden-dialog |
-| `supabase/functions/offerte-reject/index.ts` | Nieuw: afwijzen via portal |
-| `src/pages/OfferteFeedback.tsx` | Nieuw: stats + tabel + AI-rapport |
-| `supabase/functions/ai-offerte-feedback-analyse/index.ts` | Nieuw: AI-analyse |
-| `src/App.tsx` | Route toevoegen |
-| `src/components/AppSidebar.tsx` | Link naar feedback-pagina |
+| `src/components/detail/DetailComponents.tsx` | Nieuw: gedeelde QuickStat, TabButton, InfoRow, lijst-renderers |
+| `src/pages/LeadDetail.tsx` | Refactor: importeer gedeelde componenten, cleaner header met inline contactinfo |
+| `src/pages/KlantDetail.tsx` | Volledige herschrijving: zelfde layout als LeadDetail, met opdrachten-tab, sidebar, activiteiten-tijdlijn |
 
