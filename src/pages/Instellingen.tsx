@@ -584,6 +584,7 @@ const defaultTemplate: OfferteTemplate = {
   standaard_installatietermijn: "Binnen 4 weken na akkoord",
   badge_1: "Gecertificeerd installateur", badge_2: "Persoonlijk advies", badge_3: "Professionele installatie",
   akkoord_tekst: "",
+  voorwaarden_standaard_bijvoegen: true,
 };
 
 function OfferteTemplateInstellingen({ partnerId }: { partnerId: string }) {
