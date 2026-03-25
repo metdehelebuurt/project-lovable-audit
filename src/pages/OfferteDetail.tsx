@@ -42,6 +42,14 @@ const statusColors: Record<OfferteStatus, string> = {
   verlopen: "bg-warning-light text-warning-foreground",
 };
 
+const categorieLabelsMap: Record<string, string> = {
+  prijs: "Prijs te hoog",
+  concurrent: "Concurrent gekozen",
+  geen_behoefte: "Geen behoefte meer",
+  timing: "Timing niet goed",
+  overig: "Overig",
+};
+
 interface OfferteRegel {
   product_id?: string;
   omschrijving: string;
