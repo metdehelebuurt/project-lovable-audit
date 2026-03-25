@@ -397,9 +397,8 @@ const Planning = () => {
             <ToggleGroupItem value="jaar">Jaar</ToggleGroupItem>
           </ToggleGroup>
 
-          <Button size="sm" onClick={() => setShowNewForm(!showNewForm)}>
-            {showNewForm ? <X className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-            {showNewForm ? "Annuleren" : "Nieuwe afspraak"}
+          <Button size="sm" onClick={() => planningNavigate("/planning/nieuw")}>
+            <Plus className="h-4 w-4 mr-1" /> Nieuwe afspraak
           </Button>
 
           <DropdownMenu>
