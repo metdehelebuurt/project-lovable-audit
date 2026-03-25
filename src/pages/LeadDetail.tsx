@@ -71,7 +71,7 @@ interface AiSignal {
   prioriteit: "hoog" | "middel" | "laag";
 }
 
-const bronOptions = ["website", "telefoon", "referral", "advertentie", "beurs", "overig"];
+const DEFAULT_BRONNEN = ["website", "telefoon", "referral", "advertentie", "beurs", "social media", "overig"];
 const woningtypeOptions = ["vrijstaand", "twee_onder_een_kap", "hoekwoning", "tussenwoning", "appartement", "bungalow", "overig"];
 const daktypeOptions = ["schuin_pannen", "schuin_leien", "plat", "gemengd", "overig"];
 const energielabelOptions = ["A++++", "A+++", "A++", "A+", "A", "B", "C", "D", "E", "F", "G"];
