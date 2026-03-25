@@ -96,8 +96,8 @@ const Energieadvies = () => {
         warmtepomp_interesse: data.interesseCategorieen.includes("warmtepomp"),
         batterij_interesse: data.interesseCategorieen.includes("thuisbatterij"),
         laadpaal_interesse: data.interesseCategorieen.includes("laadpaal"),
-        extra_json: adviesPayload,
-      }, { onConflict: "lead_id" });
+        extra_json: adviesPayload as any,
+      } as any, { onConflict: "lead_id" });
       if (error) throw error;
       return leadId;
     },
