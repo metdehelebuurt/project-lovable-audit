@@ -419,72 +419,7 @@ const Planning = () => {
         </div>
       </div>
 
-      {/* Inline nieuwe afspraak formulier */}
-      {showNewForm && (
-        <Card className="rounded-2xl border-0 shadow-sm bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <Label className="text-xs">Titel *</Label>
-                <Input value={newAfspraak.titel} onChange={e => updateField("titel", e.target.value)} placeholder="Bijv. Adviesgesprek zonnepanelen" />
-              </div>
-              <div>
-                <Label className="text-xs">Adviseur</Label>
-                <Select value={newAfspraak.adviseur_id} onValueChange={v => updateField("adviseur_id", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecteer adviseur" /></SelectTrigger>
-                  <SelectContent>
-                    {teamUsers.map(u => (
-                      <SelectItem key={u.id} value={u.id}>
-                        <span className="flex items-center gap-2"><User className="h-3.5 w-3.5" />{u.voornaam} {u.achternaam}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Type</Label>
-                <Select value={newAfspraak.type} onValueChange={v => updateField("type", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="thuisbezoek"><span className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> Thuisbezoek</span></SelectItem>
-                    <SelectItem value="op_afstand"><span className="flex items-center gap-2"><Video className="h-3.5 w-3.5" /> Op afstand</span></SelectItem>
-                    <SelectItem value="belafspraak"><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Belafspraak</span></SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Datum *</Label>
-                <Input type="date" value={newAfspraak.datum} onChange={e => updateField("datum", e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">Van</Label>
-                  <Input type="time" value={newAfspraak.start_tijd} onChange={e => updateField("start_tijd", e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs">Tot</Label>
-                  <Input type="time" value={newAfspraak.eind_tijd} onChange={e => updateField("eind_tijd", e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Locatie</Label>
-                <Input value={newAfspraak.locatie} onChange={e => updateField("locatie", e.target.value)} placeholder="Adres of videocall link" />
-              </div>
-              <div>
-                <Label className="text-xs">Notities</Label>
-                <Input value={newAfspraak.notities} onChange={e => updateField("notities", e.target.value)} placeholder="Eventuele notities..." />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={handleCreateAfspraak} disabled={saving} className="w-full">
-                  {saving ? "Opslaan..." : "Inplannen"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
