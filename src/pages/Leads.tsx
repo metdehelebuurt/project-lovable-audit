@@ -16,7 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Users, FileText, ClipboardCheck, LayoutList, Columns3, GripVertical, Phone, Mail, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, FileText, ClipboardCheck, LayoutList, Columns3, GripVertical, Phone, Mail, MapPin, Layers, List } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
 
