@@ -507,7 +507,7 @@ const OfferteDetail = () => {
               ) : (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Status wijzigen</p>
-                  <Select value={offerte.status} onValueChange={v => statusMutation.mutate({ status: v as OfferteStatus })}>
+                  <Select value={offerte.status} onValueChange={v => handleStatusChange(v as OfferteStatus)}>
                     <SelectTrigger className="rounded-xl">
                       <Badge className={statusColors[offerte.status]}>{statusLabels[offerte.status]}</Badge>
                     </SelectTrigger>
