@@ -90,7 +90,9 @@ const Planning = () => {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
-  const [mijnAgenda, setMijnAgenda] = useState(true);
+  const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const [mijnAgenda, setMijnAgenda] = useState(!isAdmin);
+  const [selectedAdviseur, setSelectedAdviseur] = useState<string>("alle");
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
 
   // Fetch team users
