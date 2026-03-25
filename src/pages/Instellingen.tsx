@@ -418,6 +418,7 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
               <p className="text-xs text-muted-foreground mt-1">Max 2MB, voor donkere/gekleurde achtergronden op offertes</p>
             </div>
           </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label>Primaire kleur</Label>
