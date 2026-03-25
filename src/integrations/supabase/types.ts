@@ -1465,6 +1465,7 @@ export type Database = {
           licentie_adviseurs: number | null
           licentie_installateurs: number | null
           logo_url: string | null
+          logo_url_donker: string | null
           naam: string
           notities: string | null
           plaats: string | null
@@ -1506,6 +1507,7 @@ export type Database = {
           licentie_adviseurs?: number | null
           licentie_installateurs?: number | null
           logo_url?: string | null
+          logo_url_donker?: string | null
           naam: string
           notities?: string | null
           plaats?: string | null
@@ -1547,6 +1549,7 @@ export type Database = {
           licentie_adviseurs?: number | null
           licentie_installateurs?: number | null
           logo_url?: string | null
+          logo_url_donker?: string | null
           naam?: string
           notities?: string | null
           plaats?: string | null
