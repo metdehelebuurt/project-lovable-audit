@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,17 +15,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Globe, Pencil,
-  FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw, Video, CalendarIcon,
+  FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw,
   MessageSquare, StickyNote, Send, Trash2, Clock, User, TrendingUp,
-  Activity, Save, ExternalLink, X, Check, PhoneCall, PhoneOff, Home,
+  Save, ExternalLink, X, Check, PhoneCall, PhoneOff, CalendarIcon, Home,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
+import {
+  QuickStat, TabButton, InfoRow, OffertesLijst, SchouwenLijst, AfsprakenLijst,
+  SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
+  formatDate, formatDateTime, formatCurrency,
+} from "@/components/detail/DetailComponents";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
 
-// Hoofdstatussen (pipeline balk)
 const pipelineSteps: { key: LeadStatus; label: string }[] = [
   { key: "nieuw", label: "Nieuw" },
   { key: "contact_geprobeerd", label: "Contact geprobeerd" },
@@ -34,7 +38,6 @@ const pipelineSteps: { key: LeadStatus; label: string }[] = [
   { key: "klant", label: "Klant" },
 ];
 
-// Opvolg-substatussen
 const subStatuses: { key: LeadStatus; label: string; icon: React.ElementType }[] = [
   { key: "geen_gehoor", label: "Geen gehoor", icon: PhoneOff },
   { key: "voicemail", label: "Voicemail", icon: Phone },
@@ -87,39 +90,6 @@ const contactResultaatOptions = [
   { value: "terugbelverzoek", label: "Terugbelverzoek" },
 ];
 
-const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
-const formatDateTime = (d: string) =>
-  new Date(d).toLocaleString("nl-NL", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
-
-const QuickStat = ({ label, value, icon: Icon }: { label: string; value: string | number; icon: React.ElementType }) => (
-  <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5">
-    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-      <Icon className="h-4 w-4 text-primary" />
-    </div>
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-bold text-foreground">{value}</p>
-    </div>
-  </div>
-);
-
-const TabButton = ({ active, label, count, onClick }: { active: boolean; label: string; count?: number; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-      active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-    }`}
-  >
-    {label}
-    {count !== undefined && (
-      <span className={`ml-1.5 text-xs ${active ? "text-primary" : "text-muted-foreground"}`}>({count})</span>
-    )}
-  </button>
-);
-
 const LeadDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -145,7 +115,6 @@ const LeadDetail = () => {
     enabled: !!id,
   });
 
-  // Lead owner name
   const { data: ownerUser } = useQuery({
     queryKey: ["user", lead?.owner_user_id],
     queryFn: async () => {
@@ -155,7 +124,6 @@ const LeadDetail = () => {
     enabled: !!lead?.owner_user_id,
   });
 
-  // Toegewezen adviseur name
   const { data: assignedUser } = useQuery({
     queryKey: ["user", lead?.toegewezen_aan],
     queryFn: async () => {
@@ -166,7 +134,6 @@ const LeadDetail = () => {
     enabled: !!lead?.toegewezen_aan,
   });
 
-  // Lead eigenschappen
   const { data: eigenschappen } = useQuery({
     queryKey: ["lead-eigenschappen", id],
     queryFn: async () => {
@@ -176,7 +143,6 @@ const LeadDetail = () => {
     enabled: !!id,
   });
 
-  // Contactmomenten
   const { data: contactmomenten = [] } = useQuery({
     queryKey: ["lead-contactmomenten", id],
     queryFn: async () => {
@@ -316,7 +282,6 @@ const LeadDetail = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // Save eigenschappen
   const saveEigenschappenMutation = useMutation({
     mutationFn: async (data: any) => {
       if (eigenschappen?.id) {
@@ -336,7 +301,6 @@ const LeadDetail = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // Add contact moment
   const addContactMutation = useMutation({
     mutationFn: async (data: { type: string; richting: string; resultaat: string; notitie: string }) => {
       const { error } = await supabase.from("lead_contactmomenten" as any).insert({
@@ -396,7 +360,6 @@ const LeadDetail = () => {
     updateLeadMutation.mutate(cleaned);
   };
 
-  // Eigenschappen form state
   const [eigForm, setEigForm] = useState<any>({});
   useEffect(() => {
     if (eigenschappen) {
@@ -433,7 +396,6 @@ const LeadDetail = () => {
 
   const currentIdx = statusIdx(lead.lead_status);
   const isLost = lead.lead_status === "verloren";
-  const isSubStatus = subStatuses.some(s => s.key === lead.lead_status);
   const totalOfferteValue = offertes.reduce((sum, o) => sum + o.totaal_bedrag, 0);
   const acceptedOffertes = offertes.filter(o => o.status === "geaccepteerd").length;
   const daysSinceCreated = Math.floor((Date.now() - new Date(lead.created_at).getTime()) / (1000 * 60 * 60 * 24));
@@ -450,6 +412,16 @@ const LeadDetail = () => {
     { key: "activiteit", label: "Activiteit" },
   ];
 
+  // Build timeline events
+  const timelineEvents = [
+    ...notities.map((n: any) => ({ type: "notitie", date: n.created_at, label: `Notitie door ${n.user?.voornaam || "Onbekend"}`, detail: n.inhoud?.substring(0, 80) })),
+    ...contactmomenten.map((c: any) => ({ type: "contact", date: c.created_at, label: `${c.type} (${c.richting})${c.resultaat ? " — " + c.resultaat.replace(/_/g, " ") : ""}`, detail: c.notitie?.substring(0, 80) || `Door ${c.user?.voornaam || "Onbekend"}` })),
+    ...offertes.map(o => ({ type: "offerte", date: o.created_at, label: `Offerte ${o.offertenummer} aangemaakt`, detail: formatCurrency(o.totaal_bedrag) })),
+    ...schouwen.map(s => ({ type: "schouw", date: s.geplande_datum, label: `Schouw ${s.schouw_nummer}`, detail: s.categorie })),
+    ...afspraken.map((a: any) => ({ type: "afspraak", date: a.datum, label: a.titel, detail: a.type })),
+    { type: "created", date: lead.created_at, label: "Lead aangemaakt", detail: `${lead.voornaam} ${lead.achternaam}` },
+  ];
+
   return (
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
@@ -462,10 +434,16 @@ const LeadDetail = () => {
             <h1 className="text-2xl font-semibold text-foreground">{lead.voornaam} {lead.achternaam}</h1>
             <Badge className={allStatusColors[lead.lead_status]}>{lead.lead_status.replace(/_/g, " ")}</Badge>
           </div>
-          <div className="flex items-center gap-3 text-muted-foreground text-sm mt-0.5 flex-wrap">
-            <span>{lead.email}{lead.bedrijfsnaam && ` • ${lead.bedrijfsnaam}`}</span>
+          {/* Inline contact info */}
+          <div className="flex items-center gap-4 text-muted-foreground text-sm mt-1 flex-wrap">
+            {lead.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{lead.email}</span>}
+            {lead.telefoon && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{lead.telefoon}</span>}
+            {lead.adres && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{lead.adres}, {lead.postcode} {lead.plaats}</span>}
+            {lead.bedrijfsnaam && <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{lead.bedrijfsnaam}</span>}
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             {ownerUser && (
-              <span className="flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
                 <User className="h-3 w-3" /> Eigenaar: {ownerUser.voornaam} {ownerUser.achternaam}
               </span>
             )}
@@ -491,7 +469,7 @@ const LeadDetail = () => {
         </div>
       </div>
 
-      {/* Pipeline Bar — hoofdstatussen */}
+      {/* Pipeline Bar */}
       <Card className="rounded-2xl border-0 shadow-sm overflow-hidden">
         <div className="flex">
           {pipelineSteps.map((step, i) => {
@@ -525,7 +503,6 @@ const LeadDetail = () => {
             <div className="flex items-center gap-1.5"><X className="h-3.5 w-3.5" /><span>Verloren</span></div>
           </button>
         </div>
-        {/* Sub-statussen rij */}
         <div className="flex border-t border-border">
           {subStatuses.map((sub) => {
             const SubIcon = sub.icon;
@@ -549,7 +526,7 @@ const LeadDetail = () => {
         </div>
       </Card>
 
-      {/* Quick Stats Row */}
+      {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <QuickStat label="Offertes" value={offertes.length} icon={FileText} />
         <QuickStat label="Offertewaarde" value={formatCurrency(totalOfferteValue)} icon={TrendingUp} />
@@ -569,8 +546,7 @@ const LeadDetail = () => {
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-
-          {/* ─── OVERZICHT ─── */}
+          {/* OVERZICHT */}
           {activeTab === "overzicht" && (
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -651,13 +627,11 @@ const LeadDetail = () => {
             </Card>
           )}
 
-          {/* ─── KLANTDATA ─── */}
+          {/* KLANTDATA */}
           {activeTab === "klantdata" && (
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Home className="h-4 w-4 text-primary" /> Klantdata
-                </CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2"><Home className="h-4 w-4 text-primary" /> Klantdata</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
@@ -693,9 +667,7 @@ const LeadDetail = () => {
                     </div>
                   </div>
                 </div>
-
                 <Separator />
-
                 <div>
                   <p className="text-sm font-medium mb-3">Energiegegevens</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -704,7 +676,7 @@ const LeadDetail = () => {
                       <Input type="number" value={eigForm.huidig_verbruik_kwh || ""} onChange={e => setEigForm((p: any) => ({ ...p, huidig_verbruik_kwh: e.target.value }))} className="rounded-xl" placeholder="bijv. 3500" />
                     </div>
                     <div>
-                      <Label className="text-xs">Aantal panelen (gewenst/huidig)</Label>
+                      <Label className="text-xs">Aantal panelen</Label>
                       <Input type="number" value={eigForm.aantal_panelen || ""} onChange={e => setEigForm((p: any) => ({ ...p, aantal_panelen: e.target.value }))} className="rounded-xl" />
                     </div>
                     <div>
@@ -729,9 +701,7 @@ const LeadDetail = () => {
                     </div>
                   </div>
                 </div>
-
                 <Separator />
-
                 <div>
                   <p className="text-sm font-medium mb-3">Interesses</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -742,16 +712,12 @@ const LeadDetail = () => {
                       { key: "isolatie_interesse", label: "Isolatie" },
                     ].map(item => (
                       <div key={item.key} className="flex items-center gap-2">
-                        <Switch
-                          checked={eigForm[item.key] || false}
-                          onCheckedChange={v => setEigForm((p: any) => ({ ...p, [item.key]: v }))}
-                        />
+                        <Switch checked={eigForm[item.key] || false} onCheckedChange={v => setEigForm((p: any) => ({ ...p, [item.key]: v }))} />
                         <Label className="text-sm">{item.label}</Label>
                       </div>
                     ))}
                   </div>
                 </div>
-
                 <div className="flex justify-end pt-2">
                   <Button onClick={saveEigenschappen} disabled={saveEigenschappenMutation.isPending} className="rounded-xl gap-1.5">
                     {saveEigenschappenMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -762,13 +728,11 @@ const LeadDetail = () => {
             </Card>
           )}
 
-          {/* ─── NOTITIES ─── */}
+          {/* NOTITIES */}
           {activeTab === "notities" && (
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <StickyNote className="h-4 w-4 text-primary" /> Notities
-                </CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><StickyNote className="h-4 w-4 text-primary" /> Notities</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -803,16 +767,13 @@ const LeadDetail = () => {
             </Card>
           )}
 
-          {/* ─── COMMUNICATIE ─── */}
+          {/* COMMUNICATIE */}
           {activeTab === "communicatie" && (
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-primary" /> Communicatie & Contactmomenten
-                </CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> Communicatie</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Contactmomenten */}
                 {contactmomenten.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contactmomenten</p>
@@ -833,8 +794,6 @@ const LeadDetail = () => {
                     ))}
                   </div>
                 )}
-
-                {/* Offerte berichten */}
                 {berichten.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Offerte berichten</p>
@@ -850,7 +809,6 @@ const LeadDetail = () => {
                     ))}
                   </div>
                 )}
-
                 {contactmomenten.length === 0 && berichten.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-6">Geen communicatie gevonden.</p>
                 )}
@@ -858,102 +816,16 @@ const LeadDetail = () => {
             </Card>
           )}
 
-          {/* ─── AFSPRAKEN ─── */}
-          {activeTab === "afspraken" && (
-            <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><CalendarIcon className="h-4 w-4 text-primary" /> Afspraken</CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setAfspraakOpen(true)} className="rounded-xl gap-1"><Plus className="h-3.5 w-3.5" /> Inplannen</Button>
-              </CardHeader>
-              <CardContent>
-                {afspraken.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">Geen afspraken</p>
-                ) : (
-                  <div className="space-y-2">
-                    {afspraken.map((a: any) => (
-                      <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                            {a.type === "op_afstand" ? <Video className="h-4 w-4 text-primary" /> : <MapPin className="h-4 w-4 text-primary" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{a.titel}</p>
-                            <p className="text-xs text-muted-foreground">{formatDate(a.datum)}{a.start_tijd && ` • ${a.start_tijd.slice(0, 5)}`}{a.eind_tijd && ` - ${a.eind_tijd.slice(0, 5)}`}</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-xs">{a.status}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          {/* AFSPRAKEN */}
+          {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />}
 
-          {/* ─── OFFERTES ─── */}
-          {activeTab === "offertes" && (
-            <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Offertes</CardTitle>
-                <Button size="sm" variant="outline" onClick={handleNewOfferte} className="rounded-xl gap-1"><Plus className="h-3.5 w-3.5" /> Nieuwe offerte</Button>
-              </CardHeader>
-              <CardContent>
-                {offertes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">Geen offertes</p>
-                ) : (
-                  <div className="space-y-2">
-                    {offertes.map(o => (
-                      <Link key={o.id} to={`/offertes/${o.id}/pdf`} className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center"><FileText className="h-4 w-4 text-primary" /></div>
-                          <div>
-                            <p className="text-sm font-medium">{o.offertenummer}</p>
-                            <p className="text-xs text-muted-foreground">{formatDate(o.created_at)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold">{formatCurrency(o.totaal_bedrag)}</span>
-                          <Badge variant="outline" className="text-xs">{o.status}</Badge>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          {/* OFFERTES */}
+          {activeTab === "offertes" && <OffertesLijst offertes={offertes} onNew={handleNewOfferte} />}
 
-          {/* ─── SCHOUWEN ─── */}
-          {activeTab === "schouwen" && (
-            <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-primary" /> Schouwen</CardTitle>
-                <Button size="sm" variant="outline" onClick={() => navigate("/schouwen")} className="rounded-xl gap-1"><Plus className="h-3.5 w-3.5" /> Nieuwe schouw</Button>
-              </CardHeader>
-              <CardContent>
-                {schouwen.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">Geen schouwen</p>
-                ) : (
-                  <div className="space-y-2">
-                    {schouwen.map(s => (
-                      <Link key={s.id} to={`/schouwen/${s.id}`} className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center"><ClipboardCheck className="h-4 w-4 text-primary" /></div>
-                          <div>
-                            <p className="text-sm font-medium">{s.schouw_nummer}</p>
-                            <p className="text-xs text-muted-foreground">{s.categorie} • {formatDate(s.geplande_datum)}</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-xs">{s.status}</Badge>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          {/* SCHOUWEN */}
+          {activeTab === "schouwen" && <SchouwenLijst schouwen={schouwen} onNew={() => navigate("/schouwen")} />}
 
-          {/* ─── DOCUMENTEN ─── */}
+          {/* DOCUMENTEN */}
           {activeTab === "documenten" && (
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-3">
@@ -982,48 +854,8 @@ const LeadDetail = () => {
             </Card>
           )}
 
-          {/* ─── ACTIVITEIT ─── */}
-          {activeTab === "activiteit" && (
-            <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><Activity className="h-4 w-4 text-primary" /> Tijdlijn</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    ...notities.map((n: any) => ({ type: "notitie", date: n.created_at, label: `Notitie door ${n.user?.voornaam || "Onbekend"}`, detail: n.inhoud?.substring(0, 80) })),
-                    ...contactmomenten.map((c: any) => ({ type: "contact", date: c.created_at, label: `${c.type} (${c.richting})${c.resultaat ? " — " + c.resultaat.replace(/_/g, " ") : ""}`, detail: c.notitie?.substring(0, 80) || `Door ${c.user?.voornaam || "Onbekend"}` })),
-                    ...offertes.map(o => ({ type: "offerte", date: o.created_at, label: `Offerte ${o.offertenummer} aangemaakt`, detail: formatCurrency(o.totaal_bedrag) })),
-                    ...schouwen.map(s => ({ type: "schouw", date: s.geplande_datum, label: `Schouw ${s.schouw_nummer}`, detail: s.categorie })),
-                    ...afspraken.map((a: any) => ({ type: "afspraak", date: a.datum, label: a.titel, detail: a.type })),
-                    { type: "created", date: lead.created_at, label: "Lead aangemaakt", detail: `${lead.voornaam} ${lead.achternaam}` },
-                  ]
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .slice(0, 30)
-                    .map((event, i) => (
-                      <div key={i} className="flex gap-3 items-start">
-                        <div className="flex flex-col items-center">
-                          <div className={`h-2.5 w-2.5 rounded-full mt-1.5 ${
-                            event.type === "notitie" ? "bg-primary" :
-                            event.type === "contact" ? "bg-violet-500" :
-                            event.type === "offerte" ? "bg-amber-500" :
-                            event.type === "schouw" ? "bg-emerald-500" :
-                            event.type === "afspraak" ? "bg-blue-500" :
-                            "bg-muted-foreground"
-                          }`} />
-                          {i < 29 && <div className="w-px h-full bg-border min-h-[20px]" />}
-                        </div>
-                        <div className="pb-3">
-                          <p className="text-sm font-medium text-foreground">{event.label}</p>
-                          <p className="text-xs text-muted-foreground">{event.detail}</p>
-                          <p className="text-[10px] text-muted-foreground">{formatDateTime(event.date)}</p>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* ACTIVITEIT */}
+          {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}
         </div>
 
         {/* Sidebar */}
@@ -1117,48 +949,23 @@ const LeadDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Samenvatting */}
-          <Card className="rounded-2xl border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" /> Samenvatting</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Totaal offertes</span><span className="font-medium">{offertes.length}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Geaccepteerd</span><span className="font-medium">{acceptedOffertes}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Offertewaarde</span><span className="font-medium">{formatCurrency(totalOfferteValue)}</span></div>
-              <Separator />
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Schouwen</span><span className="font-medium">{schouwen.length}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Afspraken</span><span className="font-medium">{afspraken.length}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Contactmomenten</span><span className="font-medium">{contactmomenten.length}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Notities</span><span className="font-medium">{notities.length}</span></div>
-            </CardContent>
-          </Card>
+          <SamenvattingCard items={[
+            { label: "Totaal offertes", value: offertes.length },
+            { label: "Geaccepteerd", value: acceptedOffertes },
+            { label: "Offertewaarde", value: formatCurrency(totalOfferteValue) },
+            { label: "Schouwen", value: schouwen.length },
+            { label: "Afspraken", value: afspraken.length },
+            { label: "Contactmomenten", value: contactmomenten.length },
+            { label: "Notities", value: notities.length },
+          ]} />
 
-          {/* Snelle acties */}
-          <Card className="rounded-2xl border-0 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Snelle acties</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" onClick={() => setAfspraakOpen(true)}>
-                <CalendarIcon className="h-3.5 w-3.5" /> Afspraak inplannen
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" onClick={handleNewOfferte}>
-                <FileText className="h-3.5 w-3.5" /> Offerte aanmaken
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" onClick={() => navigate("/schouwen")}>
-                <ClipboardCheck className="h-3.5 w-3.5" /> Schouw inplannen
-              </Button>
-              {lead.email && (
-                <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" asChild>
-                  <a href={`mailto:${lead.email}`}><Mail className="h-3.5 w-3.5" /> E-mail versturen</a>
-                </Button>
-              )}
-              {lead.telefoon && (
-                <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" asChild>
-                  <a href={`tel:${lead.telefoon}`}><Phone className="h-3.5 w-3.5" /> Bellen</a>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <SnelleActies
+            onAfspraak={() => setAfspraakOpen(true)}
+            onOfferte={handleNewOfferte}
+            onSchouw={() => navigate("/schouwen")}
+            email={lead.email}
+            telefoon={lead.telefoon}
+          />
         </div>
       </div>
 
@@ -1172,13 +979,5 @@ const LeadDetail = () => {
     </div>
   );
 };
-
-const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | null | undefined }) => (
-  <div className="flex items-center gap-2 text-sm p-2 rounded-lg">
-    <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-    <span className="text-xs text-muted-foreground w-16 shrink-0">{label}</span>
-    <span className="flex-1 truncate">{value || <span className="text-muted-foreground italic">—</span>}</span>
-  </div>
-);
 
 export default LeadDetail;
