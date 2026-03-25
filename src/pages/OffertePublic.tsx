@@ -46,6 +46,10 @@ export default function OffertePublic() {
   const [error, setError] = useState<string | null>(null);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [rejectDialog, setRejectDialog] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectCategorie, setRejectCategorie] = useState("");
+  const [rejectReden, setRejectReden] = useState("");
 
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
