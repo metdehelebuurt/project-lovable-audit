@@ -1,106 +1,86 @@
 
 
-## Plan: Klantfeedback verwerken — Lead Management & Planning verbeteringen
-
-Dit plan pakt de 12 feedbackpunten aan in 5 logische werkpakketten.
+## Plan: 6 feedbackpunten verwerken
 
 ---
 
-### Werkpakket 1: Adviseur-selectie bij afspraken (punten 1, 2, 5, 7)
+### 1. Product bewerken lukt niet — foto blijft staan
 
-**Probleem:** Afspraken worden altijd gekoppeld aan de ingelogde gebruiker. Er is geen mogelijkheid om een andere adviseur te kiezen.
-
-**Oplossing:**
-- **AfspraakDialog.tsx**: Adviseur-dropdown toevoegen die partner-users ophaalt (rol = adviseur, partner_staff, partner_admin). Default: lead owner (als beschikbaar), anders ingelogde user.
-- **Planning.tsx**: Zelfde adviseur-dropdown in het inline formulier. Adviseur-naam tonen bij events in de kalender.
-- **AfspraakDialog**: `lead_id` meegeven zorgt automatisch voor koppeling lead → adviseur → afspraak.
-
-### Werkpakket 2: "Mijn Agenda" filter in Planning (punten 3, 4)
-
-**Probleem:** Geen persoonlijk overzicht per gebruiker.
+**Probleem:** In `Producten.tsx` (regel 192-228) wordt `saveMutation` aangeroepen, maar de `afbeelding_url` wordt correct meegegeven via het destructured `data` object. Het probleem zit waarschijnlijk in de RLS policy: `producten` UPDATE vereist `partner_id = get_user_partner_id(auth.uid())`, maar catalogusproducten hebben `partner_id = null`. Partner users kunnen die producten dus niet updaten.
 
 **Oplossing:**
-- **Planning.tsx**: Toggle-filter toevoegen: "Mijn agenda" vs "Alle afspraken". Default = "Mijn agenda" voor adviseurs.
-- Afspraken filteren op `adviseur_id = auth.uid()`.
-- Schouwen filteren op `adviseur_id`.
-- Adviseur-naam tonen bij elke event in alle weergaven.
+- Catalogusproducten (partner_id = null) mogen niet direct bewerkt worden door partners. De edit-knop moet alleen verschijnen voor eigen producten of als superadmin.
+- Alternativ: als een partner een catalogusproduct wil aanpassen, dupliceer het naar een partner-specifiek product.
+- Zorg dat na een succesvolle save de `queryClient` correct geïnvalideerd wordt en het form sluit.
 
-### Werkpakket 3: Uitgebreide lead-statussen (punten 8, 11)
+**Bestanden:** `src/pages/Producten.tsx`
 
-**Probleem:** Huidige statussen (nieuw, gekwalificeerd, offerte_verzonden, klant, verloren) zijn te beperkt voor dagelijkse opvolging.
+---
 
-**Oplossing — Database migratie:**
-```sql
-ALTER TYPE lead_status ADD VALUE 'contact_geprobeerd';
-ALTER TYPE lead_status ADD VALUE 'geen_gehoor';
-ALTER TYPE lead_status ADD VALUE 'voicemail';
-ALTER TYPE lead_status ADD VALUE 'terugbellen';
-ALTER TYPE lead_status ADD VALUE 'gesproken';
-ALTER TYPE lead_status ADD VALUE 'afspraak_gepland';
+### 2. Disclaimer bij AI-gegenereerde specificaties
+
+**Oplossing:**
+- **Inline disclaimer**: In `ProductDetail.tsx` bij het specificaties-tabblad, wanneer specs door AI zijn ingevuld, een gele disclaimerbanner tonen: "⚠ Deze specificaties zijn automatisch gegenereerd door AI en kunnen fouten bevatten. Controleer de gegevens handmatig. Aan deze specificaties kunnen geen rechten worden ontleend."
+- **Pop-up na generatie**: Na succesvol AI-invullen (`handleAiVerify` en `handleGenerateDatasheet`), toon een AlertDialog met de waarschuwing dat specificaties handmatig gecontroleerd moeten worden, met een "Ik heb het begrepen" knop.
+- **Op datasheets**: Kleine disclaimer onderaan de `ProductDatasheet` component.
+
+**Bestanden:** `src/pages/ProductDetail.tsx`, `src/components/producten/ProductDatasheet.tsx`
+
+---
+
+### 3. PDF template uitlijning en adres in voetnoot
+
+**Probleem:** `PageFooter` in `OffertePDF.tsx` (regel 442-446) toont `partner.adres` maar dat veld bevat mogelijk alleen de straatnaam zonder huisnummer. Het adresveld is één tekstfield, dus het hangt af van de invoer. De footer is nu:
+```
+partner.naam • partner.adres • postcode plaats
 ```
 
-**Frontend updates:**
-- **LeadDetail.tsx**: Pipeline-balk aanpassen met twee rijen — bovenste rij = hoofdstatussen (nieuw → gekwalificeerd → offerte → klant), onderste rij = opvolgstatussen (contact_geprobeerd, geen_gehoor, voicemail, terugbellen, gesproken, afspraak_gepland).
-- **Leads.tsx**: Nieuwe statussen toevoegen aan filters en labels.
+**Oplossing:**
+- Footer verbeteren met volledige adresweergave. Voeg ook KVK/BTW toe indien beschikbaar.
+- Controleer dat alle secties consistent uitgelinjd zijn (padding, marges).
 
-### Werkpakket 4: Gestructureerde lead-velden (punten 8, 9)
+**Bestanden:** `src/pages/OffertePDF.tsx`
 
-**Probleem:** Belangrijke data (verbruik, aantal panelen, woningtype) zit in notities.
+---
 
-**Oplossing — Nieuwe tabel `lead_eigenschappen`:**
-```sql
-CREATE TABLE lead_eigenschappen (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  partner_id uuid NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  -- Energie/woning velden
-  woningtype text,              -- vrijstaand, hoekwoning, tussenwoning, etc.
-  bouwjaar integer,
-  daktype text,
-  dakrichting text,
-  aantal_panelen integer,
-  huidig_verbruik_kwh integer,
-  huidige_energielabel text,
-  gewenst_energielabel text,
-  warmtepomp_interesse boolean DEFAULT false,
-  batterij_interesse boolean DEFAULT false,
-  laadpaal_interesse boolean DEFAULT false,
-  isolatie_interesse boolean DEFAULT false,
-  extra_json jsonb DEFAULT '{}'  -- voor partner-specifieke velden
-);
+### 4. "Opgesteld door" persoonlijker maken — adviseur naam
+
+**Probleem:** Bij "Opgesteld door" (regel 623-627) staat nu `partner.naam`. De adviseur naam is beschikbaar via `adviseurNaam`.
+
+**Oplossing:** Toon adviseur naam als primair, bedrijfsnaam als secundair:
 ```
-Met RLS identiek aan leads.
-
-**Frontend:**
-- **LeadDetail.tsx**: Nieuw tabblad "Klantdata" of sectie in Overzicht met gestructureerde invoervelden voor woningtype, verbruik, interesses, etc.
-
-### Werkpakket 5: Contactmomenten-registratie & Lead-eigenaar tonen (punten 10, 12)
-
-**Probleem:** Geen gestructureerde contactmomenten, geen zichtbare eigenaar, geen automatische tijdlijn.
-
-**Oplossing — Nieuwe tabel `lead_contactmomenten`:**
-```sql
-CREATE TABLE lead_contactmomenten (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL,
-  partner_id uuid NOT NULL,
-  type text NOT NULL,           -- 'call', 'voicemail', 'email', 'whatsapp', 'bezoek', 'overig'
-  richting text DEFAULT 'uitgaand', -- 'uitgaand' of 'inkomend'
-  resultaat text,               -- 'bereikt', 'geen_gehoor', 'voicemail', 'terugbelverzoek'
-  notitie text,
-  created_at timestamptz DEFAULT now()
-);
+Opgesteld door
+Piet Jansen
+Bedrijfsnaam
+email@bedrijf.nl
 ```
 
-**Frontend updates:**
-- **LeadDetail.tsx**:
-  - **Lead-eigenaar tonen**: In header, owner_user_id opzoeken en naam tonen met mogelijkheid om te wijzigen.
-  - **Contactmomenten-widget**: Snelle "Log contact" knop in sidebar met type/richting/resultaat selectie.
-  - **Activiteit-tab**: Contactmomenten opnemen in tijdlijn naast notities, offertes, afspraken.
-  - Communicatie-tab verrijken met contactmomenten.
+**Bestanden:** `src/pages/OffertePDF.tsx`
+
+---
+
+### 5. Dynamische velden — garantievoorwaarden hard-coded op 2 jaar
+
+**Probleem:** In `OfferteNieuw.tsx` (regel 89) staat de default waarde: `"Productgarantie conform fabrikant. Installatiegarantie: 2 jaar."`. Dit wordt correct opgeslagen in de offerte. In de PDF wordt `(offerte as any).garantie_voorwaarden` gebruikt (regel 413), dus dit zou de juiste waarde moeten tonen.
+
+**Oplossing:**
+- Controleer of de offerte record daadwerkelijk de garantie_voorwaarden bevat — mogelijk is het veld null bij oudere offertes. Als dat zo is, toon de default niet als fallback.
+- Maak de default slimmer: baseer op de garantie_jaren van de geselecteerde producten (bijv. "Productgarantie: 25 jaar conform fabrikant. Installatiegarantie: 2 jaar.").
+- In de PDF: zorg ervoor dat `garantie_voorwaarden` niet als type-cast `as any` wordt benaderd maar als typed field.
+
+**Bestanden:** `src/pages/OfferteNieuw.tsx`, `src/pages/OffertePDF.tsx`
+
+---
+
+### 6. Extra logo-versie voor donkere achtergrond
+
+**Oplossing:**
+- **Database**: Voeg `logo_url_donker` kolom toe aan de `partners` tabel.
+- **Instellingen**: In partner-instellingen een upload-optie voor het donkere logo.
+- **PDF templates**: In `VoorbladTemplates.tsx` bij dark/gradient templates, gebruik `logo_url_donker` als beschikbaar, anders val terug op standaard logo.
+- **OffertePDF.tsx**: Pass `logoUrlDark` door als extra prop.
+
+**Bestanden:** SQL migratie, `src/pages/OffertePDF.tsx`, `src/components/offertes/templates/VoorbladTemplates.tsx`, `src/pages/Instellingen.tsx`
 
 ---
 
@@ -108,17 +88,12 @@ CREATE TABLE lead_contactmomenten (
 
 | Bestand | Wijziging |
 |---------|-----------|
-| SQL migratie | Nieuwe statussen, `lead_eigenschappen`, `lead_contactmomenten` tabellen + RLS |
-| `src/components/shared/AfspraakDialog.tsx` | Adviseur-selectie dropdown |
-| `src/pages/Planning.tsx` | Adviseur-keuze bij aanmaken, "Mijn agenda" filter, adviseur-naam bij events |
-| `src/pages/LeadDetail.tsx` | Uitgebreide pipeline, eigenaar tonen, klantdata sectie, contactmomenten widget, verrijkte tijdlijn |
-| `src/pages/Leads.tsx` | Nieuwe statussen in filters/labels, eigenaar-kolom |
-
-### Aanpak
-
-Dit is een groot pakket. Ik stel voor om het in twee rondes te implementeren:
-- **Ronde 1**: Werkpakketten 1 + 2 + 3 (adviseur-selectie, mijn agenda, extra statussen) — direct merkbaar in dagelijks gebruik
-- **Ronde 2**: Werkpakketten 4 + 5 (klantdata, contactmomenten) — verdieping
-
-Wil je alles in een keer, of eerst Ronde 1?
+| SQL migratie | `logo_url_donker` kolom op `partners` |
+| `src/pages/Producten.tsx` | Fix edit-rechten voor catalogusproducten |
+| `src/pages/ProductDetail.tsx` | AI-disclaimer pop-up + banner |
+| `src/components/producten/ProductDatasheet.tsx` | Disclaimer footer |
+| `src/pages/OffertePDF.tsx` | Footer adres, "Opgesteld door" adviseur, typed garantie velden, logo_url_donker support |
+| `src/components/offertes/templates/VoorbladTemplates.tsx` | Dark logo prop + fallback |
+| `src/pages/OfferteNieuw.tsx` | Slimmere garantie default op basis van producten |
+| `src/pages/Instellingen.tsx` | Upload voor donker logo |
 
