@@ -125,7 +125,7 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
       <div style={{ width: "42%", backgroundColor: sc, color: "#fff", padding: "64px 40px", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
         {heroImageUrl && <HeroImageBg url={heroImageUrl} overlay={`${sc}cc`} />}
         <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
-          {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 44, marginBottom: 48, objectFit: "contain", alignSelf: "flex-start" }} />}
+          {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 44, marginBottom: 48, objectFit: "contain", alignSelf: "flex-start" }} />}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
             <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>Uw persoonlijke offerte</h1>
