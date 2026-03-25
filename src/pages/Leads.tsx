@@ -41,8 +41,8 @@ const statusColors: Record<LeadStatus, string> = {
   verloren: "bg-error-light text-error",
 };
 
-// Kanban kolommen — logisch gegroepeerde statussen
-const kanbanColumns: { status: LeadStatus; color: string }[] = [
+// Kanban: alle 10 kolommen (uitgebreide modus)
+const kanbanColumnsAll: { status: LeadStatus; color: string }[] = [
   { status: "nieuw", color: "border-t-primary" },
   { status: "contact_geprobeerd", color: "border-t-sky-500" },
   { status: "geen_gehoor", color: "border-t-orange-500" },
@@ -53,6 +53,16 @@ const kanbanColumns: { status: LeadStatus; color: string }[] = [
   { status: "offerte_verzonden", color: "border-t-amber-500" },
   { status: "klant", color: "border-t-green-600" },
   { status: "verloren", color: "border-t-red-500" },
+];
+
+// Kanban: 5 gegroepeerde kolommen (standaard)
+type KanbanGroup = { label: string; statuses: LeadStatus[]; color: string; defaultDrop: LeadStatus };
+const kanbanGroups: KanbanGroup[] = [
+  { label: "Nieuw", statuses: ["nieuw"], color: "border-t-primary", defaultDrop: "nieuw" },
+  { label: "Contact", statuses: ["contact_geprobeerd", "geen_gehoor", "terugbellen", "gesproken"], color: "border-t-sky-500", defaultDrop: "contact_geprobeerd" },
+  { label: "Gekwalificeerd", statuses: ["afspraak_gepland", "gekwalificeerd"], color: "border-t-emerald-500", defaultDrop: "gekwalificeerd" },
+  { label: "Offerte", statuses: ["offerte_verzonden"], color: "border-t-amber-500", defaultDrop: "offerte_verzonden" },
+  { label: "Afgerond", statuses: ["klant", "verloren"], color: "border-t-green-600", defaultDrop: "klant" },
 ];
 
 const DEFAULT_BRONNEN = ["website", "telefoon", "referral", "advertentie", "beurs", "social media", "overig"];
