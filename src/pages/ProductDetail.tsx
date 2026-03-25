@@ -662,6 +662,14 @@ const ProductDetail = () => {
 
         {/* ── SPECIFICATIES ── */}
         <TabsContent value="specificaties">
+          {filledSpecs.length > 0 && (
+            <Alert className="mb-4 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200 text-xs">
+                ⚠ Deze specificaties kunnen (deels) automatisch zijn gegenereerd door AI en kunnen fouten bevatten. Controleer de gegevens altijd handmatig. Aan deze specificaties kunnen geen rechten worden ontleend.
+              </AlertDescription>
+            </Alert>
+          )}
           <Card className="rounded-2xl border-0 shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
