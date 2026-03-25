@@ -658,9 +658,40 @@ const Producten = () => {
                       {canEdit && (
                         <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(product)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
+                            {/* Only allow editing own products or superadmin */}
+                            {(isSuperadmin || product.partner_id === profile?.partner_id) ? (
+                              <Button variant="ghost" size="icon" onClick={() => openEdit(product)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="icon" title="Dupliceer naar eigen catalogus" onClick={() => {
+                                setIsCreating(true);
+                                setEditingProduct(null);
+                                const galleryImages = Array.isArray(product.afbeeldingen) ? (product.afbeeldingen as string[]) : [];
+                                const specs = (product.specs && typeof product.specs === "object" && !Array.isArray(product.specs)) ? (product.specs as Record<string, string>) : {};
+                                setForm({
+                                  naam: product.naam, categorie: product.categorie, merk: product.merk || "",
+                                  model: product.model || "", omschrijving: product.omschrijving || "",
+                                  offerte_tekst: (product as any).offerte_tekst || "",
+                                  prijs_excl_btw: Number(product.prijs_excl_btw), kostprijs: product.kostprijs ? Number(product.kostprijs) : null,
+                                  eenheid: product.eenheid || "stuk", voorraad: product.voorraad,
+                                  btw_percentage: product.btw_percentage ?? 21,
+                                  max_korting_euro: product.max_korting_euro ? Number(product.max_korting_euro) : null,
+                                  max_korting_percentage: product.max_korting_percentage ? Number(product.max_korting_percentage) : null,
+                                  product_code: product.product_code || "", leverancier: product.leverancier || "",
+                                  artikelnummer: product.artikelnummer || "", ean_code: product.ean_code || "",
+                                  levertijd: product.levertijd || "", garantie_jaren: product.garantie_jaren,
+                                  certificeringen: product.certificeringen || "", status: product.status,
+                                  afbeelding_url: product.afbeelding_url || null,
+                                  afbeeldingen: galleryImages, specs,
+                                  datasheet_url: (product as any).datasheet_url || null,
+                                  datasheet_type: (product as any).datasheet_type || null,
+                                });
+                                toast.info("Catalogusproduct gedupliceerd — sla op om uw eigen versie te maken");
+                              }}>
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            )}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>

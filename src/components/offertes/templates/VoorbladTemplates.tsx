@@ -5,6 +5,7 @@ interface VoorbladProps {
   sc: string;
   pcTint: string;
   logoUrl: string | null;
+  logoUrlDark?: string | null;
   partnerNaam: string;
   klantNaam: string;
   offertenummer: string;
@@ -55,7 +56,8 @@ const HeroImageBg: React.FC<{ url: string; overlay: string }> = ({ url, overlay 
    1 — HERO DARK
    ════════════════════════════════════════════════════════════ */
 export const HeroDark: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, productNaam, slogan, introTekst, badges, telefoon, klantAdres, klantPostcode, klantPlaats, pcTint, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, productNaam, slogan, introTekst, badges, telefoon, klantAdres, klantPostcode, klantPlaats, pcTint, heroImageUrl, heroTitle = "Offerte" } = props;
+  const darkLogo = logoUrlDark || logoUrl;
   const hasImage = !!heroImageUrl;
 
   return (
@@ -66,7 +68,7 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
       <div style={{ backgroundColor: hasImage ? "transparent" : sc, color: "#fff", padding: "70px 56px 48px", position: "relative", flex: "0 0 50%", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
         <div style={{ position: "absolute", top: 0, right: 0, width: 240, height: "100%", background: `linear-gradient(135deg, ${pc}, ${hexToTint(pc, 0.6)})`, clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
         <div style={{ position: "relative", zIndex: 1 }}>
-          {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 52, marginBottom: 32, objectFit: "contain" }} />}
+          {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 52, marginBottom: 32, objectFit: "contain" }} />}
           <p style={{ fontSize: 14, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>Verduurzaam je huis</h1>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.15, color: pc }}>
@@ -114,7 +116,8 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
    2 — HERO SPLIT
    ════════════════════════════════════════════════════════════ */
 export const HeroSplit: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, slogan, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, slogan, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const darkLogo = logoUrlDark || logoUrl;
 
   return (
     <div style={{ ...rootStyle, flexDirection: "row" }}>
@@ -122,7 +125,7 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
       <div style={{ width: "42%", backgroundColor: sc, color: "#fff", padding: "64px 40px", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
         {heroImageUrl && <HeroImageBg url={heroImageUrl} overlay={`${sc}cc`} />}
         <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
-          {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 44, marginBottom: 48, objectFit: "contain", alignSelf: "flex-start" }} />}
+          {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 44, marginBottom: 48, objectFit: "contain", alignSelf: "flex-start" }} />}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
             <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>Uw persoonlijke offerte</h1>
@@ -197,14 +200,15 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
    4 — HERO GRADIENT
    ════════════════════════════════════════════════════════════ */
 export const HeroGradient: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const darkLogo = logoUrlDark || logoUrl;
 
   return (
     <div style={{ ...rootStyle, background: heroImageUrl ? "none" : `linear-gradient(160deg, ${sc} 0%, ${hexToTint(pc, 0.9)} 100%)`, color: "#fff", padding: "64px 56px" }}>
       {heroImageUrl && <HeroImageBg url={heroImageUrl} overlay={`linear-gradient(160deg, ${sc}ee 0%, ${hexToTint(pc, 0.85)} 100%)`} />}
 
       <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
-        {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 48, marginBottom: 56, objectFit: "contain", alignSelf: "flex-start" }} />}
+        {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 48, marginBottom: 56, objectFit: "contain", alignSelf: "flex-start" }} />}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <p style={{ fontSize: 16, fontWeight: 600, textTransform: "uppercase", letterSpacing: 5, marginBottom: 16, opacity: 0.7 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 52, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{categoryLabel ? `${categoryLabel} offerte` : "Uw offerte"}</h1>
@@ -232,14 +236,15 @@ export const HeroGradient: React.FC<VoorbladProps> = (props) => {
    5 — HERO PHOTO
    ════════════════════════════════════════════════════════════ */
 export const HeroPhoto: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const darkLogo = logoUrlDark || logoUrl;
 
   return (
     <div style={{ ...rootStyle }}>
       {/* Top image area — 45% */}
       <div style={{ height: "45%", flexShrink: 0, background: heroImageUrl ? "none" : `linear-gradient(135deg, ${sc}, ${pc})`, display: "flex", alignItems: "flex-end", padding: "0 56px 36px", position: "relative", overflow: "hidden" }}>
         {heroImageUrl && <HeroImageBg url={heroImageUrl} overlay={`${sc}bb`} />}
-        {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ position: "absolute", top: 36, left: 56, height: 40, objectFit: "contain", zIndex: 2 }} />}
+        {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ position: "absolute", top: 36, left: 56, height: 40, objectFit: "contain", zIndex: 2 }} />}
         <div style={{ position: "relative", zIndex: 2 }}>
           <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 6, opacity: 0.9 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 40, fontWeight: 800, color: "#fff", margin: 0 }}>

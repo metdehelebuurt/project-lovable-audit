@@ -11,9 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Download, Eye, FileText, CheckCircle,
-  Package, Pencil, Save, X, Upload, ScanSearch,
+  Package, Pencil, Save, X, Upload, ScanSearch, AlertTriangle,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import ProductImage from "@/components/producten/ProductImage";
 import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import { getGroupedSpecs, categorySpecDefinitions } from "@/components/producten/categorySpecDefinitions";
@@ -60,6 +62,7 @@ const ProductDetail = () => {
   const [savingProduct, setSavingProduct] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [savingPdf, setSavingPdf] = useState(false);
+  const [aiDisclaimerOpen, setAiDisclaimerOpen] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -235,6 +238,7 @@ const ProductDetail = () => {
           description: `${sourceLabel}${data.raw_count && data.raw_count !== filledCount ? ` (${data.raw_count} raw → ${filledCount} gemapped)` : ""}`,
           duration: 6000,
         });
+        setAiDisclaimerOpen(true);
       }
     } catch (err: any) {
       toast.error("AI verificatie mislukt", { description: err.message });
@@ -424,6 +428,7 @@ const ProductDetail = () => {
       await refetchDatasheet();
 
       toast.success("Datasheet gegenereerd");
+      setAiDisclaimerOpen(true);
     } catch (err: any) {
       toast.error("Datasheet generatie mislukt", { description: err.message });
     } finally {
@@ -657,6 +662,14 @@ const ProductDetail = () => {
 
         {/* ── SPECIFICATIES ── */}
         <TabsContent value="specificaties">
+          {filledSpecs.length > 0 && (
+            <Alert className="mb-4 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200 text-xs">
+                ⚠ Deze specificaties kunnen (deels) automatisch zijn gegenereerd door AI en kunnen fouten bevatten. Controleer de gegevens altijd handmatig. Aan deze specificaties kunnen geen rechten worden ontleend.
+              </AlertDescription>
+            </Alert>
+          )}
           <Card className="rounded-2xl border-0 shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -958,6 +971,28 @@ const ProductDetail = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AI Disclaimer Dialog */}
+      <AlertDialog open={aiDisclaimerOpen} onOpenChange={setAiDisclaimerOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              Handmatige controle vereist
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              De specificaties zijn automatisch gegenereerd door AI op basis van publiek beschikbare bronnen.
+              <br /><br />
+              <strong>Controleer alle waarden handmatig</strong> voordat u deze gebruikt in offertes of communicatie naar klanten. AI-gegenereerde data kan onvolledig of onjuist zijn.
+              <br /><br />
+              <span className="text-xs text-muted-foreground">Aan AI-gegenereerde specificaties kunnen geen rechten worden ontleend.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>Ik heb het begrepen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

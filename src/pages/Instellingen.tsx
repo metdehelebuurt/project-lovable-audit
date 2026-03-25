@@ -295,15 +295,17 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingDark, setUploadingDark] = useState(false);
   const [primaireKleur, setPrimaireKleur] = useState("#5B58E1");
   const [secundaireKleur, setSecundaireKleur] = useState("#1a1a2e");
   const [bedrijfsslogan, setBedrijfsslogan] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrlDonker, setLogoUrlDonker] = useState<string | null>(null);
   const [partnerNaam, setPartnerNaam] = useState("");
 
   useEffect(() => {
     supabase.from("partners")
-      .select("naam, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan")
+      .select("naam, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan")
       .eq("id", partnerId).single()
       .then(({ data }) => {
         if (data) {
@@ -312,6 +314,7 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
           setSecundaireKleur(data.secundaire_kleur || "#1a1a2e");
           setBedrijfsslogan(data.bedrijfsslogan || "");
           setLogoUrl(data.logo_url);
+          setLogoUrlDonker((data as any).logo_url_donker || null);
         }
         setLoading(false);
       });
@@ -372,6 +375,47 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
             <div>
               <Input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} className="text-sm" />
               <p className="text-xs text-muted-foreground mt-1">Max 2MB, wordt getoond op offertes</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <Label>Logo voor donkere achtergrond <span className="text-xs text-muted-foreground">(optioneel)</span></Label>
+          <p className="text-xs text-muted-foreground mb-1">Wordt gebruikt op donkere PDF-voorbladen (bijv. witte versie van uw logo)</p>
+          <div className="flex items-center gap-4 mt-1">
+            {logoUrlDonker ? (
+              <div className="relative">
+                <img src={logoUrlDonker} alt="Logo donker" className={`h-12 w-auto object-contain rounded-lg border p-1 bg-gray-800 ${uploadingDark ? "opacity-50" : ""}`} />
+              </div>
+            ) : (
+              <div className="h-12 w-12 rounded-lg border border-dashed flex items-center justify-center bg-gray-800">
+                <Palette className="h-5 w-5 text-gray-400" />
+              </div>
+            )}
+            <div>
+              <Input type="file" accept="image/*" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (!file.type.startsWith("image/")) { toast.error("Selecteer een afbeelding"); return; }
+                if (file.size > 2 * 1024 * 1024) { toast.error("Maximaal 2MB"); return; }
+                setUploadingDark(true);
+                try {
+                  const ext = file.name.split(".").pop();
+                  const path = `${partnerId}/logo_donker_${Date.now()}.${ext}`;
+                  const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
+                  if (error) { toast.error("Upload mislukt: " + error.message); setUploadingDark(false); return; }
+                  const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
+                  const urlWithCacheBust = publicUrl + "?t=" + Date.now();
+                  const { error: updateError } = await supabase.from("partners").update({ logo_url_donker: urlWithCacheBust } as any).eq("id", partnerId);
+                  if (updateError) { toast.error("Fout bij opslaan: " + updateError.message); } else {
+                    setLogoUrlDonker(urlWithCacheBust);
+                    toast.success("Donker logo geüpload");
+                  }
+                } catch (err: any) {
+                  toast.error("Onverwachte fout bij uploaden");
+                }
+                setUploadingDark(false);
+              }} disabled={uploadingDark} className="text-sm" />
+              <p className="text-xs text-muted-foreground mt-1">Max 2MB, voor donkere/gekleurde achtergronden op offertes</p>
             </div>
           </div>
         </div>

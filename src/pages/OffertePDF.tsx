@@ -235,7 +235,7 @@ export default function OffertePDF() {
       }
 
       if (o.partner_id) {
-        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
+        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
         if (p) {
           setPartner(p as PartnerBranding);
           if (p.feature_flags_json && typeof p.feature_flags_json === "object") {
@@ -359,6 +359,10 @@ export default function OffertePDF() {
     ? (partner.logo_url.startsWith("http") ? partner.logo_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url}`)
     : null;
 
+  const logoUrlDonker = (partner as any).logo_url_donker
+    ? ((partner as any).logo_url_donker.startsWith("http") ? (partner as any).logo_url_donker : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${(partner as any).logo_url_donker}`)
+    : null;
+
   const mainCategory = producten.length > 0 ? producten[0].categorie : null;
   const categoryLabel = mainCategory ? (categoryLabels[mainCategory] || mainCategory) : null;
 
@@ -410,7 +414,12 @@ export default function OffertePDF() {
 
   const adviseurNaam = adviseur ? `${adviseur.voornaam} ${adviseur.achternaam}` : "Uw adviseur";
   const introTekst = (offerte as any).introductie_tekst as string | null;
-  const garantieVw = (offerte as any).garantie_voorwaarden as string | null;
+  const garantieVw = ((offerte as any).garantie_voorwaarden as string | null) || (() => {
+    // Dynamic fallback based on product warranty
+    const maxGarantie = producten.reduce((max, p) => Math.max(max, p.garantie_jaren || 0), 0);
+    if (maxGarantie > 0) return `Productgarantie: ${maxGarantie} jaar conform fabrikant. Installatiegarantie: 2 jaar.`;
+    return "Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.";
+  })();
   const installTermijn = (offerte as any).installatie_termijn as string | null;
 
   const VoorbladComp = voorbladTemplates[config.voorblad] || HeroDark;
@@ -441,7 +450,13 @@ export default function OffertePDF() {
 
   const PageFooter = () => (
     <div style={{ borderTop: `2px solid ${pc}`, padding: "12px 0 0", marginTop: "auto", fontSize: 9, color: "#999", textAlign: "center" as const }}>
-      <p style={{ margin: 0 }}>{partner.naam}{partner.adres ? ` • ${partner.adres}` : ""}{partner.postcode || partner.plaats ? ` • ${partner.postcode || ""} ${partner.plaats || ""}` : ""}</p>
+      <p style={{ margin: 0 }}>
+        {partner.naam}
+        {partner.adres ? ` • ${partner.adres}` : ""}
+        {partner.postcode || partner.plaats ? ` • ${partner.postcode || ""} ${partner.plaats || ""}`.trim() : ""}
+        {(partner as any).kvk ? ` • KVK ${(partner as any).kvk}` : ""}
+        {(partner as any).btw ? ` • BTW ${(partner as any).btw}` : ""}
+      </p>
     </div>
   );
 
@@ -528,7 +543,7 @@ export default function OffertePDF() {
         return (
           <div key="voorblad" style={{ ...pageStyle, padding: 0, height: "297mm", minHeight: "297mm" }}>
             <VoorbladComp
-              pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl}
+              pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl} logoUrlDark={logoUrlDonker}
               partnerNaam={partner.naam} klantNaam={offerte.klant_naam}
               offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam}
               datum={formatDate(offerte.created_at)}
@@ -622,7 +637,8 @@ export default function OffertePDF() {
                 </div>
                 <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "16px 20px" }}>
                   <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: pc, margin: "0 0 8px" }}>Opgesteld door</p>
-                  <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{partner.naam}</p>
+                  <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{adviseurNaam}</p>
+                  <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.naam}</p>
                   {partner.email && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.email}</p>}
                 </div>
               </div>

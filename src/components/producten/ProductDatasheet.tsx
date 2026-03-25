@@ -420,6 +420,18 @@ const ProductDatasheet: React.FC<ProductDatasheetProps> = ({ product, partner })
                 </div>
               </div>
             ))}
+
+            {/* AI Disclaimer on last page */}
+            {pageIdx === pages.length - 1 && (
+              <div style={{
+                marginTop: "auto", padding: "8px 12px", backgroundColor: "#fffbeb",
+                borderRadius: 6, border: "1px solid #fde68a", fontSize: 8,
+                color: "#92400e", lineHeight: 1.5, fontStyle: "italic",
+              }}>
+                ⚠ Dit specificatieblad kan automatisch gegenereerde informatie bevatten. Controleer alle waarden handmatig.
+                Aan de inhoud van dit document kunnen geen rechten worden ontleend.
+              </div>
+            )}
           </div>
         </A4Page>
       ))}
