@@ -208,7 +208,7 @@ export const HeroGradient: React.FC<VoorbladProps> = (props) => {
       {heroImageUrl && <HeroImageBg url={heroImageUrl} overlay={`linear-gradient(160deg, ${sc}ee 0%, ${hexToTint(pc, 0.85)} 100%)`} />}
 
       <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
-        {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 48, marginBottom: 56, objectFit: "contain", alignSelf: "flex-start" }} />}
+        {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 48, marginBottom: 56, objectFit: "contain", alignSelf: "flex-start" }} />}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <p style={{ fontSize: 16, fontWeight: 600, textTransform: "uppercase", letterSpacing: 5, marginBottom: 16, opacity: 0.7 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 52, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{categoryLabel ? `${categoryLabel} offerte` : "Uw offerte"}</h1>
