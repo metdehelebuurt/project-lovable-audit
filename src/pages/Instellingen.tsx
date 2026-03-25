@@ -44,6 +44,7 @@ const Instellingen = () => {
     { id: "huisstijl", label: "Huisstijl", icon: Palette, adminOnly: true },
     { id: "email", label: "E-mail", icon: Mail, adminOnly: true },
     { id: "offertes", label: "Offertes", icon: FileText, adminOnly: true },
+    { id: "leads", label: "Leads", icon: Users, adminOnly: true },
     { id: "schouwen", label: "Schouwen", icon: ClipboardList, adminOnly: true },
     { id: "privacy", label: "Privacy & Data", icon: Shield },
   ];
