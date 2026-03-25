@@ -92,6 +92,7 @@ const Instellingen = () => {
               <OfferteTemplateInstellingen partnerId={profile.partner_id} />
             </div>
           )}
+          {activeTab === "leads" && isPartnerAdmin && profile?.partner_id && <LeadBronnenConfig partnerId={profile.partner_id} />}
           {activeTab === "schouwen" && isPartnerAdmin && profile?.partner_id && <SchouwInstellingen partnerId={profile.partner_id} />}
           {activeTab === "privacy" && <PrivacyTab isSuperOrPartner={isSuperOrPartner} />}
         </div>
