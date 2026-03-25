@@ -84,6 +84,18 @@ const Leads = () => {
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
 
+  // Fetch partner-specific lead sources
+  const { data: bronOptions = DEFAULT_BRONNEN } = useQuery({
+    queryKey: ["partner-lead-bronnen", profile?.partner_id],
+    queryFn: async () => {
+      if (!profile?.partner_id) return DEFAULT_BRONNEN;
+      const { data } = await supabase.from("partners").select("lead_bronnen").eq("id", profile.partner_id).single();
+      if (data?.lead_bronnen && Array.isArray(data.lead_bronnen)) return data.lead_bronnen as string[];
+      return DEFAULT_BRONNEN;
+    },
+    enabled: !!profile,
+  });
+
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
