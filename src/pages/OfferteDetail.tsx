@@ -669,6 +669,51 @@ const OfferteDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Afwijzing reden dialog */}
+      <Dialog open={afwijzingDialog} onOpenChange={setAfwijzingDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {pendingStatus === "verlopen" ? "Reden voor verlopen" : "Reden voor afwijzing"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Geef aan waarom deze offerte {pendingStatus === "verlopen" ? "is verlopen" : "is afgewezen"}. Dit helpt bij het verbeteren van toekomstige offertes.
+            </p>
+            <div>
+              <Label className="text-sm">Categorie</Label>
+              <Select value={afwijzingCategorie} onValueChange={setAfwijzingCategorie}>
+                <SelectTrigger className="rounded-xl mt-1">
+                  <SelectValue placeholder="Selecteer een categorie..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categorieLabelsMap).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm">Toelichting (optioneel)</Label>
+              <Textarea
+                value={afwijzingReden}
+                onChange={e => setAfwijzingReden(e.target.value)}
+                placeholder="Voeg extra context toe..."
+                className="rounded-xl mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAfwijzingDialog(false)} className="rounded-pill">Annuleren</Button>
+            <Button onClick={handleAfwijzingConfirm} className="rounded-pill" variant="destructive">
+              Bevestigen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
