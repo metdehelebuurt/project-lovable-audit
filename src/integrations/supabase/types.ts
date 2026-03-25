@@ -1899,6 +1899,12 @@ export type Database = {
         | "offerte_verzonden"
         | "klant"
         | "verloren"
+        | "contact_geprobeerd"
+        | "geen_gehoor"
+        | "voicemail"
+        | "terugbellen"
+        | "gesproken"
+        | "afspraak_gepland"
       offerte_status:
         | "concept"
         | "verzonden"
@@ -2098,6 +2104,12 @@ export const Constants = {
         "offerte_verzonden",
         "klant",
         "verloren",
+        "contact_geprobeerd",
+        "geen_gehoor",
+        "voicemail",
+        "terugbellen",
+        "gesproken",
+        "afspraak_gepland",
       ],
       offerte_status: [
         "concept",
