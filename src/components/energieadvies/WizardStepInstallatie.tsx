@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Sun, Battery, Flame, Car } from "lucide-react";
+import { Sun, Battery, Flame, Car, Gauge } from "lucide-react";
 import type { WizardData } from "./types";
 
 interface Props {
@@ -99,6 +99,36 @@ export default function WizardStepInstallatie({ data, onChange }: Props) {
             </div>
           </div>
           <Switch checked={data.heeftThuisbatterij} onCheckedChange={v => onChange({ heeftThuisbatterij: v })} />
+        </div>
+
+        {/* Elektrische auto */}
+        <div className="rounded-xl border p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Car className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label>Elektrische auto</Label>
+                <p className="text-xs text-muted-foreground">Of overweegt u er een?</p>
+              </div>
+            </div>
+            <Switch checked={data.heeftElektrischeAuto} onCheckedChange={v => onChange({ heeftElektrischeAuto: v })} />
+          </div>
+          {data.heeftElektrischeAuto && (
+            <div className="pt-2 border-t">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Gauge className="h-3 w-3" />
+                Geschatte kilometers per jaar
+              </Label>
+              <Input
+                type="number"
+                placeholder="bijv. 15000"
+                value={data.kmPerJaar || ""}
+                onChange={e => onChange({ kmPerJaar: parseInt(e.target.value) || null })}
+                className="rounded-xl mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Gemiddeld in Nederland: 12.000–15.000 km/jaar</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

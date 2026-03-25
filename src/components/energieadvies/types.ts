@@ -10,6 +10,8 @@ export interface WizardData {
   dakOppervlakte: number | null;
   aantalPersonen: number | null;
   energielabel: "A++++" | "A+++" | "A++" | "A+" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "onbekend" | "";
+  aansluitwaarde: "1-fase" | "3-fase" | "";
+  isolatieNiveau: "goed" | "matig" | "slecht" | "";
 
   // Stap 2: Huidige installatie
   heeftZonnepanelen: boolean;
@@ -19,6 +21,8 @@ export interface WizardData {
   heeftWarmtepomp: boolean;
   heeftLaadpaal: boolean;
   heeftThuisbatterij: boolean;
+  heeftElektrischeAuto: boolean;
+  kmPerJaar: number | null;
 
   // Stap 3: Verbruik & contract
   jaarverbruikKwh: number | null;
@@ -44,6 +48,9 @@ export interface AdviesResultaat {
   geschatteBesparing?: number;
   geschatteInvestering?: string;
   terugverdientijd?: string;
+  co2BesparingKg?: number;
+  zelfvoorzieningsgraad?: number;
+  prioriteit: "hoog" | "middel" | "laag";
 }
 
 export interface ProductMatch {
@@ -56,8 +63,11 @@ export interface ProductMatch {
   btw_percentage: number | null;
   specs: Record<string, any> | null;
   garantie_jaren: number | null;
-  geschiktheidScore: number; // 0-100
+  geschiktheidScore: number;
   scoreReden: string;
+  matchLabel: "Beste keuze" | "Goede match" | "Alternatief" | "Beperkt geschikt";
+  afbeelding_url: string | null;
+  kernSpecs: Record<string, string>;
 }
 
 export const initialWizardData: WizardData = {
@@ -67,6 +77,8 @@ export const initialWizardData: WizardData = {
   dakOppervlakte: null,
   aantalPersonen: null,
   energielabel: "",
+  aansluitwaarde: "",
+  isolatieNiveau: "",
   heeftZonnepanelen: false,
   zonnepanelenWp: null,
   zonnepanelenLeeftijd: null,
@@ -74,6 +86,8 @@ export const initialWizardData: WizardData = {
   heeftWarmtepomp: false,
   heeftLaadpaal: false,
   heeftThuisbatterij: false,
+  heeftElektrischeAuto: false,
+  kmPerJaar: null,
   jaarverbruikKwh: null,
   gasverbruikM3: null,
   terugleveringKwh: null,
