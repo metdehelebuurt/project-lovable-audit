@@ -441,7 +441,13 @@ export default function OffertePDF() {
 
   const PageFooter = () => (
     <div style={{ borderTop: `2px solid ${pc}`, padding: "12px 0 0", marginTop: "auto", fontSize: 9, color: "#999", textAlign: "center" as const }}>
-      <p style={{ margin: 0 }}>{partner.naam}{partner.adres ? ` • ${partner.adres}` : ""}{partner.postcode || partner.plaats ? ` • ${partner.postcode || ""} ${partner.plaats || ""}` : ""}</p>
+      <p style={{ margin: 0 }}>
+        {partner.naam}
+        {partner.adres ? ` • ${partner.adres}` : ""}
+        {partner.postcode || partner.plaats ? ` • ${partner.postcode || ""} ${partner.plaats || ""}`.trim() : ""}
+        {(partner as any).kvk ? ` • KVK ${(partner as any).kvk}` : ""}
+        {(partner as any).btw ? ` • BTW ${(partner as any).btw}` : ""}
+      </p>
     </div>
   );
 
