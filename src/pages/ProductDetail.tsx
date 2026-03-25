@@ -62,6 +62,7 @@ const ProductDetail = () => {
   const [savingProduct, setSavingProduct] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [savingPdf, setSavingPdf] = useState(false);
+  const [aiDisclaimerOpen, setAiDisclaimerOpen] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
