@@ -43,7 +43,7 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
 
   // Load partner voorwaarden settings
-  useState(() => {
+  useEffect(() => {
     if (!offerte.partner_id) return;
     supabase.from("partners").select("voorwaarden_pdf_url, feature_flags_json").eq("id", offerte.partner_id).single()
       .then(({ data }) => {
@@ -58,7 +58,7 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
           }
         }
       });
-  });
+  }, [offerte.partner_id]);
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
