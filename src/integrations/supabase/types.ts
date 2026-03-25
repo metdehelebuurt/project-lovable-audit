@@ -1480,6 +1480,7 @@ export type Database = {
           telefoonnummer: string | null
           trial_einddatum: string | null
           updated_at: string
+          voorwaarden_pdf_url: string | null
           website: string | null
         }
         Insert: {
@@ -1522,6 +1523,7 @@ export type Database = {
           telefoonnummer?: string | null
           trial_einddatum?: string | null
           updated_at?: string
+          voorwaarden_pdf_url?: string | null
           website?: string | null
         }
         Update: {
@@ -1564,6 +1566,7 @@ export type Database = {
           telefoonnummer?: string | null
           trial_einddatum?: string | null
           updated_at?: string
+          voorwaarden_pdf_url?: string | null
           website?: string | null
         }
         Relationships: []

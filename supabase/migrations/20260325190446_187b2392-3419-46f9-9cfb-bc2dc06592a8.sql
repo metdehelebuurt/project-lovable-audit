@@ -1,0 +1,1 @@
+ALTER TABLE public.partners ADD COLUMN voorwaarden_pdf_url text;

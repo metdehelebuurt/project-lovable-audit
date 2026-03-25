@@ -574,6 +574,7 @@ interface OfferteTemplate {
   voorblad: boolean; productpagina: boolean; energieadvies: boolean; schouwrapport: boolean;
   standaard_garantievoorwaarden: string; standaard_betalingsvoorwaarden: string;
   standaard_installatietermijn: string; badge_1: string; badge_2: string; badge_3: string; akkoord_tekst: string;
+  voorwaarden_standaard_bijvoegen: boolean;
 }
 
 const defaultTemplate: OfferteTemplate = {
@@ -583,23 +584,58 @@ const defaultTemplate: OfferteTemplate = {
   standaard_installatietermijn: "Binnen 4 weken na akkoord",
   badge_1: "Gecertificeerd installateur", badge_2: "Persoonlijk advies", badge_3: "Professionele installatie",
   akkoord_tekst: "",
+  voorwaarden_standaard_bijvoegen: true,
 };
 
 function OfferteTemplateInstellingen({ partnerId }: { partnerId: string }) {
   const [template, setTemplate] = useState<OfferteTemplate>(defaultTemplate);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [voorwaardenUrl, setVoorwaardenUrl] = useState<string | null>(null);
+  const [uploadingVoorwaarden, setUploadingVoorwaarden] = useState(false);
 
   useEffect(() => {
-    supabase.from("partners").select("feature_flags_json").eq("id", partnerId).single()
+    supabase.from("partners").select("feature_flags_json, voorwaarden_pdf_url").eq("id", partnerId).single()
       .then(({ data }) => {
-        if (data?.feature_flags_json && typeof data.feature_flags_json === "object") {
-          const flags = data.feature_flags_json as Record<string, any>;
-          if (flags.offerte_template) setTemplate({ ...defaultTemplate, ...flags.offerte_template });
+        if (data) {
+          if (data.feature_flags_json && typeof data.feature_flags_json === "object") {
+            const flags = data.feature_flags_json as Record<string, any>;
+            if (flags.offerte_template) setTemplate({ ...defaultTemplate, ...flags.offerte_template });
+          }
+          setVoorwaardenUrl((data as any).voorwaarden_pdf_url || null);
         }
         setLoading(false);
       });
   }, [partnerId]);
+
+  const handleVoorwaardenUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") { toast.error("Selecteer een PDF-bestand"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
+    setUploadingVoorwaarden(true);
+    try {
+      const path = `${partnerId}/voorwaarden_${Date.now()}.pdf`;
+      const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
+      if (error) { toast.error("Upload mislukt: " + error.message); setUploadingVoorwaarden(false); return; }
+      const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
+      const { error: updateError } = await supabase.from("partners").update({ voorwaarden_pdf_url: publicUrl } as any).eq("id", partnerId);
+      if (updateError) { toast.error("Fout bij opslaan: " + updateError.message); } else {
+        setVoorwaardenUrl(publicUrl);
+        toast.success("Algemene voorwaarden geüpload");
+      }
+    } catch {
+      toast.error("Onverwachte fout bij uploaden");
+    }
+    setUploadingVoorwaarden(false);
+  };
+
+  const handleRemoveVoorwaarden = async () => {
+    const { error } = await supabase.from("partners").update({ voorwaarden_pdf_url: null } as any).eq("id", partnerId);
+    if (error) { toast.error(error.message); return; }
+    setVoorwaardenUrl(null);
+    toast.success("Algemene voorwaarden verwijderd");
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -655,6 +691,36 @@ function OfferteTemplateInstellingen({ partnerId }: { partnerId: string }) {
         <div className="border-t pt-4">
           <Label>Akkoordsectie tekst (optioneel)</Label>
           <Textarea value={template.akkoord_tekst} onChange={e => update("akkoord_tekst", e.target.value)} className="rounded-xl mt-1" rows={2} placeholder="Extra tekst boven de handtekeningsectie..." />
+        </div>
+        <div className="border-t pt-4 space-y-4">
+          <p className="text-sm font-medium text-foreground">Algemene voorwaarden</p>
+          <p className="text-xs text-muted-foreground">Upload uw algemene voorwaarden als PDF. Deze kunnen bij het versturen van offertes automatisch worden bijgevoegd als downloadlink.</p>
+          <div className="flex items-center gap-4">
+            {voorwaardenUrl ? (
+              <div className="flex items-center gap-3 rounded-xl border p-3 flex-1">
+                <FileText className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Algemene voorwaarden.pdf</p>
+                  <a href={voorwaardenUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Bekijken →</a>
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleRemoveVoorwaarden} className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex-1">
+                <Input type="file" accept="application/pdf" onChange={handleVoorwaardenUpload} disabled={uploadingVoorwaarden} className="text-sm" />
+                <p className="text-xs text-muted-foreground mt-1">Max 10MB, alleen PDF</p>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <p className="text-sm font-medium">Standaard bijvoegen bij offertes</p>
+              <p className="text-xs text-muted-foreground">Automatisch een link naar de voorwaarden toevoegen bij het versturen</p>
+            </div>
+            <Switch checked={template.voorwaarden_standaard_bijvoegen} onCheckedChange={v => update("voorwaarden_standaard_bijvoegen", v)} disabled={!voorwaardenUrl} />
+          </div>
         </div>
         <Button onClick={handleSave} disabled={saving}>{saving ? "Opslaan..." : "Template opslaan"}</Button>
       </CardContent>

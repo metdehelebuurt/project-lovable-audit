@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,10 +35,30 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
   const [subject, setSubject] = useState(`Offerte ${offerte.offertenummer} — ${partnerNaam || "Uw adviseur"}`);
   const [includeAcceptLink, setIncludeAcceptLink] = useState(true);
   const [includePortalLink, setIncludePortalLink] = useState(true);
+  const [includeVoorwaarden, setIncludeVoorwaarden] = useState(false);
+  const [voorwaardenUrl, setVoorwaardenUrl] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
+
+  // Load partner voorwaarden settings
+  useEffect(() => {
+    if (!offerte.partner_id) return;
+    supabase.from("partners").select("voorwaarden_pdf_url, feature_flags_json").eq("id", offerte.partner_id).single()
+      .then(({ data }) => {
+        if (data) {
+          const url = (data as any).voorwaarden_pdf_url || null;
+          setVoorwaardenUrl(url);
+          if (url && data.feature_flags_json && typeof data.feature_flags_json === "object") {
+            const flags = data.feature_flags_json as Record<string, any>;
+            if (flags.offerte_template?.voorwaarden_standaard_bijvoegen) {
+              setIncludeVoorwaarden(true);
+            }
+          }
+        }
+      });
+  }, [offerte.partner_id]);
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
@@ -88,6 +108,9 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
       }
       if (includePortalLink && portalUrl) {
         linksHtml += `<p><a href="${portalUrl}" style="color:#5B58E1;text-decoration:underline;">Bekijk uw interactieve offertepagina →</a></p>`;
+      }
+      if (includeVoorwaarden && voorwaardenUrl) {
+        linksHtml += `<hr style="border:none;border-top:1px solid #eee;margin:16px 0;" /><p style="font-size:13px;color:#666;">📎 <a href="${voorwaardenUrl}" target="_blank" style="color:#5B58E1;text-decoration:underline;">Download onze algemene voorwaarden (PDF)</a></p>`;
       }
 
       const fullHtml = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">${htmlBody}${linksHtml}</div>`;
@@ -241,6 +264,18 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
                 Interactieve offertepagina bijvoegen
               </Label>
             </div>
+            {voorwaardenUrl && (
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="voorwaarden-link"
+                  checked={includeVoorwaarden}
+                  onCheckedChange={(c) => setIncludeVoorwaarden(!!c)}
+                />
+                <Label htmlFor="voorwaarden-link" className="text-sm cursor-pointer">
+                  Algemene voorwaarden bijvoegen (PDF-link)
+                </Label>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Paperclip className="h-3.5 w-3.5" />
               <span>PDF offerte wordt als bijlage bijgevoegd</span>
