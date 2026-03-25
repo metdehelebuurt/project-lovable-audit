@@ -622,7 +622,8 @@ export default function OffertePDF() {
                 </div>
                 <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "16px 20px" }}>
                   <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: pc, margin: "0 0 8px" }}>Opgesteld door</p>
-                  <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{partner.naam}</p>
+                  <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{adviseurNaam}</p>
+                  <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.naam}</p>
                   {partner.email && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.email}</p>}
                 </div>
               </div>
