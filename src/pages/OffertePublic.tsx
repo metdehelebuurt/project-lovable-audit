@@ -146,6 +146,33 @@ export default function OffertePublic() {
     setAccepting(false);
   };
 
+  const handleReject = async () => {
+    setRejecting(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("offerte-reject", {
+        body: { share_token: token, reden: rejectReden, categorie: rejectCategorie },
+      });
+      if (fnErr || data?.error) {
+        toast.error(data?.error || fnErr?.message || "Er is een fout opgetreden");
+      } else {
+        setOfferte((prev: any) => ({ ...prev, status: "afgewezen" }));
+        toast.success("Offerte afgewezen");
+        setRejectDialog(false);
+      }
+    } catch {
+      toast.error("Er is een fout opgetreden");
+    }
+    setRejecting(false);
+  };
+
+  const categorieOptions: Record<string, string> = {
+    prijs: "Prijs te hoog",
+    concurrent: "Concurrent gekozen",
+    geen_behoefte: "Geen behoefte meer",
+    timing: "Timing niet goed",
+    overig: "Overig",
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
