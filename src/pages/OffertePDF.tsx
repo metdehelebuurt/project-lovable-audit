@@ -562,6 +562,12 @@ export default function OffertePDF() {
               klantPlaats={offerte.klant_plaats || null}
               heroImageUrl={config.hero_image_url || null}
               heroTitle={config.hero_title || "Offerte"}
+              logoUrlDark={(() => {
+                const variant = config.voorblad_logo_variant || "auto";
+                if (variant === "light") return undefined;
+                if (variant === "dark") return logoUrlDonker || logoUrl;
+                return logoUrlDonker;
+              })()}
             />
           </div>
         );
