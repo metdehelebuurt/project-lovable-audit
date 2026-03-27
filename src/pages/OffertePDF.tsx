@@ -192,7 +192,7 @@ const sectionToggleKeys: Record<string, keyof TemplateConfig> = {
 const platformBranding: PartnerBranding = {
   naam: "mijnhuis.nu", adres: null, postcode: null, plaats: null,
   email: "info@mijnhuis.nu", telefoonnummer: null, kvk: null, btw: null,
-  website: "www.mijnhuis.nu", logo_url: null,
+  website: "www.mijnhuis.nu", logo_url: null, logo_url_donker: null,
   primaire_kleur: "#5B58E1", secundaire_kleur: "#1a1a2e",
   bedrijfsslogan: "Slim verduurzamen begint hier",
 };
