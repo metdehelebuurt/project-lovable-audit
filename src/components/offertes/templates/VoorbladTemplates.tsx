@@ -159,7 +159,8 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
    3 — HERO MINIMAL
    ════════════════════════════════════════════════════════════ */
 export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, introTekst, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, introTekst, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const displayLogo = heroImageUrl ? (logoUrlDark || logoUrl) : logoUrl;
 
   return (
     <div style={{ ...rootStyle, padding: "80px 64px" }}>
@@ -171,7 +172,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
 
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 72, position: "relative", zIndex: 1 }}>
-        {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 44, objectFit: "contain" }} />}
+        {displayLogo && <img src={displayLogo} alt={partnerNaam} style={{ height: 44, objectFit: "contain" }} />}
         <div style={{ textAlign: "right", fontSize: 12, color: "#999" }}>
           <p style={{ margin: "3px 0" }}>{offertenummer}</p>
           <p style={{ margin: "3px 0" }}>{datum}</p>

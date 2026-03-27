@@ -65,6 +65,7 @@ interface PartnerBranding {
   btw: string | null;
   website: string | null;
   logo_url: string | null;
+  logo_url_donker: string | null;
   primaire_kleur: string;
   secundaire_kleur: string;
   bedrijfsslogan: string | null;
@@ -191,7 +192,7 @@ const sectionToggleKeys: Record<string, keyof TemplateConfig> = {
 const platformBranding: PartnerBranding = {
   naam: "mijnhuis.nu", adres: null, postcode: null, plaats: null,
   email: "info@mijnhuis.nu", telefoonnummer: null, kvk: null, btw: null,
-  website: "www.mijnhuis.nu", logo_url: null,
+  website: "www.mijnhuis.nu", logo_url: null, logo_url_donker: null,
   primaire_kleur: "#5B58E1", secundaire_kleur: "#1a1a2e",
   bedrijfsslogan: "Slim verduurzamen begint hier",
 };
@@ -359,8 +360,8 @@ export default function OffertePDF() {
     ? (partner.logo_url.startsWith("http") ? partner.logo_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url}`)
     : null;
 
-  const logoUrlDonker = (partner as any).logo_url_donker
-    ? ((partner as any).logo_url_donker.startsWith("http") ? (partner as any).logo_url_donker : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${(partner as any).logo_url_donker}`)
+  const logoUrlDonker = partner.logo_url_donker
+    ? (partner.logo_url_donker.startsWith("http") ? partner.logo_url_donker : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url_donker}`)
     : null;
 
   const mainCategory = producten.length > 0 ? producten[0].categorie : null;
@@ -454,8 +455,8 @@ export default function OffertePDF() {
         {partner.naam}
         {partner.adres ? ` • ${partner.adres}` : ""}
         {partner.postcode || partner.plaats ? ` • ${partner.postcode || ""} ${partner.plaats || ""}`.trim() : ""}
-        {(partner as any).kvk ? ` • KVK ${(partner as any).kvk}` : ""}
-        {(partner as any).btw ? ` • BTW ${(partner as any).btw}` : ""}
+        {partner.kvk ? ` • KVK ${partner.kvk}` : ""}
+        {partner.btw ? ` • BTW ${partner.btw}` : ""}
       </p>
     </div>
   );
