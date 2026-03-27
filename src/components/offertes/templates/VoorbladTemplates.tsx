@@ -172,7 +172,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
 
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 72, position: "relative", zIndex: 1 }}>
-        {logoUrl && <img src={logoUrl} alt={partnerNaam} style={{ height: 44, objectFit: "contain" }} />}
+        {displayLogo && <img src={displayLogo} alt={partnerNaam} style={{ height: 44, objectFit: "contain" }} />}
         <div style={{ textAlign: "right", fontSize: 12, color: "#999" }}>
           <p style={{ margin: "3px 0" }}>{offertenummer}</p>
           <p style={{ margin: "3px 0" }}>{datum}</p>
