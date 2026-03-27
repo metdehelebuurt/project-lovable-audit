@@ -1,33 +1,41 @@
 
 
-## Plan: Logo op donkere achtergronden correct tonen in PDF offertes
+## Plan: Voorblad toont verkeerd product — volgorde corrigeren
 
 ### Probleem
 
-1. **`PartnerBranding` interface** mist `logo_url_donker` — wordt nu via `(partner as any)` benaderd, fragiel.
-2. **HeroMinimal** template destructuret `logoUrlDark` niet en gebruikt altijd het reguliere logo — ook als de achtergrond donker is (bijv. bij hero image met overlay).
-3. **HeroPhoto** top-sectie heeft altijd een donkere achtergrond (gradient of image+overlay) maar valt correct terug op `darkLogo`. Dit is OK.
-4. **HeroDark**, **HeroSplit**, **HeroGradient** gebruiken `darkLogo = logoUrlDark || logoUrl` — correct, maar als geen donker logo is geüpload werkt de fallback niet goed bij logo's die slecht zichtbaar zijn op donker.
+Op regel 260-263 worden producten opgehaald met `.in("id", productIds)`, wat **geen vaste volgorde** garandeert. Het eerste product in de array (`producten[0]`) wordt op het voorblad getoond (regel 552), maar dat is niet per se het eerste product uit de offerte-regels.
 
-### Wijzigingen
+### Oplossing
 
-#### 1. `PartnerBranding` interface uitbreiden (`OffertePDF.tsx`)
-- Voeg `logo_url_donker: string | null` toe aan de interface
-- Verwijder alle `(partner as any).logo_url_donker` casts
+Na het ophalen van producten, sorteer ze in dezelfde volgorde als de `regels` array. De eerste regel in de offerte is het hoofdproduct en moet op het voorblad staan.
 
-#### 2. HeroMinimal template fixen (`VoorbladTemplates.tsx`)
-- Destructure `logoUrlDark` in HeroMinimal
-- Wanneer `heroImageUrl` aanwezig is (donkere overlay achtergrond): gebruik `logoUrlDark || logoUrl`
-- Wanneer geen hero image: gebruik `logoUrl` (lichte achtergrond)
+### Wijziging
 
-#### 3. Alle templates consistenter maken
-- Controleer dat elk template met donkere achtergrond altijd `logoUrlDark || logoUrl` gebruikt
-- Controleer dat templates met lichte achtergrond altijd `logoUrl` gebruiken
+**`src/pages/OffertePDF.tsx`** (regel 262-263):
+
+Huidige code:
+```typescript
+const { data: prods } = await supabase.from("producten").select("*").in("id", productIds);
+if (prods) setProducten(prods);
+```
+
+Nieuwe code:
+```typescript
+const { data: prods } = await supabase.from("producten").select("*").in("id", productIds);
+if (prods) {
+  // Sorteer producten in dezelfde volgorde als de offerte-regels
+  const orderMap = new Map(productIds.map((id, i) => [id, i]));
+  prods.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
+  setProducten(prods);
+}
+```
+
+Dit zorgt ervoor dat `producten[0]` altijd het eerste product uit de offerte-regels is — het hoofdproduct dat op het voorblad hoort.
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/pages/OffertePDF.tsx` | `logo_url_donker` toevoegen aan `PartnerBranding`, `(partner as any)` casts verwijderen |
-| `src/components/offertes/templates/VoorbladTemplates.tsx` | HeroMinimal: `logoUrlDark` ondersteuning toevoegen met context-aware selectie |
+| `src/pages/OffertePDF.tsx` | Producten sorteren op volgorde van offerte-regels |
 
