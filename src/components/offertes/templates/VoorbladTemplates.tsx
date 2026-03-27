@@ -159,7 +159,8 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
    3 — HERO MINIMAL
    ════════════════════════════════════════════════════════════ */
 export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, introTekst, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, introTekst, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const displayLogo = heroImageUrl ? (logoUrlDark || logoUrl) : logoUrl;
 
   return (
     <div style={{ ...rootStyle, padding: "80px 64px" }}>

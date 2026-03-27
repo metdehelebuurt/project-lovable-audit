@@ -455,8 +455,8 @@ export default function OffertePDF() {
         {partner.naam}
         {partner.adres ? ` • ${partner.adres}` : ""}
         {partner.postcode || partner.plaats ? ` • ${partner.postcode || ""} ${partner.plaats || ""}`.trim() : ""}
-        {(partner as any).kvk ? ` • KVK ${(partner as any).kvk}` : ""}
-        {(partner as any).btw ? ` • BTW ${(partner as any).btw}` : ""}
+        {partner.kvk ? ` • KVK ${partner.kvk}` : ""}
+        {partner.btw ? ` • BTW ${partner.btw}` : ""}
       </p>
     </div>
   );
