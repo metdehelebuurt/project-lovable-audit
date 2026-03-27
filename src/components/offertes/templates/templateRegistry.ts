@@ -84,6 +84,8 @@ export type TemplateConfig = {
   // Hero customization
   hero_image_url?: string;
   hero_title?: string;
+  // Logo variant: 'auto' (default, context-aware), 'light', 'dark'
+  voorblad_logo_variant?: "auto" | "light" | "dark";
   // Section ordering
   section_order?: string[];
 };
