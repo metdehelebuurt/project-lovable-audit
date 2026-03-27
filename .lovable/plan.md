@@ -1,40 +1,33 @@
 
 
-## Plan: Kanban view verbeteren — meer kolommen zichtbaar zonder scrollen
+## Plan: Logo op donkere achtergronden correct tonen in PDF offertes
 
 ### Probleem
 
-Er zijn **10 kanbankolommen** met `min-w-[260px]` en `minWidth: 2800px`. Op een 2011px scherm passen er maximaal 7, op een laptop (1440px) slechts 5. Horizontaal scrollen is onvermijdelijk en onhandig.
+1. **`PartnerBranding` interface** mist `logo_url_donker` — wordt nu via `(partner as any)` benaderd, fragiel.
+2. **HeroMinimal** template destructuret `logoUrlDark` niet en gebruikt altijd het reguliere logo — ook als de achtergrond donker is (bijv. bij hero image met overlay).
+3. **HeroPhoto** top-sectie heeft altijd een donkere achtergrond (gradient of image+overlay) maar valt correct terug op `darkLogo`. Dit is OK.
+4. **HeroDark**, **HeroSplit**, **HeroGradient** gebruiken `darkLogo = logoUrlDark || logoUrl` — correct, maar als geen donker logo is geüpload werkt de fallback niet goed bij logo's die slecht zichtbaar zijn op donker.
 
-### Oplossing: twee aanpassingen
+### Wijzigingen
 
-#### 1. Kolommen groeperen in fases (standaard)
+#### 1. `PartnerBranding` interface uitbreiden (`OffertePDF.tsx`)
+- Voeg `logo_url_donker: string | null` toe aan de interface
+- Verwijder alle `(partner as any).logo_url_donker` casts
 
-Reduceer van 10 naar **5 groepen** die altijd zonder scrollen passen:
+#### 2. HeroMinimal template fixen (`VoorbladTemplates.tsx`)
+- Destructure `logoUrlDark` in HeroMinimal
+- Wanneer `heroImageUrl` aanwezig is (donkere overlay achtergrond): gebruik `logoUrlDark || logoUrl`
+- Wanneer geen hero image: gebruik `logoUrl` (lichte achtergrond)
 
-| Groep | Statussen | Kleur |
-|-------|-----------|-------|
-| Nieuw | `nieuw` | primary |
-| Contact | `contact_geprobeerd`, `geen_gehoor`, `terugbellen`, `gesproken` | sky |
-| Gekwalificeerd | `afspraak_gepland`, `gekwalificeerd` | emerald |
-| Offerte | `offerte_verzonden` | amber |
-| Afgerond | `klant`, `verloren` | green/red |
-
-Binnen een gegroepeerde kolom wordt de substatus als kleurlabel op elke kaart getoond. Drag-and-drop opent een kleine dropdown om de exacte substatus te kiezen als de doelgroep meerdere statussen bevat.
-
-#### 2. Compactere kaarten + responsive kolombreedtes
-
-- Verwijder `min-w-[260px]` en `max-w-[320px]`, gebruik `flex-1` met `gap-3` zodat kolommen de beschikbare ruimte vullen.
-- Kaarten compacter: verberg email/telefoon/plaats standaard, toon alleen naam + bedrijf + bron-badge. Hover toont extra info via tooltip.
-- Verwijder de `minWidth` inline style die horizontale scroll forceert.
-
-#### 3. Toggle gedetailleerd/compact
-
-Voeg een kleine toggle toe (bijv. "Gegroepeerd / Uitgebreid") zodat gebruikers die alle 10 kolommen willen zien dat nog steeds kunnen, maar standaard de 5-kolom weergave krijgen.
+#### 3. Alle templates consistenter maken
+- Controleer dat elk template met donkere achtergrond altijd `logoUrlDark || logoUrl` gebruikt
+- Controleer dat templates met lichte achtergrond altijd `logoUrl` gebruiken
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/pages/Leads.tsx` | Kanban kolommen groeperen, responsive flex layout, compactere kaarten, toggle |
+| `src/pages/OffertePDF.tsx` | `logo_url_donker` toevoegen aan `PartnerBranding`, `(partner as any)` casts verwijderen |
+| `src/components/offertes/templates/VoorbladTemplates.tsx` | HeroMinimal: `logoUrlDark` ondersteuning toevoegen met context-aware selectie |
 
