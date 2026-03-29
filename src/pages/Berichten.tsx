@@ -460,20 +460,38 @@ const Berichten = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Berichten</h1>
-        <p className="text-muted-foreground mt-1">Support tickets en klantberichten</p>
+        <h1 className="text-2xl font-semibold text-foreground">Berichten & E-mail</h1>
+        <p className="text-muted-foreground mt-1">E-mail inbox, verzonden berichten, templates en support</p>
       </div>
 
       {isPartnerRole ? (
-        <Tabs defaultValue="klantberichten" className="space-y-4">
-          <TabsList>
+        <Tabs defaultValue="inbox" className="space-y-4">
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="inbox" className="gap-1.5">
+              <Inbox className="h-3.5 w-3.5" /> Inbox
+            </TabsTrigger>
+            <TabsTrigger value="verzonden" className="gap-1.5">
+              <MailCheck className="h-3.5 w-3.5" /> Verzonden
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="gap-1.5">
+              <LayoutTemplate className="h-3.5 w-3.5" /> Templates
+            </TabsTrigger>
             <TabsTrigger value="klantberichten" className="gap-1.5">
               <MessageSquare className="h-3.5 w-3.5" /> Klantberichten
             </TabsTrigger>
             <TabsTrigger value="tickets" className="gap-1.5">
-              <FileText className="h-3.5 w-3.5" /> Support tickets
+              <FileText className="h-3.5 w-3.5" /> Support
             </TabsTrigger>
           </TabsList>
+          <TabsContent value="inbox">
+            <EmailInbox />
+          </TabsContent>
+          <TabsContent value="verzonden">
+            <EmailLog />
+          </TabsContent>
+          <TabsContent value="templates">
+            <EmailTemplates />
+          </TabsContent>
           <TabsContent value="klantberichten">
             <KlantBerichtenTab />
           </TabsContent>
