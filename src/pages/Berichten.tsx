@@ -18,11 +18,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Send, ArrowLeft, MessageSquare, FileText } from "lucide-react";
+import { Plus, Search, Send, ArrowLeft, MessageSquare, FileText, Inbox, MailCheck, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import type { Database, Json } from "@/integrations/supabase/types";
+import EmailInbox from "@/components/email/EmailInbox";
+import EmailLog from "@/components/email/EmailLog";
+import EmailTemplates from "@/components/email/EmailTemplates";
 
 type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 type TicketPrioriteit = Database["public"]["Enums"]["ticket_prioriteit"];
