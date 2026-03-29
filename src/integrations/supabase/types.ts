@@ -468,6 +468,87 @@ export type Database = {
           },
         ]
       }
+      email_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          html_body: string | null
+          id: string
+          imap_saved: boolean | null
+          offerte_id: string | null
+          onderwerp: string
+          ontvanger_email: string
+          partner_id: string
+          status: string
+          type: string
+          verzonden_door_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          html_body?: string | null
+          id?: string
+          imap_saved?: boolean | null
+          offerte_id?: string | null
+          onderwerp: string
+          ontvanger_email: string
+          partner_id: string
+          status?: string
+          type?: string
+          verzonden_door_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          html_body?: string | null
+          id?: string
+          imap_saved?: boolean | null
+          offerte_id?: string | null
+          onderwerp?: string
+          ontvanger_email?: string
+          partner_id?: string
+          status?: string
+          type?: string
+          verzonden_door_id?: string | null
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          created_at: string
+          html_body: string
+          id: string
+          naam: string
+          onderwerp: string
+          partner_id: string
+          standaard: boolean | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          html_body: string
+          id?: string
+          naam: string
+          onderwerp: string
+          partner_id: string
+          standaard?: boolean | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          html_body?: string
+          id?: string
+          naam?: string
+          onderwerp?: string
+          partner_id?: string
+          standaard?: boolean | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       installaties: {
         Row: {
           consument_id: string | null
@@ -1467,6 +1548,11 @@ export type Database = {
           email: string | null
           feature_flags_json: Json | null
           id: string
+          imap_host: string | null
+          imap_pass_encrypted: string | null
+          imap_port: number | null
+          imap_use_ssl: boolean | null
+          imap_user: string | null
           kvk: string | null
           lead_bronnen: Json | null
           licentie_adviseurs: number | null
@@ -1511,6 +1597,11 @@ export type Database = {
           email?: string | null
           feature_flags_json?: Json | null
           id?: string
+          imap_host?: string | null
+          imap_pass_encrypted?: string | null
+          imap_port?: number | null
+          imap_use_ssl?: boolean | null
+          imap_user?: string | null
           kvk?: string | null
           lead_bronnen?: Json | null
           licentie_adviseurs?: number | null
@@ -1555,6 +1646,11 @@ export type Database = {
           email?: string | null
           feature_flags_json?: Json | null
           id?: string
+          imap_host?: string | null
+          imap_pass_encrypted?: string | null
+          imap_port?: number | null
+          imap_use_ssl?: boolean | null
+          imap_user?: string | null
           kvk?: string | null
           lead_bronnen?: Json | null
           licentie_adviseurs?: number | null
