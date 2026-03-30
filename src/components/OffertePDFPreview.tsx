@@ -169,6 +169,9 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
   const logoUrl = partner.logo_url
     ? (partner.logo_url.startsWith("http") ? partner.logo_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url}`)
     : null;
+  const logoUrlDonker = partner.logo_url_donker
+    ? (partner.logo_url_donker.startsWith("http") ? partner.logo_url_donker : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url_donker}`)
+    : null;
 
   const mainCategory = producten.length > 0 ? producten[0].categorie : null;
   const categoryLabel = mainCategory ? (categoryLabels[mainCategory] || mainCategory) : null;
