@@ -241,6 +241,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     prijstabel_variant: (templateConfig?.prijstabel as string) || "price-modern",
     energieadvies_variant: (templateConfig?.energieadvies as string) || "energy-cards",
     voorwaarden_variant: (templateConfig?.voorwaarden as string) || "terms-simple",
+    voorblad_logo_variant: (templateConfig?.voorblad_logo_variant as string) || "auto",
   };
 
   const sectionOrder: string[] = templateConfig?.section_order || DEFAULT_SECTION_ORDER;
