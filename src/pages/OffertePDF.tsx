@@ -932,32 +932,32 @@ export default function OffertePDF() {
                   </div>
 
                   {/* Logo variant selector */}
-                  {logoUrlDonker && (
-                    <div>
-                      <Label className="text-xs flex items-center gap-1 mb-1.5"><ImageIcon className="h-3 w-3" /> Logo variant voorblad</Label>
-                      <div className="flex gap-1.5">
-                        {([
-                          { value: "auto", label: "Automatisch" },
-                          { value: "light", label: "Licht logo" },
-                          { value: "dark", label: "Donker logo" },
-                        ] as const).map(opt => (
-                          <Button
-                            key={opt.value}
-                            type="button"
-                            variant={(config.voorblad_logo_variant || "auto") === opt.value ? "default" : "outline"}
-                            size="sm"
-                            className="h-7 text-[11px] flex-1"
-                            onClick={() => setConfig(p => ({ ...p, voorblad_logo_variant: opt.value }))}
-                          >
-                            {opt.label}
-                          </Button>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Automatisch kiest het juiste logo op basis van de achtergrond.
-                      </p>
+                  <div>
+                    <Label className="text-xs flex items-center gap-1 mb-1.5"><ImageIcon className="h-3 w-3" /> Logo variant voorblad</Label>
+                    <div className="flex gap-1.5">
+                      {([
+                        { value: "auto", label: "Automatisch" },
+                        { value: "light", label: "Licht logo" },
+                        { value: "dark", label: "Donker logo" },
+                      ] as const).map(opt => (
+                        <Button
+                          key={opt.value}
+                          type="button"
+                          variant={(config.voorblad_logo_variant || "auto") === opt.value ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 text-[11px] flex-1"
+                          onClick={() => setConfig(p => ({ ...p, voorblad_logo_variant: opt.value }))}
+                        >
+                          {opt.label}
+                        </Button>
+                      ))}
                     </div>
-                  )}
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {logoUrlDonker
+                        ? "Automatisch kiest het juiste logo op basis van de achtergrond."
+                        : "Upload een donker logo in Instellingen voor optimale weergave op donkere achtergronden."}
+                    </p>
+                  </div>
 
                   {/* Hero image upload + gallery */}
                   <div>
