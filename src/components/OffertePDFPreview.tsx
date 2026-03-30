@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -508,56 +508,53 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       case "datasheets": {
         const dsProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd" || (p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0));
         if (dsProducts.length === 0) return null;
-        return (
-          <div key="datasheets">
-            {producten.filter(p => p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0).map(p => {
-              const specs = p.specs as Record<string, any>;
-              const specEntries = Object.entries(specs).filter(([, v]) => v !== null && v !== undefined && v !== "");
-              if (specEntries.length === 0) return null;
-              pageNum++;
-              return (
-                <div key={`specs-${p.id}`} className="pdf-page" style={pageStyle}>
-                  <PageHeader />
-                  <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Technische specificaties</h2>
-                    <p style={{ fontSize: 14, color: "#666", margin: "0 0 4px" }}>{p.merk ? `${p.merk} ` : ""}{p.model || p.naam}</p>
-                    <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-                      {specEntries.map(([key, val], i) => (
-                        <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", backgroundColor: i % 4 < 2 ? "#fff" : pcTint, borderBottom: "1px solid #f0f0f0" }}>
-                          <span style={{ fontSize: 11, color: "#666", fontWeight: 500 }}>{key.replace(/_/g, " ")}</span>
-                          <span style={{ fontSize: 11, color: sc, fontWeight: 700 }}>{String(val)}</span>
-                        </div>
-                      ))}
+        const datasheetPages: React.ReactNode[] = [];
+        producten.filter(p => p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0).forEach(p => {
+          const specs = p.specs as Record<string, any>;
+          const specEntries = Object.entries(specs).filter(([, v]) => v !== null && v !== undefined && v !== "");
+          if (specEntries.length === 0) return;
+          pageNum++;
+          datasheetPages.push(
+            <div key={`specs-${p.id}`} className="pdf-page" style={pageStyle}>
+              <PageHeader />
+              <div style={{ flex: 1 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Technische specificaties</h2>
+                <p style={{ fontSize: 14, color: "#666", margin: "0 0 4px" }}>{p.merk ? `${p.merk} ` : ""}{p.model || p.naam}</p>
+                <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                  {specEntries.map(([key, val], i) => (
+                    <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", backgroundColor: i % 4 < 2 ? "#fff" : pcTint, borderBottom: "1px solid #f0f0f0" }}>
+                      <span style={{ fontSize: 11, color: "#666", fontWeight: 500 }}>{key.replace(/_/g, " ")}</span>
+                      <span style={{ fontSize: 11, color: sc, fontWeight: 700 }}>{String(val)}</span>
                     </div>
-                  </div>
-                  <PageFooter />
+                  ))}
                 </div>
-              );
-            })}
-            {dsProducts.map(p => {
-              if (p.datasheet_type === "fabrikant" && p.datasheet_url) {
-                const dsUrl = p.datasheet_url.startsWith("http") ? p.datasheet_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${p.datasheet_url}`;
-                pageNum++;
-                return (
-                  <div key={`ds-${p.id}`} className="pdf-page" style={{ ...pageStyle, padding: 0 }}>
-                    <iframe src={dsUrl} title={`Datasheet ${p.naam}`} style={{ width: "100%", height: "100%", border: "none", minHeight: "297mm" }} />
-                  </div>
-                );
-              }
-              if (p.datasheet_type === "gegenereerd") {
-                const specs = p.specs && typeof p.specs === "object" && !Array.isArray(p.specs) ? (p.specs as Record<string, string>) : null;
-                pageNum++;
-                return (
-                  <div key={`ds-${p.id}`} className="pdf-page" style={{ margin: "0 auto", pageBreakAfter: "always" }}>
-                    <ProductDatasheet product={{ naam: p.naam, merk: p.merk, model: p.model, categorie: p.categorie, omschrijving: p.omschrijving, afbeelding_url: p.afbeelding_url, specs, certificeringen: p.certificeringen, garantie_jaren: p.garantie_jaren, prijs_excl_btw: p.prijs_excl_btw, onderhoud: p.onderhoud, installatie_instructies: p.installatie_instructies }} partner={partner} />
-                  </div>
-                );
-              }
-              return null;
-            })}
-          </div>
-        );
+              </div>
+              <PageFooter />
+            </div>
+          );
+        });
+        dsProducts.forEach(p => {
+          if (p.datasheet_type === "fabrikant" && p.datasheet_url) {
+            const dsUrl = p.datasheet_url.startsWith("http") ? p.datasheet_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${p.datasheet_url}`;
+            pageNum++;
+            datasheetPages.push(
+              <div key={`ds-${p.id}`} className="pdf-page" style={{ ...pageStyle, padding: 0 }}>
+                <iframe src={dsUrl} title={`Datasheet ${p.naam}`} style={{ width: "100%", height: "100%", border: "none", minHeight: "297mm" }} />
+              </div>
+            );
+          } else if (p.datasheet_type === "gegenereerd") {
+            const specs = p.specs && typeof p.specs === "object" && !Array.isArray(p.specs) ? (p.specs as Record<string, string>) : null;
+            pageNum++;
+            datasheetPages.push(
+              <div key={`ds-${p.id}`} className="pdf-page" style={{ margin: "0 auto", pageBreakAfter: "always" }}>
+                <ProductDatasheet product={{ naam: p.naam, merk: p.merk, model: p.model, categorie: p.categorie, omschrijving: p.omschrijving, afbeelding_url: p.afbeelding_url, specs, certificeringen: p.certificeringen, garantie_jaren: p.garantie_jaren, prijs_excl_btw: p.prijs_excl_btw, onderhoud: p.onderhoud, installatie_instructies: p.installatie_instructies }} partner={partner} />
+              </div>
+            );
+          }
+        });
+        if (datasheetPages.length === 0) return null;
+        return <React.Fragment key="datasheets">{datasheetPages}</React.Fragment>;
       }
 
       default:
@@ -573,7 +570,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
           .no-print { display: none !important; }
           .pdf-page { page-break-after: always; break-after: page; }
-          .pdf-page:last-child { page-break-after: avoid; break-after: avoid; }
+          .pdf-page:last-of-type { page-break-after: avoid; break-after: avoid; }
         }
         @media screen {
           .pdf-page { margin-bottom: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
@@ -592,7 +589,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         </div>
       )}
 
-      {sectionOrder.map(sectionId => renderSection(sectionId))}
+      {sectionOrder.map(sectionId => renderSection(sectionId)).filter(Boolean)}
     </>
   );
 }
