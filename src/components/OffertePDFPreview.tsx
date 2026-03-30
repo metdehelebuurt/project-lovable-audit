@@ -127,7 +127,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       }
 
       if (o.partner_id) {
-        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
+        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
         if (p) {
           setPartner(p as PartnerBranding);
           if (p.feature_flags_json && typeof p.feature_flags_json === "object") {
