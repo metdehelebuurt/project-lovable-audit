@@ -1,41 +1,32 @@
 
 
-## Plan: Voorblad toont verkeerd product — volgorde corrigeren
+## Plan: Logo-variant doorvoeren in PDF preview
 
 ### Probleem
 
-Op regel 260-263 worden producten opgehaald met `.in("id", productIds)`, wat **geen vaste volgorde** garandeert. Het eerste product in de array (`producten[0]`) wordt op het voorblad getoond (regel 552), maar dat is niet per se het eerste product uit de offerte-regels.
+De logo-variant keuze (auto/licht/donker) werkt alleen in de **editor** (`OffertePDF.tsx`), maar niet in de **PDF preview** (`OffertePDFPreview.tsx`) die gebruikt wordt voor printen/delen. Twee problemen:
 
-### Oplossing
+1. `OffertePDFPreview.tsx` haalt `logo_url_donker` niet op uit de database (ontbreekt in de SELECT query, regel 129)
+2. Het voorblad-component krijgt geen `logoUrlDark` prop en de `voorblad_logo_variant` config wordt niet toegepast (regel 344)
 
-Na het ophalen van producten, sorteer ze in dezelfde volgorde als de `regels` array. De eerste regel in de offerte is het hoofdproduct en moet op het voorblad staan.
+### Wijzigingen
 
-### Wijziging
+**`src/components/OffertePDFPreview.tsx`**:
 
-**`src/pages/OffertePDF.tsx`** (regel 262-263):
-
-Huidige code:
-```typescript
-const { data: prods } = await supabase.from("producten").select("*").in("id", productIds);
-if (prods) setProducten(prods);
-```
-
-Nieuwe code:
-```typescript
-const { data: prods } = await supabase.from("producten").select("*").in("id", productIds);
-if (prods) {
-  // Sorteer producten in dezelfde volgorde als de offerte-regels
-  const orderMap = new Map(productIds.map((id, i) => [id, i]));
-  prods.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
-  setProducten(prods);
-}
-```
-
-Dit zorgt ervoor dat `producten[0]` altijd het eerste product uit de offerte-regels is — het hoofdproduct dat op het voorblad hoort.
+1. **PartnerBranding interface** — `logo_url_donker` toevoegen
+2. **Database query** (regel 129) — `logo_url_donker` toevoegen aan de SELECT
+3. **Logo URL resolutie** (na regel 170) — `logoUrlDonker` variabele aanmaken, zelfde logica als `logoUrl`
+4. **Voorblad render** (regel 344) — `logoUrlDark` prop toevoegen met dezelfde variant-logica als in de editor:
+   ```
+   const variant = tc.voorblad_logo_variant || "auto";
+   if (variant === "light") → undefined
+   if (variant === "dark") → logoUrlDonker || logoUrl
+   default ("auto") → logoUrlDonker
+   ```
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/pages/OffertePDF.tsx` | Producten sorteren op volgorde van offerte-regels |
+| `src/components/OffertePDFPreview.tsx` | `logo_url_donker` ophalen + `logoUrlDark` prop doorvoeren naar voorblad |
 
