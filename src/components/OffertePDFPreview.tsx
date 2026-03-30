@@ -37,6 +37,7 @@ interface PartnerBranding {
   btw: string | null;
   website: string | null;
   logo_url: string | null;
+  logo_url_donker: string | null;
   primaire_kleur: string;
   secundaire_kleur: string;
   bedrijfsslogan: string | null;
