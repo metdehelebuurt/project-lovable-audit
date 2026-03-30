@@ -37,6 +37,7 @@ interface PartnerBranding {
   btw: string | null;
   website: string | null;
   logo_url: string | null;
+  logo_url_donker: string | null;
   primaire_kleur: string;
   secundaire_kleur: string;
   bedrijfsslogan: string | null;
@@ -108,7 +109,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
   const platformBranding: PartnerBranding = {
     naam: "mijnhuis.nu", adres: null, postcode: null, plaats: null,
     email: "info@mijnhuis.nu", telefoonnummer: null, kvk: null, btw: null,
-    website: "www.mijnhuis.nu", logo_url: null, primaire_kleur: "#5B58E1",
+    website: "www.mijnhuis.nu", logo_url: null, logo_url_donker: null, primaire_kleur: "#5B58E1",
     secundaire_kleur: "#1a1a2e", bedrijfsslogan: "Slim verduurzamen begint hier",
   };
 
@@ -126,7 +127,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       }
 
       if (o.partner_id) {
-        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
+        const { data: p } = await supabase.from("partners").select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, website, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json").eq("id", o.partner_id).single();
         if (p) {
           setPartner(p as PartnerBranding);
           if (p.feature_flags_json && typeof p.feature_flags_json === "object") {
@@ -167,6 +168,9 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
 
   const logoUrl = partner.logo_url
     ? (partner.logo_url.startsWith("http") ? partner.logo_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url}`)
+    : null;
+  const logoUrlDonker = partner.logo_url_donker
+    ? (partner.logo_url_donker.startsWith("http") ? partner.logo_url_donker : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url_donker}`)
     : null;
 
   const mainCategory = producten.length > 0 ? producten[0].categorie : null;
@@ -237,6 +241,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     prijstabel_variant: (templateConfig?.prijstabel as string) || "price-modern",
     energieadvies_variant: (templateConfig?.energieadvies as string) || "energy-cards",
     voorwaarden_variant: (templateConfig?.voorwaarden as string) || "terms-simple",
+    voorblad_logo_variant: (templateConfig?.voorblad_logo_variant as string) || "auto",
   };
 
   const sectionOrder: string[] = templateConfig?.section_order || DEFAULT_SECTION_ORDER;
@@ -341,7 +346,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         pageNum++;
         return (
           <div key="voorblad" className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
-            <VoorbladComp pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} categoryLabel={categoryLabel || null} productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null} slogan={partner.bedrijfsslogan || null} introTekst={introTekst} badges={[tc.badge_1, tc.badge_2, tc.badge_3]} telefoon={partner.telefoonnummer || null} klantAdres={offerte.klant_adres || null} klantPostcode={offerte.klant_postcode || null} klantPlaats={offerte.klant_plaats || null} heroImageUrl={tc.hero_image_url || null} heroTitle={tc.hero_title || "Offerte"} />
+            <VoorbladComp pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl} logoUrlDark={(() => { const v = tc.voorblad_logo_variant || "auto"; if (v === "light") return undefined; if (v === "dark") return logoUrlDonker || logoUrl; return logoUrlDonker; })()} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} categoryLabel={categoryLabel || null} productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null} slogan={partner.bedrijfsslogan || null} introTekst={introTekst} badges={[tc.badge_1, tc.badge_2, tc.badge_3]} telefoon={partner.telefoonnummer || null} klantAdres={offerte.klant_adres || null} klantPostcode={offerte.klant_postcode || null} klantPlaats={offerte.klant_plaats || null} heroImageUrl={tc.hero_image_url || null} heroTitle={tc.hero_title || "Offerte"} />
             <PageNumber num={pageNum} />
           </div>
         );
