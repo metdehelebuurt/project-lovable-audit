@@ -589,7 +589,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         </div>
       )}
 
-      {sectionOrder.map(sectionId => renderSection(sectionId))}
+      {sectionOrder.map(sectionId => renderSection(sectionId)).filter(Boolean)}
     </>
   );
 }
