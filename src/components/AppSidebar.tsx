@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
-  MessageCircleWarning
+  MessageCircleWarning, MessagesSquare
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
