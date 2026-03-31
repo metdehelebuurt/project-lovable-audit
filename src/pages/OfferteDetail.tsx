@@ -414,37 +414,43 @@ const OfferteDetail = () => {
               </div>
 
               <div className="mt-4 pt-4 border-t space-y-1.5 max-w-xs ml-auto text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotaal excl. BTW</span>
-                  <span>{formatCurrency(offerte.subtotaal + (offerteKortingWaarde > 0
-                    ? offerteKortingType === "percentage"
-                      ? offerte.subtotaal / (1 - offerteKortingWaarde / 100) * (offerteKortingWaarde / 100)
-                      : offerteKortingWaarde
-                    : 0))}</span>
-                </div>
-                {offerteKortingWaarde > 0 && (
-                  <div className="flex justify-between text-success">
-                    <span>Korting ({offerteKortingType === "percentage" ? `${offerteKortingWaarde}%` : "vast bedrag"})</span>
-                    <span>-{formatCurrency(
-                      offerteKortingType === "percentage"
-                        ? offerte.subtotaal / (1 - offerteKortingWaarde / 100) * (offerteKortingWaarde / 100)
-                        : offerteKortingWaarde
-                    )}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotaal na korting</span>
-                  <span>{formatCurrency(offerte.subtotaal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">BTW</span>
-                  <span>{formatCurrency(offerte.btw_bedrag)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-semibold text-base pt-1">
-                  <span>Totaal incl. BTW</span>
-                  <span>{formatCurrency(offerte.totaal_bedrag)}</span>
-                </div>
+                {(() => {
+                  // Herbereken bruto subtotaal vanuit de regels
+                  const brutoSub = regels.reduce((sum, r) => sum + regelSub(r), 0);
+                  let kortingBedrag = 0;
+                  if (offerteKortingWaarde > 0) {
+                    kortingBedrag = offerteKortingType === "percentage"
+                      ? brutoSub * (offerteKortingWaarde / 100)
+                      : offerteKortingWaarde;
+                  }
+                  return (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotaal excl. BTW</span>
+                        <span>{formatCurrency(brutoSub)}</span>
+                      </div>
+                      {kortingBedrag > 0 && (
+                        <div className="flex justify-between text-success">
+                          <span>Korting ({offerteKortingType === "percentage" ? `${offerteKortingWaarde}%` : "vast bedrag"})</span>
+                          <span>-{formatCurrency(kortingBedrag)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotaal na korting</span>
+                        <span>{formatCurrency(offerte.subtotaal)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">BTW</span>
+                        <span>{formatCurrency(offerte.btw_bedrag)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-semibold text-base pt-1">
+                        <span>Totaal incl. BTW</span>
+                        <span>{formatCurrency(offerte.totaal_bedrag)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
