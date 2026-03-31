@@ -42,6 +42,10 @@ const renderIntro = (tekst: string, style: React.CSSProperties) => {
   if (isHtml(tekst)) {
     return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: tekst }} />;
   }
+  // Platte tekst: converteer \n naar <br/>
+  const html = tekst.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, "<br/>")}</p>`).join("");
+  return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: html }} />;
+  }
   const match = tekst.match(/^((?:Beste|Geachte|Lieve|Dag)\s[^,]+,)\s*/i);
   if (match) {
     return (

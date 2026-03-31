@@ -331,7 +331,7 @@ export default function OffertePublic() {
                   {offerte.installatie_termijn && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Installatietermijn</p>
-                      <p className="text-sm text-muted-foreground">{offerte.installatie_termijn}</p>
+                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.installatie_termijn) }} />
                     </div>
                   )}
                 </CardContent>
