@@ -32,7 +32,7 @@ export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partne
     {garantieVw && (
       <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Garantievoorwaarden</p>
-        <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{garantieVw}</p>
+        {renderHtmlOrText(garantieVw, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 })}
       </div>
     )}
     {installTermijn && (
