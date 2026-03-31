@@ -19,7 +19,7 @@ interface VoorwaardenProps {
   partnerHandtekeningDatum?: string | null;
 }
 
-export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partnerNaam, adviseurNaam, klantNaam, datum, garantieVw, installTermijn, betalingsvoorwaarden, notities, akkoordTekst }) => (
+export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partnerNaam, adviseurNaam, klantNaam, datum, garantieVw, installTermijn, betalingsvoorwaarden, notities, akkoordTekst, partnerHandtekening, partnerHandtekeningDatum }) => (
   <div style={{ fontFamily: "'Rubik', sans-serif" }}>
     {garantieVw && (
       <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
