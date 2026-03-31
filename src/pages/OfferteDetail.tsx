@@ -85,6 +85,11 @@ const OfferteDetail = () => {
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
 
+  // Delete dialog state
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleteReden, setDeleteReden] = useState("");
+  const [deleteKlant, setDeleteKlant] = useState(false);
+
   // Afwijzing dialog state
   const [afwijzingDialog, setAfwijzingDialog] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<OfferteStatus | null>(null);
