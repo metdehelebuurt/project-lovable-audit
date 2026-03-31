@@ -1,52 +1,49 @@
 
 
-## Plan: Categorie-bug fixen en titel aanpasbaar maken
+## Plan: WYSIWYG editor voor introductietekst
 
-### Gevonden problemen
+### Probleem
 
-1. **Verkeerde categorie op PDF-preview**: In `OffertePDFPreview.tsx` (regel 160-162) worden producten opgehaald via `.in("id", productIds)` maar **niet gesorteerd** op de volgorde van de offerte-regels. Daardoor is `producten[0]` willekeurig — het kan een zonnepaneel zijn terwijl het hoofdproduct een thuisbatterij is. De `categoryLabel` en `productNaam` op het voorblad zijn hierdoor fout.
-
-   In `OffertePDF.tsx` (de editor) is dit wél gefixt (regel 290-291 sorteert op regelvolgorde), maar de print-preview mist dezelfde sortering.
-
-2. **Titel niet aanpasbaar**: De grote titel op het voorblad ("Verduurzaam je huis met onze Thuisbatterij") is hardcoded in de voorblad-templates. De gebruiker kan alleen het kleine label ("Offerte") aanpassen via `hero_title`, maar niet de hoofdtitel of de categorie-tekst.
+De introductietekst wordt opgeslagen als plain text. Enters, spaties en opmaak die de gebruiker invoert gaan verloren in de PDF-weergave.
 
 ### Oplossing
 
-#### 1. Product-sortering fixen in OffertePDFPreview.tsx
+Tiptap (lichtgewicht WYSIWYG editor op basis van ProseMirror) toevoegen. De introductietekst wordt opgeslagen als HTML zodat formatting bewaard blijft.
 
-Na het ophalen van producten (regel 161-162), dezelfde sorterlogica toevoegen als in OffertePDF.tsx:
+### Wijzigingen
 
-```typescript
-if (prods) {
-  const orderMap = new Map(productIds.map((id, i) => [id, i]));
-  prods.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
-  setProducten(prods);
-}
+#### 1. Dependency toevoegen
+
+```
+@tiptap/react @tiptap/starter-kit @tiptap/extension-underline
 ```
 
-Dit zorgt ervoor dat `producten[0]` altijd het eerste product uit de offerte-regels is, waardoor de juiste categorie en productnaam op het voorblad verschijnen.
+#### 2. Nieuwe component: `src/components/shared/RichTextEditor.tsx`
 
-#### 2. Titel aanpasbaar maken
+Compacte Tiptap-editor met toolbar-knoppen voor: **Vet**, *Cursief*, Onderstreept, Opsomming, en Enter/alinea-ondersteuning. Styling past bij de bestaande rounded-xl design. Neemt `value` (HTML string) en `onChange` callback.
 
-Twee nieuwe velden toevoegen aan de template config in `OffertePDF.tsx` editor:
+#### 3. `src/pages/OfferteNieuw.tsx`
 
-- **`hero_main_title`**: De grote koptekst (standaard: "Verduurzaam je huis")
-- **`hero_category_text`**: De tweede regel (standaard: automatisch op basis van categorie, bijv. "met onze Thuisbatterij")
+- Vervang de `<Textarea>` (regel 584) door `<RichTextEditor>` 
+- `introductieTekst` state bevat nu HTML i.p.v. plain text
+- AI-gegenereerde tekst wordt omgezet naar HTML (newlines → `<br>`)
+- Opslaan naar database blijft via `introductie_tekst` kolom (is al `text` type, werkt voor HTML)
 
-In de editor-zijbalk (naast het bestaande "Voorblad titel" veld):
-- Input voor "Hoofdtitel" (placeholder: "Verduurzaam je huis")
-- Input voor "Ondertitel" (placeholder: auto-gegenereerd uit categorie)
+#### 4. `src/components/offertes/templates/VoorbladTemplates.tsx`
 
-In alle voorblad-templates (`VoorbladTemplates.tsx`):
-- Nieuwe optionele props `heroMainTitle` en `heroCategoryText`
-- Waar nu `"Verduurzaam je huis"` hardcoded staat → `heroMainTitle || "Verduurzaam je huis"`
-- Waar nu `categoryLabel` tekst staat → `heroCategoryText || (categoryLabel ? ...)` (fallback naar automatisch)
+- `renderIntro` aanpassen: als de tekst HTML-tags bevat (`<p>`, `<br>`, `<strong>` etc.), render via `dangerouslySetInnerHTML` met de juiste styling
+- Fallback voor plain text (bestaande offertes) blijft werken
+
+#### 5. `src/pages/OffertePDF.tsx`
+
+- Dezelfde wijziging voor de intro-weergave in de editor-preview
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/OffertePDFPreview.tsx` | Product-sortering toevoegen (regel 161-162) |
-| `src/pages/OffertePDF.tsx` | Twee nieuwe config-inputs voor titel; doorvoeren als props naar VoorbladComp |
-| `src/components/offertes/templates/VoorbladTemplates.tsx` | Nieuwe props `heroMainTitle` en `heroCategoryText` in interface + alle 5 templates |
+| `src/components/shared/RichTextEditor.tsx` | Nieuw: Tiptap WYSIWYG wrapper component |
+| `src/pages/OfferteNieuw.tsx` | Textarea → RichTextEditor, AI output naar HTML |
+| `src/components/offertes/templates/VoorbladTemplates.tsx` | `renderIntro` HTML-aware maken |
+| `src/pages/OffertePDF.tsx` | Intro rendering updaten voor HTML |
 
