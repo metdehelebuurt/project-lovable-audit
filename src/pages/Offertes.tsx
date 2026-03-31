@@ -397,7 +397,7 @@ const Offertes = () => {
     return matchSearch && matchStatus;
   });
 
-  const formatCurrency = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
+  // Using shared formatCurrency from @/types/offerte
 
   return (
     <div className="space-y-6">
