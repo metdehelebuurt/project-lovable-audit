@@ -143,7 +143,46 @@ const OfferteNieuw = () => {
     }
   }, []);
 
-  // Fetch partner feature flags for product visibility
+  // A6: Edit-modus - laad bestaande offerte
+  const { data: editOfferte } = useQuery({
+    queryKey: ["offerte-edit", editId],
+    enabled: !!editId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("offertes").select("*").eq("id", editId!).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!editOfferte) return;
+    setKlantNaam(editOfferte.klant_naam);
+    setKlantEmail(editOfferte.klant_email);
+    setKlantTelefoon(editOfferte.klant_telefoon || "");
+    setKlantAdres(editOfferte.klant_adres || "");
+    setKlantPostcode(editOfferte.klant_postcode || "");
+    setKlantPlaats(editOfferte.klant_plaats || "");
+    setGeldigTot(editOfferte.geldig_tot);
+    setBetalingsvoorwaarden(editOfferte.betalingsvoorwaarden || "");
+    setNotities(editOfferte.notities || "");
+    setIntroductieTekst(editOfferte.introductie_tekst || "");
+    setGarantieVoorwaarden(editOfferte.garantie_voorwaarden || "");
+    setInstallatieTermijn(editOfferte.installatie_termijn || "");
+    setIncludeSchouw((editOfferte as any).include_schouw ?? false);
+    setIncludeEnergieadvies((editOfferte as any).include_energieadvies ?? false);
+    setSchouwId(editOfferte.schouw_id || "");
+    if (editOfferte.lead_id) {
+      setSelectedLead({ id: editOfferte.lead_id, voornaam: "", achternaam: "", email: "", telefoon: null, adres: null, postcode: null, plaats: null });
+    }
+    const r = Array.isArray(editOfferte.regels) ? (editOfferte.regels as unknown as OfferteRegel[]) : [{ ...emptyRegel }];
+    setRegels(r);
+    const tc = editOfferte.template_config && typeof editOfferte.template_config === "object" ? editOfferte.template_config as any : {};
+    if (tc.offerte_korting_type) setOfferteKortingType(tc.offerte_korting_type);
+    if (tc.offerte_korting_waarde) setOfferteKortingWaarde(tc.offerte_korting_waarde);
+    setTemplateConfig(prev => ({ ...prev, ...tc }));
+  }, [editOfferte]);
+
+
   const isSuperadmin = profile?.rol === "superadmin";
   const { data: partnerFlags } = useQuery({
     queryKey: ["partner-flags", profile?.partner_id],
