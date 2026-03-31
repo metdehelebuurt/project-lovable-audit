@@ -1,5 +1,13 @@
 import React from "react";
 
+const isHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s);
+const renderHtmlOrText = (text: string, style: React.CSSProperties) => {
+  if (isHtml(text)) {
+    return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: text }} />;
+  }
+  return <p style={style}>{text}</p>;
+};
+
 interface VoorwaardenProps {
   pc: string;
   sc: string;
