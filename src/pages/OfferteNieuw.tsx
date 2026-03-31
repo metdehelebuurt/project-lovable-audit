@@ -334,20 +334,22 @@ const OfferteNieuw = () => {
         // Update existing offerte
         const { error } = await supabase.from("offertes").update(record).eq("id", editId);
         if (error) throw error;
+        return editId;
       } else {
         // Create new offerte
         record.partner_id = profile?.partner_id;
         record.adviseur_id = profile?.id;
         record.offertenummer = generateOfferteNummer();
-        const { error } = await supabase.from("offertes").insert(record);
+        const { data, error } = await supabase.from("offertes").insert(record).select("id").single();
         if (error) throw error;
+        return data.id;
       }
     },
-    onSuccess: () => {
+    onSuccess: (newId: string) => {
       queryClient.invalidateQueries({ queryKey: ["offertes"] });
       if (editId) queryClient.invalidateQueries({ queryKey: ["offerte", editId] });
       toast.success(editId ? "Offerte bijgewerkt" : "Offerte aangemaakt");
-      navigate(editId ? `/offertes/${editId}` : "/offertes");
+      navigate(editId ? `/offertes/${editId}` : `/offertes/${newId}/pdf`);
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });

@@ -1088,6 +1088,11 @@ export default function OffertePDF() {
               )}
             </div>
 
+            {/* Opvolging herinneringen */}
+            {offerte?.partner_id && (
+              <OfferteHerinneringen offerteId={offerte.id} partnerId={offerte.partner_id} compact />
+            )}
+
             {/* Handtekening sectie */}
             <div className="rounded-xl border border-border overflow-hidden">
               <div className="p-3">
