@@ -284,7 +284,15 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
   const PageFooter = () => (
     <div style={{ borderTop: `2px solid ${pc}`, padding: "12px 0 0", marginTop: "auto", fontSize: 9, color: "#999", textAlign: "center" as const }}>
       <p style={{ margin: 0 }}>{partner.naam}{partner.adres ? ` • ${partner.adres}` : ""}{partner.postcode || partner.plaats ? ` • ${partner.postcode || ""} ${partner.plaats || ""}` : ""}</p>
-      <p style={{ margin: "2px 0 0" }}>{partner.kvk ? `KvK: ${partner.kvk}` : ""}{partner.btw ? ` • BTW: ${partner.btw}` : ""}{partner.website ? ` • ${partner.website}` : ""}</p>
+      <p style={{ margin: "2px 0 0" }}>
+        {[
+          partner.telefoonnummer,
+          partner.email,
+          partner.website,
+          partner.kvk ? `KvK: ${partner.kvk}` : null,
+          partner.btw ? `BTW: ${partner.btw}` : null,
+        ].filter(Boolean).join(" • ")}
+      </p>
     </div>
   );
 
