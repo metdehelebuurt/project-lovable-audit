@@ -55,6 +55,7 @@ import OffertePublic from "@/pages/OffertePublic";
 import FeedbackNieuw from "@/pages/FeedbackNieuw";
 import FeedbackOverzicht from "@/pages/FeedbackOverzicht";
 import FeedbackAdmin from "@/pages/FeedbackAdmin";
+import AdminAbonnementen from "@/pages/AdminAbonnementen";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
