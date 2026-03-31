@@ -67,15 +67,7 @@ interface OfferteFormData {
   offerte_korting_waarde: number;
 }
 
-const emptyRegel: OfferteRegel = {
-  omschrijving: "",
-  aantal: 1,
-  prijs_per_stuk: 0,
-  btw_percentage: 21,
-  korting_percentage: 0,
-  korting_bedrag: 0,
-  korting_type: "percentage",
-};
+const emptyRegel = emptyOfferteRegel;
 
 const emptyForm: OfferteFormData = {
   lead_id: "",
