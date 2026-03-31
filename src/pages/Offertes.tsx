@@ -133,6 +133,9 @@ const Offertes = () => {
   const [shareDialog, setShareDialog] = useState<Offerte | null>(null);
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<Offerte | null>(null);
+  const [deleteReden, setDeleteReden] = useState("");
+  const [deleteKlant, setDeleteKlant] = useState(false);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
@@ -301,15 +304,34 @@ const Offertes = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, verwijderKlant }: { id: string; verwijderKlant: boolean }) => {
+      // Delete related records to avoid FK constraint violations
+      await supabase.from("offerte_berichten").delete().eq("offerte_id", id);
+      await supabase.from("opdrachten").delete().eq("offerte_id", id);
+      await supabase.from("installaties").delete().eq("offerte_id", id);
+      // Unlink klanten
+      if (verwijderKlant) {
+        const { data: linkedKlanten } = await supabase.from("klanten").select("id").eq("offerte_id", id);
+        await supabase.from("klanten").update({ offerte_id: null }).eq("offerte_id", id);
+        if (linkedKlanten?.length) {
+          for (const k of linkedKlanten) {
+            await supabase.from("klanten").delete().eq("id", k.id);
+          }
+        }
+      } else {
+        await supabase.from("klanten").update({ offerte_id: null }).eq("offerte_id", id);
+      }
       const { error } = await supabase.from("offertes").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offertes"] });
       toast.success("Offerte verwijderd");
+      setDeleteDialog(null);
+      setDeleteReden("");
+      setDeleteKlant(false);
     },
-    onError: (err: Error) => toast.error("Fout", { description: err.message }),
+    onError: (err: Error) => toast.error("Fout bij verwijderen", { description: err.message }),
   });
 
   const openCreate = () => {
@@ -535,21 +557,9 @@ const Offertes = () => {
                               </Button>
                             )}
                             {canDelete && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Offerte verwijderen</AlertDialogTitle>
-                                    <AlertDialogDescription>Weet je zeker dat je offerte {o.offertenummer} wilt verwijderen?</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteMutation.mutate(o.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteDialog(o)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </TableCell>
@@ -589,21 +599,9 @@ const Offertes = () => {
                         <Eye className="h-4 w-4" />
                       </Button>
                       {canDelete && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Offerte verwijderen</AlertDialogTitle>
-                              <AlertDialogDescription>Weet je zeker dat je offerte {o.offertenummer} wilt verwijderen?</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteMutation.mutate(o.id)} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteDialog(o)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -1056,6 +1054,49 @@ const Offertes = () => {
               <p className="text-xs text-muted-foreground">De link is 30 dagen geldig. De klant kan de offerte bekijken en direct online accepteren.</p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={!!deleteDialog} onOpenChange={(open) => { if (!open) { setDeleteDialog(null); setDeleteReden(""); setDeleteKlant(false); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Offerte verwijderen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Weet je zeker dat je offerte <strong>{deleteDialog?.offertenummer}</strong> wilt verwijderen? Gerelateerde opdrachten en installaties worden ook verwijderd.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <Label>Reden van verwijdering *</Label>
+              <Textarea
+                value={deleteReden}
+                onChange={(e) => setDeleteReden(e.target.value)}
+                placeholder="Geef een reden op voor het verwijderen..."
+                className="mt-1"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="deleteKlantOffertes"
+                checked={deleteKlant}
+                onCheckedChange={(v) => setDeleteKlant(v === true)}
+              />
+              <Label htmlFor="deleteKlantOffertes" className="text-sm cursor-pointer">
+                Bijbehorende klant ook verwijderen
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog(null)}>Annuleren</Button>
+            <Button
+              variant="destructive"
+              disabled={!deleteReden.trim() || deleteMutation.isPending}
+              onClick={() => deleteDialog && deleteMutation.mutate({ id: deleteDialog.id, verwijderKlant: deleteKlant })}
+            >
+              {deleteMutation.isPending ? "Bezig..." : "Definitief verwijderen"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
