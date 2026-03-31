@@ -468,7 +468,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
                   {partner.email && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.email}</p>}
                 </div>
               </div>
-              <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} />
+              <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} offerteKortingType={templateConfig?.offerte_korting_type || null} offerteKortingWaarde={templateConfig?.offerte_korting_waarde || 0} />
               <div style={{ marginTop: 28 }}>
                 <VoorwaardenComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} garantieVw={garantieVw} installTermijn={installTermijn} betalingsvoorwaarden={offerte.betalingsvoorwaarden || null} notities={offerte.notities || null} akkoordTekst={tc.akkoord_tekst} partnerHandtekening={(offerte as any).partner_handtekening_data || null} partnerHandtekeningDatum={(offerte as any).partner_handtekening_op ? formatDate((offerte as any).partner_handtekening_op) : null} />
               </div>
