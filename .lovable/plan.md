@@ -1,34 +1,44 @@
 
 
-## Plan: Fix 3 PDF offerte problemen
+## Plan: Aanhef-opmaak en USP-balk uitlijning in voorblad templates
 
-### 1. Witte laatste pagina verwijderen
+### Probleem 1: Aanhef formatting
 
-**Probleem**: De CSS `page-break-after: always` op `.pdf-page` in de `pageStyle` (regel 284) forceert altijd een page break, ook na de laatste pagina. De `:last-of-type` CSS-regel werkt niet wanneer datasheets in een `React.Fragment` gewrapt zitten — de individuele `.pdf-page` divs binnen het Fragment zijn niet het `:last-of-type` van hun parent.
+De `introTekst` wordt als één doorlopend blok getoond: "Beste heer Verhaar, Het was een genoegen...". De aanhef (alles t/m de eerste komma) moet op een eigen regel staan, gevolgd door een witregel, dan de rest van de zin.
 
-**Oplossing**: Verwijder `pageBreakAfter: "always"` uit de inline `pageStyle` en vertrouw volledig op de CSS-regel `.pdf-page { page-break-after: always }` + `.pdf-page:last-child { page-break-after: avoid }`. Wijzig `:last-of-type` naar `:last-child` zodat het correct werkt ongeacht nesting.
+**Oplossing**: In alle voorblad-templates waar `introTekst` gerenderd wordt, de tekst splitsen op het patroon `"Beste ... ,\n"`. Concreet: detecteer of de tekst begint met een aanhef (bijv. regex `/^(Beste\s[^,]+,)\s*/` of `/^(Geachte\s[^,]+,)\s*/`), en render de aanhef als apart `<p>` element met `marginBottom: 12`, gevolgd door de rest van de tekst.
 
-### 2. Adviseur-naam op offerte tonen (via instellingen)
+Dit wordt als helper-functie geïmplementeerd zodat alle 5 templates het consistent gebruiken:
 
-**Probleem**: De adviseur-naam staat al op het voorblad via `adviseurNaam`, maar de user wil dat partner-admins in Instellingen de standaard adviseur-naam kunnen instellen die op offertes verschijnt.
+```typescript
+const renderIntro = (tekst: string, style: React.CSSProperties) => {
+  const match = tekst.match(/^((?:Beste|Geachte|Lieve|Dag)\s[^,]+,)\s*/i);
+  if (match) {
+    return (
+      <>
+        <p style={{ ...style, marginBottom: 8 }}>{match[1]}</p>
+        <p style={style}>{tekst.slice(match[0].length)}</p>
+      </>
+    );
+  }
+  return <p style={style}>{tekst}</p>;
+};
+```
 
-**Oplossing**: De adviseur wordt al opgehaald uit de `users` tabel op basis van `adviseur_id` (regel 142). De naam staat al op het voorblad. Aanvulling: toon de adviseur-naam ook expliciet in de **prijstabel-sectie** ("Opgesteld door" blok, regel 436-441) naast de bedrijfsnaam, zodat het duidelijk is welke adviseur de offerte heeft gemaakt.
+### Probleem 2: USP/telefoon-balk niet onderaan de pagina
 
-### 3. Dubbele specificaties verwijderen
+In HeroDark (regel 82-110): het onderste contentblok gebruikt `flex: 1` maar de USP-balk (regel 104-109) zit binnen de padding van de parent. De `<div style={{ flex: 1 }} />` spacer (regel 102) duwt het naar beneden, maar de padding van de parent (`padding: "48px 56px"`) zorgt ervoor dat het niet volledig onderaan de pagina zit.
 
-**Probleem**: In de `datasheets` case (regel 513-563) worden er **twee loops** uitgevoerd:
-1. **Eerste loop** (regel 517-541): rendert een raw specs-tabel voor elk product met `specs`
-2. **Tweede loop** (regel 542-559): rendert ProductDatasheet of iframe voor producten met `datasheet_type`
+**Oplossing**: 
+- Verwijder de padding-bottom van het onderste content-blok
+- Maak de USP-balk een apart element buiten de padding-container, met eigen horizontale padding
+- Geef de USP-balk een vaste positie onderaan met `marginTop: "auto"` en eigen padding (`padding: "18px 56px"`)
 
-Producten met `datasheet_type === "gegenereerd"` én `specs` krijgen BEIDE pagina's — dit is de dubbele specificatie.
-
-**Oplossing**: In de eerste loop (raw specs-tabel), sla producten over die `datasheet_type === "gegenereerd"` hebben, want die krijgen al een volledige ProductDatasheet via de tweede loop.
-
----
+Dit geldt voor alle templates die badges/USPs tonen (HeroDark, HeroGradient).
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/OffertePDFPreview.tsx` | (1) `pageBreakAfter` uit inline style, CSS `:last-child` fix; (2) adviseur-naam in prijstabel "Opgesteld door" blok; (3) filter `datasheet_type === "gegenereerd"` uit raw specs loop |
+| `src/components/offertes/templates/VoorbladTemplates.tsx` | (1) Helper `renderIntro` toevoegen die aanhef splitst; (2) alle 5 templates: vervang `<p>{introTekst}</p>` door `renderIntro()`; (3) HeroDark: USP-balk naar buiten padding verplaatsen met `marginTop: auto` en eigen padding voor correcte uitlijning |
 
