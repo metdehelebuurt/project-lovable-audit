@@ -36,9 +36,10 @@ export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partne
       </div>
     )}
     {installTermijn && (
-      <p style={{ fontSize: 12, color: "#555", marginBottom: 12 }}>
-        <strong style={{ color: sc }}>Installatietermijn:</strong> {installTermijn}
-      </p>
+      <div style={{ fontSize: 12, color: "#555", marginBottom: 12 }}>
+        <strong style={{ color: sc }}>Installatietermijn:</strong>
+        {renderHtmlOrText(installTermijn, { fontSize: 12, color: "#555", margin: "4px 0 0", lineHeight: 1.6 })}
+      </div>
     )}
     {betalingsvoorwaarden && (
       <p style={{ fontSize: 11, color: "#666", marginBottom: 12 }}>
