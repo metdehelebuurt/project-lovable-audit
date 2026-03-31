@@ -121,7 +121,7 @@ export const TermsBoxed: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, pcTint2
   </div>
 );
 
-export const TermsSidebar: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partnerNaam, adviseurNaam, klantNaam, datum, garantieVw, installTermijn, betalingsvoorwaarden, notities, akkoordTekst }) => (
+export const TermsSidebar: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partnerNaam, adviseurNaam, klantNaam, datum, garantieVw, installTermijn, betalingsvoorwaarden, notities, akkoordTekst, partnerHandtekening, partnerHandtekeningDatum }) => (
   <div style={{ display: "flex", gap: 24, fontFamily: "'Rubik', sans-serif" }}>
     <div style={{ flex: "0 0 45%", backgroundColor: pcTint, borderRadius: 12, padding: "20px 24px" }}>
       <p style={{ fontSize: 12, fontWeight: 700, color: sc, margin: "0 0 12px" }}>Voorwaarden</p>
