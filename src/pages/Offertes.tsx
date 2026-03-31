@@ -304,15 +304,34 @@ const Offertes = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, verwijderKlant }: { id: string; verwijderKlant: boolean }) => {
+      // Delete related records to avoid FK constraint violations
+      await supabase.from("offerte_berichten").delete().eq("offerte_id", id);
+      await supabase.from("opdrachten").delete().eq("offerte_id", id);
+      await supabase.from("installaties").delete().eq("offerte_id", id);
+      // Unlink klanten
+      if (verwijderKlant) {
+        const { data: linkedKlanten } = await supabase.from("klanten").select("id").eq("offerte_id", id);
+        await supabase.from("klanten").update({ offerte_id: null }).eq("offerte_id", id);
+        if (linkedKlanten?.length) {
+          for (const k of linkedKlanten) {
+            await supabase.from("klanten").delete().eq("id", k.id);
+          }
+        }
+      } else {
+        await supabase.from("klanten").update({ offerte_id: null }).eq("offerte_id", id);
+      }
       const { error } = await supabase.from("offertes").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offertes"] });
       toast.success("Offerte verwijderd");
+      setDeleteDialog(null);
+      setDeleteReden("");
+      setDeleteKlant(false);
     },
-    onError: (err: Error) => toast.error("Fout", { description: err.message }),
+    onError: (err: Error) => toast.error("Fout bij verwijderen", { description: err.message }),
   });
 
   const openCreate = () => {
