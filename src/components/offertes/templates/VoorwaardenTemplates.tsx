@@ -69,7 +69,7 @@ export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partne
   </div>
 );
 
-export const TermsBoxed: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, pcTint2, partnerNaam, adviseurNaam, klantNaam, datum, garantieVw, installTermijn, betalingsvoorwaarden, notities, akkoordTekst }) => (
+export const TermsBoxed: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, pcTint2, partnerNaam, adviseurNaam, klantNaam, datum, garantieVw, installTermijn, betalingsvoorwaarden, notities, akkoordTekst, partnerHandtekening, partnerHandtekeningDatum }) => (
   <div style={{ fontFamily: "'Rubik', sans-serif" }}>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
       {garantieVw && (
