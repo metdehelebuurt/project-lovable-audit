@@ -122,7 +122,7 @@ export const ProductSpotlight: React.FC<ProductProps> = ({ pc, sc, pcTint, produ
   </div>
 );
 
-export const ProductShowcase: React.FC<ProductProps & { index?: number }> = ({ pc, sc, pcTint, producten, index = 0 }) => {
+export const ProductShowcase: React.FC<ProductProps> = ({ pc, sc, pcTint, producten, index = 0 }) => {
   const prod = producten[index];
   if (!prod) return null;
   const specs = prod.specs && typeof prod.specs === "object" ? Object.entries(prod.specs).slice(0, 6) : [];
