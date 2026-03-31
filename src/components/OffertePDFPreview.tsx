@@ -159,7 +159,11 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       const productIds = regels.map(r => r.product_id).filter(Boolean) as string[];
       if (productIds.length > 0) {
         const { data: prods } = await supabase.from("producten").select("*").in("id", productIds);
-        if (prods) setProducten(prods);
+        if (prods) {
+          const orderMap = new Map(productIds.map((id, i) => [id, i]));
+          prods.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
+          setProducten(prods);
+        }
       }
       setLoading(false);
     })();
