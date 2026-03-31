@@ -133,6 +133,9 @@ const Offertes = () => {
   const [shareDialog, setShareDialog] = useState<Offerte | null>(null);
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<Offerte | null>(null);
+  const [deleteReden, setDeleteReden] = useState("");
+  const [deleteKlant, setDeleteKlant] = useState(false);
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
