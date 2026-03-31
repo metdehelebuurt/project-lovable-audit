@@ -85,9 +85,9 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
         <div style={{ position: "relative", zIndex: 1 }}>
           {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 52, marginBottom: 32, objectFit: "contain" }} />}
           <p style={{ fontSize: 14, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
-          <h1 style={{ fontSize: 42, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>Verduurzaam je huis</h1>
+          <h1 style={{ fontSize: 42, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>{heroMainTitle || "Verduurzaam je huis"}</h1>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.15, color: pc }}>
-            {categoryLabel ? `met onze ${categoryLabel}` : "met onze oplossing"}
+            {heroCategoryText || (categoryLabel ? `met onze ${categoryLabel}` : "met onze oplossing")}
           </h1>
           {productNaam && <p style={{ fontSize: 20, fontWeight: 500, marginTop: 16, opacity: 0.9 }}>{productNaam}</p>}
         </div>
