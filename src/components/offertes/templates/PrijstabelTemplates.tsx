@@ -215,7 +215,7 @@ export const PriceDetailed: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, pcTin
     </table>
     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
       <div style={{ width: 280, backgroundColor: pcTint, borderRadius: 10, padding: "12px 16px" }}>
-        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} />
+        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} regels={regels} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: sc, borderTop: `3px solid ${pc}`, paddingTop: 8 }}>
           <span>Totaal</span><span>{formatCurrency(totaalBedrag)}</span>
         </div>
