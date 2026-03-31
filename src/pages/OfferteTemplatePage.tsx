@@ -18,7 +18,7 @@ import {
   HeroDark, HeroSplit, HeroMinimal, HeroGradient, HeroPhoto,
 } from "@/components/offertes/templates/VoorbladTemplates";
 import {
-  ProductList, ProductCards, ProductGrid, ProductSpotlight,
+  ProductList, ProductCards, ProductGrid, ProductSpotlight, ProductShowcase,
 } from "@/components/offertes/templates/ProductTemplates";
 import {
   PriceClassic, PriceModern, PriceCompact, PriceDetailed,
@@ -86,6 +86,22 @@ const btwBedrag = sampleRegels.reduce((s, r) => {
 }, 0);
 const totaalBedrag = subtotaal + btwBedrag;
 
+/* Thumbnail page wrapper to simulate real PDF page structure */
+const ThumbnailPage: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div style={{ width: 794, height: 1123, backgroundColor: "#fff", fontFamily: "'Rubik', sans-serif", fontSize: 13, color: "#1a1a2e", display: "flex", flexDirection: "column", boxSizing: "border-box", padding: "56px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 14, borderBottom: `2px solid ${pc}`, marginBottom: 20 }}>
+      <div style={{ width: 80, height: 28, backgroundColor: pcTint, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#999" }}>Logo</div>
+      <div style={{ fontSize: 9, color: "#999" }}>info@bedrijf.nl • 020-1234567</div>
+    </div>
+    <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1a1a2e", margin: "0 0 6px" }}>{title}</h2>
+    <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 20 }} />
+    <div style={{ flex: 1, overflow: "hidden" }}>{children}</div>
+    <div style={{ borderTop: `2px solid ${pc}`, paddingTop: 10, marginTop: "auto", fontSize: 8, color: "#999", textAlign: "center" }}>
+      Bedrijf • Voorbeeldstraat 1 • 1234 AB Amsterdam • KVK 12345678
+    </div>
+  </div>
+);
+
 /* ─── Thumbnail component map ─── */
 const thumbnailMap: Record<string, React.ReactNode> = {
   "hero-dark": <HeroDark {...sampleVoorblad} isThumbnail />,
@@ -93,20 +109,21 @@ const thumbnailMap: Record<string, React.ReactNode> = {
   "hero-minimal": <HeroMinimal {...sampleVoorblad} isThumbnail />,
   "hero-gradient": <HeroGradient {...sampleVoorblad} isThumbnail />,
   "hero-photo": <HeroPhoto {...sampleVoorblad} isThumbnail />,
-  "product-list": <ProductList pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail />,
-  "product-cards": <ProductCards pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail />,
-  "product-grid": <ProductGrid pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail />,
-  "product-spotlight": <ProductSpotlight pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail />,
-  "price-classic": <PriceClassic pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail />,
-  "price-modern": <PriceModern pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail />,
-  "price-compact": <PriceCompact pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail />,
-  "price-detailed": <PriceDetailed pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail />,
-  "energy-cards": <EnergyCards pc={pc} sc={sc} pcTint={pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
-  "energy-infographic": <EnergyInfographic pc={pc} sc={sc} pcTint={pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
-  "energy-minimal": <EnergyMinimal pc={pc} sc={sc} pcTint={pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail />,
-  "terms-simple": <TermsSimple pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam="Uw Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="18 maart 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail />,
-  "terms-boxed": <TermsBoxed pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam="Uw Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="18 maart 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail />,
-  "terms-sidebar": <TermsSidebar pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam="Uw Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="18 maart 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail />,
+  "product-list": <ThumbnailPage title="Producten"><ProductList pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail /></ThumbnailPage>,
+  "product-cards": <ThumbnailPage title="Producten"><ProductCards pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail /></ThumbnailPage>,
+  "product-grid": <ThumbnailPage title="Producten"><ProductGrid pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail /></ThumbnailPage>,
+  "product-spotlight": <ThumbnailPage title="Producten"><ProductSpotlight pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} isThumbnail /></ThumbnailPage>,
+  "product-showcase": <ThumbnailPage title="Product Showcase"><ProductShowcase pc={pc} sc={sc} pcTint={pcTint} producten={[sampleProduct]} index={0} /></ThumbnailPage>,
+  "price-classic": <ThumbnailPage title="Opdrachtbevestiging"><PriceClassic pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail /></ThumbnailPage>,
+  "price-modern": <ThumbnailPage title="Opdrachtbevestiging"><PriceModern pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail /></ThumbnailPage>,
+  "price-compact": <ThumbnailPage title="Opdrachtbevestiging"><PriceCompact pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail /></ThumbnailPage>,
+  "price-detailed": <ThumbnailPage title="Opdrachtbevestiging"><PriceDetailed pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={sampleRegels} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={fmtCur} isThumbnail /></ThumbnailPage>,
+  "energy-cards": <ThumbnailPage title="Besparing & Rendement"><EnergyCards pc={pc} sc={sc} pcTint={pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail /></ThumbnailPage>,
+  "energy-infographic": <ThumbnailPage title="Besparing & Rendement"><EnergyInfographic pc={pc} sc={sc} pcTint={pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail /></ThumbnailPage>,
+  "energy-minimal": <ThumbnailPage title="Besparing & Rendement"><EnergyMinimal pc={pc} sc={sc} pcTint={pcTint} capaciteit={5} besparing={850} terugverdientijd={6.5} investering={5500} formatCurrency={fmtCur} isThumbnail /></ThumbnailPage>,
+  "terms-simple": <ThumbnailPage title="Voorwaarden & Akkoord"><TermsSimple pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam="Uw Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="18 maart 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail /></ThumbnailPage>,
+  "terms-boxed": <ThumbnailPage title="Voorwaarden & Akkoord"><TermsBoxed pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam="Uw Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="18 maart 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail /></ThumbnailPage>,
+  "terms-sidebar": <ThumbnailPage title="Voorwaarden & Akkoord"><TermsSidebar pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam="Uw Bedrijf" klantNaam="Jan de Vries" adviseurNaam="Piet Jansen" datum="18 maart 2025" garantieVw="Productgarantie conform fabrikant" installTermijn="Binnen 4 weken" betalingsvoorwaarden="30 dagen netto" notities={null} akkoordTekst="" isThumbnail /></ThumbnailPage>,
 };
 
 /* ─── Live preview component map ─── */
@@ -114,7 +131,7 @@ const liveVoorbladMap: Record<string, React.FC<any>> = {
   "hero-dark": HeroDark, "hero-split": HeroSplit, "hero-minimal": HeroMinimal, "hero-gradient": HeroGradient, "hero-photo": HeroPhoto,
 };
 const liveProductMap: Record<string, React.FC<any>> = {
-  "product-list": ProductList, "product-cards": ProductCards, "product-grid": ProductGrid, "product-spotlight": ProductSpotlight,
+  "product-list": ProductList, "product-cards": ProductCards, "product-grid": ProductGrid, "product-spotlight": ProductSpotlight, "product-showcase": ProductShowcase,
 };
 const livePrijsMap: Record<string, React.FC<any>> = {
   "price-classic": PriceClassic, "price-modern": PriceModern, "price-compact": PriceCompact, "price-detailed": PriceDetailed,
@@ -356,7 +373,7 @@ export default function OfferteTemplatePage() {
                               }`}
                             >
                               {/* Thumbnail */}
-                              <div className="w-full aspect-[4/3] rounded-t-md overflow-hidden bg-white relative">
+                              <div className="w-full aspect-[210/297] rounded-t-md overflow-hidden bg-white relative">
                                 {isSelected && (
                                   <div className="absolute top-1.5 right-1.5 z-10 bg-primary text-primary-foreground rounded-full p-0.5">
                                     <Check className="h-3 w-3" />
@@ -365,8 +382,8 @@ export default function OfferteTemplatePage() {
                                 <div
                                   style={{
                                     width: 794,
-                                    height: 595,
-                                    transform: "scale(0.22)",
+                                    height: 1123,
+                                    transform: "scale(0.155)",
                                     transformOrigin: "top left",
                                     pointerEvents: "none",
                                     overflow: "hidden",
