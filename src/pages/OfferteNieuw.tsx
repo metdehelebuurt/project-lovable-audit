@@ -234,7 +234,7 @@ const OfferteNieuw = () => {
       setRegels(p => p.map((r, i) => i === idx ? {
         ...r,
         product_id: product.id,
-        omschrijving: `${product.naam}${product.merk ? ` — ${product.merk}` : ""}${product.model ? ` ${product.model}` : ""}`,
+        omschrijving: product.naam,
         offerte_tekst: offerteTekst,
         prijs_per_stuk: product.prijs_excl_btw,
         btw_percentage: product.btw_percentage ?? 21,
