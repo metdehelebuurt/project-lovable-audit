@@ -581,7 +581,7 @@ const OfferteNieuw = () => {
                   AI Intro genereren
                 </Button>
               </div>
-              <Textarea value={introductieTekst} onChange={e => setIntroductieTekst(e.target.value)} className="rounded-xl" rows={3} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
+              <RichTextEditor value={introductieTekst} onChange={setIntroductieTekst} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
