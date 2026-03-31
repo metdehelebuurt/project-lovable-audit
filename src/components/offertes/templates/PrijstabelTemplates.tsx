@@ -96,6 +96,7 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
               <td style={{ padding: "10px 12px" }}>{r.omschrijving}{r.offerte_tekst && <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{r.offerte_tekst}</div>}</td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
               <td style={{ padding: "10px 12px", textAlign: "right", color: kLabel ? pc : "#ccc" }}>{kLabel || "—"}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right" }}>{r.btw_percentage}%</td>
               <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(sub)}</td>
             </tr>
           );
