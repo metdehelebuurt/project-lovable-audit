@@ -284,7 +284,7 @@ export const HeroPhoto: React.FC<VoorbladProps> = (props) => {
             <p style={{ fontSize: 13, color: "#555", margin: "3px 0 0" }}>{datum}</p>
           </div>
         </div>
-        {introTekst && <p style={{ fontSize: 14, lineHeight: 1.8, color: "#333" }}>{introTekst}</p>}
+        {introTekst && renderIntro(introTekst, { fontSize: 14, lineHeight: 1.8, color: "#333", margin: 0 })}
         <div style={{ flex: 1 }} />
       </div>
     </div>
