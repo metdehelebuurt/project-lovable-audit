@@ -477,7 +477,7 @@ const OfferteDetail = () => {
                 {offerte.introductie_tekst && (
                   <div>
                     <p className="text-muted-foreground text-xs mb-1">Introductietekst</p>
-                    <p className="whitespace-pre-wrap">{offerte.introductie_tekst}</p>
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: offerte.introductie_tekst }} />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4">
@@ -490,14 +490,14 @@ const OfferteDetail = () => {
                   {offerte.installatie_termijn && (
                     <div>
                       <p className="text-muted-foreground text-xs mb-1">Installatietermijn</p>
-                      <p>{offerte.installatie_termijn}</p>
+                      <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: offerte.installatie_termijn }} />
                     </div>
                   )}
                 </div>
                 {offerte.garantie_voorwaarden && (
                   <div>
                     <p className="text-muted-foreground text-xs mb-1">Garantievoorwaarden</p>
-                    <p className="whitespace-pre-wrap">{offerte.garantie_voorwaarden}</p>
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: offerte.garantie_voorwaarden }} />
                   </div>
                 )}
               </CardContent>
