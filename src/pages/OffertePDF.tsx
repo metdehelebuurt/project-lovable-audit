@@ -613,6 +613,8 @@ export default function OffertePDF() {
               klantPlaats={offerte.klant_plaats || null}
               heroImageUrl={config.hero_image_url || null}
               heroTitle={config.hero_title || "Offerte"}
+              heroMainTitle={config.hero_main_title || undefined}
+              heroCategoryText={config.hero_category_text || undefined}
               logoUrlDark={(() => {
                 const variant = config.voorblad_logo_variant || "auto";
                 if (variant === "light") return undefined;
@@ -980,6 +982,14 @@ export default function OffertePDF() {
                   <div>
                     <Label className="text-xs flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Voorblad titel</Label>
                     <Input value={config.hero_title || ""} onChange={e => setConfig(p => ({ ...p, hero_title: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="Offerte" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Hoofdtitel voorblad</Label>
+                    <Input value={config.hero_main_title || ""} onChange={e => setConfig(p => ({ ...p, hero_main_title: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="Verduurzaam je huis" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Ondertitel / categorie</Label>
+                    <Input value={config.hero_category_text || ""} onChange={e => setConfig(p => ({ ...p, hero_category_text: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="Automatisch op basis van categorie" />
                   </div>
 
                   {/* Logo variant selector */}

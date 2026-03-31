@@ -159,7 +159,11 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       const productIds = regels.map(r => r.product_id).filter(Boolean) as string[];
       if (productIds.length > 0) {
         const { data: prods } = await supabase.from("producten").select("*").in("id", productIds);
-        if (prods) setProducten(prods);
+        if (prods) {
+          const orderMap = new Map(productIds.map((id, i) => [id, i]));
+          prods.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
+          setProducten(prods);
+        }
       }
       setLoading(false);
     })();
@@ -248,6 +252,8 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
     hero_image_url: templateConfig?.hero_image_url ?? "",
     hero_title: templateConfig?.hero_title ?? "Offerte",
+    hero_main_title: templateConfig?.hero_main_title ?? "",
+    hero_category_text: templateConfig?.hero_category_text ?? "",
     voorblad_variant: (templateConfig?.voorblad as string) || "hero-dark",
     producten_variant: (templateConfig?.producten as string) || "product-cards",
     prijstabel_variant: (templateConfig?.prijstabel as string) || "price-modern",
@@ -365,7 +371,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         pageNum++;
         return (
           <div key="voorblad" className="pdf-page" style={{ ...pageStyle, padding: 0, overflow: "hidden" }}>
-            <VoorbladComp pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl} logoUrlDark={(() => { const v = tc.voorblad_logo_variant || "auto"; if (v === "light") return undefined; if (v === "dark") return logoUrlDonker || logoUrl; return logoUrlDonker; })()} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} categoryLabel={categoryLabel || null} productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null} slogan={partner.bedrijfsslogan || null} introTekst={introTekst} badges={[tc.badge_1, tc.badge_2, tc.badge_3]} telefoon={partner.telefoonnummer || null} klantAdres={offerte.klant_adres || null} klantPostcode={offerte.klant_postcode || null} klantPlaats={offerte.klant_plaats || null} heroImageUrl={tc.hero_image_url || null} heroTitle={tc.hero_title || "Offerte"} />
+            <VoorbladComp pc={pc} sc={sc} pcTint={pcTint} logoUrl={logoUrl} logoUrlDark={(() => { const v = tc.voorblad_logo_variant || "auto"; if (v === "light") return undefined; if (v === "dark") return logoUrlDonker || logoUrl; return logoUrlDonker; })()} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} offertenummer={offerte.offertenummer} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} categoryLabel={categoryLabel || null} productNaam={producten.length > 0 ? (producten[0].merk && producten[0].model ? `${producten[0].merk} ${producten[0].model}` : producten[0].naam) : null} slogan={partner.bedrijfsslogan || null} introTekst={introTekst} badges={[tc.badge_1, tc.badge_2, tc.badge_3]} telefoon={partner.telefoonnummer || null} klantAdres={offerte.klant_adres || null} klantPostcode={offerte.klant_postcode || null} klantPlaats={offerte.klant_plaats || null} heroImageUrl={tc.hero_image_url || null} heroTitle={tc.hero_title || "Offerte"} heroMainTitle={tc.hero_main_title || undefined} heroCategoryText={tc.hero_category_text || undefined} />
             <PageNumber num={pageNum} />
           </div>
         );

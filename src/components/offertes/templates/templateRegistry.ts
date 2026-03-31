@@ -85,6 +85,8 @@ export type TemplateConfig = {
   // Hero customization
   hero_image_url?: string;
   hero_title?: string;
+  hero_main_title?: string;
+  hero_category_text?: string;
   // Logo variant: 'auto' (default, context-aware), 'light', 'dark'
   voorblad_logo_variant?: "auto" | "light" | "dark";
   // Section ordering

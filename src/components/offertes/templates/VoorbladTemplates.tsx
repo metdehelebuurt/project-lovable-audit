@@ -23,6 +23,8 @@ interface VoorbladProps {
   isThumbnail?: boolean;
   heroImageUrl?: string | null;
   heroTitle?: string;
+  heroMainTitle?: string;
+  heroCategoryText?: string;
 }
 
 function hexToTint(hex: string, opacity: number): string {
@@ -69,7 +71,7 @@ const HeroImageBg: React.FC<{ url: string; overlay: string }> = ({ url, overlay 
    1 — HERO DARK
    ════════════════════════════════════════════════════════════ */
 export const HeroDark: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, productNaam, slogan, introTekst, badges, telefoon, klantAdres, klantPostcode, klantPlaats, pcTint, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, productNaam, slogan, introTekst, badges, telefoon, klantAdres, klantPostcode, klantPlaats, pcTint, heroImageUrl, heroTitle = "Offerte", heroMainTitle, heroCategoryText } = props;
   const darkLogo = logoUrlDark || logoUrl;
   const hasImage = !!heroImageUrl;
 
@@ -83,9 +85,9 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
         <div style={{ position: "relative", zIndex: 1 }}>
           {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 52, marginBottom: 32, objectFit: "contain" }} />}
           <p style={{ fontSize: 14, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
-          <h1 style={{ fontSize: 42, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>Verduurzaam je huis</h1>
+          <h1 style={{ fontSize: 42, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>{heroMainTitle || "Verduurzaam je huis"}</h1>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: "6px 0 0", lineHeight: 1.15, color: pc }}>
-            {categoryLabel ? `met onze ${categoryLabel}` : "met onze oplossing"}
+            {heroCategoryText || (categoryLabel ? `met onze ${categoryLabel}` : "met onze oplossing")}
           </h1>
           {productNaam && <p style={{ fontSize: 20, fontWeight: 500, marginTop: 16, opacity: 0.9 }}>{productNaam}</p>}
         </div>
@@ -130,7 +132,7 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
    2 — HERO SPLIT
    ════════════════════════════════════════════════════════════ */
 export const HeroSplit: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, slogan, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, slogan, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte", heroMainTitle, heroCategoryText } = props;
   const darkLogo = logoUrlDark || logoUrl;
 
   return (
@@ -142,9 +144,9 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
           {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 44, marginBottom: 48, objectFit: "contain", alignSelf: "flex-start" }} />}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
-            <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>Uw persoonlijke offerte</h1>
+            <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>{heroMainTitle || "Uw persoonlijke offerte"}</h1>
             <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginTop: 20, marginBottom: 28 }} />
-            <p style={{ fontSize: 15, opacity: 0.8, lineHeight: 1.7 }}>{categoryLabel ? `Voor uw ${categoryLabel.toLowerCase()} project` : "Voor uw verduurzamingsproject"}</p>
+            <p style={{ fontSize: 15, opacity: 0.8, lineHeight: 1.7 }}>{heroCategoryText || (categoryLabel ? `Voor uw ${categoryLabel.toLowerCase()} project` : "Voor uw verduurzamingsproject")}</p>
           </div>
           {slogan && <p style={{ fontSize: 14, fontStyle: "italic", color: pc, marginTop: "auto", paddingTop: 24 }}>"{slogan}"</p>}
         </div>
@@ -173,7 +175,7 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
    3 — HERO MINIMAL
    ════════════════════════════════════════════════════════════ */
 export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, introTekst, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, introTekst, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte", heroMainTitle, heroCategoryText } = props;
   const displayLogo = heroImageUrl ? (logoUrlDark || logoUrl) : logoUrl;
 
   return (
@@ -196,7 +198,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
       {/* Center content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", zIndex: 1 }}>
         <p style={{ fontSize: 15, fontWeight: 700, textTransform: "uppercase", letterSpacing: 5, color: pc, marginBottom: 20 }}>{heroTitle}</p>
-        <h1 style={{ fontSize: 56, fontWeight: 800, color: sc, margin: 0, lineHeight: 1.05 }}>Uw persoonlijke<br />voorstel</h1>
+        <h1 style={{ fontSize: 56, fontWeight: 800, color: sc, margin: 0, lineHeight: 1.05 }}>{heroMainTitle || "Uw persoonlijke voorstel"}</h1>
         <div style={{ width: 72, height: 4, backgroundColor: pc, borderRadius: 2, margin: "32px 0" }} />
         <p style={{ fontSize: 18, color: "#555", margin: 0 }}>Opgesteld voor <strong style={{ color: sc }}>{klantNaam}</strong></p>
         {klantAdres && <p style={{ fontSize: 15, color: "#888", margin: "6px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
@@ -215,7 +217,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
    4 — HERO GRADIENT
    ════════════════════════════════════════════════════════════ */
 export const HeroGradient: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte", heroMainTitle, heroCategoryText } = props;
   const darkLogo = logoUrlDark || logoUrl;
 
   return (
@@ -226,7 +228,7 @@ export const HeroGradient: React.FC<VoorbladProps> = (props) => {
         {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 48, marginBottom: 56, objectFit: "contain", alignSelf: "flex-start" }} />}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <p style={{ fontSize: 16, fontWeight: 600, textTransform: "uppercase", letterSpacing: 5, marginBottom: 16, opacity: 0.7 }}>{heroTitle}</p>
-          <h1 style={{ fontSize: 52, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{categoryLabel ? `${categoryLabel} offerte` : "Uw offerte"}</h1>
+          <h1 style={{ fontSize: 52, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{heroMainTitle || (categoryLabel ? `${categoryLabel} offerte` : "Uw offerte")}</h1>
           <h2 style={{ fontSize: 28, fontWeight: 400, margin: "12px 0 0", opacity: 0.9 }}>voor {klantNaam}</h2>
           {klantAdres && <p style={{ fontSize: 15, opacity: 0.7, margin: "10px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
           {introTekst && (
@@ -251,7 +253,7 @@ export const HeroGradient: React.FC<VoorbladProps> = (props) => {
    5 — HERO PHOTO
    ════════════════════════════════════════════════════════════ */
 export const HeroPhoto: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, pcTint, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte", heroMainTitle, heroCategoryText } = props;
   const darkLogo = logoUrlDark || logoUrl;
 
   return (
@@ -263,8 +265,9 @@ export const HeroPhoto: React.FC<VoorbladProps> = (props) => {
         <div style={{ position: "relative", zIndex: 2 }}>
           <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 6, opacity: 0.9 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 40, fontWeight: 800, color: "#fff", margin: 0 }}>
-            {categoryLabel || "Offerte"}
+            {heroMainTitle || categoryLabel || "Offerte"}
           </h1>
+          {heroCategoryText && <p style={{ fontSize: 18, color: "#fff", opacity: 0.85, margin: "8px 0 0" }}>{heroCategoryText}</p>}
         </div>
       </div>
 
