@@ -265,8 +265,9 @@ export const HeroPhoto: React.FC<VoorbladProps> = (props) => {
         <div style={{ position: "relative", zIndex: 2 }}>
           <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 6, opacity: 0.9 }}>{heroTitle}</p>
           <h1 style={{ fontSize: 40, fontWeight: 800, color: "#fff", margin: 0 }}>
-            {categoryLabel || "Offerte"}
+            {heroMainTitle || categoryLabel || "Offerte"}
           </h1>
+          {heroCategoryText && <p style={{ fontSize: 18, color: "#fff", opacity: 0.85, margin: "8px 0 0" }}>{heroCategoryText}</p>}
         </div>
       </div>
 
