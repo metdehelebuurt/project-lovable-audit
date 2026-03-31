@@ -515,7 +515,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         const dsProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd" || (p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0));
         if (dsProducts.length === 0) return null;
         const datasheetPages: React.ReactNode[] = [];
-        producten.filter(p => p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0).forEach(p => {
+        producten.filter(p => p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0 && p.datasheet_type !== "gegenereerd").forEach(p => {
           const specs = p.specs as Record<string, any>;
           const specEntries = Object.entries(specs).filter(([, v]) => v !== null && v !== undefined && v !== "");
           if (specEntries.length === 0) return;
