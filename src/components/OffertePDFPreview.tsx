@@ -116,6 +116,14 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
   const [templateConfig, setTemplateConfig] = useState<any>(null);
 
   useEffect(() => {
+    if (offerte) {
+      const orig = document.title;
+      document.title = `${offerte.klant_naam} - ${offerte.offertenummer}`;
+      return () => { document.title = orig; };
+    }
+  }, [offerte]);
+
+  useEffect(() => {
     if (!id) return;
     (async () => {
       const { data: o } = await supabase.from("offertes").select("*").eq("id", id).single();
