@@ -1066,10 +1066,13 @@ export default function OffertePDF() {
             <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={20} max={100} step={1} className="w-28" />
             <span className="text-xs text-muted-foreground w-8">{zoom}%</span>
             <Separator orientation="vertical" className="h-5 mx-1" />
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={handlePrint}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={handlePrint} disabled={!partnerHandtekening}>
               <Download className="h-3.5 w-3.5" /> PDF
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => navigate(`/offertes/${id}?email=true`)}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => {
+              if (!partnerHandtekening) { toast.error("Onderteken de offerte eerst"); return; }
+              navigate(`/offertes/${id}?email=true`);
+            }} disabled={!partnerHandtekening}>
               <Mail className="h-3.5 w-3.5" /> E-mail
             </Button>
           </div>
