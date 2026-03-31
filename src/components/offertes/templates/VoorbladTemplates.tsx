@@ -23,6 +23,8 @@ interface VoorbladProps {
   isThumbnail?: boolean;
   heroImageUrl?: string | null;
   heroTitle?: string;
+  heroMainTitle?: string;
+  heroCategoryText?: string;
 }
 
 function hexToTint(hex: string, opacity: number): string {
