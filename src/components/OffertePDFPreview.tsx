@@ -584,8 +584,11 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       `}</style>
 
       {!hideActionBar && (
-        <div className="no-print" style={{ padding: "16px 24px", display: "flex", gap: 8, justifyContent: "center", backgroundColor: "#f8f8f8", borderBottom: "1px solid #eee" }}>
-          <button onClick={() => window.print()} style={{ padding: "10px 24px", borderRadius: 40, color: "#fff", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", backgroundColor: pc, boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
+        <div className="no-print" style={{ padding: "16px 24px", display: "flex", gap: 8, justifyContent: "center", alignItems: "center", backgroundColor: "#f8f8f8", borderBottom: "1px solid #eee" }}>
+          {!(offerte as any).partner_handtekening_data && (
+            <span style={{ fontSize: 12, color: "#c00", marginRight: 12 }}>⚠ Offerte is nog niet ondertekend door de adviseur</span>
+          )}
+          <button onClick={() => window.print()} disabled={!(offerte as any).partner_handtekening_data} style={{ padding: "10px 24px", borderRadius: 40, color: "#fff", fontSize: 13, fontWeight: 600, border: "none", cursor: (offerte as any).partner_handtekening_data ? "pointer" : "not-allowed", backgroundColor: (offerte as any).partner_handtekening_data ? pc : "#ccc", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", opacity: (offerte as any).partner_handtekening_data ? 1 : 0.6 }}>
             PDF downloaden
           </button>
           <button onClick={() => window.history.back()} style={{ padding: "10px 24px", borderRadius: 40, backgroundColor: "#f0f0f0", color: "#555", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>
