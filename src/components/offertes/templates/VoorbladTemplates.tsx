@@ -34,6 +34,19 @@ function hexToTint(hex: string, opacity: number): string {
 
 const A4_HEIGHT = 1123;
 
+const renderIntro = (tekst: string, style: React.CSSProperties) => {
+  const match = tekst.match(/^((?:Beste|Geachte|Lieve|Dag)\s[^,]+,)\s*/i);
+  if (match) {
+    return (
+      <>
+        <p style={{ ...style, marginBottom: 8 }}>{match[1]}</p>
+        <p style={style}>{tekst.slice(match[0].length)}</p>
+      </>
+    );
+  }
+  return <p style={style}>{tekst}</p>;
+};
+
 const rootStyle: React.CSSProperties = {
   width: "100%",
   height: A4_HEIGHT,
@@ -79,7 +92,7 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
       </div>
 
       {/* Bottom content section — remaining 50% */}
-      <div style={{ padding: "48px 56px", flex: 1, display: "flex", flexDirection: "column", zIndex: 1, backgroundColor: hasImage ? "rgba(255,255,255,0.96)" : "transparent" }}>
+      <div style={{ padding: "48px 56px 0", flex: 1, display: "flex", flexDirection: "column", zIndex: 1, backgroundColor: hasImage ? "rgba(255,255,255,0.96)" : "transparent" }}>
         <div style={{ display: "flex", gap: 48, marginBottom: 40 }}>
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: pc, marginBottom: 10 }}>Opgesteld voor</p>
@@ -96,17 +109,18 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
         </div>
         {introTekst && (
           <div style={{ backgroundColor: pcTint, borderLeft: `4px solid ${pc}`, padding: "18px 24px", borderRadius: 10, marginBottom: 28 }}>
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: "#333" }}>{introTekst}</p>
+            {renderIntro(introTekst, { margin: 0, fontSize: 14, lineHeight: 1.7, color: "#333" })}
           </div>
         )}
         <div style={{ flex: 1 }} />
         {slogan && <p style={{ fontSize: 16, fontStyle: "italic", color: pc, marginBottom: 20 }}>"{slogan}"</p>}
-        <div style={{ backgroundColor: pcTint, padding: "18px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${hexToTint(pc, 0.15)}`, paddingLeft: 0, paddingRight: 0 }}>
-          <div style={{ display: "flex", gap: 24, fontSize: 12, color: "#666" }}>
-            {badges.map((b, i) => <span key={i}>✓ {b}</span>)}
-          </div>
-          {telefoon && <span style={{ fontSize: 13, fontWeight: 600, color: sc }}>{telefoon}</span>}
+      </div>
+      {/* USP bar — pinned to bottom */}
+      <div style={{ backgroundColor: pcTint, padding: "18px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${hexToTint(pc, 0.15)}`, zIndex: 1 }}>
+        <div style={{ display: "flex", gap: 24, fontSize: 12, color: "#666" }}>
+          {badges.map((b, i) => <span key={i}>✓ {b}</span>)}
         </div>
+        {telefoon && <span style={{ fontSize: 13, fontWeight: 600, color: sc }}>{telefoon}</span>}
       </div>
     </div>
   );
@@ -149,7 +163,7 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
           <p style={{ fontSize: 13, color: "#555", margin: "4px 0" }}>Offertenr: <strong>{offertenummer}</strong></p>
           <p style={{ fontSize: 13, color: "#555", margin: "4px 0" }}>Datum: <strong>{datum}</strong></p>
         </div>
-        {introTekst && <p style={{ fontSize: 14, lineHeight: 1.8, color: "#333" }}>{introTekst}</p>}
+        {introTekst && renderIntro(introTekst, { fontSize: 14, lineHeight: 1.8, color: "#333", margin: 0 })}
       </div>
     </div>
   );
@@ -186,7 +200,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
         <div style={{ width: 72, height: 4, backgroundColor: pc, borderRadius: 2, margin: "32px 0" }} />
         <p style={{ fontSize: 18, color: "#555", margin: 0 }}>Opgesteld voor <strong style={{ color: sc }}>{klantNaam}</strong></p>
         {klantAdres && <p style={{ fontSize: 15, color: "#888", margin: "6px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
-        {introTekst && <p style={{ fontSize: 14, lineHeight: 1.8, color: "#555", marginTop: 32, maxWidth: 520 }}>{introTekst}</p>}
+        {introTekst && <div style={{ marginTop: 32, maxWidth: 520 }}>{renderIntro(introTekst, { fontSize: 14, lineHeight: 1.8, color: "#555", margin: 0 })}</div>}
       </div>
 
       {/* Footer */}
@@ -216,7 +230,7 @@ export const HeroGradient: React.FC<VoorbladProps> = (props) => {
           <h2 style={{ fontSize: 28, fontWeight: 400, margin: "12px 0 0", opacity: 0.9 }}>voor {klantNaam}</h2>
           {klantAdres && <p style={{ fontSize: 15, opacity: 0.7, margin: "10px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
           {introTekst && (
-            <p style={{ fontSize: 15, lineHeight: 1.8, marginTop: 40, maxWidth: 520, opacity: 0.9 }}>{introTekst}</p>
+            <div style={{ marginTop: 40, maxWidth: 520, opacity: 0.9 }}>{renderIntro(introTekst, { fontSize: 15, lineHeight: 1.8, margin: 0 })}</div>
           )}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 24 }}>
@@ -270,7 +284,7 @@ export const HeroPhoto: React.FC<VoorbladProps> = (props) => {
             <p style={{ fontSize: 13, color: "#555", margin: "3px 0 0" }}>{datum}</p>
           </div>
         </div>
-        {introTekst && <p style={{ fontSize: 14, lineHeight: 1.8, color: "#333" }}>{introTekst}</p>}
+        {introTekst && renderIntro(introTekst, { fontSize: 14, lineHeight: 1.8, color: "#333", margin: 0 })}
         <div style={{ flex: 1 }} />
       </div>
     </div>
