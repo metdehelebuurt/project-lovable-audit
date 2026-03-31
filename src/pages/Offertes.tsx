@@ -91,9 +91,6 @@ const emptyForm: OfferteFormData = {
   offerte_korting_waarde: 0,
 };
 
-// Using shared generateOfferteNummer from @/types/offerte
-import { generateOfferteNummer } from "@/types/offerte";
-
 const Offertes = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
