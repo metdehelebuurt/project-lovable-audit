@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,6 +70,8 @@ const OfferteNieuw = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
 
   const [selectedLead, setSelectedLead] = useState<SelectedLead | null>(null);
   const [klantNaam, setKlantNaam] = useState("");
@@ -141,7 +143,46 @@ const OfferteNieuw = () => {
     }
   }, []);
 
-  // Fetch partner feature flags for product visibility
+  // A6: Edit-modus - laad bestaande offerte
+  const { data: editOfferte } = useQuery({
+    queryKey: ["offerte-edit", editId],
+    enabled: !!editId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("offertes").select("*").eq("id", editId!).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!editOfferte) return;
+    setKlantNaam(editOfferte.klant_naam);
+    setKlantEmail(editOfferte.klant_email);
+    setKlantTelefoon(editOfferte.klant_telefoon || "");
+    setKlantAdres(editOfferte.klant_adres || "");
+    setKlantPostcode(editOfferte.klant_postcode || "");
+    setKlantPlaats(editOfferte.klant_plaats || "");
+    setGeldigTot(editOfferte.geldig_tot);
+    setBetalingsvoorwaarden(editOfferte.betalingsvoorwaarden || "");
+    setNotities(editOfferte.notities || "");
+    setIntroductieTekst(editOfferte.introductie_tekst || "");
+    setGarantieVoorwaarden(editOfferte.garantie_voorwaarden || "");
+    setInstallatieTermijn(editOfferte.installatie_termijn || "");
+    setIncludeSchouw((editOfferte as any).include_schouw ?? false);
+    setIncludeEnergieadvies((editOfferte as any).include_energieadvies ?? false);
+    setSchouwId(editOfferte.schouw_id || "");
+    if (editOfferte.lead_id) {
+      setSelectedLead({ id: editOfferte.lead_id, voornaam: "", achternaam: "", email: "", telefoon: null, adres: null, postcode: null, plaats: null });
+    }
+    const r = Array.isArray(editOfferte.regels) ? (editOfferte.regels as unknown as OfferteRegel[]) : [{ ...emptyRegel }];
+    setRegels(r);
+    const tc = editOfferte.template_config && typeof editOfferte.template_config === "object" ? editOfferte.template_config as any : {};
+    if (tc.offerte_korting_type) setOfferteKortingType(tc.offerte_korting_type);
+    if (tc.offerte_korting_waarde) setOfferteKortingWaarde(tc.offerte_korting_waarde);
+    setTemplateConfig(prev => ({ ...prev, ...tc }));
+  }, [editOfferte]);
+
+
   const isSuperadmin = profile?.rol === "superadmin";
   const { data: partnerFlags } = useQuery({
     queryKey: ["partner-flags", profile?.partner_id],
@@ -287,17 +328,26 @@ const OfferteNieuw = () => {
         totaal_bedrag: totals.totaal,
         include_schouw: includeSchouw,
         include_energieadvies: includeEnergieadvies,
-        partner_id: profile?.partner_id,
-        adviseur_id: profile?.id,
-        offertenummer: generateOfferteNummer(),
       };
-      const { error } = await supabase.from("offertes").insert(record);
-      if (error) throw error;
+
+      if (editId) {
+        // Update existing offerte
+        const { error } = await supabase.from("offertes").update(record).eq("id", editId);
+        if (error) throw error;
+      } else {
+        // Create new offerte
+        record.partner_id = profile?.partner_id;
+        record.adviseur_id = profile?.id;
+        record.offertenummer = generateOfferteNummer();
+        const { error } = await supabase.from("offertes").insert(record);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offertes"] });
-      toast.success("Offerte aangemaakt");
-      navigate("/offertes");
+      if (editId) queryClient.invalidateQueries({ queryKey: ["offerte", editId] });
+      toast.success(editId ? "Offerte bijgewerkt" : "Offerte aangemaakt");
+      navigate(editId ? `/offertes/${editId}` : "/offertes");
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
@@ -331,8 +381,8 @@ const OfferteNieuw = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Nieuwe offerte</h1>
-          <p className="text-muted-foreground text-sm">Maak een offerte aan en koppel optioneel aan een lead</p>
+          <h1 className="text-2xl font-semibold text-foreground">{editId ? "Offerte bewerken" : "Nieuwe offerte"}</h1>
+          <p className="text-muted-foreground text-sm">{editId ? "Pas de offerte aan en sla op" : "Maak een offerte aan en koppel optioneel aan een lead"}</p>
         </div>
       </div>
 
@@ -615,7 +665,7 @@ const OfferteNieuw = () => {
             <Button type="button" variant="outline" onClick={() => navigate("/offertes")} className="rounded-pill">Annuleren</Button>
             <Button type="submit" className="rounded-pill gap-2" disabled={saveMutation.isPending}>
               {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Offerte aanmaken
+              {editId ? "Offerte bijwerken" : "Offerte aanmaken"}
             </Button>
           </div>
         </div>

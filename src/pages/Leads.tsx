@@ -174,6 +174,17 @@ const Leads = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Clean up FK references before deleting
+      await Promise.all([
+        supabase.from("lead_notities").delete().eq("lead_id", id),
+        supabase.from("lead_contactmomenten").delete().eq("lead_id", id),
+        supabase.from("lead_eigenschappen").delete().eq("lead_id", id),
+      ]);
+      // Unlink offertes and klanten
+      await supabase.from("offertes").update({ lead_id: null } as any).eq("lead_id", id);
+      await supabase.from("klanten").update({ lead_id: null } as any).eq("lead_id", id);
+      await supabase.from("schouwen").delete().eq("lead_id", id);
+      await supabase.from("afspraken").delete().eq("lead_id", id);
       const { error } = await supabase.from("leads").delete().eq("id", id);
       if (error) throw error;
     },

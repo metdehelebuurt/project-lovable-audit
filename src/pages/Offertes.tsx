@@ -19,7 +19,9 @@ import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
+import RichTextEditor from "@/components/shared/RichTextEditor";
 import type { Database, Json } from "@/integrations/supabase/types";
+import { formatCurrency, regelSubtotaal as regelSubShared, generateOfferteNummer, type OfferteRegel, emptyOfferteRegel } from "@/types/offerte";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
@@ -41,17 +43,7 @@ const statusColors: Record<OfferteStatus, string> = {
   verlopen: "bg-warning-light text-warning-foreground",
 };
 
-interface OfferteRegel {
-  product_id?: string;
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-  korting_bedrag?: number;
-  korting_type?: "percentage" | "bedrag";
-}
+// Using shared OfferteRegel from @/types/offerte
 
 interface OfferteFormData {
   lead_id: string;
@@ -75,15 +67,7 @@ interface OfferteFormData {
   offerte_korting_waarde: number;
 }
 
-const emptyRegel: OfferteRegel = {
-  omschrijving: "",
-  aantal: 1,
-  prijs_per_stuk: 0,
-  btw_percentage: 21,
-  korting_percentage: 0,
-  korting_bedrag: 0,
-  korting_type: "percentage",
-};
+const emptyRegel = emptyOfferteRegel;
 
 const emptyForm: OfferteFormData = {
   lead_id: "",
@@ -105,15 +89,6 @@ const emptyForm: OfferteFormData = {
   include_energieadvies: false,
   offerte_korting_type: "percentage",
   offerte_korting_waarde: 0,
-};
-
-const generateOfferteNummer = () => {
-  const d = new Date();
-  const yy = d.getFullYear().toString().slice(2);
-  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
-  const dd = d.getDate().toString().padStart(2, "0");
-  const rand = Math.floor(Math.random() * 9999).toString().padStart(4, "0");
-  return `OF-${yy}${mm}${dd}-${rand}`;
 };
 
 const Offertes = () => {
@@ -211,11 +186,7 @@ const Offertes = () => {
     enabled: !!profile?.partner_id,
   });
 
-  const regelSub = (r: OfferteRegel) => {
-    const bruto = r.aantal * r.prijs_per_stuk;
-    if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
-    return bruto * (1 - (r.korting_percentage || 0) / 100);
-  };
+  const regelSub = regelSubShared;
 
   const totals = useMemo(() => {
     let subtotaal = 0;
@@ -402,7 +373,7 @@ const Offertes = () => {
         regels: p.regels.map((r, i) => i === idx ? {
           ...r,
           product_id: product.id,
-          omschrijving: `${product.naam}${product.merk ? ` — ${product.merk}` : ""}${product.model ? ` ${product.model}` : ""}`,
+          omschrijving: product.naam,
           offerte_tekst: offerteTekst,
           prijs_per_stuk: product.prijs_excl_btw,
           btw_percentage: product.btw_percentage ?? 21,
@@ -423,7 +394,7 @@ const Offertes = () => {
     return matchSearch && matchStatus;
   });
 
-  const formatCurrency = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
+  // Using shared formatCurrency from @/types/offerte
 
   return (
     <div className="space-y-6">
@@ -801,16 +772,16 @@ const Offertes = () => {
               <h3 className="font-medium text-foreground">Offerte teksten</h3>
               <div>
                 <Label>Introductietekst</Label>
-                <Textarea value={form.introductie_tekst} onChange={e => setForm(p => ({ ...p, introductie_tekst: e.target.value }))} className="rounded-xl" rows={3} placeholder="Inleidende tekst bovenaan de offerte..." />
+                <RichTextEditor value={form.introductie_tekst} onChange={v => setForm(p => ({ ...p, introductie_tekst: v }))} placeholder="Inleidende tekst bovenaan de offerte..." />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Garantievoorwaarden</Label>
-                  <Textarea value={form.garantie_voorwaarden} onChange={e => setForm(p => ({ ...p, garantie_voorwaarden: e.target.value }))} className="rounded-xl" rows={3} placeholder="Garantievoorwaarden..." />
+                  <RichTextEditor value={form.garantie_voorwaarden} onChange={v => setForm(p => ({ ...p, garantie_voorwaarden: v }))} placeholder="Garantievoorwaarden..." />
                 </div>
                 <div>
                   <Label>Installatietermijn</Label>
-                  <Textarea value={form.installatie_termijn} onChange={e => setForm(p => ({ ...p, installatie_termijn: e.target.value }))} className="rounded-xl" rows={3} placeholder="Verwachte installatietermijn..." />
+                  <RichTextEditor value={form.installatie_termijn} onChange={v => setForm(p => ({ ...p, installatie_termijn: v }))} placeholder="Verwachte installatietermijn..." />
                 </div>
               </div>
             </div>
@@ -875,8 +846,12 @@ const Offertes = () => {
                         <TableCell className="text-right">{r.aantal}</TableCell>
                         <TableCell className="text-right">{formatCurrency(r.prijs_per_stuk)}</TableCell>
                         <TableCell className="text-right">{r.btw_percentage}%</TableCell>
-                        <TableCell className="text-right">{r.korting_percentage}%</TableCell>
-                        <TableCell className="text-right">{formatCurrency(r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100))}</TableCell>
+                        <TableCell className="text-right">
+                          {r.korting_type === "bedrag"
+                            ? formatCurrency(r.korting_bedrag || 0)
+                            : `${r.korting_percentage || 0}%`}
+                        </TableCell>
+                        <TableCell className="text-right">{formatCurrency(regelSub(r))}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -22,6 +22,7 @@ import {
   User, Clock, StickyNote, FileText
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
+import { formatCurrency, regelSubtotaal as regelSub, type OfferteRegel } from "@/types/offerte";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
@@ -51,26 +52,7 @@ const categorieLabelsMap: Record<string, string> = {
   overig: "Overig",
 };
 
-interface OfferteRegel {
-  product_id?: string;
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-  korting_bedrag?: number;
-  korting_type?: "percentage" | "bedrag";
-}
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
-
-const regelSub = (r: OfferteRegel) => {
-  const bruto = r.aantal * r.prijs_per_stuk;
-  if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
-  return bruto * (1 - (r.korting_percentage || 0) / 100);
-};
+// Using shared types from @/types/offerte
 
 const OfferteDetail = () => {
   const { id } = useParams();
@@ -432,37 +414,43 @@ const OfferteDetail = () => {
               </div>
 
               <div className="mt-4 pt-4 border-t space-y-1.5 max-w-xs ml-auto text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotaal excl. BTW</span>
-                  <span>{formatCurrency(offerte.subtotaal + (offerteKortingWaarde > 0
-                    ? offerteKortingType === "percentage"
-                      ? offerte.subtotaal / (1 - offerteKortingWaarde / 100) * (offerteKortingWaarde / 100)
-                      : offerteKortingWaarde
-                    : 0))}</span>
-                </div>
-                {offerteKortingWaarde > 0 && (
-                  <div className="flex justify-between text-success">
-                    <span>Korting ({offerteKortingType === "percentage" ? `${offerteKortingWaarde}%` : "vast bedrag"})</span>
-                    <span>-{formatCurrency(
-                      offerteKortingType === "percentage"
-                        ? offerte.subtotaal / (1 - offerteKortingWaarde / 100) * (offerteKortingWaarde / 100)
-                        : offerteKortingWaarde
-                    )}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotaal na korting</span>
-                  <span>{formatCurrency(offerte.subtotaal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">BTW</span>
-                  <span>{formatCurrency(offerte.btw_bedrag)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-semibold text-base pt-1">
-                  <span>Totaal incl. BTW</span>
-                  <span>{formatCurrency(offerte.totaal_bedrag)}</span>
-                </div>
+                {(() => {
+                  // Herbereken bruto subtotaal vanuit de regels
+                  const brutoSub = regels.reduce((sum, r) => sum + regelSub(r), 0);
+                  let kortingBedrag = 0;
+                  if (offerteKortingWaarde > 0) {
+                    kortingBedrag = offerteKortingType === "percentage"
+                      ? brutoSub * (offerteKortingWaarde / 100)
+                      : offerteKortingWaarde;
+                  }
+                  return (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotaal excl. BTW</span>
+                        <span>{formatCurrency(brutoSub)}</span>
+                      </div>
+                      {kortingBedrag > 0 && (
+                        <div className="flex justify-between text-success">
+                          <span>Korting ({offerteKortingType === "percentage" ? `${offerteKortingWaarde}%` : "vast bedrag"})</span>
+                          <span>-{formatCurrency(kortingBedrag)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotaal na korting</span>
+                        <span>{formatCurrency(offerte.subtotaal)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">BTW</span>
+                        <span>{formatCurrency(offerte.btw_bedrag)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-semibold text-base pt-1">
+                        <span>Totaal incl. BTW</span>
+                        <span>{formatCurrency(offerte.totaal_bedrag)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
