@@ -228,7 +228,7 @@ export const HeroGradient: React.FC<VoorbladProps> = (props) => {
         {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 48, marginBottom: 56, objectFit: "contain", alignSelf: "flex-start" }} />}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <p style={{ fontSize: 16, fontWeight: 600, textTransform: "uppercase", letterSpacing: 5, marginBottom: 16, opacity: 0.7 }}>{heroTitle}</p>
-          <h1 style={{ fontSize: 52, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{categoryLabel ? `${categoryLabel} offerte` : "Uw offerte"}</h1>
+          <h1 style={{ fontSize: 52, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{heroMainTitle || (categoryLabel ? `${categoryLabel} offerte` : "Uw offerte")}</h1>
           <h2 style={{ fontSize: 28, fontWeight: 400, margin: "12px 0 0", opacity: 0.9 }}>voor {klantNaam}</h2>
           {klantAdres && <p style={{ fontSize: 15, opacity: 0.7, margin: "10px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
           {introTekst && (
