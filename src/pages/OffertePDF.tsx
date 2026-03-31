@@ -39,6 +39,7 @@ import {
 import { categoryFields } from "@/components/schouwen/SchouwCategoryFields";
 import SignaturePad from "@/components/schouwen/SignaturePad";
 import { toast } from "sonner";
+import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type Product = Database["public"]["Tables"]["producten"]["Row"];
