@@ -48,6 +48,7 @@ const Instellingen = () => {
     { id: "offertes", label: "Offertes", icon: FileText, adminOnly: true },
     { id: "leads", label: "Leads", icon: Users, adminOnly: true },
     { id: "schouwen", label: "Schouwen", icon: ClipboardList, adminOnly: true },
+    { id: "abonnement", label: "Abonnement", icon: CreditCard, adminOnly: true },
     { id: "privacy", label: "Privacy & Data", icon: Shield },
   ];
 
