@@ -105,8 +105,12 @@ export const TermsBoxed: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, pcTint2
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 20, borderTop: `2px solid ${pc}`, paddingTop: 20 }}>
       <div>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Handtekening {partnerNaam}</p>
-        <p style={{ fontSize: 11, color: "#888", margin: "4px 0" }}>{adviseurNaam} — {datum}</p>
-        <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 12 }} />
+        <p style={{ fontSize: 11, color: "#888", margin: "4px 0" }}>{adviseurNaam} — {partnerHandtekeningDatum || datum}</p>
+        {partnerHandtekening ? (
+          <img src={partnerHandtekening} alt="Handtekening" style={{ height: 40, marginTop: 8, objectFit: "contain" }} />
+        ) : (
+          <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 12 }} />
+        )}
       </div>
       <div>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Handtekening klant</p>
