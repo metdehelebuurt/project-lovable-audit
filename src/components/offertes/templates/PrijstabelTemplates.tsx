@@ -148,7 +148,7 @@ export const PriceModern: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, regels,
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
-        <span>BTW</span><span>{formatCurrency(btwBedrag)}</span>
+        <span>{btwLabel(regels)}</span><span>{formatCurrency(btwBedrag)}</span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 8 }}>
         <span>Totaal</span><span>{formatCurrency(totaalBedrag)}</span>
