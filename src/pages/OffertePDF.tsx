@@ -217,6 +217,9 @@ export default function OffertePDF() {
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroGallery, setHeroGallery] = useState<string[]>([]);
   const [showGallery, setShowGallery] = useState(false);
+  const [partnerHandtekening, setPartnerHandtekening] = useState<string | null>(null);
+  const [partnerHandtekeningOp, setPartnerHandtekeningOp] = useState<string | null>(null);
+  const [signatureSaving, setSignatureSaving] = useState(false);
   const heroFileRef = useRef<HTMLInputElement>(null);
 
   // Drag & drop state
