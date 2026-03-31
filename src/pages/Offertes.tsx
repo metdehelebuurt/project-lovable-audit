@@ -189,11 +189,7 @@ const Offertes = () => {
     enabled: !!profile?.partner_id,
   });
 
-  const regelSub = (r: OfferteRegel) => {
-    const bruto = r.aantal * r.prijs_per_stuk;
-    if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
-    return bruto * (1 - (r.korting_percentage || 0) / 100);
-  };
+  const regelSub = regelSubShared;
 
   const totals = useMemo(() => {
     let subtotaal = 0;
