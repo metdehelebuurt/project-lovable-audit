@@ -163,7 +163,7 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
           <p style={{ fontSize: 13, color: "#555", margin: "4px 0" }}>Offertenr: <strong>{offertenummer}</strong></p>
           <p style={{ fontSize: 13, color: "#555", margin: "4px 0" }}>Datum: <strong>{datum}</strong></p>
         </div>
-        {introTekst && <p style={{ fontSize: 14, lineHeight: 1.8, color: "#333" }}>{introTekst}</p>}
+        {introTekst && renderIntro(introTekst, { fontSize: 14, lineHeight: 1.8, color: "#333", margin: 0 })}
       </div>
     </div>
   );
