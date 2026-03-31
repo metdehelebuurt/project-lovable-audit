@@ -584,15 +584,13 @@ const OfferteNieuw = () => {
               </div>
               <RichTextEditor value={introductieTekst} onChange={setIntroductieTekst} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Garantievoorwaarden</Label>
-                <Textarea value={garantieVoorwaarden} onChange={e => setGarantieVoorwaarden(e.target.value)} className="rounded-xl mt-1" rows={2} placeholder="Garantievoorwaarden..." />
-              </div>
-              <div>
-                <Label>Installatietermijn</Label>
-                <Input value={installatieTermijn} onChange={e => setInstallatieTermijn(e.target.value)} className="rounded-xl" placeholder="Bijv. Binnen 4 weken na akkoord" />
-              </div>
+            <div>
+              <Label className="mb-1 block">Garantievoorwaarden</Label>
+              <RichTextEditor value={garantieVoorwaarden} onChange={setGarantieVoorwaarden} placeholder="Garantievoorwaarden..." />
+            </div>
+            <div>
+              <Label className="mb-1 block">Installatietermijn</Label>
+              <RichTextEditor value={installatieTermijn} onChange={setInstallatieTermijn} placeholder="Bijv. Binnen 4 weken na akkoord" />
             </div>
           </CardContent>
         </Card>

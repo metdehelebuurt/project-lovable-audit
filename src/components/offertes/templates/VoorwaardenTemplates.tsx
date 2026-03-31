@@ -1,5 +1,13 @@
 import React from "react";
 
+const isHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s);
+const renderHtmlOrText = (text: string, style: React.CSSProperties) => {
+  if (isHtml(text)) {
+    return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: text }} />;
+  }
+  return <p style={style}>{text}</p>;
+};
+
 interface VoorwaardenProps {
   pc: string;
   sc: string;
@@ -24,13 +32,14 @@ export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partne
     {garantieVw && (
       <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 6px" }}>Garantievoorwaarden</p>
-        <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{garantieVw}</p>
+        {renderHtmlOrText(garantieVw, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 })}
       </div>
     )}
     {installTermijn && (
-      <p style={{ fontSize: 12, color: "#555", marginBottom: 12 }}>
-        <strong style={{ color: sc }}>Installatietermijn:</strong> {installTermijn}
-      </p>
+      <div style={{ fontSize: 12, color: "#555", marginBottom: 12 }}>
+        <strong style={{ color: sc }}>Installatietermijn:</strong>
+        {renderHtmlOrText(installTermijn, { fontSize: 12, color: "#555", margin: "4px 0 0", lineHeight: 1.6 })}
+      </div>
     )}
     {betalingsvoorwaarden && (
       <p style={{ fontSize: 11, color: "#666", marginBottom: 12 }}>
@@ -75,13 +84,13 @@ export const TermsBoxed: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, pcTint2
       {garantieVw && (
         <div style={{ border: `1px solid ${pcTint2}`, borderRadius: 10, padding: "14px 16px" }}>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: pc, margin: "0 0 6px" }}>Garantie</p>
-          <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 }}>{garantieVw}</p>
+          {renderHtmlOrText(garantieVw, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 })}
         </div>
       )}
       {installTermijn && (
         <div style={{ border: `1px solid ${pcTint2}`, borderRadius: 10, padding: "14px 16px" }}>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: pc, margin: "0 0 6px" }}>Installatie</p>
-          <p style={{ fontSize: 11, color: "#555", margin: 0 }}>{installTermijn}</p>
+          {renderHtmlOrText(installTermijn, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 })}
         </div>
       )}
       {betalingsvoorwaarden && (
@@ -128,13 +137,13 @@ export const TermsSidebar: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partn
       {garantieVw && (
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: pc, margin: "0 0 4px" }}>Garantie</p>
-          <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.5 }}>{garantieVw}</p>
+          {renderHtmlOrText(garantieVw, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.5 })}
         </div>
       )}
       {installTermijn && (
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: pc, margin: "0 0 4px" }}>Installatie</p>
-          <p style={{ fontSize: 11, color: "#555", margin: 0 }}>{installTermijn}</p>
+          {renderHtmlOrText(installTermijn, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.5 })}
         </div>
       )}
       {betalingsvoorwaarden && (
