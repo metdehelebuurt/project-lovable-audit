@@ -705,7 +705,7 @@ export default function OffertePDF() {
                 </div>
               </div>
 
-              <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} offerteKortingType={config.offerte_korting_type || null} offerteKortingWaarde={config.offerte_korting_waarde || 0} />
+              <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} offerteKortingType={(config as any).offerte_korting_type || null} offerteKortingWaarde={(config as any).offerte_korting_waarde || 0} />
 
               <div style={{ marginTop: 28 }}>
                 <VoorwaardenComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} garantieVw={garantieVw} installTermijn={installTermijn} betalingsvoorwaarden={offerte.betalingsvoorwaarden || null} notities={offerte.notities || null} akkoordTekst={config.akkoord_tekst || ""} partnerHandtekening={partnerHandtekening} partnerHandtekeningDatum={partnerHandtekeningOp ? formatDate(partnerHandtekeningOp) : null} />
