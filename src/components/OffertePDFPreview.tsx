@@ -392,8 +392,35 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         );
       }
 
-      case "producten":
+      case "producten": {
         if (!tc.productpagina || producten.length === 0) return null;
+        const prodData = producten.map(p => ({ naam: p.naam, merk: p.merk, model: p.model, omschrijving: p.omschrijving, afbeelding_url: p.afbeelding_url, garantie_jaren: p.garantie_jaren, certificeringen: p.certificeringen, specs: p.specs && typeof p.specs === "object" ? (p.specs as Record<string, any>) : null, onderhoud: p.onderhoud }));
+
+        if (tc.producten === "product-showcase") {
+          return (
+            <React.Fragment key="producten">
+              {prodData.map((_, pi) => {
+                pageNum++;
+                return (
+                  <div key={`prod-showcase-${pi}`} className="pdf-page" style={pageStyle}>
+                    <PageHeader />
+                    <div style={{ flex: 1 }}>
+                      {pi === 0 && (
+                        <>
+                          <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Producten</h2>
+                          <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
+                        </>
+                      )}
+                      <ProductComp pc={pc} sc={sc} pcTint={pcTint} producten={prodData} index={pi} />
+                    </div>
+                    <PageFooter />
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          );
+        }
+
         pageNum++;
         return (
           <div key="producten" className="pdf-page" style={pageStyle}>
@@ -401,11 +428,12 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Producten</h2>
               <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginBottom: 24 }} />
-              <ProductComp pc={pc} sc={sc} pcTint={pcTint} producten={producten.map(p => ({ naam: p.naam, merk: p.merk, model: p.model, omschrijving: p.omschrijving, afbeelding_url: p.afbeelding_url, garantie_jaren: p.garantie_jaren, certificeringen: p.certificeringen, specs: p.specs && typeof p.specs === "object" ? (p.specs as Record<string, any>) : null, onderhoud: p.onderhoud }))} />
+              <ProductComp pc={pc} sc={sc} pcTint={pcTint} producten={prodData} />
             </div>
             <PageFooter />
           </div>
         );
+      }
 
       case "prijstabel": {
         pageNum++;

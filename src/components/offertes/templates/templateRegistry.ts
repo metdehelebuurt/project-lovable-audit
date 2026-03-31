@@ -30,6 +30,7 @@ export const templateSecties: TemplateSectie[] = [
       { id: "product-cards", naam: "Kaarten", beschrijving: "Productkaarten met afbeeldingen" },
       { id: "product-grid", naam: "Grid", beschrijving: "2-koloms grid layout" },
       { id: "product-spotlight", naam: "Spotlight", beschrijving: "Elk product op volle breedte" },
+      { id: "product-showcase", naam: "Commercieel", beschrijving: "Volledige pagina per product, grote foto & USPs" },
     ],
   },
   {
