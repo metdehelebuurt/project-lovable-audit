@@ -396,7 +396,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         if (!tc.productpagina || producten.length === 0) return null;
         const prodData = producten.map(p => ({ naam: p.naam, merk: p.merk, model: p.model, omschrijving: p.omschrijving, afbeelding_url: p.afbeelding_url, garantie_jaren: p.garantie_jaren, certificeringen: p.certificeringen, specs: p.specs && typeof p.specs === "object" ? (p.specs as Record<string, any>) : null, onderhoud: p.onderhoud }));
 
-        if (tc.producten === "product-showcase") {
+        if (tc.producten_variant === "product-showcase") {
           return (
             <React.Fragment key="producten">
               {prodData.map((_, pi) => {
