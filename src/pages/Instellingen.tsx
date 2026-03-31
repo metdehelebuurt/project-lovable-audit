@@ -98,6 +98,7 @@ const Instellingen = () => {
           {activeTab === "producten" && isPartnerAdmin && profile?.partner_id && <ProductenInstellingen partnerId={profile.partner_id} />}
           {activeTab === "leads" && isPartnerAdmin && profile?.partner_id && <LeadBronnenConfig partnerId={profile.partner_id} />}
           {activeTab === "schouwen" && isPartnerAdmin && profile?.partner_id && <SchouwInstellingen partnerId={profile.partner_id} />}
+          {activeTab === "abonnement" && isPartnerAdmin && profile?.partner_id && <PartnerAbonnement />}
           {activeTab === "privacy" && <PrivacyTab isSuperOrPartner={isSuperOrPartner} />}
         </div>
       </div>
