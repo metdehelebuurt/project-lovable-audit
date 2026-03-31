@@ -442,9 +442,8 @@ export default function OffertePDF() {
   /* ─── Shared page sub-components ─── */
   const PageHeader = () => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: `2px solid ${pc}`, marginBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
         {logoUrl && <img src={logoUrl} alt={partner.naam} style={{ height: 36, objectFit: "contain" }} />}
-        <span style={{ fontWeight: 700, fontSize: 16, color: sc }}>{partner.naam}</span>
       </div>
       <div style={{ fontSize: 10, color: "#888", textAlign: "right" as const }}>
         {partner.email && <span>{partner.email}</span>}
