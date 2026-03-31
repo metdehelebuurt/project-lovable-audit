@@ -613,6 +613,8 @@ export default function OffertePDF() {
               klantPlaats={offerte.klant_plaats || null}
               heroImageUrl={config.hero_image_url || null}
               heroTitle={config.hero_title || "Offerte"}
+              heroMainTitle={config.hero_main_title || undefined}
+              heroCategoryText={config.hero_category_text || undefined}
               logoUrlDark={(() => {
                 const variant = config.voorblad_logo_variant || "auto";
                 if (variant === "light") return undefined;
