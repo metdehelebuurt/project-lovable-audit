@@ -177,7 +177,7 @@ export const PriceCompact: React.FC<PrijstabelProps> = ({ pc, sc, regels, subtot
     <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0 0", fontSize: 16, fontWeight: 800, color: sc, borderTop: `2px solid ${pc}`, marginTop: 8 }}>
       <span>Totaal incl. BTW</span><span>{formatCurrency(totaalBedrag)}</span>
     </div>
-    <p style={{ fontSize: 10, color: "#999", marginTop: 4 }}>Subtotaal: {formatCurrency(subtotaal)} + BTW: {formatCurrency(btwBedrag)}</p>
+    <p style={{ fontSize: 10, color: "#999", marginTop: 4 }}>Subtotaal: {formatCurrency(subtotaal)} + {btwLabel(regels)}: {formatCurrency(btwBedrag)}</p>
   </div>
 );
 
