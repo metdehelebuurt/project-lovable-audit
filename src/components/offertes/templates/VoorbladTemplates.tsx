@@ -200,7 +200,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
         <div style={{ width: 72, height: 4, backgroundColor: pc, borderRadius: 2, margin: "32px 0" }} />
         <p style={{ fontSize: 18, color: "#555", margin: 0 }}>Opgesteld voor <strong style={{ color: sc }}>{klantNaam}</strong></p>
         {klantAdres && <p style={{ fontSize: 15, color: "#888", margin: "6px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
-        {introTekst && <p style={{ fontSize: 14, lineHeight: 1.8, color: "#555", marginTop: 32, maxWidth: 520 }}>{introTekst}</p>}
+        {introTekst && <div style={{ marginTop: 32, maxWidth: 520 }}>{renderIntro(introTekst, { fontSize: 14, lineHeight: 1.8, color: "#555", margin: 0 })}</div>}
       </div>
 
       {/* Footer */}
