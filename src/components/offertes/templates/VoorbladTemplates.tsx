@@ -144,9 +144,9 @@ export const HeroSplit: React.FC<VoorbladProps> = (props) => {
           {darkLogo && <img src={darkLogo} alt={partnerNaam} style={{ height: 44, marginBottom: 48, objectFit: "contain", alignSelf: "flex-start" }} />}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <p style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 3, color: pc, marginBottom: 10 }}>{heroTitle}</p>
-            <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>Uw persoonlijke offerte</h1>
+            <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>{heroMainTitle || "Uw persoonlijke offerte"}</h1>
             <div style={{ width: 48, height: 3, backgroundColor: pc, borderRadius: 2, marginTop: 20, marginBottom: 28 }} />
-            <p style={{ fontSize: 15, opacity: 0.8, lineHeight: 1.7 }}>{categoryLabel ? `Voor uw ${categoryLabel.toLowerCase()} project` : "Voor uw verduurzamingsproject"}</p>
+            <p style={{ fontSize: 15, opacity: 0.8, lineHeight: 1.7 }}>{heroCategoryText || (categoryLabel ? `Voor uw ${categoryLabel.toLowerCase()} project` : "Voor uw verduurzamingsproject")}</p>
           </div>
           {slogan && <p style={{ fontSize: 14, fontStyle: "italic", color: pc, marginTop: "auto", paddingTop: 24 }}>"{slogan}"</p>}
         </div>
