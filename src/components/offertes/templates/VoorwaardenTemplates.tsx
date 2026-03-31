@@ -90,7 +90,7 @@ export const TermsBoxed: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, pcTint2
       {installTermijn && (
         <div style={{ border: `1px solid ${pcTint2}`, borderRadius: 10, padding: "14px 16px" }}>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: pc, margin: "0 0 6px" }}>Installatie</p>
-          <p style={{ fontSize: 11, color: "#555", margin: 0 }}>{installTermijn}</p>
+          {renderHtmlOrText(installTermijn, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.6 })}
         </div>
       )}
       {betalingsvoorwaarden && (
