@@ -131,7 +131,7 @@ const liveVoorbladMap: Record<string, React.FC<any>> = {
   "hero-dark": HeroDark, "hero-split": HeroSplit, "hero-minimal": HeroMinimal, "hero-gradient": HeroGradient, "hero-photo": HeroPhoto,
 };
 const liveProductMap: Record<string, React.FC<any>> = {
-  "product-list": ProductList, "product-cards": ProductCards, "product-grid": ProductGrid, "product-spotlight": ProductSpotlight,
+  "product-list": ProductList, "product-cards": ProductCards, "product-grid": ProductGrid, "product-spotlight": ProductSpotlight, "product-showcase": ProductShowcase,
 };
 const livePrijsMap: Record<string, React.FC<any>> = {
   "price-classic": PriceClassic, "price-modern": PriceModern, "price-compact": PriceCompact, "price-detailed": PriceDetailed,
