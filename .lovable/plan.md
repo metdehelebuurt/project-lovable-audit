@@ -1,33 +1,57 @@
 
 
-## Plan: Alleen logo tonen in PDF page header (zonder bedrijfsnaam)
+## Plan: Commercieel aantrekkelijke productpagina toevoegen aan PDF editor
 
-### Probleem
+### Concept
 
-In de `PageHeader` component staat naast het logo ook `<span>{partner.naam}</span>`. Bij partners zoals "Smart Accu" verschijnt de bedrijfsnaam als tekst naast het logo, terwijl het logo zelf al de naam bevat. Dit ziet er dubbelop en onprofessioneel uit.
+Een nieuw template **"product-showcase"** dat elk product een eigen volledige pagina geeft met een groot centraal productbeeld, USP-badges, en gestructureerde productinfo — vergelijkbaar met een commercieel productblad/brochure.
 
-### Oplossing
+### Design per product-pagina
 
-Verwijder de `<span>` met `partner.naam` uit de PageHeader in **beide** bestanden. Het logo alleen is voldoende — als er geen logo is, wordt er niets getoond (wat correct is, want zonder logo hoort een partner er eerst een te uploaden).
+```text
+┌──────────────────────────────────────┐
+│  [logo]              partner contact │  ← PageHeader
+│──────────────────────────────────────│
+│                                      │
+│  MERK — MODEL                        │
+│  ████████████████████████████████     │
+│  █                              █    │
+│  █    GROTE PRODUCTFOTO         █    │  ← 280px hoog, lichtgrijze bg
+│  █    (centraal, contain)       █    │
+│  █                              █    │
+│  ████████████████████████████████     │
+│                                      │
+│  ═══ Productnaam ═══                 │  ← groot, bold, sc kleur
+│                                      │
+│  Omschrijving tekst...               │
+│                                      │
+│  ┌──────┐ ┌──────┐ ┌──────┐         │
+│  │🛡 10j │ │✓ IEC │ │🔧    │         │  ← USP badges (garantie,
+│  │garant│ │cert  │ │onderh│         │     certificeringen, onderhoud)
+│  └──────┘ └──────┘ └──────┘         │
+│                                      │
+│  Spec key    │ Spec value            │  ← Top 6 specs in 2-kolom
+│  Spec key    │ Spec value            │     striped tabel
+│──────────────────────────────────────│
+│  partner footer                      │  ← PageFooter
+└──────────────────────────────────────┘
+```
+
+Elk product krijgt een eigen `.pdf-page` — dit geeft maximale visuele impact en voorkomt dat content samengeperst wordt.
 
 ### Wijzigingen
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/OffertePDFPreview.tsx` (regel 261-264) | Verwijder `<span>{partner.naam}</span>`, toon alleen het logo |
-| `src/pages/OffertePDF.tsx` (regel 445-448) | Idem |
+| `src/components/offertes/templates/ProductTemplates.tsx` | Nieuw `ProductShowcase` component: full-page layout per product met grote foto (280px), USP-badges, top-specs tabel |
+| `src/components/offertes/templates/templateRegistry.ts` | Nieuwe variant `product-showcase` ("Commercieel") toevoegen aan producten-secties |
+| `src/components/OffertePDFPreview.tsx` | Bij `case "producten"`: als template `product-showcase` is, render meerdere `.pdf-page` divs (één per product) i.p.v. één pagina met alle producten |
 
-Concreet wordt in beide bestanden:
-```tsx
-// Was:
-<div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-  {logoUrl && <img ... />}
-  <span style={{ fontWeight: 700, fontSize: 16, color: sc }}>{partner.naam}</span>
-</div>
+### Technische details
 
-// Wordt:
-<div style={{ display: "flex", alignItems: "center" }}>
-  {logoUrl && <img ... />}
-</div>
-```
+- **ProductShowcase** rendert per product (niet als lijst) — de parent in `OffertePDFPreview` loopt over producten en maakt per product een aparte `.pdf-page`
+- Grote afbeelding: `width: 100%, height: 280px, objectFit: contain, backgroundColor: #f8f8fa, borderRadius: 16px`
+- USP-badges: garantie, certificeringen, onderhoud als horizontale pill-badges in `pcTint` kleur
+- Specs: maximaal 6 meest relevante specs in gestreepte 2-kolom tabel
+- Bestaande templates (list, cards, grid, spotlight) blijven ongewijzigd
 
