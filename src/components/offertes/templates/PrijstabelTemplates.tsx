@@ -157,7 +157,7 @@ export const PriceCompact: React.FC<PrijstabelProps> = ({ pc, sc, regels, subtot
       return (
         <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #eee", fontSize: 12 }}>
           <span style={{ color: "#333" }}>{r.aantal}× {r.omschrijving}{r.offerte_tekst && <span style={{ fontSize: 10, color: "#888" }}> — {r.offerte_tekst}</span>}</span>
-          <span style={{ fontWeight: 600, color: sc }}>{formatCurrency(sub)}</span>
+          <span style={{ fontWeight: 600, color: sc }}>{formatCurrency(sub)} <span style={{ fontSize: 10, fontWeight: 400, color: "#999" }}>({r.btw_percentage}%)</span></span>
         </div>
       );
     })}

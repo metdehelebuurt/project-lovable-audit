@@ -508,6 +508,7 @@ const ProductDetail = () => {
         model: product.model,
         omschrijving: product.omschrijving,
         prijs_excl_btw: product.prijs_excl_btw,
+        btw_percentage: product.btw_percentage,
         certificeringen: product.certificeringen,
         garantie_jaren: product.garantie_jaren,
         specs: product.specs,
