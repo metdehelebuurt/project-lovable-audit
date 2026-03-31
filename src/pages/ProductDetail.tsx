@@ -590,7 +590,7 @@ const ProductDetail = () => {
                     )}
                     <div>
                       <p className="text-xs text-muted-foreground">BTW</p>
-                      <Select value={String(product.btw_percentage ?? 21)} onValueChange={(v) => { setProduct({ ...product, btw_percentage: Number(v) }); setIsDirty(true); }}>
+                      <Select value={String(product.btw_percentage ?? 21)} onValueChange={(v) => { queryClient.setQueryData(["product", id], { ...product, btw_percentage: Number(v) }); setIsDirty(true); }}>
                         <SelectTrigger className="w-24 h-8 text-sm">
                           <SelectValue />
                         </SelectTrigger>
