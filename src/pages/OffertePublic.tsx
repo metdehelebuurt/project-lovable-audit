@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ensureHtml } from "@/types/offerte";
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
