@@ -37,6 +37,7 @@ import {
   voorwaardenTemplates, TermsSimple, TermsBoxed, TermsSidebar,
 } from "@/components/offertes/templates/VoorwaardenTemplates";
 import { categoryFields } from "@/components/schouwen/SchouwCategoryFields";
+import SignaturePad from "@/components/schouwen/SignaturePad";
 import { toast } from "sonner";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
