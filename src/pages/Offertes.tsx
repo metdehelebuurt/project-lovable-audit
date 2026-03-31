@@ -772,16 +772,16 @@ const Offertes = () => {
               <h3 className="font-medium text-foreground">Offerte teksten</h3>
               <div>
                 <Label>Introductietekst</Label>
-                <Textarea value={form.introductie_tekst} onChange={e => setForm(p => ({ ...p, introductie_tekst: e.target.value }))} className="rounded-xl" rows={3} placeholder="Inleidende tekst bovenaan de offerte..." />
+                <RichTextEditor value={form.introductie_tekst} onChange={v => setForm(p => ({ ...p, introductie_tekst: v }))} placeholder="Inleidende tekst bovenaan de offerte..." />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Garantievoorwaarden</Label>
-                  <Textarea value={form.garantie_voorwaarden} onChange={e => setForm(p => ({ ...p, garantie_voorwaarden: e.target.value }))} className="rounded-xl" rows={3} placeholder="Garantievoorwaarden..." />
+                  <RichTextEditor value={form.garantie_voorwaarden} onChange={v => setForm(p => ({ ...p, garantie_voorwaarden: v }))} placeholder="Garantievoorwaarden..." />
                 </div>
                 <div>
                   <Label>Installatietermijn</Label>
-                  <Textarea value={form.installatie_termijn} onChange={e => setForm(p => ({ ...p, installatie_termijn: e.target.value }))} className="rounded-xl" rows={3} placeholder="Verwachte installatietermijn..." />
+                  <RichTextEditor value={form.installatie_termijn} onChange={v => setForm(p => ({ ...p, installatie_termijn: v }))} placeholder="Verwachte installatietermijn..." />
                 </div>
               </div>
             </div>
