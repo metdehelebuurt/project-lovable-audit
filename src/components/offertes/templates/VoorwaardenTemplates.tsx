@@ -137,7 +137,7 @@ export const TermsSidebar: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partn
       {garantieVw && (
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: pc, margin: "0 0 4px" }}>Garantie</p>
-          <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.5 }}>{garantieVw}</p>
+          {renderHtmlOrText(garantieVw, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.5 })}
         </div>
       )}
       {installTermijn && (
