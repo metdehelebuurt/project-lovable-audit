@@ -846,8 +846,12 @@ const Offertes = () => {
                         <TableCell className="text-right">{r.aantal}</TableCell>
                         <TableCell className="text-right">{formatCurrency(r.prijs_per_stuk)}</TableCell>
                         <TableCell className="text-right">{r.btw_percentage}%</TableCell>
-                        <TableCell className="text-right">{r.korting_percentage}%</TableCell>
-                        <TableCell className="text-right">{formatCurrency(r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100))}</TableCell>
+                        <TableCell className="text-right">
+                          {r.korting_type === "bedrag"
+                            ? formatCurrency(r.korting_bedrag || 0)
+                            : `${r.korting_percentage || 0}%`}
+                        </TableCell>
+                        <TableCell className="text-right">{formatCurrency(regelSub(r))}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
