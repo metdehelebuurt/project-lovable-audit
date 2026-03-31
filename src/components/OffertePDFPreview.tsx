@@ -205,7 +205,11 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       }
     }
     if (!energieadvies && producten.length > 0) {
-      const totalInvestering = regels.reduce((sum, r) => sum + (r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100)), 0);
+      const totalInvestering = regels.reduce((sum, r) => {
+        const bruto = r.aantal * r.prijs_per_stuk;
+        if ((r as any).korting_type === "bedrag") return sum + bruto - ((r as any).korting_bedrag || 0);
+        return sum + bruto * (1 - (r.korting_percentage || 0) / 100);
+      }, 0);
       if (totalInvestering > 0) {
         const estBesparing = Math.round(totalInvestering * 0.12);
         const terugverdientijd = estBesparing > 0 ? Math.round((totalInvestering / estBesparing) * 10) / 10 : 0;
