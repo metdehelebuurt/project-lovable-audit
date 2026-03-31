@@ -276,7 +276,7 @@ export default function OffertePublic() {
             {offerte.introductie_tekst && (
               <Card className="rounded-2xl border-0 shadow-sm" style={{ borderLeft: `4px solid ${pc}` }}>
                 <CardContent className="pt-6">
-                  <p className="text-sm text-foreground leading-relaxed">{offerte.introductie_tekst}</p>
+                  <div className="prose prose-sm max-w-none text-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.introductie_tekst) }} />
                 </CardContent>
               </Card>
             )}
