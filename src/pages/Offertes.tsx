@@ -43,17 +43,7 @@ const statusColors: Record<OfferteStatus, string> = {
   verlopen: "bg-warning-light text-warning-foreground",
 };
 
-interface OfferteRegel {
-  product_id?: string;
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-  korting_bedrag?: number;
-  korting_type?: "percentage" | "bedrag";
-}
+// Using shared OfferteRegel from @/types/offerte
 
 interface OfferteFormData {
   lead_id: string;
