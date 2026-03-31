@@ -252,6 +252,8 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     akkoord_tekst: templateConfig?.akkoord_tekst ?? "",
     hero_image_url: templateConfig?.hero_image_url ?? "",
     hero_title: templateConfig?.hero_title ?? "Offerte",
+    hero_main_title: templateConfig?.hero_main_title ?? "",
+    hero_category_text: templateConfig?.hero_category_text ?? "",
     voorblad_variant: (templateConfig?.voorblad as string) || "hero-dark",
     producten_variant: (templateConfig?.producten as string) || "product-cards",
     prijstabel_variant: (templateConfig?.prijstabel as string) || "price-modern",
