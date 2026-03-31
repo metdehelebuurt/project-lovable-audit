@@ -22,7 +22,7 @@ import {
   User, Clock, StickyNote, FileText
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { formatCurrency, regelSubtotaal as regelSub, type OfferteRegel } from "@/types/offerte";
+import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
@@ -465,7 +465,7 @@ const OfferteDetail = () => {
                 {offerte.introductie_tekst && (
                   <div>
                     <p className="text-muted-foreground text-xs mb-1">Introductietekst</p>
-                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: offerte.introductie_tekst }} />
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.introductie_tekst) }} />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4">
@@ -478,14 +478,14 @@ const OfferteDetail = () => {
                   {offerte.installatie_termijn && (
                     <div>
                       <p className="text-muted-foreground text-xs mb-1">Installatietermijn</p>
-                      <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: offerte.installatie_termijn }} />
+                      <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.installatie_termijn) }} />
                     </div>
                   )}
                 </div>
                 {offerte.garantie_voorwaarden && (
                   <div>
                     <p className="text-muted-foreground text-xs mb-1">Garantievoorwaarden</p>
-                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: offerte.garantie_voorwaarden }} />
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.garantie_voorwaarden) }} />
                   </div>
                 )}
               </CardContent>

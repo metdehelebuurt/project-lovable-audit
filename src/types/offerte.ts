@@ -21,6 +21,13 @@ export const emptyOfferteRegel: OfferteRegel = {
   korting_type: "percentage",
 };
 
+// Platte tekst → HTML fallback (voor oudere offertes zonder WYSIWYG)
+export const ensureHtml = (text: string): string => {
+  if (!text) return "";
+  if (/<[a-z][\s\S]*>/i.test(text)) return text;
+  return text.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, "<br/>")}</p>`).join("");
+};
+
 // B2 + B3: Gedeelde utility functies
 export const formatCurrency = (n: number) =>
   new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);

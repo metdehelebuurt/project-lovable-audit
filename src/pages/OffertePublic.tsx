@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ensureHtml } from "@/types/offerte";
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
@@ -276,7 +277,7 @@ export default function OffertePublic() {
             {offerte.introductie_tekst && (
               <Card className="rounded-2xl border-0 shadow-sm" style={{ borderLeft: `4px solid ${pc}` }}>
                 <CardContent className="pt-6">
-                  <p className="text-sm text-foreground leading-relaxed">{offerte.introductie_tekst}</p>
+                  <div className="prose prose-sm max-w-none text-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.introductie_tekst) }} />
                 </CardContent>
               </Card>
             )}
@@ -325,13 +326,13 @@ export default function OffertePublic() {
                   {offerte.garantie_voorwaarden && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Garantie</p>
-                      <p className="text-sm text-muted-foreground">{offerte.garantie_voorwaarden}</p>
+                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.garantie_voorwaarden) }} />
                     </div>
                   )}
                   {offerte.installatie_termijn && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Installatietermijn</p>
-                      <p className="text-sm text-muted-foreground">{offerte.installatie_termijn}</p>
+                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.installatie_termijn) }} />
                     </div>
                   )}
                 </CardContent>
