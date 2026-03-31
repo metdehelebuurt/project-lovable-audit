@@ -143,7 +143,7 @@ export const TermsSidebar: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partn
       {installTermijn && (
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: pc, margin: "0 0 4px" }}>Installatie</p>
-          <p style={{ fontSize: 11, color: "#555", margin: 0 }}>{installTermijn}</p>
+          {renderHtmlOrText(installTermijn, { fontSize: 11, color: "#555", margin: 0, lineHeight: 1.5 })}
         </div>
       )}
       {betalingsvoorwaarden && (
