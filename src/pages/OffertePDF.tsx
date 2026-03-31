@@ -1052,6 +1052,35 @@ export default function OffertePDF() {
                 </div>
               )}
             </div>
+
+            {/* Handtekening sectie */}
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="p-3">
+                <span className="text-sm font-semibold text-foreground">✍️ Handtekening adviseur</span>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Verplicht voordat de offerte verzonden of gedownload kan worden</p>
+              </div>
+              <div className="px-3 pb-3">
+                {partnerHandtekening ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-green-600 font-medium">
+                      <Check className="h-3.5 w-3.5" />
+                      <span>Ondertekend op {partnerHandtekeningOp ? new Date(partnerHandtekeningOp).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</span>
+                    </div>
+                    <div className="border border-border rounded-lg p-2 bg-muted/30">
+                      <img src={partnerHandtekening} alt="Handtekening" className="h-16 object-contain" />
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="text-xs w-full" onClick={() => handleSignature(null)}>
+                      Opnieuw tekenen
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <SignaturePad value={null} onChange={handleSignature} />
+                    {signatureSaving && <p className="text-[10px] text-muted-foreground">Opslaan...</p>}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </ScrollArea>
       </div>
