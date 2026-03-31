@@ -52,8 +52,12 @@ export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partne
       <div>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — {partnerNaam}</p>
         <p style={{ fontSize: 12, color: "#555", margin: "4px 0" }}>{adviseurNaam}</p>
-        <p style={{ fontSize: 12, color: "#888", margin: "4px 0" }}>Datum: {datum}</p>
-        <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 16 }} />
+        <p style={{ fontSize: 12, color: "#888", margin: "4px 0" }}>Datum: {partnerHandtekeningDatum || datum}</p>
+        {partnerHandtekening ? (
+          <img src={partnerHandtekening} alt="Handtekening" style={{ height: 40, marginTop: 8, objectFit: "contain" }} />
+        ) : (
+          <div style={{ borderBottom: "1px solid #ccc", height: 40, marginTop: 16 }} />
+        )}
       </div>
       <div>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — Klant</p>
