@@ -1229,6 +1229,68 @@ export type Database = {
           },
         ]
       }
+      offerte_herinneringen: {
+        Row: {
+          created_at: string
+          herinnering_datum: string
+          id: string
+          notitie: string | null
+          offerte_id: string
+          partner_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          herinnering_datum: string
+          id?: string
+          notitie?: string | null
+          offerte_id: string
+          partner_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          herinnering_datum?: string
+          id?: string
+          notitie?: string | null
+          offerte_id?: string
+          partner_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offerte_herinneringen_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offerte_herinneringen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offerte_herinneringen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offerte_herinneringen_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offertes: {
         Row: {
           accepted_at: string | null

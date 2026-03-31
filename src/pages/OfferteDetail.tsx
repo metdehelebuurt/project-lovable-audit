@@ -19,11 +19,12 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Send, Link2, Copy, FileDown, Pencil, Trash2,
   Check, XCircle, MessageSquare, Calendar, MapPin, Phone, Mail,
-  User, Clock, StickyNote, FileText
+  User, Clock, StickyNote, FileText, Bell
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
+import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
@@ -633,6 +634,20 @@ const OfferteDetail = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Opvolgingsherinneringen */}
+          {offerte.partner_id && (
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-muted-foreground" /> Opvolgingsherinneringen
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OfferteHerinneringen offerteId={offerte.id} partnerId={offerte.partner_id} />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Notities */}
           <Card className="rounded-2xl border-0 shadow-sm">

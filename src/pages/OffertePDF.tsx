@@ -39,6 +39,7 @@ import {
 import { categoryFields } from "@/components/schouwen/SchouwCategoryFields";
 import SignaturePad from "@/components/schouwen/SignaturePad";
 import { toast } from "sonner";
+import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -1087,6 +1088,11 @@ export default function OffertePDF() {
                 </div>
               )}
             </div>
+
+            {/* Opvolging herinneringen */}
+            {offerte?.partner_id && (
+              <OfferteHerinneringen offerteId={offerte.id} partnerId={offerte.partner_id} compact />
+            )}
 
             {/* Handtekening sectie */}
             <div className="rounded-xl border border-border overflow-hidden">
