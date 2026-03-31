@@ -315,7 +315,29 @@ export default function OffertePDF() {
   };
 
   const handlePrint = () => {
+    if (!partnerHandtekening) {
+      toast.error("Onderteken de offerte eerst voordat u de PDF kunt downloaden");
+      return;
+    }
     window.open(`/offertes/${id}/pdf/print`, "_blank");
+  };
+
+  const handleSignature = async (base64: string | null) => {
+    setPartnerHandtekening(base64);
+    if (!id) return;
+    setSignatureSaving(true);
+    const now = base64 ? new Date().toISOString() : null;
+    setPartnerHandtekeningOp(now);
+    const { error } = await supabase.from("offertes").update({
+      partner_handtekening_data: base64,
+      partner_handtekening_op: now,
+    } as any).eq("id", id);
+    setSignatureSaving(false);
+    if (error) {
+      toast.error("Handtekening opslaan mislukt");
+    } else {
+      toast.success(base64 ? "Handtekening opgeslagen" : "Handtekening verwijderd");
+    }
   };
 
   const handleSelect = (sectieId: string, variantId: string) => {
