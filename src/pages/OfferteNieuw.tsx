@@ -70,6 +70,8 @@ const OfferteNieuw = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
 
   const [selectedLead, setSelectedLead] = useState<SelectedLead | null>(null);
   const [klantNaam, setKlantNaam] = useState("");
