@@ -16,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProductImage from "@/components/producten/ProductImage";
 import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import { getGroupedSpecs, categorySpecDefinitions } from "@/components/producten/categorySpecDefinitions";
@@ -508,6 +509,7 @@ const ProductDetail = () => {
         model: product.model,
         omschrijving: product.omschrijving,
         prijs_excl_btw: product.prijs_excl_btw,
+        btw_percentage: product.btw_percentage,
         certificeringen: product.certificeringen,
         garantie_jaren: product.garantie_jaren,
         specs: product.specs,
@@ -588,7 +590,16 @@ const ProductDetail = () => {
                     )}
                     <div>
                       <p className="text-xs text-muted-foreground">BTW</p>
-                      <p className="text-sm font-medium text-foreground">{product.btw_percentage ?? 21}%</p>
+                      <Select value={String(product.btw_percentage ?? 21)} onValueChange={(v) => { queryClient.setQueryData(["product", id], { ...product, btw_percentage: Number(v) }); setIsDirty(true); }}>
+                        <SelectTrigger className="w-24 h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0%</SelectItem>
+                          <SelectItem value="9">9%</SelectItem>
+                          <SelectItem value="21">21%</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     {product.garantie_jaren && (
                       <div>
