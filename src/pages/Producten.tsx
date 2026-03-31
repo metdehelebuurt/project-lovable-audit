@@ -166,7 +166,7 @@ const Producten = () => {
   const alleenEigenProducten = !isSuperadmin && partnerFlags?.alleen_eigen_producten === true;
 
   const { data: producten = [], isLoading } = useQuery({
-    queryKey: ["producten"],
+    queryKey: ["producten", alleenEigenProducten],
     queryFn: async () => {
       const { data, error } = await supabase.from("producten").select("*").order("naam");
       if (error) throw error;
@@ -176,7 +176,6 @@ const Producten = () => {
       }
       return result;
     },
-    enabled: alleenEigenProducten !== undefined || isSuperadmin,
   });
 
   const actief = producten.filter(p => p.status === "actief").length;
