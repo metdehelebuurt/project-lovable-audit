@@ -52,26 +52,7 @@ const categorieLabelsMap: Record<string, string> = {
   overig: "Overig",
 };
 
-interface OfferteRegel {
-  product_id?: string;
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-  korting_bedrag?: number;
-  korting_type?: "percentage" | "bedrag";
-}
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
-
-const regelSub = (r: OfferteRegel) => {
-  const bruto = r.aantal * r.prijs_per_stuk;
-  if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
-  return bruto * (1 - (r.korting_percentage || 0) / 100);
-};
+// Using shared types from @/types/offerte
 
 const OfferteDetail = () => {
   const { id } = useParams();
