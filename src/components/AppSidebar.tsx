@@ -78,6 +78,8 @@ const getNavGroups = (rol: string): NavGroup[] => {
     beheer.push({ title: "Documenten", url: "/documenten", icon: FolderOpen });
   if (rol === "superadmin")
     beheer.push({ title: "Affiliate Beheer", url: "/affiliate-beheer", icon: Handshake });
+  if (rol === "superadmin")
+    beheer.push({ title: "Abonnementen", url: "/admin/abonnementen", icon: CreditCard });
   if (rol === "affiliate")
     beheer.push({ title: "Affiliate Links", url: "/affiliates", icon: Link2 });
   if (beheer.length) groups.push({ label: "Beheer", items: beheer });
