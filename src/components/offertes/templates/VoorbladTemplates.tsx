@@ -34,6 +34,19 @@ function hexToTint(hex: string, opacity: number): string {
 
 const A4_HEIGHT = 1123;
 
+const renderIntro = (tekst: string, style: React.CSSProperties) => {
+  const match = tekst.match(/^((?:Beste|Geachte|Lieve|Dag)\s[^,]+,)\s*/i);
+  if (match) {
+    return (
+      <>
+        <p style={{ ...style, marginBottom: 8 }}>{match[1]}</p>
+        <p style={style}>{tekst.slice(match[0].length)}</p>
+      </>
+    );
+  }
+  return <p style={style}>{tekst}</p>;
+};
+
 const rootStyle: React.CSSProperties = {
   width: "100%",
   height: A4_HEIGHT,
