@@ -82,6 +82,7 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
           <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 11 }}>Omschrijving</th>
           <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Prijs</th>
           <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Korting</th>
+          <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>BTW</th>
           <th style={{ backgroundColor: sc, color: "#fff", padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 11 }}>Subtotaal</th>
         </tr>
       </thead>
