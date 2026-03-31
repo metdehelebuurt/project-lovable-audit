@@ -22,7 +22,7 @@ import {
   User, Clock, StickyNote, FileText
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { formatCurrency, regelSubtotaal as regelSub, type OfferteRegel } from "@/types/offerte";
+import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
