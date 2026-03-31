@@ -1,0 +1,1 @@
+ALTER TABLE public.feedback_verzoeken ADD COLUMN ai_interview jsonb DEFAULT '[]'::jsonb;
