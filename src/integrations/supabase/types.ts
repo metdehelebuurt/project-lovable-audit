@@ -549,6 +549,85 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_verzoeken: {
+        Row: {
+          admin_reactie: string | null
+          ai_samenvatting: string | null
+          ai_tags: Json | null
+          beschrijving: string
+          bijlagen: Json | null
+          categorie: string | null
+          created_at: string
+          id: string
+          partner_id: string | null
+          prioriteit: string | null
+          status: string | null
+          stemmen: number | null
+          titel: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_reactie?: string | null
+          ai_samenvatting?: string | null
+          ai_tags?: Json | null
+          beschrijving: string
+          bijlagen?: Json | null
+          categorie?: string | null
+          created_at?: string
+          id?: string
+          partner_id?: string | null
+          prioriteit?: string | null
+          status?: string | null
+          stemmen?: number | null
+          titel: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_reactie?: string | null
+          ai_samenvatting?: string | null
+          ai_tags?: Json | null
+          beschrijving?: string
+          bijlagen?: Json | null
+          categorie?: string | null
+          created_at?: string
+          id?: string
+          partner_id?: string | null
+          prioriteit?: string | null
+          status?: string | null
+          stemmen?: number | null
+          titel?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_verzoeken_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_verzoeken_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_verzoeken_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installaties: {
         Row: {
           consument_id: string | null
