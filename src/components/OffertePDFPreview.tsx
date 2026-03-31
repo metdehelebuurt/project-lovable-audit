@@ -281,7 +281,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     width: "210mm", minHeight: "297mm", margin: "0 auto", padding: "15mm",
     backgroundColor: "#fff", fontFamily: "'Rubik', sans-serif", fontSize: 13,
     color: "#1a1a2e", display: "flex", flexDirection: "column",
-    boxSizing: "border-box", pageBreakAfter: "always", position: "relative",
+    boxSizing: "border-box", position: "relative",
   };
 
   /* ─── Grouped schouw ─── */
@@ -436,6 +436,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
                 <div style={{ backgroundColor: pcTint, borderRadius: 10, padding: "16px 20px" }}>
                   <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: pc, margin: "0 0 8px" }}>Opgesteld door</p>
                   <p style={{ fontWeight: 600, margin: "0 0 4px", color: sc }}>{partner.naam}</p>
+                  <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>Adviseur: {adviseurNaam}</p>
                   {partner.adres && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.adres}</p>}
                   {partner.email && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.email}</p>}
                 </div>
@@ -514,7 +515,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         const dsProducts = producten.filter(p => p.datasheet_type === "fabrikant" || p.datasheet_type === "gegenereerd" || (p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0));
         if (dsProducts.length === 0) return null;
         const datasheetPages: React.ReactNode[] = [];
-        producten.filter(p => p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0).forEach(p => {
+        producten.filter(p => p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0 && p.datasheet_type !== "gegenereerd").forEach(p => {
           const specs = p.specs as Record<string, any>;
           const specEntries = Object.entries(specs).filter(([, v]) => v !== null && v !== undefined && v !== "");
           if (specEntries.length === 0) return;
@@ -575,7 +576,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
           .no-print { display: none !important; }
           .pdf-page { page-break-after: always; break-after: page; }
-          .pdf-page:last-of-type { page-break-after: avoid; break-after: avoid; }
+          .pdf-page:last-child { page-break-after: avoid; break-after: avoid; }
         }
         @media screen {
           .pdf-page { margin-bottom: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
