@@ -14,48 +14,240 @@ export type Database = {
   }
   public: {
     Tables: {
+      abonnement_notificaties_config: {
+        Row: {
+          dagen_voor_verloop: number[]
+          email_bij_factuur: boolean
+          email_bij_opzegging: boolean
+          email_bij_verloop: boolean
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          dagen_voor_verloop?: number[]
+          email_bij_factuur?: boolean
+          email_bij_opzegging?: boolean
+          email_bij_verloop?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          dagen_voor_verloop?: number[]
+          email_bij_factuur?: boolean
+          email_bij_opzegging?: boolean
+          email_bij_verloop?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      abonnement_plannen: {
+        Row: {
+          actief: boolean
+          beschrijving: string | null
+          created_at: string
+          features: Json
+          id: string
+          jaar_prijs: number
+          maand_prijs: number
+          max_adviseurs: number | null
+          max_gebruikers: number | null
+          max_installateurs: number | null
+          max_leads: number | null
+          max_offertes: number | null
+          modules: Json
+          naam: string
+          slug: string
+          updated_at: string
+          volgorde: number
+          voorwaarden: string | null
+        }
+        Insert: {
+          actief?: boolean
+          beschrijving?: string | null
+          created_at?: string
+          features?: Json
+          id?: string
+          jaar_prijs?: number
+          maand_prijs?: number
+          max_adviseurs?: number | null
+          max_gebruikers?: number | null
+          max_installateurs?: number | null
+          max_leads?: number | null
+          max_offertes?: number | null
+          modules?: Json
+          naam: string
+          slug: string
+          updated_at?: string
+          volgorde?: number
+          voorwaarden?: string | null
+        }
+        Update: {
+          actief?: boolean
+          beschrijving?: string | null
+          created_at?: string
+          features?: Json
+          id?: string
+          jaar_prijs?: number
+          maand_prijs?: number
+          max_adviseurs?: number | null
+          max_gebruikers?: number | null
+          max_installateurs?: number | null
+          max_leads?: number | null
+          max_offertes?: number | null
+          modules?: Json
+          naam?: string
+          slug?: string
+          updated_at?: string
+          volgorde?: number
+          voorwaarden?: string | null
+        }
+        Relationships: []
+      }
+      abonnement_wijzigingen: {
+        Row: {
+          abonnement_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          naar_plan_id: string | null
+          partner_id: string
+          type: string
+          user_id: string | null
+          van_plan_id: string | null
+        }
+        Insert: {
+          abonnement_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          naar_plan_id?: string | null
+          partner_id: string
+          type: string
+          user_id?: string | null
+          van_plan_id?: string | null
+        }
+        Update: {
+          abonnement_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          naar_plan_id?: string | null
+          partner_id?: string
+          type?: string
+          user_id?: string | null
+          van_plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abonnement_wijzigingen_abonnement_id_fkey"
+            columns: ["abonnement_id"]
+            isOneToOne: false
+            referencedRelation: "abonnementen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnement_wijzigingen_naar_plan_id_fkey"
+            columns: ["naar_plan_id"]
+            isOneToOne: false
+            referencedRelation: "abonnement_plannen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnement_wijzigingen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnement_wijzigingen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnement_wijzigingen_van_plan_id_fkey"
+            columns: ["van_plan_id"]
+            isOneToOne: false
+            referencedRelation: "abonnement_plannen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       abonnementen: {
         Row: {
           affiliate_referral_id: string | null
           created_at: string
+          gratis_maanden: number
           id: string
+          interval: string
           korting_actief_tot: string | null
+          korting_percentage: number | null
+          korting_reden: string | null
+          korting_vast_bedrag: number | null
           kortingscode_id: string | null
           maand_bedrag: number
+          notities: string | null
+          opzeg_datum: string | null
+          opzegtermijn_dagen: number
           partner_id: string
           plan: string
+          plan_id: string | null
           start_datum: string
           status: string
           updated_at: string
           verloop_datum: string | null
+          volgende_factuur_datum: string | null
         }
         Insert: {
           affiliate_referral_id?: string | null
           created_at?: string
+          gratis_maanden?: number
           id?: string
+          interval?: string
           korting_actief_tot?: string | null
+          korting_percentage?: number | null
+          korting_reden?: string | null
+          korting_vast_bedrag?: number | null
           kortingscode_id?: string | null
           maand_bedrag?: number
+          notities?: string | null
+          opzeg_datum?: string | null
+          opzegtermijn_dagen?: number
           partner_id: string
           plan?: string
+          plan_id?: string | null
           start_datum?: string
           status?: string
           updated_at?: string
           verloop_datum?: string | null
+          volgende_factuur_datum?: string | null
         }
         Update: {
           affiliate_referral_id?: string | null
           created_at?: string
+          gratis_maanden?: number
           id?: string
+          interval?: string
           korting_actief_tot?: string | null
+          korting_percentage?: number | null
+          korting_reden?: string | null
+          korting_vast_bedrag?: number | null
           kortingscode_id?: string | null
           maand_bedrag?: number
+          notities?: string | null
+          opzeg_datum?: string | null
+          opzegtermijn_dagen?: number
           partner_id?: string
           plan?: string
+          plan_id?: string | null
           start_datum?: string
           status?: string
           updated_at?: string
           verloop_datum?: string | null
+          volgende_factuur_datum?: string | null
         }
         Relationships: [
           {
@@ -83,6 +275,88 @@ export type Database = {
             foreignKeyName: "abonnementen_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: true
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnementen_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "abonnement_plannen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_commissies: {
+        Row: {
+          abonnement_id: string | null
+          affiliate_id: string
+          bedrag: number
+          created_at: string
+          factuur_id: string | null
+          id: string
+          partner_id: string | null
+          percentage: number
+          status: string
+          type: string
+        }
+        Insert: {
+          abonnement_id?: string | null
+          affiliate_id: string
+          bedrag?: number
+          created_at?: string
+          factuur_id?: string | null
+          id?: string
+          partner_id?: string | null
+          percentage?: number
+          status?: string
+          type?: string
+        }
+        Update: {
+          abonnement_id?: string | null
+          affiliate_id?: string
+          bedrag?: number
+          created_at?: string
+          factuur_id?: string | null
+          id?: string
+          partner_id?: string | null
+          percentage?: number
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_commissies_abonnement_id_fkey"
+            columns: ["abonnement_id"]
+            isOneToOne: false
+            referencedRelation: "abonnementen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissies_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissies_factuur_id_fkey"
+            columns: ["factuur_id"]
+            isOneToOne: false
+            referencedRelation: "facturen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissies_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissies_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -548,6 +822,85 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      facturen: {
+        Row: {
+          abonnement_id: string | null
+          bedrag_excl_btw: number
+          betaald_op: string | null
+          betaald_via: string | null
+          btw_bedrag: number
+          created_at: string
+          factuurnummer: string
+          id: string
+          korting_bedrag: number
+          notities: string | null
+          partner_id: string
+          pdf_url: string | null
+          periode_eind: string
+          periode_start: string
+          status: string
+          totaal_bedrag: number
+        }
+        Insert: {
+          abonnement_id?: string | null
+          bedrag_excl_btw?: number
+          betaald_op?: string | null
+          betaald_via?: string | null
+          btw_bedrag?: number
+          created_at?: string
+          factuurnummer: string
+          id?: string
+          korting_bedrag?: number
+          notities?: string | null
+          partner_id: string
+          pdf_url?: string | null
+          periode_eind: string
+          periode_start: string
+          status?: string
+          totaal_bedrag?: number
+        }
+        Update: {
+          abonnement_id?: string | null
+          bedrag_excl_btw?: number
+          betaald_op?: string | null
+          betaald_via?: string | null
+          btw_bedrag?: number
+          created_at?: string
+          factuurnummer?: string
+          id?: string
+          korting_bedrag?: number
+          notities?: string | null
+          partner_id?: string
+          pdf_url?: string | null
+          periode_eind?: string
+          periode_start?: string
+          status?: string
+          totaal_bedrag?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facturen_abonnement_id_fkey"
+            columns: ["abonnement_id"]
+            isOneToOne: false
+            referencedRelation: "abonnementen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feedback_verzoeken: {
         Row: {
