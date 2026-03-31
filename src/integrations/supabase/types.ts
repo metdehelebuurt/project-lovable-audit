@@ -552,6 +552,7 @@ export type Database = {
       feedback_verzoeken: {
         Row: {
           admin_reactie: string | null
+          ai_interview: Json | null
           ai_samenvatting: string | null
           ai_tags: Json | null
           beschrijving: string
@@ -570,6 +571,7 @@ export type Database = {
         }
         Insert: {
           admin_reactie?: string | null
+          ai_interview?: Json | null
           ai_samenvatting?: string | null
           ai_tags?: Json | null
           beschrijving: string
@@ -588,6 +590,7 @@ export type Database = {
         }
         Update: {
           admin_reactie?: string | null
+          ai_interview?: Json | null
           ai_samenvatting?: string | null
           ai_tags?: Json | null
           beschrijving?: string

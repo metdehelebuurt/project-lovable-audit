@@ -85,7 +85,8 @@ const getNavGroups = (rol: string): NavGroup[] => {
   // FEEDBACK & SUPPORT
   const support: NavItem[] = [];
   support.push({ title: "Feedback", url: "/feedback", icon: MessageSquareHeart });
-  if (["superadmin", "partner_admin"].includes(rol))
+  support.push({ title: "Functieverzoek", url: "/feedback/nieuw?type=functieverzoek", icon: Lightbulb });
+  if (rol === "superadmin")
     support.push({ title: "Feedback Beheer", url: "/feedback/admin", icon: MessageSquareHeart });
   groups.push({ label: "Support", items: support });
 

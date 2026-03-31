@@ -219,7 +219,7 @@ const App = () => (
               <Route path="/feedback" element={<FeedbackOverzicht />} />
               <Route path="/feedback/nieuw" element={<FeedbackNieuw />} />
               <Route path="/feedback/admin" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><FeedbackAdmin /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin"]}><FeedbackAdmin /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/affiliates" element={
