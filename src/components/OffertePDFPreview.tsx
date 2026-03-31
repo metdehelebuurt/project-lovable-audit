@@ -281,7 +281,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     width: "210mm", minHeight: "297mm", margin: "0 auto", padding: "15mm",
     backgroundColor: "#fff", fontFamily: "'Rubik', sans-serif", fontSize: 13,
     color: "#1a1a2e", display: "flex", flexDirection: "column",
-    boxSizing: "border-box", pageBreakAfter: "always", position: "relative",
+    boxSizing: "border-box", position: "relative",
   };
 
   /* ─── Grouped schouw ─── */
