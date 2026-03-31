@@ -169,8 +169,8 @@ const DatasheetCheckDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             Ontbrekende productdatasheets
@@ -181,7 +181,7 @@ const DatasheetCheckDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 max-h-80 overflow-y-auto py-2">
+        <div className="space-y-3 flex-1 min-h-0 overflow-y-auto py-2">
           {products.map((product) => {
             const status = statuses[product.id];
             const label = [product.naam, product.merk, product.model]
@@ -261,7 +261,7 @@ const DatasheetCheckDialog = ({
           })}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-shrink-0 flex-col sm:flex-row flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
