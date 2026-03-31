@@ -1,44 +1,33 @@
 
 
-## Plan: Aanhef-opmaak en USP-balk uitlijning in voorblad templates
+## Plan: Alleen logo tonen in PDF page header (zonder bedrijfsnaam)
 
-### Probleem 1: Aanhef formatting
+### Probleem
 
-De `introTekst` wordt als één doorlopend blok getoond: "Beste heer Verhaar, Het was een genoegen...". De aanhef (alles t/m de eerste komma) moet op een eigen regel staan, gevolgd door een witregel, dan de rest van de zin.
+In de `PageHeader` component staat naast het logo ook `<span>{partner.naam}</span>`. Bij partners zoals "Smart Accu" verschijnt de bedrijfsnaam als tekst naast het logo, terwijl het logo zelf al de naam bevat. Dit ziet er dubbelop en onprofessioneel uit.
 
-**Oplossing**: In alle voorblad-templates waar `introTekst` gerenderd wordt, de tekst splitsen op het patroon `"Beste ... ,\n"`. Concreet: detecteer of de tekst begint met een aanhef (bijv. regex `/^(Beste\s[^,]+,)\s*/` of `/^(Geachte\s[^,]+,)\s*/`), en render de aanhef als apart `<p>` element met `marginBottom: 12`, gevolgd door de rest van de tekst.
+### Oplossing
 
-Dit wordt als helper-functie geïmplementeerd zodat alle 5 templates het consistent gebruiken:
+Verwijder de `<span>` met `partner.naam` uit de PageHeader in **beide** bestanden. Het logo alleen is voldoende — als er geen logo is, wordt er niets getoond (wat correct is, want zonder logo hoort een partner er eerst een te uploaden).
 
-```typescript
-const renderIntro = (tekst: string, style: React.CSSProperties) => {
-  const match = tekst.match(/^((?:Beste|Geachte|Lieve|Dag)\s[^,]+,)\s*/i);
-  if (match) {
-    return (
-      <>
-        <p style={{ ...style, marginBottom: 8 }}>{match[1]}</p>
-        <p style={style}>{tekst.slice(match[0].length)}</p>
-      </>
-    );
-  }
-  return <p style={style}>{tekst}</p>;
-};
-```
-
-### Probleem 2: USP/telefoon-balk niet onderaan de pagina
-
-In HeroDark (regel 82-110): het onderste contentblok gebruikt `flex: 1` maar de USP-balk (regel 104-109) zit binnen de padding van de parent. De `<div style={{ flex: 1 }} />` spacer (regel 102) duwt het naar beneden, maar de padding van de parent (`padding: "48px 56px"`) zorgt ervoor dat het niet volledig onderaan de pagina zit.
-
-**Oplossing**: 
-- Verwijder de padding-bottom van het onderste content-blok
-- Maak de USP-balk een apart element buiten de padding-container, met eigen horizontale padding
-- Geef de USP-balk een vaste positie onderaan met `marginTop: "auto"` en eigen padding (`padding: "18px 56px"`)
-
-Dit geldt voor alle templates die badges/USPs tonen (HeroDark, HeroGradient).
-
-### Bestanden
+### Wijzigingen
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/offertes/templates/VoorbladTemplates.tsx` | (1) Helper `renderIntro` toevoegen die aanhef splitst; (2) alle 5 templates: vervang `<p>{introTekst}</p>` door `renderIntro()`; (3) HeroDark: USP-balk naar buiten padding verplaatsen met `marginTop: auto` en eigen padding voor correcte uitlijning |
+| `src/components/OffertePDFPreview.tsx` (regel 261-264) | Verwijder `<span>{partner.naam}</span>`, toon alleen het logo |
+| `src/pages/OffertePDF.tsx` (regel 445-448) | Idem |
+
+Concreet wordt in beide bestanden:
+```tsx
+// Was:
+<div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+  {logoUrl && <img ... />}
+  <span style={{ fontWeight: 700, fontSize: 16, color: sc }}>{partner.naam}</span>
+</div>
+
+// Wordt:
+<div style={{ display: "flex", alignItems: "center" }}>
+  {logoUrl && <img ... />}
+</div>
+```
 
