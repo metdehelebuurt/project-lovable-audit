@@ -155,8 +155,12 @@ export const TermsSidebar: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partn
       <div style={{ marginBottom: 24 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — {partnerNaam}</p>
         <p style={{ fontSize: 11, color: "#888", margin: "2px 0" }}>{adviseurNaam}</p>
-        <p style={{ fontSize: 11, color: "#888", margin: "2px 0" }}>Datum: {datum}</p>
-        <div style={{ borderBottom: "1px solid #ccc", height: 36, marginTop: 12 }} />
+        <p style={{ fontSize: 11, color: "#888", margin: "2px 0" }}>Datum: {partnerHandtekeningDatum || datum}</p>
+        {partnerHandtekening ? (
+          <img src={partnerHandtekening} alt="Handtekening" style={{ height: 36, marginTop: 8, objectFit: "contain" }} />
+        ) : (
+          <div style={{ borderBottom: "1px solid #ccc", height: 36, marginTop: 12 }} />
+        )}
       </div>
       <div>
         <p style={{ fontSize: 11, fontWeight: 700, color: sc, margin: "0 0 8px" }}>Voor akkoord — Klant</p>
