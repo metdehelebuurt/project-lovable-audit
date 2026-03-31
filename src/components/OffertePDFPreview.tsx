@@ -576,7 +576,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
           .no-print { display: none !important; }
           .pdf-page { page-break-after: always; break-after: page; }
-          .pdf-page:last-of-type { page-break-after: avoid; break-after: avoid; }
+          .pdf-page:last-child { page-break-after: avoid; break-after: avoid; }
         }
         @media screen {
           .pdf-page { margin-bottom: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
