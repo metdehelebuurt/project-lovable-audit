@@ -23,6 +23,8 @@ interface OfferteRegel {
   prijs_per_stuk: number;
   btw_percentage: number;
   korting_percentage: number;
+  korting_bedrag: number;
+  korting_type: "percentage" | "bedrag";
 }
 
 interface OpdrachtData {
