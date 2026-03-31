@@ -234,7 +234,8 @@ export default function OffertePDF() {
       const { data: o } = await supabase.from("offertes").select("*").eq("id", id).single();
       if (!o) { setLoading(false); return; }
       setOfferte(o);
-
+      setPartnerHandtekening((o as any).partner_handtekening_data || null);
+      setPartnerHandtekeningOp((o as any).partner_handtekening_op || null);
       if (o.template_config && typeof o.template_config === "object") {
         setConfig(prev => ({ ...prev, ...(o.template_config as Record<string, any>) }));
       }
