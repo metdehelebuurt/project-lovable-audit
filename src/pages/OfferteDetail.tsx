@@ -155,8 +155,25 @@ const OfferteDetail = () => {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("offertes").delete().eq("id", id!);
+    mutationFn: async ({ reden, verwijderKlant }: { reden: string; verwijderKlant: boolean }) => {
+      const offerteId = id!;
+      // Delete related records to avoid FK constraint violations
+      await supabase.from("offerte_berichten").delete().eq("offerte_id", offerteId);
+      await supabase.from("opdrachten").delete().eq("offerte_id", offerteId);
+      await supabase.from("installaties").delete().eq("offerte_id", offerteId);
+      // Unlink klanten referencing this offerte
+      await supabase.from("klanten").update({ offerte_id: null }).eq("offerte_id", offerteId);
+      // If user wants to delete associated customer too
+      if (verwijderKlant) {
+        const { data: linkedKlanten } = await supabase.from("klanten").select("id").eq("offerte_id", offerteId);
+        if (linkedKlanten?.length) {
+          for (const k of linkedKlanten) {
+            await supabase.from("klanten").delete().eq("id", k.id);
+          }
+        }
+      }
+      // Now delete the offerte
+      const { error } = await supabase.from("offertes").delete().eq("id", offerteId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -164,7 +181,7 @@ const OfferteDetail = () => {
       toast.success("Offerte verwijderd");
       navigate("/offertes");
     },
-    onError: (err: Error) => toast.error("Fout", { description: err.message }),
+    onError: (err: Error) => toast.error("Fout bij verwijderen", { description: err.message }),
   });
 
   const saveNotitieMutation = useMutation({
