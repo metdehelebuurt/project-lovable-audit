@@ -16,6 +16,7 @@ interface ProductProps {
     onderhoud: string | null;
   }>;
   isThumbnail?: boolean;
+  index?: number;
 }
 
 function resolveImgUrl(url: string | null): string | null {
