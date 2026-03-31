@@ -112,7 +112,7 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
     </table>
     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
       <div style={{ width: 260 }}>
-        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} />
+        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} regels={regels} />
         <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontSize: 16, fontWeight: 800, color: sc, borderTop: `3px solid ${pc}`, marginTop: 4 }}>
           <span>Totaal incl. BTW</span><span>{formatCurrency(totaalBedrag)}</span>
         </div>
