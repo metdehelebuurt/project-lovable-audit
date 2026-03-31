@@ -15,6 +15,8 @@ interface VoorwaardenProps {
   notities: string | null;
   akkoordTekst: string;
   isThumbnail?: boolean;
+  partnerHandtekening?: string | null;
+  partnerHandtekeningDatum?: string | null;
 }
 
 export const TermsSimple: React.FC<VoorwaardenProps> = ({ pc, sc, pcTint, partnerNaam, adviseurNaam, klantNaam, datum, garantieVw, installTermijn, betalingsvoorwaarden, notities, akkoordTekst }) => (
