@@ -40,6 +40,12 @@ const regelKortingLabel = (r: PrijstabelProps["regels"][0]) => {
 const brutoSubtotaal = (regels: PrijstabelProps["regels"]) =>
   regels.reduce((s, r) => s + regelSub(r), 0);
 
+const btwLabel = (regels: PrijstabelProps["regels"]) => {
+  const pcts = [...new Set(regels.map(r => r.btw_percentage))];
+  if (pcts.length === 1) return `BTW (${pcts[0]}%)`;
+  return `BTW (${pcts.join("% / ")}%)`;
+};
+
 const OfferteKortingBlock: React.FC<{
   pc: string;
   brutoSub: number;
@@ -49,7 +55,8 @@ const OfferteKortingBlock: React.FC<{
   btwBedrag: number;
   totaalBedrag: number;
   formatCurrency: (n: number) => string;
-}> = ({ brutoSub, offerteKortingType, offerteKortingWaarde, subtotaal, btwBedrag, totaalBedrag, formatCurrency, pc }) => {
+  regels: PrijstabelProps["regels"];
+}> = ({ brutoSub, offerteKortingType, offerteKortingWaarde, subtotaal, btwBedrag, totaalBedrag, formatCurrency, pc, regels }) => {
   const hasOfferteKorting = offerteKortingType && (offerteKortingWaarde || 0) > 0;
   const kortingBedrag = hasOfferteKorting
     ? (offerteKortingType === "percentage" ? brutoSub * ((offerteKortingWaarde || 0) / 100) : (offerteKortingWaarde || 0))
@@ -67,7 +74,7 @@ const OfferteKortingBlock: React.FC<{
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "#666" }}>
-        <span>BTW</span><span>{formatCurrency(btwBedrag)}</span>
+        <span>{btwLabel(regels)}</span><span>{formatCurrency(btwBedrag)}</span>
       </div>
     </>
   );
@@ -105,7 +112,7 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
     </table>
     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
       <div style={{ width: 260 }}>
-        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} />
+        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} regels={regels} />
         <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontSize: 16, fontWeight: 800, color: sc, borderTop: `3px solid ${pc}`, marginTop: 4 }}>
           <span>Totaal incl. BTW</span><span>{formatCurrency(totaalBedrag)}</span>
         </div>
@@ -141,7 +148,7 @@ export const PriceModern: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, regels,
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
-        <span>BTW</span><span>{formatCurrency(btwBedrag)}</span>
+        <span>{btwLabel(regels)}</span><span>{formatCurrency(btwBedrag)}</span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 8 }}>
         <span>Totaal</span><span>{formatCurrency(totaalBedrag)}</span>
@@ -170,7 +177,7 @@ export const PriceCompact: React.FC<PrijstabelProps> = ({ pc, sc, regels, subtot
     <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0 0", fontSize: 16, fontWeight: 800, color: sc, borderTop: `2px solid ${pc}`, marginTop: 8 }}>
       <span>Totaal incl. BTW</span><span>{formatCurrency(totaalBedrag)}</span>
     </div>
-    <p style={{ fontSize: 10, color: "#999", marginTop: 4 }}>Subtotaal: {formatCurrency(subtotaal)} + BTW: {formatCurrency(btwBedrag)}</p>
+    <p style={{ fontSize: 10, color: "#999", marginTop: 4 }}>Subtotaal: {formatCurrency(subtotaal)} + {btwLabel(regels)}: {formatCurrency(btwBedrag)}</p>
   </div>
 );
 
@@ -208,7 +215,7 @@ export const PriceDetailed: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, pcTin
     </table>
     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
       <div style={{ width: 280, backgroundColor: pcTint, borderRadius: 10, padding: "12px 16px" }}>
-        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} />
+        <OfferteKortingBlock pc={pc} brutoSub={brutoSubtotaal(regels)} offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} subtotaal={subtotaal} btwBedrag={btwBedrag} totaalBedrag={totaalBedrag} formatCurrency={formatCurrency} regels={regels} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: sc, borderTop: `3px solid ${pc}`, paddingTop: 8 }}>
           <span>Totaal</span><span>{formatCurrency(totaalBedrag)}</span>
         </div>
