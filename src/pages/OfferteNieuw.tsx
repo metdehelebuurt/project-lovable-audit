@@ -381,8 +381,8 @@ const OfferteNieuw = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Nieuwe offerte</h1>
-          <p className="text-muted-foreground text-sm">Maak een offerte aan en koppel optioneel aan een lead</p>
+          <h1 className="text-2xl font-semibold text-foreground">{editId ? "Offerte bewerken" : "Nieuwe offerte"}</h1>
+          <p className="text-muted-foreground text-sm">{editId ? "Pas de offerte aan en sla op" : "Maak een offerte aan en koppel optioneel aan een lead"}</p>
         </div>
       </div>
 
