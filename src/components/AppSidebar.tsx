@@ -82,6 +82,13 @@ const getNavGroups = (rol: string): NavGroup[] => {
     beheer.push({ title: "Affiliate Links", url: "/affiliates", icon: Link2 });
   if (beheer.length) groups.push({ label: "Beheer", items: beheer });
 
+  // FEEDBACK & SUPPORT
+  const support: NavItem[] = [];
+  support.push({ title: "Feedback", url: "/feedback", icon: MessagesSquare });
+  if (["superadmin", "partner_admin"].includes(rol))
+    support.push({ title: "Feedback Beheer", url: "/feedback/admin", icon: MessagesSquare });
+  groups.push({ label: "Support", items: support });
+
   // INSTELLINGEN
   if (["superadmin", "partner_admin", "partner_staff", "affiliate"].includes(rol))
     groups.push({ label: "Instellingen", items: [{ title: "Instellingen", url: "/instellingen", icon: Settings }] });

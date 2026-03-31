@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.ai-parse-datasheet]
 verify_jwt = false
+
+[functions.ai-feedback-categorize]
+verify_jwt = false

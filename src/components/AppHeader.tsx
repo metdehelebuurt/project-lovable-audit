@@ -59,6 +59,10 @@ export function AppHeader() {
               <User className="mr-2 h-4 w-4" />
               Profiel
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/feedback/nieuw")}>
+              <MessageSquarePlus className="mr-2 h-4 w-4" />
+              Feedback geven
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
