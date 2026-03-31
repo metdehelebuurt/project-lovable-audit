@@ -665,7 +665,7 @@ const OfferteNieuw = () => {
             <Button type="button" variant="outline" onClick={() => navigate("/offertes")} className="rounded-pill">Annuleren</Button>
             <Button type="submit" className="rounded-pill gap-2" disabled={saveMutation.isPending}>
               {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Offerte aanmaken
+              {editId ? "Offerte bijwerken" : "Offerte aanmaken"}
             </Button>
           </div>
         </div>
