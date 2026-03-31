@@ -373,7 +373,7 @@ export default function OfferteTemplatePage() {
                               }`}
                             >
                               {/* Thumbnail */}
-                              <div className="w-full aspect-[4/3] rounded-t-md overflow-hidden bg-white relative">
+                              <div className="w-full aspect-[210/297] rounded-t-md overflow-hidden bg-white relative">
                                 {isSelected && (
                                   <div className="absolute top-1.5 right-1.5 z-10 bg-primary text-primary-foreground rounded-full p-0.5">
                                     <Check className="h-3 w-3" />
@@ -382,8 +382,8 @@ export default function OfferteTemplatePage() {
                                 <div
                                   style={{
                                     width: 794,
-                                    height: 595,
-                                    transform: "scale(0.22)",
+                                    height: 1123,
+                                    transform: "scale(0.155)",
                                     transformOrigin: "top left",
                                     pointerEvents: "none",
                                     overflow: "hidden",
