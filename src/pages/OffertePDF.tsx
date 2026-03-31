@@ -37,6 +37,7 @@ import {
   voorwaardenTemplates, TermsSimple, TermsBoxed, TermsSidebar,
 } from "@/components/offertes/templates/VoorwaardenTemplates";
 import { categoryFields } from "@/components/schouwen/SchouwCategoryFields";
+import SignaturePad from "@/components/schouwen/SignaturePad";
 import { toast } from "sonner";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
@@ -216,6 +217,9 @@ export default function OffertePDF() {
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroGallery, setHeroGallery] = useState<string[]>([]);
   const [showGallery, setShowGallery] = useState(false);
+  const [partnerHandtekening, setPartnerHandtekening] = useState<string | null>(null);
+  const [partnerHandtekeningOp, setPartnerHandtekeningOp] = useState<string | null>(null);
+  const [signatureSaving, setSignatureSaving] = useState(false);
   const heroFileRef = useRef<HTMLInputElement>(null);
 
   // Drag & drop state
@@ -230,7 +234,8 @@ export default function OffertePDF() {
       const { data: o } = await supabase.from("offertes").select("*").eq("id", id).single();
       if (!o) { setLoading(false); return; }
       setOfferte(o);
-
+      setPartnerHandtekening((o as any).partner_handtekening_data || null);
+      setPartnerHandtekeningOp((o as any).partner_handtekening_op || null);
       if (o.template_config && typeof o.template_config === "object") {
         setConfig(prev => ({ ...prev, ...(o.template_config as Record<string, any>) }));
       }
@@ -310,7 +315,29 @@ export default function OffertePDF() {
   };
 
   const handlePrint = () => {
+    if (!partnerHandtekening) {
+      toast.error("Onderteken de offerte eerst voordat u de PDF kunt downloaden");
+      return;
+    }
     window.open(`/offertes/${id}/pdf/print`, "_blank");
+  };
+
+  const handleSignature = async (base64: string | null) => {
+    setPartnerHandtekening(base64);
+    if (!id) return;
+    setSignatureSaving(true);
+    const now = base64 ? new Date().toISOString() : null;
+    setPartnerHandtekeningOp(now);
+    const { error } = await supabase.from("offertes").update({
+      partner_handtekening_data: base64,
+      partner_handtekening_op: now,
+    } as any).eq("id", id);
+    setSignatureSaving(false);
+    if (error) {
+      toast.error("Handtekening opslaan mislukt");
+    } else {
+      toast.success(base64 ? "Handtekening opgeslagen" : "Handtekening verwijderd");
+    }
   };
 
   const handleSelect = (sectieId: string, variantId: string) => {
@@ -656,7 +683,7 @@ export default function OffertePDF() {
               <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} />
 
               <div style={{ marginTop: 28 }}>
-                <VoorwaardenComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} garantieVw={garantieVw} installTermijn={installTermijn} betalingsvoorwaarden={offerte.betalingsvoorwaarden || null} notities={offerte.notities || null} akkoordTekst={config.akkoord_tekst || ""} />
+                <VoorwaardenComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} garantieVw={garantieVw} installTermijn={installTermijn} betalingsvoorwaarden={offerte.betalingsvoorwaarden || null} notities={offerte.notities || null} akkoordTekst={config.akkoord_tekst || ""} partnerHandtekening={partnerHandtekening} partnerHandtekeningDatum={partnerHandtekeningOp ? formatDate(partnerHandtekeningOp) : null} />
               </div>
             </div>
             <PageFooter />
@@ -1025,6 +1052,35 @@ export default function OffertePDF() {
                 </div>
               )}
             </div>
+
+            {/* Handtekening sectie */}
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="p-3">
+                <span className="text-sm font-semibold text-foreground">✍️ Handtekening adviseur</span>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Verplicht voordat de offerte verzonden of gedownload kan worden</p>
+              </div>
+              <div className="px-3 pb-3">
+                {partnerHandtekening ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-green-600 font-medium">
+                      <Check className="h-3.5 w-3.5" />
+                      <span>Ondertekend op {partnerHandtekeningOp ? new Date(partnerHandtekeningOp).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</span>
+                    </div>
+                    <div className="border border-border rounded-lg p-2 bg-muted/30">
+                      <img src={partnerHandtekening} alt="Handtekening" className="h-16 object-contain" />
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="text-xs w-full" onClick={() => handleSignature(null)}>
+                      Opnieuw tekenen
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <SignaturePad value={null} onChange={handleSignature} />
+                    {signatureSaving && <p className="text-[10px] text-muted-foreground">Opslaan...</p>}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </ScrollArea>
       </div>
@@ -1039,10 +1095,13 @@ export default function OffertePDF() {
             <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={20} max={100} step={1} className="w-28" />
             <span className="text-xs text-muted-foreground w-8">{zoom}%</span>
             <Separator orientation="vertical" className="h-5 mx-1" />
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={handlePrint}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={handlePrint} disabled={!partnerHandtekening}>
               <Download className="h-3.5 w-3.5" /> PDF
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => navigate(`/offertes/${id}?email=true`)}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => {
+              if (!partnerHandtekening) { toast.error("Onderteken de offerte eerst"); return; }
+              navigate(`/offertes/${id}?email=true`);
+            }} disabled={!partnerHandtekening}>
               <Mail className="h-3.5 w-3.5" /> E-mail
             </Button>
           </div>

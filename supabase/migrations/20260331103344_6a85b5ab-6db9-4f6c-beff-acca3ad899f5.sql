@@ -1,0 +1,1 @@
+ALTER TABLE public.offertes ADD COLUMN partner_handtekening_data text, ADD COLUMN partner_handtekening_op timestamptz;

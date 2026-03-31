@@ -1175,6 +1175,8 @@ export type Database = {
           lead_id: string | null
           notities: string | null
           offertenummer: string
+          partner_handtekening_data: string | null
+          partner_handtekening_op: string | null
           partner_id: string | null
           regels: Json
           schouw_id: string | null
@@ -1213,6 +1215,8 @@ export type Database = {
           lead_id?: string | null
           notities?: string | null
           offertenummer: string
+          partner_handtekening_data?: string | null
+          partner_handtekening_op?: string | null
           partner_id?: string | null
           regels?: Json
           schouw_id?: string | null
@@ -1251,6 +1255,8 @@ export type Database = {
           lead_id?: string | null
           notities?: string | null
           offertenummer?: string
+          partner_handtekening_data?: string | null
+          partner_handtekening_op?: string | null
           partner_id?: string | null
           regels?: Json
           schouw_id?: string | null
