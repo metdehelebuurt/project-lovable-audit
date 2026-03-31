@@ -39,8 +39,10 @@ const A4_HEIGHT = 1123;
 const isHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s);
 
 const renderIntro = (tekst: string, style: React.CSSProperties) => {
+  const wrapStyle = { ...style, whiteSpace: "normal" as const };
   if (isHtml(tekst)) {
-    return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: tekst }} />;
+    const spacedHtml = tekst.replace(/<p>/g, '<p style="margin-bottom:0.75em">');
+    return <div style={wrapStyle} dangerouslySetInnerHTML={{ __html: spacedHtml }} />;
   }
   // Platte tekst: converteer \n naar <br/>
   const html = tekst.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, "<br/>")}</p>`).join("");
