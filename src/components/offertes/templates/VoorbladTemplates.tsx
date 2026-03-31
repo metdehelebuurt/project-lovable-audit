@@ -198,7 +198,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
       {/* Center content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", zIndex: 1 }}>
         <p style={{ fontSize: 15, fontWeight: 700, textTransform: "uppercase", letterSpacing: 5, color: pc, marginBottom: 20 }}>{heroTitle}</p>
-        <h1 style={{ fontSize: 56, fontWeight: 800, color: sc, margin: 0, lineHeight: 1.05 }}>Uw persoonlijke<br />voorstel</h1>
+        <h1 style={{ fontSize: 56, fontWeight: 800, color: sc, margin: 0, lineHeight: 1.05 }}>{heroMainTitle || "Uw persoonlijke voorstel"}</h1>
         <div style={{ width: 72, height: 4, backgroundColor: pc, borderRadius: 2, margin: "32px 0" }} />
         <p style={{ fontSize: 18, color: "#555", margin: 0 }}>Opgesteld voor <strong style={{ color: sc }}>{klantNaam}</strong></p>
         {klantAdres && <p style={{ fontSize: 15, color: "#888", margin: "6px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
