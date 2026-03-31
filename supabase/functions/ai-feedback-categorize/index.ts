@@ -10,7 +10,82 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { feedback_id } = await req.json();
+    const body = await req.json();
+
+    // MODE: Generate interview questions for feature requests
+    if (body.mode === "generate_questions") {
+      const { titel, type } = body;
+      if (!titel) {
+        return new Response(JSON.stringify({ error: "titel is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+      const prompt = `Een gebruiker van een SaaS-platform voor energiebedrijven wil een ${type === "functieverzoek" ? "nieuwe functie aanvragen" : "feedback geven"}.
+
+Titel van het verzoek: "${titel}"
+
+Genereer precies 5 korte, gerichte verduidelijkingsvragen (in het Nederlands) die helpen om het verzoek beter te begrijpen. De vragen moeten inzicht geven in:
+1. Het onderliggende probleem of de behoefte
+2. De doelgroep/gebruikersrol
+3. De frequentie/urgentie
+4. Het gewenste eindresultaat
+5. Eventuele referenties of voorbeelden
+
+Houd de vragen kort, duidelijk en vriendelijk.`;
+
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: "Je bent een product manager die verduidelijkende vragen stelt aan gebruikers. Antwoord alleen met de tool-call." },
+            { role: "user", content: prompt },
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "generate_questions",
+              description: "Genereer verduidelijkende vragen",
+              parameters: {
+                type: "object",
+                properties: {
+                  vragen: { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
+                },
+                required: ["vragen"],
+              },
+            },
+          }],
+          tool_choice: { type: "function", function: { name: "generate_questions" } },
+        }),
+      });
+
+      if (!aiResp.ok) {
+        const status = aiResp.status;
+        if (status === 429) return new Response(JSON.stringify({ error: "AI rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        throw new Error(`AI gateway error: ${status}`);
+      }
+
+      const aiData = await aiResp.json();
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      if (!toolCall) throw new Error("No tool call in AI response");
+
+      const result = JSON.parse(toolCall.function.arguments);
+      return new Response(JSON.stringify({ vragen: result.vragen }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // MODE: Categorize feedback (original behavior)
+    const { feedback_id } = body;
     if (!feedback_id) {
       return new Response(JSON.stringify({ error: "feedback_id is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -21,7 +96,6 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch feedback
     const { data: feedback, error: fetchErr } = await supabase
       .from("feedback_verzoeken")
       .select("*")
@@ -34,7 +108,6 @@ serve(async (req) => {
       });
     }
 
-    // Fetch recent similar items for deduplication hint
     const { data: recentItems } = await supabase
       .from("feedback_verzoeken")
       .select("id, titel, categorie, stemmen")
@@ -44,6 +117,14 @@ serve(async (req) => {
 
     const existingTitles = (recentItems || []).map((i: any) => `- ${i.titel} (categorie: ${i.categorie}, stemmen: ${i.stemmen})`).join("\n");
 
+    // Include AI interview answers if present
+    const interviewData = (feedback as any).ai_interview;
+    let interviewText = "";
+    if (Array.isArray(interviewData) && interviewData.length > 0) {
+      interviewText = "\n\nAntwoorden op verduidelijkende vragen:\n" +
+        interviewData.map((item: any) => `V: ${item.vraag}\nA: ${item.antwoord}`).join("\n\n");
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -51,7 +132,7 @@ serve(async (req) => {
 
 Titel: ${feedback.titel}
 Beschrijving: ${feedback.beschrijving}
-Type: ${feedback.type}
+Type: ${feedback.type}${interviewText}
 
 Bestaande items in het systeem:
 ${existingTitles || "Geen"}
@@ -99,16 +180,8 @@ Bepaal:
 
     if (!aiResp.ok) {
       const status = aiResp.status;
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "AI rate limit exceeded" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (status === 429) return new Response(JSON.stringify({ error: "AI rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       throw new Error(`AI gateway error: ${status}`);
     }
 
@@ -118,7 +191,6 @@ Bepaal:
 
     const result = JSON.parse(toolCall.function.arguments);
 
-    // Update feedback with AI results
     const { error: updateErr } = await supabase
       .from("feedback_verzoeken")
       .update({

@@ -250,6 +250,19 @@ export default function FeedbackAdmin() {
                   </div>
                 )}
 
+                {/* AI Interview dossier */}
+                {selectedItem.ai_interview && Array.isArray(selectedItem.ai_interview) && (selectedItem.ai_interview as any[]).length > 0 && (
+                  <div className="bg-primary/5 rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-medium flex items-center gap-1"><Sparkles className="h-3 w-3 text-primary" /> Verduidelijkingsvragen & Antwoorden</p>
+                    {(selectedItem.ai_interview as any[]).map((item: any, i: number) => (
+                      <div key={i} className="text-sm">
+                        <p className="text-muted-foreground text-xs font-medium">{i + 1}. {item.vraag}</p>
+                        <p className="mt-0.5">{item.antwoord || <span className="text-muted-foreground italic">Niet beantwoord</span>}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: selectedItem.beschrijving }} />
 
                 {selectedItem.bijlagen && (selectedItem.bijlagen as any[]).length > 0 && (
