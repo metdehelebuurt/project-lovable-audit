@@ -140,12 +140,28 @@ const OfferteNieuw = () => {
     }
   }, []);
 
+  // Fetch partner feature flags for product visibility
+  const isSuperadmin = profile?.rol === "superadmin";
+  const { data: partnerFlags } = useQuery({
+    queryKey: ["partner-flags", profile?.partner_id],
+    enabled: !!profile?.partner_id && !isSuperadmin,
+    queryFn: async () => {
+      const { data } = await supabase.from("partners").select("feature_flags_json").eq("id", profile!.partner_id!).single();
+      return (data?.feature_flags_json && typeof data.feature_flags_json === "object") ? data.feature_flags_json as Record<string, any> : {};
+    },
+  });
+  const alleenEigenProducten = !isSuperadmin && partnerFlags?.alleen_eigen_producten === true;
+
   const { data: producten = [] } = useQuery({
-    queryKey: ["producten-for-offertes"],
+    queryKey: ["producten-for-offertes", alleenEigenProducten],
     queryFn: async () => {
       const { data, error } = await supabase.from("producten").select("*").eq("status", "actief").order("naam");
       if (error) throw error;
-      return data as Product[];
+      let result = data as Product[];
+      if (alleenEigenProducten && profile?.partner_id) {
+        result = result.filter(p => p.partner_id === profile.partner_id);
+      }
+      return result;
     },
   });
 
