@@ -217,7 +217,7 @@ export const HeroMinimal: React.FC<VoorbladProps> = (props) => {
    4 — HERO GRADIENT
    ════════════════════════════════════════════════════════════ */
 export const HeroGradient: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, introTekst, badges, klantAdres, klantPostcode, klantPlaats, heroImageUrl, heroTitle = "Offerte", heroMainTitle, heroCategoryText } = props;
   const darkLogo = logoUrlDark || logoUrl;
 
   return (
