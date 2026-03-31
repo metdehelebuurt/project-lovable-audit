@@ -1,4 +1,4 @@
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, MessageSquarePlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,10 @@ export function AppHeader() {
             <DropdownMenuItem onClick={() => navigate("/instellingen")}>
               <User className="mr-2 h-4 w-4" />
               Profiel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/feedback/nieuw")}>
+              <MessageSquarePlus className="mr-2 h-4 w-4" />
+              Feedback geven
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive">

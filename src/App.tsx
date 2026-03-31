@@ -52,6 +52,9 @@ import Klanten from "@/pages/Klanten";
 import KlantDetail from "@/pages/KlantDetail";
 import NotFound from "@/pages/NotFound";
 import OffertePublic from "@/pages/OffertePublic";
+import FeedbackNieuw from "@/pages/FeedbackNieuw";
+import FeedbackOverzicht from "@/pages/FeedbackOverzicht";
+import FeedbackAdmin from "@/pages/FeedbackAdmin";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
@@ -212,6 +215,11 @@ const App = () => (
               } />
               <Route path="/offertes/feedback" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><OfferteFeedback /></ProtectedRoute>
+              } />
+              <Route path="/feedback" element={<FeedbackOverzicht />} />
+              <Route path="/feedback/nieuw" element={<FeedbackNieuw />} />
+              <Route path="/feedback/admin" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><FeedbackAdmin /></ProtectedRoute>
               } />
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/affiliates" element={

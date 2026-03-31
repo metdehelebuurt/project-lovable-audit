@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
-  MessageCircleWarning
+  MessageCircleWarning, MessageSquareHeart
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -81,6 +81,13 @@ const getNavGroups = (rol: string): NavGroup[] => {
   if (rol === "affiliate")
     beheer.push({ title: "Affiliate Links", url: "/affiliates", icon: Link2 });
   if (beheer.length) groups.push({ label: "Beheer", items: beheer });
+
+  // FEEDBACK & SUPPORT
+  const support: NavItem[] = [];
+  support.push({ title: "Feedback", url: "/feedback", icon: MessageSquareHeart });
+  if (["superadmin", "partner_admin"].includes(rol))
+    support.push({ title: "Feedback Beheer", url: "/feedback/admin", icon: MessageSquareHeart });
+  groups.push({ label: "Support", items: support });
 
   // INSTELLINGEN
   if (["superadmin", "partner_admin", "partner_staff", "affiliate"].includes(rol))
