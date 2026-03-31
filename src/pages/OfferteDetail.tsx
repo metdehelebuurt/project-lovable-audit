@@ -465,7 +465,7 @@ const OfferteDetail = () => {
                 {offerte.introductie_tekst && (
                   <div>
                     <p className="text-muted-foreground text-xs mb-1">Introductietekst</p>
-                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: offerte.introductie_tekst }} />
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.introductie_tekst) }} />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4">
