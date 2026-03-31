@@ -588,7 +588,16 @@ const ProductDetail = () => {
                     )}
                     <div>
                       <p className="text-xs text-muted-foreground">BTW</p>
-                      <p className="text-sm font-medium text-foreground">{product.btw_percentage ?? 21}%</p>
+                      <Select value={String(product.btw_percentage ?? 21)} onValueChange={(v) => { setProduct({ ...product, btw_percentage: Number(v) }); setIsDirty(true); }}>
+                        <SelectTrigger className="w-24 h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0%</SelectItem>
+                          <SelectItem value="9">9%</SelectItem>
+                          <SelectItem value="21">21%</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     {product.garantie_jaren && (
                       <div>
