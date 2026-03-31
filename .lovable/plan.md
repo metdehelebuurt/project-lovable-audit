@@ -1,55 +1,36 @@
 
 
-## Plan: Kortingen correct doorvoeren in alle PDF-views
+## Plan: Witte pagina fix, BTW zichtbaarheid en BTW bewerkbaar per product
 
-### Gevonden problemen
+### 1. Witte laatste pagina verwijderen
 
-1. **Offerte-niveau korting niet doorgegeven aan prijstabel templates**: In zowel `OffertePDFPreview.tsx` (regel 471) als `OffertePDF.tsx` (regel 704) ontbreken de props `offerteKortingType` en `offerteKortingWaarde` bij de `<PrijsComp>`. De korting wordt opgeslagen in `template_config.offerte_korting_type` en `template_config.offerte_korting_waarde` maar nooit uitgelezen en doorgegeven.
+**Oorzaak**: Regel 587 in `OffertePDFPreview.tsx` zet `pageBreakAfter: "always"` als inline style op gegenereerde datasheets. Inline styles overschrijven de CSS-regel `.pdf-page:last-child { page-break-after: avoid }`.
 
-2. **Energieadvies investering-berekening negeert bedrag-korting**: De fallback investering-berekening (beide bestanden) gebruikt `r.korting_percentage` maar houdt geen rekening met `korting_type === "bedrag"`. Regels met een vast kortingsbedrag worden verkeerd berekend.
+**Fix**: Verwijder `pageBreakAfter: "always"` uit de inline style op regel 587. De CSS-regel op regel 609 (`page-break-after: always`) geldt al voor alle `.pdf-page` elementen, en regel 610 (`:last-child`) voorkomt de break na het laatste element.
 
-3. **OrderbevestigingPDF negeert bedrag-korting**: Alle subtotaal-berekeningen gebruiken alleen `korting_percentage`, niet `korting_type`/`korting_bedrag`.
+### 2. BTW percentage zichtbaar op offerte prijstabel
 
-### Oplossing
+**Huidige situatie**: Alleen het `PriceDetailed` template toont BTW% per regel. De andere 3 templates (Classic, Modern, Compact) tonen geen BTW per product.
 
-#### 1. Offerte-korting props doorvoeren (OffertePDFPreview.tsx + OffertePDF.tsx)
+**Fix**: In `PrijstabelTemplates.tsx`:
+- **PriceClassic**: Een "BTW" kolom toevoegen aan de tabel (na Korting, voor Subtotaal) met `r.btw_percentage%`
+- **PriceModern**: BTW% toevoegen aan de detail-regel onder elk product (bijv. `21% BTW`)
+- **PriceCompact**: BTW% toevoegen achter het subtotaal per regel
 
-Uit `templateConfig` de offerte-korting waarden uitlezen en als props meegeven aan `PrijsComp`:
+### 3. BTW percentage bewerkbaar in ProductDetail
 
-```tsx
-// Toevoegen bij config/tc extractie:
-const offerteKortingType = templateConfig?.offerte_korting_type || null;
-const offerteKortingWaarde = templateConfig?.offerte_korting_waarde || 0;
+**Huidige situatie**: `ProductDetail.tsx` toont het BTW percentage als read-only tekst. Het `handleSaveProduct` (regel 505) stuurt `btw_percentage` niet mee naar de database. Er is geen invoerveld om het aan te passen.
 
-// PrijsComp aanroep:
-<PrijsComp ... offerteKortingType={offerteKortingType} offerteKortingWaarde={offerteKortingWaarde} />
-```
-
-#### 2. Energieadvies investering-berekening fixen
-
-Vervang de simpele percentage-berekening door dezelfde `regelSub` logica die rekening houdt met `korting_type`:
-
-```tsx
-// Was:
-r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100)
-
-// Wordt (helper functie):
-const regelSub = (r) => {
-  const bruto = r.aantal * r.prijs_per_stuk;
-  if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
-  return bruto * (1 - (r.korting_percentage || 0) / 100);
-};
-```
-
-#### 3. OrderbevestigingPDF fixen
-
-Dezelfde `regelSub` helper toepassen voor subtotaal en BTW berekeningen.
+**Fix in `ProductDetail.tsx`**:
+- Het BTW-veld in het overzicht (regel 589-592) vervangen door een bewerkbaar `Select` dropdown met opties: 0%, 9%, 21%
+- Bij wijziging `isDirty` op `true` zetten zodat de bestaande "Wijzigingen opslaan" knop verschijnt
+- `btw_percentage` toevoegen aan het `handleSaveProduct` update-object (regel 505-514)
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/OffertePDFPreview.tsx` | (1) Offerte-korting uit templateConfig halen en doorgeven aan PrijsComp; (2) Energieadvies investering-berekening fixen |
-| `src/pages/OffertePDF.tsx` | (1) Offerte-korting uit config halen en doorgeven aan PrijsComp; (2) Energieadvies investering-berekening fixen |
-| `src/components/OrderbevestigingPDF.tsx` | Subtotaal-berekening aanpassen voor bedrag-korting |
+| `src/components/OffertePDFPreview.tsx` | Inline `pageBreakAfter` verwijderen van datasheet divs (regel 587) |
+| `src/components/offertes/templates/PrijstabelTemplates.tsx` | BTW% kolom/info toevoegen aan Classic, Modern en Compact templates |
+| `src/pages/ProductDetail.tsx` | BTW select dropdown toevoegen + `btw_percentage` meesturen bij opslaan |
 
