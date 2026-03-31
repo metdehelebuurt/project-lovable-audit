@@ -569,7 +569,7 @@ const OfferteNieuw = () => {
                       if (error || data?.error) {
                         toast.error(data?.error || "AI intro genereren mislukt");
                       } else if (data?.intro) {
-                        setIntroductieTekst(data.intro);
+                        setIntroductieTekst(data.intro.replace(/\n/g, "<br>"));
                         toast.success("Introductietekst gegenereerd");
                       }
                     } catch {
