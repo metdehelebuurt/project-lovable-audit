@@ -71,7 +71,7 @@ const HeroImageBg: React.FC<{ url: string; overlay: string }> = ({ url, overlay 
    1 — HERO DARK
    ════════════════════════════════════════════════════════════ */
 export const HeroDark: React.FC<VoorbladProps> = (props) => {
-  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, productNaam, slogan, introTekst, badges, telefoon, klantAdres, klantPostcode, klantPlaats, pcTint, heroImageUrl, heroTitle = "Offerte" } = props;
+  const { pc, sc, logoUrl, logoUrlDark, partnerNaam, klantNaam, offertenummer, adviseurNaam, datum, categoryLabel, productNaam, slogan, introTekst, badges, telefoon, klantAdres, klantPostcode, klantPlaats, pcTint, heroImageUrl, heroTitle = "Offerte", heroMainTitle, heroCategoryText } = props;
   const darkLogo = logoUrlDark || logoUrl;
   const hasImage = !!heroImageUrl;
 
