@@ -1056,6 +1056,49 @@ const Offertes = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={!!deleteDialog} onOpenChange={(open) => { if (!open) { setDeleteDialog(null); setDeleteReden(""); setDeleteKlant(false); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Offerte verwijderen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Weet je zeker dat je offerte <strong>{deleteDialog?.offertenummer}</strong> wilt verwijderen? Gerelateerde opdrachten en installaties worden ook verwijderd.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <Label>Reden van verwijdering *</Label>
+              <Textarea
+                value={deleteReden}
+                onChange={(e) => setDeleteReden(e.target.value)}
+                placeholder="Geef een reden op voor het verwijderen..."
+                className="mt-1"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="deleteKlantOffertes"
+                checked={deleteKlant}
+                onCheckedChange={(v) => setDeleteKlant(v === true)}
+              />
+              <Label htmlFor="deleteKlantOffertes" className="text-sm cursor-pointer">
+                Bijbehorende klant ook verwijderen
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog(null)}>Annuleren</Button>
+            <Button
+              variant="destructive"
+              disabled={!deleteReden.trim() || deleteMutation.isPending}
+              onClick={() => deleteDialog && deleteMutation.mutate({ id: deleteDialog.id, verwijderKlant: deleteKlant })}
+            >
+              {deleteMutation.isPending ? "Bezig..." : "Definitief verwijderen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
