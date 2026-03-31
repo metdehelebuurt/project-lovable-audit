@@ -428,8 +428,7 @@ const ProductDatasheet: React.FC<ProductDatasheetProps> = ({ product, partner })
                 borderRadius: 6, border: "1px solid #fde68a", fontSize: 8,
                 color: "#92400e", lineHeight: 1.5, fontStyle: "italic",
               }}>
-                ⚠ Dit specificatieblad kan automatisch gegenereerde informatie bevatten. Controleer alle waarden handmatig.
-                Aan de inhoud van dit document kunnen geen rechten worden ontleend.
+                Deze specificatie is met zorg samengesteld maar kan fouten bevatten. Er kunnen geen rechten worden ontleend aan deze specificatie.
               </div>
             )}
           </div>
