@@ -230,7 +230,7 @@ export const HeroGradient: React.FC<VoorbladProps> = (props) => {
           <h2 style={{ fontSize: 28, fontWeight: 400, margin: "12px 0 0", opacity: 0.9 }}>voor {klantNaam}</h2>
           {klantAdres && <p style={{ fontSize: 15, opacity: 0.7, margin: "10px 0 0" }}>{klantAdres}, {klantPostcode} {klantPlaats}</p>}
           {introTekst && (
-            <p style={{ fontSize: 15, lineHeight: 1.8, marginTop: 40, maxWidth: 520, opacity: 0.9 }}>{introTekst}</p>
+            <div style={{ marginTop: 40, maxWidth: 520, opacity: 0.9 }}>{renderIntro(introTekst, { fontSize: 15, lineHeight: 1.8, margin: 0 })}</div>
           )}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 24 }}>
