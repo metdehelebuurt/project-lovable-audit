@@ -1,32 +1,34 @@
 
 
-## Plan: Logo-variant doorvoeren in PDF preview
+## Plan: Fix 3 PDF offerte problemen
 
-### Probleem
+### 1. Witte laatste pagina verwijderen
 
-De logo-variant keuze (auto/licht/donker) werkt alleen in de **editor** (`OffertePDF.tsx`), maar niet in de **PDF preview** (`OffertePDFPreview.tsx`) die gebruikt wordt voor printen/delen. Twee problemen:
+**Probleem**: De CSS `page-break-after: always` op `.pdf-page` in de `pageStyle` (regel 284) forceert altijd een page break, ook na de laatste pagina. De `:last-of-type` CSS-regel werkt niet wanneer datasheets in een `React.Fragment` gewrapt zitten — de individuele `.pdf-page` divs binnen het Fragment zijn niet het `:last-of-type` van hun parent.
 
-1. `OffertePDFPreview.tsx` haalt `logo_url_donker` niet op uit de database (ontbreekt in de SELECT query, regel 129)
-2. Het voorblad-component krijgt geen `logoUrlDark` prop en de `voorblad_logo_variant` config wordt niet toegepast (regel 344)
+**Oplossing**: Verwijder `pageBreakAfter: "always"` uit de inline `pageStyle` en vertrouw volledig op de CSS-regel `.pdf-page { page-break-after: always }` + `.pdf-page:last-child { page-break-after: avoid }`. Wijzig `:last-of-type` naar `:last-child` zodat het correct werkt ongeacht nesting.
 
-### Wijzigingen
+### 2. Adviseur-naam op offerte tonen (via instellingen)
 
-**`src/components/OffertePDFPreview.tsx`**:
+**Probleem**: De adviseur-naam staat al op het voorblad via `adviseurNaam`, maar de user wil dat partner-admins in Instellingen de standaard adviseur-naam kunnen instellen die op offertes verschijnt.
 
-1. **PartnerBranding interface** — `logo_url_donker` toevoegen
-2. **Database query** (regel 129) — `logo_url_donker` toevoegen aan de SELECT
-3. **Logo URL resolutie** (na regel 170) — `logoUrlDonker` variabele aanmaken, zelfde logica als `logoUrl`
-4. **Voorblad render** (regel 344) — `logoUrlDark` prop toevoegen met dezelfde variant-logica als in de editor:
-   ```
-   const variant = tc.voorblad_logo_variant || "auto";
-   if (variant === "light") → undefined
-   if (variant === "dark") → logoUrlDonker || logoUrl
-   default ("auto") → logoUrlDonker
-   ```
+**Oplossing**: De adviseur wordt al opgehaald uit de `users` tabel op basis van `adviseur_id` (regel 142). De naam staat al op het voorblad. Aanvulling: toon de adviseur-naam ook expliciet in de **prijstabel-sectie** ("Opgesteld door" blok, regel 436-441) naast de bedrijfsnaam, zodat het duidelijk is welke adviseur de offerte heeft gemaakt.
+
+### 3. Dubbele specificaties verwijderen
+
+**Probleem**: In de `datasheets` case (regel 513-563) worden er **twee loops** uitgevoerd:
+1. **Eerste loop** (regel 517-541): rendert een raw specs-tabel voor elk product met `specs`
+2. **Tweede loop** (regel 542-559): rendert ProductDatasheet of iframe voor producten met `datasheet_type`
+
+Producten met `datasheet_type === "gegenereerd"` én `specs` krijgen BEIDE pagina's — dit is de dubbele specificatie.
+
+**Oplossing**: In de eerste loop (raw specs-tabel), sla producten over die `datasheet_type === "gegenereerd"` hebben, want die krijgen al een volledige ProductDatasheet via de tweede loop.
+
+---
 
 ### Bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `src/components/OffertePDFPreview.tsx` | `logo_url_donker` ophalen + `logoUrlDark` prop doorvoeren naar voorblad |
+| `src/components/OffertePDFPreview.tsx` | (1) `pageBreakAfter` uit inline style, CSS `:last-child` fix; (2) adviseur-naam in prijstabel "Opgesteld door" blok; (3) filter `datasheet_type === "gegenereerd"` uit raw specs loop |
 
