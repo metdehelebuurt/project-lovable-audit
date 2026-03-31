@@ -592,6 +592,59 @@ const defaultTemplate: OfferteTemplate = {
   voorwaarden_standaard_bijvoegen: true,
 };
 
+function ProductenInstellingen({ partnerId }: { partnerId: string }) {
+  const [alleenEigenProducten, setAlleenEigenProducten] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.from("partners").select("feature_flags_json").eq("id", partnerId).single()
+      .then(({ data }) => {
+        if (data?.feature_flags_json && typeof data.feature_flags_json === "object") {
+          const flags = data.feature_flags_json as Record<string, any>;
+          if (flags.alleen_eigen_producten) setAlleenEigenProducten(true);
+        }
+        setLoading(false);
+      });
+  }, [partnerId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { data: current } = await supabase.from("partners").select("feature_flags_json").eq("id", partnerId).single();
+    const existingFlags = (current?.feature_flags_json && typeof current.feature_flags_json === "object") ? current.feature_flags_json as Record<string, any> : {};
+    const { error } = await supabase.from("partners").update({
+      feature_flags_json: { ...existingFlags, alleen_eigen_producten: alleenEigenProducten } as any,
+    }).eq("id", partnerId);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Productinstellingen opgeslagen");
+  };
+
+  if (loading) return <div className="text-muted-foreground text-sm">Laden...</div>;
+
+  return (
+    <Card className="rounded-2xl border-0 shadow-sm">
+      <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Package className="h-5 w-5 text-primary" />Productinstellingen</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between rounded-xl bg-muted/50 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Alleen eigen producten tonen</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Wanneer ingeschakeld ziet u alleen producten die door uw organisatie zijn aangemaakt. 
+              Globale catalogusproducten worden verborgen.
+            </p>
+          </div>
+          <Switch
+            checked={alleenEigenProducten}
+            onCheckedChange={setAlleenEigenProducten}
+          />
+        </div>
+        <Button onClick={handleSave} disabled={saving}>{saving ? "Opslaan..." : "Opslaan"}</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function OfferteTemplateInstellingen({ partnerId }: { partnerId: string }) {
   const [template, setTemplate] = useState<OfferteTemplate>(defaultTemplate);
   const [loading, setLoading] = useState(true);
