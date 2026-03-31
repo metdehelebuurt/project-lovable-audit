@@ -205,7 +205,11 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
       }
     }
     if (!energieadvies && producten.length > 0) {
-      const totalInvestering = regels.reduce((sum, r) => sum + (r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100)), 0);
+      const totalInvestering = regels.reduce((sum, r) => {
+        const bruto = r.aantal * r.prijs_per_stuk;
+        if ((r as any).korting_type === "bedrag") return sum + bruto - ((r as any).korting_bedrag || 0);
+        return sum + bruto * (1 - (r.korting_percentage || 0) / 100);
+      }, 0);
       if (totalInvestering > 0) {
         const estBesparing = Math.round(totalInvestering * 0.12);
         const terugverdientijd = estBesparing > 0 ? Math.round((totalInvestering / estBesparing) * 10) / 10 : 0;
@@ -468,7 +472,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
                   {partner.email && <p style={{ margin: "2px 0", fontSize: 12, color: "#555" }}>{partner.email}</p>}
                 </div>
               </div>
-              <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} />
+              <PrijsComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} regels={regels} subtotaal={offerte.subtotaal} btwBedrag={offerte.btw_bedrag} totaalBedrag={offerte.totaal_bedrag} formatCurrency={formatCurrency} offerteKortingType={templateConfig?.offerte_korting_type || null} offerteKortingWaarde={templateConfig?.offerte_korting_waarde || 0} />
               <div style={{ marginTop: 28 }}>
                 <VoorwaardenComp pc={pc} sc={sc} pcTint={pcTint} pcTint2={pcTint2} partnerNaam={partner.naam} klantNaam={offerte.klant_naam} adviseurNaam={adviseurNaam} datum={formatDate(offerte.created_at)} garantieVw={garantieVw} installTermijn={installTermijn} betalingsvoorwaarden={offerte.betalingsvoorwaarden || null} notities={offerte.notities || null} akkoordTekst={tc.akkoord_tekst} partnerHandtekening={(offerte as any).partner_handtekening_data || null} partnerHandtekeningDatum={(offerte as any).partner_handtekening_op ? formatDate((offerte as any).partner_handtekening_op) : null} />
               </div>

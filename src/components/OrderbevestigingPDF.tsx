@@ -57,10 +57,14 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
     ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url}`
     : null;
 
-  const subtotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100), 0);
+  const regelSub = (r: OfferteRegel) => {
+    const bruto = r.aantal * r.prijs_per_stuk;
+    if ((r as any).korting_type === "bedrag") return bruto - ((r as any).korting_bedrag || 0);
+    return bruto * (1 - (r.korting_percentage || 0) / 100);
+  };
+  const subtotaal = regels.reduce((s, r) => s + regelSub(r), 0);
   const btwBedrag = regels.reduce((s, r) => {
-    const sub = r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100);
-    return s + sub * ((r.btw_percentage || 21) / 100);
+    return s + regelSub(r) * ((r.btw_percentage || 21) / 100);
   }, 0);
 
   return (
