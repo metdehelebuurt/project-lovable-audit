@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import RichTextEditor from "@/components/shared/RichTextEditor";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { formatCurrency, regelSubtotaal as regelSubShared, type OfferteRegel, emptyOfferteRegel } from "@/types/offerte";
+import { formatCurrency, regelSubtotaal as regelSubShared, generateOfferteNummer, type OfferteRegel, emptyOfferteRegel } from "@/types/offerte";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
