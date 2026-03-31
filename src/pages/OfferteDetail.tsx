@@ -304,23 +304,52 @@ const OfferteDetail = () => {
             </Button>
           )}
           {canDelete && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="rounded-pill gap-2">
-                  <Trash2 className="h-4 w-4" /> Verwijderen
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Offerte verwijderen</AlertDialogTitle>
-                  <AlertDialogDescription>Weet je zeker dat je offerte {offerte.offertenummer} wilt verwijderen?</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteMutation.mutate()} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <>
+              <Button variant="destructive" size="sm" className="rounded-pill gap-2" onClick={() => setDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4" /> Verwijderen
+              </Button>
+              <Dialog open={deleteDialog} onOpenChange={(open) => { setDeleteDialog(open); if (!open) { setDeleteReden(""); setDeleteKlant(false); } }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Offerte verwijderen</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground">
+                    Weet je zeker dat je offerte <strong>{offerte.offertenummer}</strong> wilt verwijderen? Gerelateerde opdrachten en installaties worden ook verwijderd.
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Reden van verwijdering *</Label>
+                      <Textarea
+                        value={deleteReden}
+                        onChange={(e) => setDeleteReden(e.target.value)}
+                        placeholder="Geef een reden op voor het verwijderen..."
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="deleteKlant"
+                        checked={deleteKlant}
+                        onCheckedChange={(v) => setDeleteKlant(v === true)}
+                      />
+                      <Label htmlFor="deleteKlant" className="text-sm cursor-pointer">
+                        Bijbehorende klant ook verwijderen
+                      </Label>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setDeleteDialog(false)}>Annuleren</Button>
+                    <Button
+                      variant="destructive"
+                      disabled={!deleteReden.trim() || deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate({ reden: deleteReden, verwijderKlant: deleteKlant })}
+                    >
+                      {deleteMutation.isPending ? "Bezig..." : "Definitief verwijderen"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
         </div>
       </div>
