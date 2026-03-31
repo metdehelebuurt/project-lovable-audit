@@ -91,14 +91,8 @@ const emptyForm: OfferteFormData = {
   offerte_korting_waarde: 0,
 };
 
-const generateOfferteNummer = () => {
-  const d = new Date();
-  const yy = d.getFullYear().toString().slice(2);
-  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
-  const dd = d.getDate().toString().padStart(2, "0");
-  const rand = Math.floor(Math.random() * 9999).toString().padStart(4, "0");
-  return `OF-${yy}${mm}${dd}-${rand}`;
-};
+// Using shared generateOfferteNummer from @/types/offerte
+import { generateOfferteNummer } from "@/types/offerte";
 
 const Offertes = () => {
   const { profile } = useAuth();
