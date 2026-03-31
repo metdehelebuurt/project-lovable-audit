@@ -36,7 +36,12 @@ function hexToTint(hex: string, opacity: number): string {
 
 const A4_HEIGHT = 1123;
 
+const isHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s);
+
 const renderIntro = (tekst: string, style: React.CSSProperties) => {
+  if (isHtml(tekst)) {
+    return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: tekst }} />;
+  }
   const match = tekst.match(/^((?:Beste|Geachte|Lieve|Dag)\s[^,]+,)\s*/i);
   if (match) {
     return (

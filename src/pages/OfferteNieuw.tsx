@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import RichTextEditor from "@/components/shared/RichTextEditor";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
@@ -568,7 +569,7 @@ const OfferteNieuw = () => {
                       if (error || data?.error) {
                         toast.error(data?.error || "AI intro genereren mislukt");
                       } else if (data?.intro) {
-                        setIntroductieTekst(data.intro);
+                        setIntroductieTekst(data.intro.replace(/\n/g, "<br>"));
                         toast.success("Introductietekst gegenereerd");
                       }
                     } catch {
@@ -581,7 +582,7 @@ const OfferteNieuw = () => {
                   AI Intro genereren
                 </Button>
               </div>
-              <Textarea value={introductieTekst} onChange={e => setIntroductieTekst(e.target.value)} className="rounded-xl" rows={3} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
+              <RichTextEditor value={introductieTekst} onChange={setIntroductieTekst} placeholder="Persoonlijke begeleidende tekst voor de klant..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
