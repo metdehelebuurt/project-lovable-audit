@@ -92,7 +92,7 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
       </div>
 
       {/* Bottom content section — remaining 50% */}
-      <div style={{ padding: "48px 56px", flex: 1, display: "flex", flexDirection: "column", zIndex: 1, backgroundColor: hasImage ? "rgba(255,255,255,0.96)" : "transparent" }}>
+      <div style={{ padding: "48px 56px 0", flex: 1, display: "flex", flexDirection: "column", zIndex: 1, backgroundColor: hasImage ? "rgba(255,255,255,0.96)" : "transparent" }}>
         <div style={{ display: "flex", gap: 48, marginBottom: 40 }}>
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: pc, marginBottom: 10 }}>Opgesteld voor</p>
@@ -109,17 +109,18 @@ export const HeroDark: React.FC<VoorbladProps> = (props) => {
         </div>
         {introTekst && (
           <div style={{ backgroundColor: pcTint, borderLeft: `4px solid ${pc}`, padding: "18px 24px", borderRadius: 10, marginBottom: 28 }}>
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: "#333" }}>{introTekst}</p>
+            {renderIntro(introTekst, { margin: 0, fontSize: 14, lineHeight: 1.7, color: "#333" })}
           </div>
         )}
         <div style={{ flex: 1 }} />
         {slogan && <p style={{ fontSize: 16, fontStyle: "italic", color: pc, marginBottom: 20 }}>"{slogan}"</p>}
-        <div style={{ backgroundColor: pcTint, padding: "18px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${hexToTint(pc, 0.15)}`, paddingLeft: 0, paddingRight: 0 }}>
-          <div style={{ display: "flex", gap: 24, fontSize: 12, color: "#666" }}>
-            {badges.map((b, i) => <span key={i}>✓ {b}</span>)}
-          </div>
-          {telefoon && <span style={{ fontSize: 13, fontWeight: 600, color: sc }}>{telefoon}</span>}
+      </div>
+      {/* USP bar — pinned to bottom */}
+      <div style={{ backgroundColor: pcTint, padding: "18px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${hexToTint(pc, 0.15)}`, zIndex: 1 }}>
+        <div style={{ display: "flex", gap: 24, fontSize: 12, color: "#666" }}>
+          {badges.map((b, i) => <span key={i}>✓ {b}</span>)}
         </div>
+        {telefoon && <span style={{ fontSize: 13, fontWeight: 600, color: sc }}>{telefoon}</span>}
       </div>
     </div>
   );
