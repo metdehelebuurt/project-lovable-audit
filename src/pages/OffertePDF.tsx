@@ -24,7 +24,7 @@ import {
   voorbladTemplates, HeroDark, HeroSplit, HeroMinimal, HeroGradient, HeroPhoto,
 } from "@/components/offertes/templates/VoorbladTemplates";
 import {
-  productTemplates, ProductCards, ProductList, ProductGrid, ProductSpotlight,
+  productTemplates, ProductCards, ProductList, ProductGrid, ProductSpotlight, ProductShowcase,
 } from "@/components/offertes/templates/ProductTemplates";
 import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import {
