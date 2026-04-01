@@ -14,6 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      abonnement_addon_aankopen: {
+        Row: {
+          aantal: number
+          abonnement_id: string | null
+          addon_id: string
+          created_at: string
+          eind_datum: string | null
+          id: string
+          interval: string
+          maand_bedrag: number
+          partner_id: string
+          start_datum: string
+          status: string
+        }
+        Insert: {
+          aantal?: number
+          abonnement_id?: string | null
+          addon_id: string
+          created_at?: string
+          eind_datum?: string | null
+          id?: string
+          interval?: string
+          maand_bedrag?: number
+          partner_id: string
+          start_datum?: string
+          status?: string
+        }
+        Update: {
+          aantal?: number
+          abonnement_id?: string | null
+          addon_id?: string
+          created_at?: string
+          eind_datum?: string | null
+          id?: string
+          interval?: string
+          maand_bedrag?: number
+          partner_id?: string
+          start_datum?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abonnement_addon_aankopen_abonnement_id_fkey"
+            columns: ["abonnement_id"]
+            isOneToOne: false
+            referencedRelation: "abonnementen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnement_addon_aankopen_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "abonnement_addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnement_addon_aankopen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnement_addon_aankopen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abonnement_addons: {
+        Row: {
+          actief: boolean
+          beschrijving: string | null
+          created_at: string
+          id: string
+          jaar_prijs: number
+          maand_prijs: number
+          naam: string
+          slug: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          actief?: boolean
+          beschrijving?: string | null
+          created_at?: string
+          id?: string
+          jaar_prijs?: number
+          maand_prijs?: number
+          naam: string
+          slug: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          actief?: boolean
+          beschrijving?: string | null
+          created_at?: string
+          id?: string
+          jaar_prijs?: number
+          maand_prijs?: number
+          naam?: string
+          slug?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       abonnement_notificaties_config: {
         Row: {
           dagen_voor_verloop: number[]
