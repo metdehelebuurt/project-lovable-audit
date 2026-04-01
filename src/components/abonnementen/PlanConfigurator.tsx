@@ -277,6 +277,11 @@ export default function PlanConfigurator() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add-ons configuratie */}
+      <div className="mt-8 pt-6 border-t">
+        <AddonConfigurator />
+      </div>
     </div>
   );
 }

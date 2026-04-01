@@ -105,14 +105,39 @@ export default function PartnerAbonnement() {
     window.location.reload();
   };
 
-  if (loading) return <p className="text-sm text-muted-foreground">Laden...</p>;
-  if (!abo) return <p className="text-sm text-muted-foreground">Geen abonnement gevonden</p>;
+  const handleBuyAddon = async () => {
+    if (!addonForm.addon_id || !abo) return;
+    setAddonSaving(true);
+    const addon = beschikbareAddons.find((a: any) => a.id === addonForm.addon_id);
+    if (!addon) { setAddonSaving(false); return; }
+    const bedrag = addon.maand_prijs * addonForm.aantal;
+    const { error } = await supabase.from("abonnement_addon_aankopen").insert({
+      abonnement_id: abo.id,
+      addon_id: addonForm.addon_id,
+      partner_id: partnerId,
+      aantal: addonForm.aantal,
+      interval: (abo as any).interval ?? "maandelijks",
+      maand_bedrag: bedrag,
+      status: "actief",
+    } as any);
+    setAddonSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${addonForm.aantal}x ${addon.naam} toegevoegd!`);
+    setAddonDialog(false);
+    window.location.reload();
+  };
+
+  // Calculate effective limits including addons
+  const addonAdviseurs = addonAankopen.filter((a: any) => a.abonnement_addons?.type === "adviseur").reduce((sum: number, a: any) => sum + a.aantal, 0);
+  const addonInstallateurs = addonAankopen.filter((a: any) => a.abonnement_addons?.type === "installateur").reduce((sum: number, a: any) => sum + a.aantal, 0);
+  const addonMaandBedrag = addonAankopen.reduce((sum: number, a: any) => sum + (a.maand_bedrag ?? 0), 0);
 
   const usageLimits = [
     { label: "Leads", used: usage.leads, max: plan?.max_leads },
     { label: "Offertes", used: usage.offertes, max: plan?.max_offertes },
     { label: "Gebruikers", used: usage.gebruikers, max: plan?.max_gebruikers },
-    { label: "Adviseurs", used: usage.adviseurs, max: plan?.max_adviseurs },
+    { label: "Adviseurs", used: usage.adviseurs, max: plan?.max_adviseurs != null ? plan.max_adviseurs + addonAdviseurs : null },
+    { label: "Installateurs", used: usage.installateurs, max: plan?.max_installateurs != null ? plan.max_installateurs + addonInstallateurs : null },
   ];
 
   return (
