@@ -20,21 +20,28 @@ export default function PartnerAbonnement() {
   const [plan, setPlan] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
   const [facturen, setFacturen] = useState<any[]>([]);
-  const [usage, setUsage] = useState({ leads: 0, offertes: 0, gebruikers: 0, adviseurs: 0 });
+  const [usage, setUsage] = useState({ leads: 0, offertes: 0, gebruikers: 0, adviseurs: 0, installateurs: 0 });
   const [loading, setLoading] = useState(true);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [addonAankopen, setAddonAankopen] = useState<any[]>([]);
+  const [beschikbareAddons, setBeschikbareAddons] = useState<any[]>([]);
+  const [addonDialog, setAddonDialog] = useState(false);
+  const [addonForm, setAddonForm] = useState({ addon_id: "", aantal: 1 });
+  const [addonSaving, setAddonSaving] = useState(false);
 
   useEffect(() => {
     if (!partnerId) return;
     const fetchAll = async () => {
-      const [{ data: aboData }, { data: planData }, { data: factuurData }, { data: leadsCount }, { data: offertesCount }, { data: usersCount }] = await Promise.all([
+      const [{ data: aboData }, { data: planData }, { data: factuurData }, { data: leadsCount }, { data: offertesCount }, { data: usersCount }, { data: addonData }, { data: addonsConfig }] = await Promise.all([
         supabase.from("abonnementen").select("*, abonnement_plannen(*)").eq("partner_id", partnerId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("abonnement_plannen").select("*").eq("actief", true).order("volgorde"),
         supabase.from("facturen").select("*").eq("partner_id", partnerId).order("created_at", { ascending: false }),
         supabase.from("leads").select("id", { count: "exact" }).eq("partner_id", partnerId),
         supabase.from("offertes").select("id", { count: "exact" }).eq("partner_id", partnerId),
         supabase.from("users").select("id, rol").eq("partner_id", partnerId),
+        supabase.from("abonnement_addon_aankopen").select("*, abonnement_addons(naam, type, maand_prijs)").eq("partner_id", partnerId).eq("status", "actief"),
+        supabase.from("abonnement_addons").select("*").eq("actief", true),
       ]);
 
       if (aboData) {
@@ -43,13 +50,17 @@ export default function PartnerAbonnement() {
       }
       if (planData) setPlans(planData);
       if (factuurData) setFacturen(factuurData);
+      if (addonData) setAddonAankopen(addonData);
+      if (addonsConfig) setBeschikbareAddons(addonsConfig);
 
       const adviseurs = (usersCount ?? []).filter((u: any) => u.rol === "adviseur").length;
+      const installateurs = (usersCount ?? []).filter((u: any) => u.rol === "installateur").length;
       setUsage({
         leads: leadsCount?.length ?? 0,
         offertes: offertesCount?.length ?? 0,
         gebruikers: usersCount?.length ?? 0,
         adviseurs,
+        installateurs,
       });
       setLoading(false);
     };
