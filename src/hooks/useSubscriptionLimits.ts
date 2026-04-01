@@ -41,20 +41,41 @@ export function useSubscriptionLimits(): SubscriptionInfo & {
     verloop_datum: null, opzeg_datum: null, limits: DEFAULT_LIMITS, loading: true,
   });
 
+  const [addonExtras, setAddonExtras] = useState<{ adviseurs: number; installateurs: number }>({ adviseurs: 0, installateurs: 0 });
+
   useEffect(() => {
     if (!profile?.partner_id) {
       setInfo(prev => ({ ...prev, loading: false }));
       return;
     }
 
-    const fetch = async () => {
-      const { data: abo } = await supabase
-        .from("abonnementen")
-        .select("*, abonnement_plannen(*)")
-        .eq("partner_id", profile.partner_id!)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const fetchData = async () => {
+      const [{ data: abo }, { data: addonAankopen }] = await Promise.all([
+        supabase
+          .from("abonnementen")
+          .select("*, abonnement_plannen(*)")
+          .eq("partner_id", profile.partner_id!)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("abonnement_addon_aankopen")
+          .select("aantal, abonnement_addons(type)")
+          .eq("partner_id", profile.partner_id!)
+          .eq("status", "actief"),
+      ]);
+
+      // Calculate addon extras
+      let extraAdviseurs = 0;
+      let extraInstallateurs = 0;
+      if (addonAankopen) {
+        for (const a of addonAankopen) {
+          const type = (a as any).abonnement_addons?.type;
+          if (type === "adviseur") extraAdviseurs += a.aantal;
+          if (type === "installateur") extraInstallateurs += a.aantal;
+        }
+      }
+      setAddonExtras({ adviseurs: extraAdviseurs, installateurs: extraInstallateurs });
 
       if (!abo) {
         setInfo(prev => ({ ...prev, loading: false, status: "geen" }));
@@ -85,7 +106,7 @@ export function useSubscriptionLimits(): SubscriptionInfo & {
       });
     };
 
-    fetch();
+    fetchData();
   }, [profile?.partner_id]);
 
   // Superadmin bypasses all limits
@@ -108,7 +129,11 @@ export function useSubscriptionLimits(): SubscriptionInfo & {
     const key = `max_${type}` as keyof PlanLimits;
     const limit = info.limits[key];
     if (limit === null || limit === undefined) return true; // unlimited
-    return count < (limit as number);
+    // Add addon extras for adviseurs and installateurs
+    let effectiveLimit = limit as number;
+    if (type === "adviseurs") effectiveLimit += addonExtras.adviseurs;
+    if (type === "installateurs") effectiveLimit += addonExtras.installateurs;
+    return count < effectiveLimit;
   };
 
   const getPlanLimits = () => info.limits;

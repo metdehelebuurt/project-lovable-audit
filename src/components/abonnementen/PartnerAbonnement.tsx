@@ -11,7 +11,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { Crown, Check, ArrowUp, FileText, AlertTriangle } from "lucide-react";
+import { Crown, Check, ArrowUp, FileText, AlertTriangle, Plus, Package } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function PartnerAbonnement() {
   const { profile } = useAuth();
@@ -20,21 +23,28 @@ export default function PartnerAbonnement() {
   const [plan, setPlan] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
   const [facturen, setFacturen] = useState<any[]>([]);
-  const [usage, setUsage] = useState({ leads: 0, offertes: 0, gebruikers: 0, adviseurs: 0 });
+  const [usage, setUsage] = useState({ leads: 0, offertes: 0, gebruikers: 0, adviseurs: 0, installateurs: 0 });
   const [loading, setLoading] = useState(true);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [addonAankopen, setAddonAankopen] = useState<any[]>([]);
+  const [beschikbareAddons, setBeschikbareAddons] = useState<any[]>([]);
+  const [addonDialog, setAddonDialog] = useState(false);
+  const [addonForm, setAddonForm] = useState({ addon_id: "", aantal: 1 });
+  const [addonSaving, setAddonSaving] = useState(false);
 
   useEffect(() => {
     if (!partnerId) return;
     const fetchAll = async () => {
-      const [{ data: aboData }, { data: planData }, { data: factuurData }, { data: leadsCount }, { data: offertesCount }, { data: usersCount }] = await Promise.all([
+      const [{ data: aboData }, { data: planData }, { data: factuurData }, { data: leadsCount }, { data: offertesCount }, { data: usersCount }, { data: addonData }, { data: addonsConfig }] = await Promise.all([
         supabase.from("abonnementen").select("*, abonnement_plannen(*)").eq("partner_id", partnerId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("abonnement_plannen").select("*").eq("actief", true).order("volgorde"),
         supabase.from("facturen").select("*").eq("partner_id", partnerId).order("created_at", { ascending: false }),
         supabase.from("leads").select("id", { count: "exact" }).eq("partner_id", partnerId),
         supabase.from("offertes").select("id", { count: "exact" }).eq("partner_id", partnerId),
         supabase.from("users").select("id, rol").eq("partner_id", partnerId),
+        supabase.from("abonnement_addon_aankopen").select("*, abonnement_addons(naam, type, maand_prijs)").eq("partner_id", partnerId).eq("status", "actief"),
+        supabase.from("abonnement_addons").select("*").eq("actief", true),
       ]);
 
       if (aboData) {
@@ -43,13 +53,17 @@ export default function PartnerAbonnement() {
       }
       if (planData) setPlans(planData);
       if (factuurData) setFacturen(factuurData);
+      if (addonData) setAddonAankopen(addonData);
+      if (addonsConfig) setBeschikbareAddons(addonsConfig);
 
       const adviseurs = (usersCount ?? []).filter((u: any) => u.rol === "adviseur").length;
+      const installateurs = (usersCount ?? []).filter((u: any) => u.rol === "installateur").length;
       setUsage({
         leads: leadsCount?.length ?? 0,
         offertes: offertesCount?.length ?? 0,
         gebruikers: usersCount?.length ?? 0,
         adviseurs,
+        installateurs,
       });
       setLoading(false);
     };
@@ -94,14 +108,42 @@ export default function PartnerAbonnement() {
     window.location.reload();
   };
 
+  const handleBuyAddon = async () => {
+    if (!addonForm.addon_id || !abo) return;
+    setAddonSaving(true);
+    const addon = beschikbareAddons.find((a: any) => a.id === addonForm.addon_id);
+    if (!addon) { setAddonSaving(false); return; }
+    const bedrag = addon.maand_prijs * addonForm.aantal;
+    const { error } = await supabase.from("abonnement_addon_aankopen").insert({
+      abonnement_id: abo.id,
+      addon_id: addonForm.addon_id,
+      partner_id: partnerId,
+      aantal: addonForm.aantal,
+      interval: (abo as any).interval ?? "maandelijks",
+      maand_bedrag: bedrag,
+      status: "actief",
+    } as any);
+    setAddonSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${addonForm.aantal}x ${addon.naam} toegevoegd!`);
+    setAddonDialog(false);
+    window.location.reload();
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground">Laden...</p>;
   if (!abo) return <p className="text-sm text-muted-foreground">Geen abonnement gevonden</p>;
+
+  // Calculate effective limits including addons
+  const addonAdviseurs = addonAankopen.filter((a: any) => a.abonnement_addons?.type === "adviseur").reduce((sum: number, a: any) => sum + a.aantal, 0);
+  const addonInstallateurs = addonAankopen.filter((a: any) => a.abonnement_addons?.type === "installateur").reduce((sum: number, a: any) => sum + a.aantal, 0);
+  const addonMaandBedrag = addonAankopen.reduce((sum: number, a: any) => sum + (a.maand_bedrag ?? 0), 0);
 
   const usageLimits = [
     { label: "Leads", used: usage.leads, max: plan?.max_leads },
     { label: "Offertes", used: usage.offertes, max: plan?.max_offertes },
     { label: "Gebruikers", used: usage.gebruikers, max: plan?.max_gebruikers },
-    { label: "Adviseurs", used: usage.adviseurs, max: plan?.max_adviseurs },
+    { label: "Adviseurs", used: usage.adviseurs, max: plan?.max_adviseurs != null ? plan.max_adviseurs + addonAdviseurs : null },
+    { label: "Installateurs", used: usage.installateurs, max: plan?.max_installateurs != null ? plan.max_installateurs + addonInstallateurs : null },
   ];
 
   return (
@@ -218,6 +260,71 @@ export default function PartnerAbonnement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add-ons */}
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2"><Package className="h-4 w-4" />Add-ons</CardTitle>
+            {beschikbareAddons.length > 0 && (
+              <Button size="sm" onClick={() => { setAddonForm({ addon_id: beschikbareAddons[0]?.id ?? "", aantal: 1 }); setAddonDialog(true); }}>
+                <Plus className="h-4 w-4 mr-1" />Add-on toevoegen
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {addonAankopen.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Geen actieve add-ons. Voeg extra adviseurs of installateurs toe.</p>
+          ) : (
+            <div className="space-y-2">
+              {addonAankopen.map((a: any) => (
+                <div key={a.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
+                  <div>
+                    <p className="font-medium text-sm">{a.abonnement_addons?.naam}</p>
+                    <p className="text-xs text-muted-foreground">{a.aantal}x — €{a.maand_bedrag}/mnd</p>
+                  </div>
+                  <Badge variant="secondary" className="capitalize">{a.abonnement_addons?.type}</Badge>
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground pt-2">Totaal add-ons: €{addonMaandBedrag.toFixed(2)}/mnd</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add-on dialog */}
+      <Dialog open={addonDialog} onOpenChange={setAddonDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add-on bijkopen</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Add-on</Label>
+              <Select value={addonForm.addon_id} onValueChange={v => setAddonForm(p => ({ ...p, addon_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecteer add-on" /></SelectTrigger>
+                <SelectContent>
+                  {beschikbareAddons.map((a: any) => (
+                    <SelectItem key={a.id} value={a.id}>{a.naam} — €{a.maand_prijs}/mnd per stuk</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Aantal</Label>
+              <Input type="number" min={1} max={50} value={addonForm.aantal} onChange={e => setAddonForm(p => ({ ...p, aantal: Math.max(1, +e.target.value) }))} />
+            </div>
+            {addonForm.addon_id && (
+              <p className="text-sm text-muted-foreground">
+                Kosten: €{((beschikbareAddons.find((a: any) => a.id === addonForm.addon_id)?.maand_prijs ?? 0) * addonForm.aantal).toFixed(2)}/mnd
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddonDialog(false)}>Annuleren</Button>
+            <Button onClick={handleBuyAddon} disabled={addonSaving}>{addonSaving ? "Verwerken..." : "Toevoegen"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Upgrade dialog */}
       <Dialog open={upgradeDialog} onOpenChange={setUpgradeDialog}>

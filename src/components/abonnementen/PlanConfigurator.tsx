@@ -9,8 +9,11 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import AddonConfigurator from "./AddonConfigurator";
+
+
 
 const ALL_MODULES = [
   "leads", "offertes", "schouwen", "opdrachten", "installaties", "planning",
@@ -266,6 +269,11 @@ export default function PlanConfigurator() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add-ons configuratie */}
+      <div className="mt-8 pt-6 border-t">
+        <AddonConfigurator />
+      </div>
     </div>
   );
 }
