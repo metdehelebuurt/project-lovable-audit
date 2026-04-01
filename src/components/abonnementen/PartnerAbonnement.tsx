@@ -11,7 +11,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { Crown, Check, ArrowUp, FileText, AlertTriangle } from "lucide-react";
+import { Crown, Check, ArrowUp, FileText, AlertTriangle, Plus, Package } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function PartnerAbonnement() {
   const { profile } = useAuth();
