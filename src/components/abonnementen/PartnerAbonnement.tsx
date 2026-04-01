@@ -261,6 +261,71 @@ export default function PartnerAbonnement() {
         </CardContent>
       </Card>
 
+      {/* Add-ons */}
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2"><Package className="h-4 w-4" />Add-ons</CardTitle>
+            {beschikbareAddons.length > 0 && (
+              <Button size="sm" onClick={() => { setAddonForm({ addon_id: beschikbareAddons[0]?.id ?? "", aantal: 1 }); setAddonDialog(true); }}>
+                <Plus className="h-4 w-4 mr-1" />Add-on toevoegen
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {addonAankopen.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Geen actieve add-ons. Voeg extra adviseurs of installateurs toe.</p>
+          ) : (
+            <div className="space-y-2">
+              {addonAankopen.map((a: any) => (
+                <div key={a.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
+                  <div>
+                    <p className="font-medium text-sm">{a.abonnement_addons?.naam}</p>
+                    <p className="text-xs text-muted-foreground">{a.aantal}x — €{a.maand_bedrag}/mnd</p>
+                  </div>
+                  <Badge variant="secondary" className="capitalize">{a.abonnement_addons?.type}</Badge>
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground pt-2">Totaal add-ons: €{addonMaandBedrag.toFixed(2)}/mnd</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add-on dialog */}
+      <Dialog open={addonDialog} onOpenChange={setAddonDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add-on bijkopen</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Add-on</Label>
+              <Select value={addonForm.addon_id} onValueChange={v => setAddonForm(p => ({ ...p, addon_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecteer add-on" /></SelectTrigger>
+                <SelectContent>
+                  {beschikbareAddons.map((a: any) => (
+                    <SelectItem key={a.id} value={a.id}>{a.naam} — €{a.maand_prijs}/mnd per stuk</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Aantal</Label>
+              <Input type="number" min={1} max={50} value={addonForm.aantal} onChange={e => setAddonForm(p => ({ ...p, aantal: Math.max(1, +e.target.value) }))} />
+            </div>
+            {addonForm.addon_id && (
+              <p className="text-sm text-muted-foreground">
+                Kosten: €{((beschikbareAddons.find((a: any) => a.id === addonForm.addon_id)?.maand_prijs ?? 0) * addonForm.aantal).toFixed(2)}/mnd
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddonDialog(false)}>Annuleren</Button>
+            <Button onClick={handleBuyAddon} disabled={addonSaving}>{addonSaving ? "Verwerken..." : "Toevoegen"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Upgrade dialog */}
       <Dialog open={upgradeDialog} onOpenChange={setUpgradeDialog}>
         <DialogContent className="max-w-3xl">
