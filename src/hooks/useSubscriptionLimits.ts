@@ -129,7 +129,11 @@ export function useSubscriptionLimits(): SubscriptionInfo & {
     const key = `max_${type}` as keyof PlanLimits;
     const limit = info.limits[key];
     if (limit === null || limit === undefined) return true; // unlimited
-    return count < (limit as number);
+    // Add addon extras for adviseurs and installateurs
+    let effectiveLimit = limit as number;
+    if (type === "adviseurs") effectiveLimit += addonExtras.adviseurs;
+    if (type === "installateurs") effectiveLimit += addonExtras.installateurs;
+    return count < effectiveLimit;
   };
 
   const getPlanLimits = () => info.limits;
