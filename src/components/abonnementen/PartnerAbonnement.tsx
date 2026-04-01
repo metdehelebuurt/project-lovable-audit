@@ -130,6 +130,9 @@ export default function PartnerAbonnement() {
     window.location.reload();
   };
 
+  if (loading) return <p className="text-sm text-muted-foreground">Laden...</p>;
+  if (!abo) return <p className="text-sm text-muted-foreground">Geen abonnement gevonden</p>;
+
   // Calculate effective limits including addons
   const addonAdviseurs = addonAankopen.filter((a: any) => a.abonnement_addons?.type === "adviseur").reduce((sum: number, a: any) => sum + a.aantal, 0);
   const addonInstallateurs = addonAankopen.filter((a: any) => a.abonnement_addons?.type === "installateur").reduce((sum: number, a: any) => sum + a.aantal, 0);
