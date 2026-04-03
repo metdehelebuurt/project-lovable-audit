@@ -166,6 +166,7 @@ const KlantDetail = () => {
 
   const tabs = [
     { key: "overzicht", label: "Overzicht" },
+    { key: "email", label: "E-mail" },
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "opdrachten", label: "Opdrachten", count: opdrachten.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
