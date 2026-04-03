@@ -852,6 +852,181 @@ export type Database = {
           },
         ]
       }
+      email_accounts: {
+        Row: {
+          access_token: string | null
+          actief: boolean
+          created_at: string
+          email_adres: string
+          id: string
+          last_sync_at: string | null
+          partner_id: string
+          provider: string
+          refresh_token: string | null
+          scopes: string[] | null
+          sync_cursor: string | null
+          token_expiry: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          actief?: boolean
+          created_at?: string
+          email_adres: string
+          id?: string
+          last_sync_at?: string | null
+          partner_id: string
+          provider: string
+          refresh_token?: string | null
+          scopes?: string[] | null
+          sync_cursor?: string | null
+          token_expiry?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          actief?: boolean
+          created_at?: string
+          email_adres?: string
+          id?: string
+          last_sync_at?: string | null
+          partner_id?: string
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string[] | null
+          sync_cursor?: string | null
+          token_expiry?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_accounts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_accounts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_berichten: {
+        Row: {
+          aan: string
+          bijlagen: Json | null
+          body_html: string | null
+          body_text: string | null
+          created_at: string
+          datum: string
+          email_account_id: string
+          id: string
+          is_gelezen: boolean
+          klant_id: string | null
+          labels: string[] | null
+          lead_id: string | null
+          offerte_id: string | null
+          onderwerp: string
+          partner_id: string
+          provider_message_id: string | null
+          richting: string
+          thread_id: string | null
+          van: string
+        }
+        Insert: {
+          aan: string
+          bijlagen?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          datum?: string
+          email_account_id: string
+          id?: string
+          is_gelezen?: boolean
+          klant_id?: string | null
+          labels?: string[] | null
+          lead_id?: string | null
+          offerte_id?: string | null
+          onderwerp?: string
+          partner_id: string
+          provider_message_id?: string | null
+          richting: string
+          thread_id?: string | null
+          van: string
+        }
+        Update: {
+          aan?: string
+          bijlagen?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          datum?: string
+          email_account_id?: string
+          id?: string
+          is_gelezen?: boolean
+          klant_id?: string | null
+          labels?: string[] | null
+          lead_id?: string | null
+          offerte_id?: string | null
+          onderwerp?: string
+          partner_id?: string
+          provider_message_id?: string | null
+          richting?: string
+          thread_id?: string | null
+          van?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_berichten_email_account_id_fkey"
+            columns: ["email_account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_berichten_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_berichten_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_berichten_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_berichten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_berichten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_log: {
         Row: {
           created_at: string
@@ -2159,6 +2334,7 @@ export type Database = {
           contract_type: string | null
           created_at: string
           email: string | null
+          email_provider: string | null
           feature_flags_json: Json | null
           id: string
           imap_host: string | null
@@ -2208,6 +2384,7 @@ export type Database = {
           contract_type?: string | null
           created_at?: string
           email?: string | null
+          email_provider?: string | null
           feature_flags_json?: Json | null
           id?: string
           imap_host?: string | null
@@ -2257,6 +2434,7 @@ export type Database = {
           contract_type?: string | null
           created_at?: string
           email?: string | null
+          email_provider?: string | null
           feature_flags_json?: Json | null
           id?: string
           imap_host?: string | null
