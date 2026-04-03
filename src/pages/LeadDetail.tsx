@@ -866,6 +866,9 @@ const LeadDetail = () => {
             </Card>
           )}
 
+          {/* E-MAIL */}
+          {activeTab === "email" && <EmailTab leadId={id} email={lead.email} />}
+
           {/* ACTIVITEIT */}
           {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}
         </div>

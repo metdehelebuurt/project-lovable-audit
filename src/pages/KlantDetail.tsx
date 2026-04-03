@@ -334,6 +334,9 @@ const KlantDetail = () => {
           {/* AFSPRAKEN */}
           {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />}
 
+          {/* E-MAIL */}
+          {activeTab === "email" && <EmailTab klantId={id} email={klant.email} />}
+
           {/* ACTIVITEIT */}
           {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}
         </div>
