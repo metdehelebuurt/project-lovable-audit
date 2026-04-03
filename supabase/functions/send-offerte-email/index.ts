@@ -222,7 +222,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Offerte niet gevonden" }), { status: 404, headers: corsHeaders });
     }
 
-    if (!partner.smtp_host || !partner.afzender_email || !partner.smtp_user || !partner.smtp_pass_encrypted) {
+    // Determine send method: OAuth or SMTP
+    const useOAuth = emailAccount && (partner.email_provider === "oauth_google" || partner.email_provider === "oauth_microsoft");
+    
+    if (!useOAuth && (!partner.smtp_host || !partner.afzender_email || !partner.smtp_user || !partner.smtp_pass_encrypted)) {
       return new Response(JSON.stringify({ error: "E-mailconfiguratie is niet ingesteld. Ga naar Instellingen → E-mail configuratie." }), { status: 400, headers: corsHeaders });
     }
 
@@ -256,21 +259,53 @@ Deno.serve(async (req) => {
 
     const emailSubject = customSubject || `Offerte ${offerte.offertenummer} — ${partner.afzender_naam || partner.naam}`;
 
-    await sendViaSMTP(
-      partner.smtp_host, partner.smtp_port || 587, partner.smtp_user, partner.smtp_pass_encrypted,
-      partner.afzender_email, partner.afzender_naam || partner.naam,
-      ontvanger_email, emailSubject, html
-    );
-
-    // Save to IMAP sent folder
     let imapSaved = false;
-    if (partner.imap_host && partner.imap_user && partner.imap_pass_encrypted) {
-      imapSaved = await saveToImapSent(
-        partner.imap_host, partner.imap_port || 993, partner.imap_user, partner.imap_pass_encrypted,
-        partner.imap_use_ssl !== false,
+
+    if (useOAuth) {
+      // Send via OAuth API (Gmail or Microsoft Graph)
+      let accessToken = emailAccount.access_token;
+      if (new Date(emailAccount.token_expiry) <= new Date()) {
+        accessToken = await refreshOAuthToken(adminClient, emailAccount);
+      }
+
+      if (emailAccount.provider === "google") {
+        await sendViaGmailApi(accessToken, emailAccount.email_adres, ontvanger_email, emailSubject, html);
+      } else {
+        await sendViaMsGraphApi(accessToken, ontvanger_email, emailSubject, html);
+      }
+      imapSaved = true; // OAuth APIs auto-save to sent
+
+      // Also save to email_berichten
+      await adminClient.from("email_berichten").insert({
+        email_account_id: emailAccount.id,
+        partner_id: userRow.partner_id,
+        richting: "uitgaand",
+        van: emailAccount.email_adres,
+        aan: ontvanger_email,
+        onderwerp: emailSubject,
+        body_html: html,
+        datum: new Date().toISOString(),
+        is_gelezen: true,
+        offerte_id,
+        lead_id: offerte.lead_id || null,
+      });
+    } else {
+      // Send via SMTP
+      await sendViaSMTP(
+        partner.smtp_host, partner.smtp_port || 587, partner.smtp_user, partner.smtp_pass_encrypted,
         partner.afzender_email, partner.afzender_naam || partner.naam,
         ontvanger_email, emailSubject, html
-      ) || false;
+      );
+
+      // Save to IMAP sent folder
+      if (partner.imap_host && partner.imap_user && partner.imap_pass_encrypted) {
+        imapSaved = await saveToImapSent(
+          partner.imap_host, partner.imap_port || 993, partner.imap_user, partner.imap_pass_encrypted,
+          partner.imap_use_ssl !== false,
+          partner.afzender_email, partner.afzender_naam || partner.naam,
+          ontvanger_email, emailSubject, html
+        ) || false;
+      }
     }
 
     // Log the email
