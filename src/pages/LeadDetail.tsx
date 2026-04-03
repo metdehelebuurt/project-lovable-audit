@@ -26,6 +26,7 @@ import {
   SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
+import EmailTab from "@/components/email/EmailTab";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -416,6 +417,7 @@ const LeadDetail = () => {
     { key: "klantdata", label: "Klantdata" },
     { key: "notities", label: "Notities", count: notities.length },
     { key: "communicatie", label: "Communicatie", count: berichten.length + contactmomenten.length },
+    { key: "email", label: "E-mail" },
     { key: "afspraken", label: "Afspraken", count: afspraken.length },
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
@@ -864,6 +866,9 @@ const LeadDetail = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* E-MAIL */}
+          {activeTab === "email" && <EmailTab leadId={id} email={lead.email} />}
 
           {/* ACTIVITEIT */}
           {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}

@@ -1,120 +1,127 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Inbox, RefreshCw, Mail, MailOpen, FolderOpen } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Inbox, RefreshCw, Mail, MailOpen, Search, Send, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
+import EmailCompose from "./EmailCompose";
 
-interface ImapEmail {
-  uid: string;
-  from: string;
-  to: string;
-  subject: string;
-  date: string;
-  seen: boolean;
-  snippet: string;
+interface EmailBericht {
+  id: string;
+  richting: string;
+  van: string;
+  aan: string;
+  onderwerp: string;
+  body_html: string | null;
+  body_text: string | null;
+  datum: string;
+  is_gelezen: boolean;
+  lead_id: string | null;
+  klant_id: string | null;
+  offerte_id: string | null;
 }
 
 const EmailInbox = () => {
-  const [emails, setEmails] = useState<ImapEmail[]>([]);
-  const [folders, setFolders] = useState<string[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState("INBOX");
-  const [loading, setLoading] = useState(false);
-  const [loadingFolders, setLoadingFolders] = useState(false);
-  const [configured, setConfigured] = useState<boolean | null>(null);
-  const [selectedEmail, setSelectedEmail] = useState<ImapEmail | null>(null);
+  const { profile } = useAuth();
+  const [emails, setEmails] = useState<EmailBericht[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [hasAccount, setHasAccount] = useState<boolean | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<EmailBericht | null>(null);
+  const [filter, setFilter] = useState<"alle" | "inkomend" | "uitgaand">("alle");
+  const [search, setSearch] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
 
   useEffect(() => {
-    checkConfig();
+    checkAndLoad();
   }, []);
 
-  const checkConfig = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("partners")
-      .select("imap_host, imap_user")
-      .single();
-    setConfigured(!!(data as any)?.imap_host && !!(data as any)?.imap_user);
-    if ((data as any)?.imap_host && (data as any)?.imap_user) {
-      loadFolders();
-      loadEmails("INBOX");
-    }
+  const checkAndLoad = async () => {
+    if (!profile?.partner_id) return;
+    const { data: account } = await supabase
+      .from("email_accounts" as any)
+      .select("id")
+      .eq("partner_id", profile.partner_id)
+      .eq("actief", true)
+      .maybeSingle();
+
+    setHasAccount(!!account);
+    if (account) loadEmails();
+    else setLoading(false);
   };
 
-  const loadFolders = async () => {
-    setLoadingFolders(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("send-offerte-email", {
-        body: { action: "list_folders" },
-      });
-      if (error || data?.error) {
-        console.error("Folders error:", data?.error || error);
-      } else {
-        setFolders(data?.folders || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    setLoadingFolders(false);
-  };
-
-  const loadEmails = async (folder: string) => {
+  const loadEmails = async () => {
     setLoading(true);
-    setSelectedEmail(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("send-offerte-email", {
-        body: { action: "read_inbox", folder, limit: 30 },
-      });
-      if (error || data?.error) {
-        toast.error("Kan inbox niet laden", { description: data?.error || error?.message });
-        setEmails([]);
-      } else {
-        setEmails(data?.emails || []);
-      }
-    } catch {
-      toast.error("Kan inbox niet laden");
+    const { data, error } = await supabase
+      .from("email_berichten" as any)
+      .select("id, richting, van, aan, onderwerp, body_html, body_text, datum, is_gelezen, lead_id, klant_id, offerte_id")
+      .order("datum", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error(error);
+      toast.error("Kan berichten niet laden");
     }
+    setEmails((data as unknown as EmailBericht[]) || []);
     setLoading(false);
   };
 
-  const handleFolderChange = (folder: string) => {
-    setSelectedFolder(folder);
-    loadEmails(folder);
-  };
-
-  const parseFromField = (from: string) => {
-    const match = from.match(/^"?(.+?)"?\s*<(.+?)>$/);
-    if (match) return { name: match[1], email: match[2] };
-    return { name: from, email: from };
-  };
-
-  const formatDate = (dateStr: string) => {
+  const handleSync = async () => {
+    setSyncing(true);
     try {
-      const d = new Date(dateStr);
-      const now = new Date();
-      if (d.toDateString() === now.toDateString()) {
-        return d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+      const { data, error } = await supabase.functions.invoke("email-api-sync", {});
+      if (error || data?.error) {
+        toast.error("Sync mislukt", { description: data?.error || error?.message });
+      } else {
+        toast.success(`${data?.synced || 0} nieuwe berichten`);
+        loadEmails();
       }
-      return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" });
-    } catch {
-      return dateStr;
-    }
+    } catch { toast.error("Sync mislukt"); }
+    setSyncing(false);
   };
 
-  if (configured === false) {
+  const parseFrom = (from: string) => {
+    const match = from.match(/^"?(.+?)"?\s*<(.+?)>$/);
+    return match ? { name: match[1], email: match[2] } : { name: from, email: from };
+  };
+
+  const formatDate = (d: string) => {
+    try {
+      const date = new Date(d);
+      const now = new Date();
+      if (date.toDateString() === now.toDateString()) {
+        return format(date, "HH:mm");
+      }
+      return format(date, "d MMM", { locale: nl });
+    } catch { return d; }
+  };
+
+  const filtered = emails.filter(e => {
+    if (filter !== "alle" && e.richting !== filter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return e.onderwerp.toLowerCase().includes(s) || e.van.toLowerCase().includes(s) || e.aan.toLowerCase().includes(s);
+    }
+    return true;
+  });
+
+  if (hasAccount === false) {
     return (
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardContent className="py-16 text-center space-y-4">
           <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto">
             <Inbox className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">IMAP niet geconfigureerd</h3>
+          <h3 className="text-lg font-semibold text-foreground">Geen e-mailaccount gekoppeld</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Configureer uw IMAP-instellingen bij Instellingen → E-mail om uw inbox hier te bekijken.
+            Koppel je Gmail of Outlook account bij Instellingen → E-mail om je inbox hier te bekijken.
           </p>
         </CardContent>
       </Card>
@@ -123,66 +130,74 @@ const EmailInbox = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        {folders.length > 0 && (
-          <Select value={selectedFolder} onValueChange={handleFolderChange}>
-            <SelectTrigger className="w-[200px]">
-              <FolderOpen className="h-3.5 w-3.5 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {folders.map((f) => (
-                <SelectItem key={f} value={f}>{f}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        <Button variant="outline" size="sm" onClick={() => loadEmails(selectedFolder)} disabled={loading} className="gap-2">
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          Vernieuwen
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Zoeken..." className="pl-10" />
+        </div>
+        <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="alle">Alle</SelectItem>
+            <SelectItem value="inkomend">Ontvangen</SelectItem>
+            <SelectItem value="uitgaand">Verzonden</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="gap-2">
+          <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+          Synchroniseren
         </Button>
-        <span className="text-sm text-muted-foreground ml-auto">
-          {emails.length} e-mail{emails.length !== 1 ? "s" : ""}
-        </span>
+        <Button size="sm" onClick={() => setComposeOpen(true)} className="gap-2 ml-auto">
+          <Plus className="h-3.5 w-3.5" /> Nieuwe e-mail
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" style={{ height: "calc(100vh - 320px)" }}>
-        {/* Email list */}
         <Card className="rounded-2xl border-0 shadow-sm lg:col-span-1">
           <ScrollArea className="h-full">
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : emails.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground text-sm">
-                Geen e-mails in deze map
+                {search ? "Geen resultaten" : "Geen e-mails"}
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {emails.map((email) => {
-                  const sender = parseFromField(email.from);
-                  const isSelected = selectedEmail?.uid === email.uid;
+                {filtered.map(email => {
+                  const sender = parseFrom(email.van);
+                  const isSelected = selectedEmail?.id === email.id;
                   return (
                     <button
-                      key={email.uid}
+                      key={email.id}
                       onClick={() => setSelectedEmail(email)}
                       className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${
                         isSelected ? "bg-primary/5 border-l-2 border-l-primary" : ""
-                      } ${!email.seen ? "font-semibold" : ""}`}
+                      } ${!email.is_gelezen ? "font-semibold" : ""}`}
                     >
                       <div className="flex items-start gap-2">
-                        {email.seen ? (
+                        {email.richting === "uitgaand" ? (
+                          <Send className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                        ) : email.is_gelezen ? (
                           <MailOpen className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                         ) : (
                           <Mail className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm truncate">{sender.name}</span>
-                            <span className="text-[11px] text-muted-foreground shrink-0">{formatDate(email.date)}</span>
+                            <span className="text-sm truncate">
+                              {email.richting === "uitgaand" ? `Aan: ${email.aan}` : sender.name}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground shrink-0">{formatDate(email.datum)}</span>
                           </div>
-                          <p className="text-sm truncate text-foreground">{email.subject}</p>
+                          <p className="text-sm truncate text-foreground">{email.onderwerp}</p>
+                          {(email.lead_id || email.klant_id) && (
+                            <div className="flex gap-1 mt-1">
+                              {email.lead_id && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Lead</Badge>}
+                              {email.klant_id && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Klant</Badge>}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -193,22 +208,25 @@ const EmailInbox = () => {
           </ScrollArea>
         </Card>
 
-        {/* Email detail */}
         <Card className="rounded-2xl border-0 shadow-sm lg:col-span-2">
           {selectedEmail ? (
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 h-full flex flex-col">
               <div>
-                <h2 className="text-xl font-semibold text-foreground">{selectedEmail.subject}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{selectedEmail.onderwerp}</h2>
                 <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                  <p><span className="font-medium text-foreground">Van:</span> {selectedEmail.from}</p>
-                  <p><span className="font-medium text-foreground">Aan:</span> {selectedEmail.to}</p>
-                  <p><span className="font-medium text-foreground">Datum:</span> {selectedEmail.date}</p>
+                  <p><span className="font-medium text-foreground">Van:</span> {selectedEmail.van}</p>
+                  <p><span className="font-medium text-foreground">Aan:</span> {selectedEmail.aan}</p>
+                  <p><span className="font-medium text-foreground">Datum:</span> {new Date(selectedEmail.datum).toLocaleString("nl-NL")}</p>
                 </div>
               </div>
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground">
-                  De volledige e-mailinhoud is beschikbaar in uw e-mailclient. Vanuit het platform ziet u alleen de headers.
-                </p>
+              <div className="border-t pt-4 flex-1 overflow-auto">
+                {selectedEmail.body_html ? (
+                  <div dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }} className="prose prose-sm max-w-none" />
+                ) : selectedEmail.body_text ? (
+                  <pre className="text-sm whitespace-pre-wrap font-sans">{selectedEmail.body_text}</pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Geen inhoud beschikbaar</p>
+                )}
               </div>
             </div>
           ) : (
@@ -218,6 +236,8 @@ const EmailInbox = () => {
           )}
         </Card>
       </div>
+
+      <EmailCompose open={composeOpen} onOpenChange={setComposeOpen} onSent={loadEmails} />
     </div>
   );
 };

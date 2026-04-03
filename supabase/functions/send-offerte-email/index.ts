@@ -127,9 +127,17 @@ Deno.serve(async (req) => {
 
     const { data: partner } = await adminClient
       .from("partners")
-      .select("naam, smtp_host, smtp_port, smtp_user, smtp_pass_encrypted, afzender_email, afzender_naam, imap_host, imap_port, imap_user, imap_pass_encrypted, imap_use_ssl")
+      .select("naam, smtp_host, smtp_port, smtp_user, smtp_pass_encrypted, afzender_email, afzender_naam, imap_host, imap_port, imap_user, imap_pass_encrypted, imap_use_ssl, email_provider")
       .eq("id", userRow.partner_id)
       .single();
+
+    // Check if partner has OAuth email account
+    const { data: emailAccount } = await adminClient
+      .from("email_accounts")
+      .select("*")
+      .eq("partner_id", userRow.partner_id)
+      .eq("actief", true)
+      .maybeSingle();
 
     if (!partner) {
       return new Response(JSON.stringify({ error: "Partner niet gevonden" }), { status: 404, headers: corsHeaders });
@@ -214,7 +222,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Offerte niet gevonden" }), { status: 404, headers: corsHeaders });
     }
 
-    if (!partner.smtp_host || !partner.afzender_email || !partner.smtp_user || !partner.smtp_pass_encrypted) {
+    // Determine send method: OAuth or SMTP
+    const useOAuth = emailAccount && (partner.email_provider === "oauth_google" || partner.email_provider === "oauth_microsoft");
+    
+    if (!useOAuth && (!partner.smtp_host || !partner.afzender_email || !partner.smtp_user || !partner.smtp_pass_encrypted)) {
       return new Response(JSON.stringify({ error: "E-mailconfiguratie is niet ingesteld. Ga naar Instellingen → E-mail configuratie." }), { status: 400, headers: corsHeaders });
     }
 
@@ -248,21 +259,53 @@ Deno.serve(async (req) => {
 
     const emailSubject = customSubject || `Offerte ${offerte.offertenummer} — ${partner.afzender_naam || partner.naam}`;
 
-    await sendViaSMTP(
-      partner.smtp_host, partner.smtp_port || 587, partner.smtp_user, partner.smtp_pass_encrypted,
-      partner.afzender_email, partner.afzender_naam || partner.naam,
-      ontvanger_email, emailSubject, html
-    );
-
-    // Save to IMAP sent folder
     let imapSaved = false;
-    if (partner.imap_host && partner.imap_user && partner.imap_pass_encrypted) {
-      imapSaved = await saveToImapSent(
-        partner.imap_host, partner.imap_port || 993, partner.imap_user, partner.imap_pass_encrypted,
-        partner.imap_use_ssl !== false,
+
+    if (useOAuth) {
+      // Send via OAuth API (Gmail or Microsoft Graph)
+      let accessToken = emailAccount.access_token;
+      if (new Date(emailAccount.token_expiry) <= new Date()) {
+        accessToken = await refreshOAuthToken(adminClient, emailAccount);
+      }
+
+      if (emailAccount.provider === "google") {
+        await sendViaGmailApi(accessToken, emailAccount.email_adres, ontvanger_email, emailSubject, html);
+      } else {
+        await sendViaMsGraphApi(accessToken, ontvanger_email, emailSubject, html);
+      }
+      imapSaved = true; // OAuth APIs auto-save to sent
+
+      // Also save to email_berichten
+      await adminClient.from("email_berichten").insert({
+        email_account_id: emailAccount.id,
+        partner_id: userRow.partner_id,
+        richting: "uitgaand",
+        van: emailAccount.email_adres,
+        aan: ontvanger_email,
+        onderwerp: emailSubject,
+        body_html: html,
+        datum: new Date().toISOString(),
+        is_gelezen: true,
+        offerte_id,
+        lead_id: offerte.lead_id || null,
+      });
+    } else {
+      // Send via SMTP
+      await sendViaSMTP(
+        partner.smtp_host, partner.smtp_port || 587, partner.smtp_user, partner.smtp_pass_encrypted,
         partner.afzender_email, partner.afzender_naam || partner.naam,
         ontvanger_email, emailSubject, html
-      ) || false;
+      );
+
+      // Save to IMAP sent folder
+      if (partner.imap_host && partner.imap_user && partner.imap_pass_encrypted) {
+        imapSaved = await saveToImapSent(
+          partner.imap_host, partner.imap_port || 993, partner.imap_user, partner.imap_pass_encrypted,
+          partner.imap_use_ssl !== false,
+          partner.afzender_email, partner.afzender_naam || partner.naam,
+          ontvanger_email, emailSubject, html
+        ) || false;
+      }
     }
 
     // Log the email
@@ -429,4 +472,80 @@ async function listImapFolders(
     console.error("IMAP list error:", err);
   }
   return folders;
+}
+
+// ─── OAuth helpers ───
+
+async function refreshOAuthToken(adminClient: any, account: any): Promise<string> {
+  let tokenUrl: string;
+  let params: Record<string, string>;
+
+  if (account.provider === "google") {
+    tokenUrl = "https://oauth2.googleapis.com/token";
+    params = {
+      client_id: Deno.env.get("GOOGLE_EMAIL_CLIENT_ID")!,
+      client_secret: Deno.env.get("GOOGLE_EMAIL_CLIENT_SECRET")!,
+      refresh_token: account.refresh_token,
+      grant_type: "refresh_token",
+    };
+  } else {
+    tokenUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+    params = {
+      client_id: Deno.env.get("MICROSOFT_EMAIL_CLIENT_ID")!,
+      client_secret: Deno.env.get("MICROSOFT_EMAIL_CLIENT_SECRET")!,
+      refresh_token: account.refresh_token,
+      grant_type: "refresh_token",
+      scope: "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send offline_access",
+    };
+  }
+
+  const resp = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(params),
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(`Token refresh failed: ${data.error}`);
+
+  await adminClient.from("email_accounts").update({
+    access_token: data.access_token,
+    token_expiry: new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString(),
+    ...(data.refresh_token ? { refresh_token: data.refresh_token } : {}),
+  }).eq("id", account.id);
+
+  return data.access_token;
+}
+
+async function sendViaGmailApi(accessToken: string, from: string, to: string, subject: string, html: string) {
+  const rawMessage = [
+    `From: ${from}`, `To: ${to}`,
+    `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+    `MIME-Version: 1.0`, `Content-Type: text/html; charset=UTF-8`, ``, html,
+  ].join("\r\n");
+
+  const encoded = btoa(unescape(encodeURIComponent(rawMessage)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  const resp = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw: encoded }),
+  });
+  if (!resp.ok) throw new Error(`Gmail send failed: ${await resp.text()}`);
+}
+
+async function sendViaMsGraphApi(accessToken: string, to: string, subject: string, html: string) {
+  const resp = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: {
+        subject,
+        body: { contentType: "HTML", content: html },
+        toRecipients: [{ emailAddress: { address: to } }],
+      },
+      saveToSentItems: true,
+    }),
+  });
+  if (!resp.ok) throw new Error(`Graph send failed: ${await resp.text()}`);
 }

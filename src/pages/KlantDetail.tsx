@@ -22,6 +22,7 @@ import {
   OpdrachtenLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
+import EmailTab from "@/components/email/EmailTab";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -166,6 +167,7 @@ const KlantDetail = () => {
 
   const tabs = [
     { key: "overzicht", label: "Overzicht" },
+    { key: "email", label: "E-mail" },
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "opdrachten", label: "Opdrachten", count: opdrachten.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
@@ -332,6 +334,9 @@ const KlantDetail = () => {
 
           {/* AFSPRAKEN */}
           {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />}
+
+          {/* E-MAIL */}
+          {activeTab === "email" && <EmailTab klantId={id} email={klant.email} />}
 
           {/* ACTIVITEIT */}
           {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}
