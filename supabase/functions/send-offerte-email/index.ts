@@ -127,9 +127,17 @@ Deno.serve(async (req) => {
 
     const { data: partner } = await adminClient
       .from("partners")
-      .select("naam, smtp_host, smtp_port, smtp_user, smtp_pass_encrypted, afzender_email, afzender_naam, imap_host, imap_port, imap_user, imap_pass_encrypted, imap_use_ssl")
+      .select("naam, smtp_host, smtp_port, smtp_user, smtp_pass_encrypted, afzender_email, afzender_naam, imap_host, imap_port, imap_user, imap_pass_encrypted, imap_use_ssl, email_provider")
       .eq("id", userRow.partner_id)
       .single();
+
+    // Check if partner has OAuth email account
+    const { data: emailAccount } = await adminClient
+      .from("email_accounts")
+      .select("*")
+      .eq("partner_id", userRow.partner_id)
+      .eq("actief", true)
+      .maybeSingle();
 
     if (!partner) {
       return new Response(JSON.stringify({ error: "Partner niet gevonden" }), { status: 404, headers: corsHeaders });
