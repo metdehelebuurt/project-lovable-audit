@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_accounts_partner_provider ON public.email_accounts(partner_id, provider);
