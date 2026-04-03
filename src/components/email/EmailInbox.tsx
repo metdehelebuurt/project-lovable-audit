@@ -69,7 +69,7 @@ const EmailInbox = () => {
       console.error(error);
       toast.error("Kan berichten niet laden");
     }
-    setEmails((data as EmailBericht[]) || []);
+    setEmails((data as unknown as EmailBericht[]) || []);
     setLoading(false);
   };
 
