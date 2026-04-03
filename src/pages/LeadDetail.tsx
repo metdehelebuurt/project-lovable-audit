@@ -416,6 +416,7 @@ const LeadDetail = () => {
     { key: "klantdata", label: "Klantdata" },
     { key: "notities", label: "Notities", count: notities.length },
     { key: "communicatie", label: "Communicatie", count: berichten.length + contactmomenten.length },
+    { key: "email", label: "E-mail" },
     { key: "afspraken", label: "Afspraken", count: afspraken.length },
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
