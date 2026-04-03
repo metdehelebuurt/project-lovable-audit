@@ -473,3 +473,79 @@ async function listImapFolders(
   }
   return folders;
 }
+
+// ─── OAuth helpers ───
+
+async function refreshOAuthToken(adminClient: any, account: any): Promise<string> {
+  let tokenUrl: string;
+  let params: Record<string, string>;
+
+  if (account.provider === "google") {
+    tokenUrl = "https://oauth2.googleapis.com/token";
+    params = {
+      client_id: Deno.env.get("GOOGLE_EMAIL_CLIENT_ID")!,
+      client_secret: Deno.env.get("GOOGLE_EMAIL_CLIENT_SECRET")!,
+      refresh_token: account.refresh_token,
+      grant_type: "refresh_token",
+    };
+  } else {
+    tokenUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+    params = {
+      client_id: Deno.env.get("MICROSOFT_EMAIL_CLIENT_ID")!,
+      client_secret: Deno.env.get("MICROSOFT_EMAIL_CLIENT_SECRET")!,
+      refresh_token: account.refresh_token,
+      grant_type: "refresh_token",
+      scope: "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send offline_access",
+    };
+  }
+
+  const resp = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(params),
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(`Token refresh failed: ${data.error}`);
+
+  await adminClient.from("email_accounts").update({
+    access_token: data.access_token,
+    token_expiry: new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString(),
+    ...(data.refresh_token ? { refresh_token: data.refresh_token } : {}),
+  }).eq("id", account.id);
+
+  return data.access_token;
+}
+
+async function sendViaGmailApi(accessToken: string, from: string, to: string, subject: string, html: string) {
+  const rawMessage = [
+    `From: ${from}`, `To: ${to}`,
+    `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+    `MIME-Version: 1.0`, `Content-Type: text/html; charset=UTF-8`, ``, html,
+  ].join("\r\n");
+
+  const encoded = btoa(unescape(encodeURIComponent(rawMessage)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  const resp = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw: encoded }),
+  });
+  if (!resp.ok) throw new Error(`Gmail send failed: ${await resp.text()}`);
+}
+
+async function sendViaMsGraphApi(accessToken: string, to: string, subject: string, html: string) {
+  const resp = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: {
+        subject,
+        body: { contentType: "HTML", content: html },
+        toRecipients: [{ emailAddress: { address: to } }],
+      },
+      saveToSentItems: true,
+    }),
+  });
+  if (!resp.ok) throw new Error(`Graph send failed: ${await resp.text()}`);
+}
