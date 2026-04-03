@@ -22,6 +22,7 @@ import {
   OpdrachtenLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
+import EmailTab from "@/components/email/EmailTab";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
