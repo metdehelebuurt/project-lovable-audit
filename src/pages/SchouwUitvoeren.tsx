@@ -12,8 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronLeft, ChevronRight, Save, Loader2, CheckCircle2, Sun } from "lucide-react";
-import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
+import { ArrowLeft, ChevronLeft, ChevronRight, Save, Loader2, CheckCircle2, Sun, Heart, Home, Wrench, Camera, ClipboardCheck, FileSignature } from "lucide-react";
+import { categoryFields, getSections, isFieldVisible, type WizardStep, type CategoryField } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
 import SignaturePad from "@/components/schouwen/SignaturePad";
@@ -23,7 +23,23 @@ import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
-const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Klant akkoord", "Samenvatting"];
+interface StepDef {
+  key: string;
+  label: string;
+  shortLabel: string;
+  icon: React.ElementType;
+  wizardStep?: WizardStep;
+}
+
+const STEPS: StepDef[] = [
+  { key: "wensen", label: "Wensen & Verwachtingen", shortLabel: "Wensen", icon: Heart, wizardStep: "wensen" },
+  { key: "situatie", label: "Situatie & Woning", shortLabel: "Situatie", icon: Home, wizardStep: "situatie" },
+  { key: "technisch", label: "Technische inspectie", shortLabel: "Technisch", icon: Wrench, wizardStep: "technisch" },
+  { key: "fotos", label: "Foto's & Media", shortLabel: "Foto's", icon: Camera },
+  { key: "checklist", label: "Checklist & Aandachtspunten", shortLabel: "Checklist", icon: ClipboardCheck },
+  { key: "akkoord", label: "Klant akkoord & Samenvatting", shortLabel: "Akkoord", icon: FileSignature },
+];
+
 const showClusters = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
 const showSatellite = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
 
@@ -59,7 +75,6 @@ const SchouwUitvoeren = () => {
   const [ondertekenaarNaam, setOndertekenaarNaam] = useState("");
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize from schouw data once loaded
   if (schouw && !initialized) {
     setGegevens((schouw.gegevens as Record<string, any>) || {});
     setFotos((schouw.fotos as unknown as SchouwFoto[]) || []);
@@ -133,16 +148,84 @@ const SchouwUitvoeren = () => {
 
   if (isLoading || !schouw) return <div className="p-6 text-muted-foreground">Laden...</div>;
 
-  const fields = categoryFields[schouw.categorie] || [];
-  const sections = getSections(schouw.categorie);
+  const allFields = categoryFields[schouw.categorie] || [];
   const checklistItems = categoryChecklists[schouw.categorie] || [];
   const progress = ((step + 1) / STEPS.length) * 100;
+  const currentStep = STEPS[step];
 
   const updateGegevens = (key: string, value: string) => setGegevens(p => ({ ...p, [key]: value }));
   const toggleChecklist = (key: string) => setChecklist(p => ({ ...p, [key]: !p[key] }));
 
+  // Get visible fields for current wizard step
+  const getVisibleSections = (wizardStep: WizardStep) => {
+    const stepFields = allFields.filter(f => f.wizardStep === wizardStep);
+    const visibleFields = stepFields.filter(f => isFieldVisible(f, gegevens));
+    const sections = getSections(schouw.categorie, wizardStep);
+    return sections.filter(section => {
+      const sectionFields = visibleFields.filter(f => (f.section || "Algemeen") === section);
+      return sectionFields.length > 0;
+    });
+  };
+
+  const getVisibleFieldsInSection = (wizardStep: WizardStep, section: string) => {
+    return allFields
+      .filter(f => f.wizardStep === wizardStep && (f.section || "Algemeen") === section)
+      .filter(f => isFieldVisible(f, gegevens));
+  };
+
+  const renderFieldInput = (f: CategoryField) => (
+    <div key={f.key}>
+      <Label className="text-sm">{f.label}</Label>
+      {f.type === "select" ? (
+        <Select value={gegevens[f.key] || ""} onValueChange={v => updateGegevens(f.key, v)}>
+          <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
+          <SelectContent>
+            {f.options?.map(o => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ) : (
+        <Input
+          type={f.type === "number" ? "number" : "text"}
+          value={gegevens[f.key] || ""}
+          onChange={e => updateGegevens(f.key, e.target.value)}
+        />
+      )}
+    </div>
+  );
+
+  const renderFormStep = (wizardStep: WizardStep) => {
+    const sections = getVisibleSections(wizardStep);
+    if (sections.length === 0) {
+      return (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="py-8 text-center text-muted-foreground">
+            Geen velden beschikbaar voor deze categorie in deze stap.
+          </CardContent>
+        </Card>
+      );
+    }
+    return (
+      <div className="space-y-6">
+        {sections.map(section => {
+          const sectionFields = getVisibleFieldsInSection(wizardStep, section);
+          return (
+            <Card key={section} className="rounded-2xl border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-lg">{section}</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {sectionFields.map(renderFieldInput)}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/schouwen/${id}`)}>
           <ArrowLeft className="h-5 w-5" />
@@ -157,18 +240,42 @@ const SchouwUitvoeren = () => {
         </Button>
       </div>
 
+      {/* Step indicator */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-muted-foreground">
-          <span>Stap {step + 1} van {STEPS.length}: {STEPS[step]}</span>
+          <span className="hidden sm:inline">Stap {step + 1} van {STEPS.length}: {currentStep.label}</span>
+          <span className="sm:hidden">Stap {step + 1}/{STEPS.length}</span>
           <span>{Math.round(progress)}%</span>
         </div>
         <Progress value={progress} />
+        {/* Mobile dot indicators */}
+        <div className="flex justify-center gap-2 sm:hidden">
+          {STEPS.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStep(i)}
+                className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                  i === step ? "bg-primary text-primary-foreground" : i < step ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Step 0: Technische inspectie */}
-      {step === 0 && (
+      {/* Step 0: Wensen & Verwachtingen */}
+      {step === 0 && renderFormStep("wensen")}
+
+      {/* Step 1: Situatie & Woning */}
+      {step === 1 && renderFormStep("situatie")}
+
+      {/* Step 2: Technische inspectie */}
+      {step === 2 && (
         <div className="space-y-6">
-          {/* Satellite map */}
           {showSatellite(schouw.categorie) && (
             <>
               <SchouwSatellietKaart
@@ -190,7 +297,6 @@ const SchouwUitvoeren = () => {
             </>
           )}
 
-          {/* Paneel clusters */}
           {showClusters(schouw.categorie) && (
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader><CardTitle className="text-lg">Paneel clusters (dakvlakken)</CardTitle></CardHeader>
@@ -206,42 +312,12 @@ const SchouwUitvoeren = () => {
             </Card>
           )}
 
-          {sections.map(section => {
-            const sectionFields = fields.filter(f => (f.section || "Algemeen") === section);
-            return (
-              <Card key={section} className="rounded-2xl border-0 shadow-sm">
-                <CardHeader><CardTitle className="text-lg">{section}</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {sectionFields.map(f => (
-                      <div key={f.key}>
-                        <Label className="text-sm">{f.label}</Label>
-                        {f.type === "select" ? (
-                          <Select value={gegevens[f.key] || ""} onValueChange={v => updateGegevens(f.key, v)}>
-                            <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
-                            <SelectContent>
-                              {f.options?.map(o => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            type={f.type === "number" ? "number" : "text"}
-                            value={gegevens[f.key] || ""}
-                            onChange={e => updateGegevens(f.key, e.target.value)}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {renderFormStep("technisch")}
         </div>
       )}
 
-      {/* Step 1: Foto's */}
-      {step === 1 && (
+      {/* Step 3: Foto's */}
+      {step === 3 && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Foto's & Media</CardTitle></CardHeader>
           <CardContent>
@@ -250,13 +326,13 @@ const SchouwUitvoeren = () => {
         </Card>
       )}
 
-      {/* Step 2: Checklist */}
-      {step === 2 && (
+      {/* Step 4: Checklist */}
+      {step === 4 && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Checklist</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {checklistItems.map(item => (
-              <div key={item.key} className="flex items-center gap-3">
+              <div key={item.key} className="flex items-center gap-3 min-h-[44px]">
                 <Checkbox checked={!!checklist[item.key]} onCheckedChange={() => toggleChecklist(item.key)} />
                 <span className="text-sm">{item.label}</span>
                 {item.required && <span className="text-xs text-destructive">verplicht</span>}
@@ -270,76 +346,76 @@ const SchouwUitvoeren = () => {
         </Card>
       )}
 
-      {/* Step 3: Klant akkoord */}
-      {step === 3 && (
-        <Card className="rounded-2xl border-0 shadow-sm">
-          <CardHeader><CardTitle className="text-lg">Klant akkoord & Handtekening</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-1">
-              <p><strong>Schouw:</strong> {schouw.schouw_nummer}</p>
-              <p><strong>Klant:</strong> {schouw.consument_naam}</p>
-              <p><strong>Datum:</strong> {new Date().toLocaleDateString("nl-NL")}</p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Hierbij verklaart de klant akkoord te gaan met de uitgevoerde schouw en de vastgelegde bevindingen.
-            </p>
-            <div>
-              <Label className="text-sm">Naam ondertekenaar</Label>
-              <Input value={ondertekenaarNaam} onChange={e => setOndertekenaarNaam(e.target.value)} placeholder="Volledige naam" />
-            </div>
-            <div>
-              <Label className="text-sm mb-2 block">Handtekening</Label>
-              <SignaturePad value={handtekeningData} onChange={setHandtekeningData} />
-            </div>
-            {!handtekeningData && (
-              <p className="text-xs text-destructive">* Een handtekening is verplicht om de schouw af te ronden</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Step 5: Klant akkoord & Samenvatting */}
+      {step === 5 && (
+        <div className="space-y-6">
+          {/* Samenvatting */}
+          <Card className="rounded-2xl border-0 shadow-sm">
+            <CardHeader><CardTitle className="text-lg">Samenvatting</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p><strong>Ingevulde velden:</strong> {Object.keys(gegevens).filter(k => k !== "paneel_clusters" && k !== "solar_score" && gegevens[k]).length} van {allFields.length}</p>
+              {showClusters(schouw.categorie) && <p><strong>Paneel clusters:</strong> {clusters.length}</p>}
+              <p><strong>Foto's:</strong> {fotos.length}</p>
+              <p><strong>Checklist:</strong> {Object.values(checklist).filter(Boolean).length} / {checklistItems.length} afgevinkt</p>
+              {aandachtspunten && <p><strong>Aandachtspunten:</strong> {aandachtspunten}</p>}
+            </CardContent>
+          </Card>
 
-      {/* Step 4: Samenvatting */}
-      {step === 4 && (
-        <Card className="rounded-2xl border-0 shadow-sm">
-          <CardHeader><CardTitle className="text-lg">Samenvatting</CardTitle></CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <p><strong>Ingevulde velden:</strong> {Object.keys(gegevens).filter(k => k !== "paneel_clusters" && gegevens[k]).length} van {fields.length}</p>
-            {showClusters(schouw.categorie) && <p><strong>Paneel clusters:</strong> {clusters.length}</p>}
-            <p><strong>Foto's:</strong> {fotos.length}</p>
-            <p><strong>Checklist:</strong> {Object.values(checklist).filter(Boolean).length} / {checklistItems.length} afgevinkt</p>
-            {aandachtspunten && <p><strong>Aandachtspunten:</strong> {aandachtspunten}</p>}
-            <p><strong>Handtekening:</strong> {handtekeningData ? "✓ Ondertekend" : "✗ Niet ondertekend"}</p>
-            {ondertekenaarNaam && <p><strong>Ondertekenaar:</strong> {ondertekenaarNaam}</p>}
-
-            {!handtekeningData && (
-              <div className="bg-muted/50 border border-border rounded-xl p-3 text-sm text-muted-foreground">
-                💡 Je kunt de schouw tussentijds opslaan en later afronden. Een handtekening is pas nodig bij het afronden.
+          {/* Handtekening */}
+          <Card className="rounded-2xl border-0 shadow-sm">
+            <CardHeader><CardTitle className="text-lg">Klant akkoord & Handtekening</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-1">
+                <p><strong>Schouw:</strong> {schouw.schouw_nummer}</p>
+                <p><strong>Klant:</strong> {schouw.consument_naam}</p>
+                <p><strong>Datum:</strong> {new Date().toLocaleDateString("nl-NL")}</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <p className="text-sm text-muted-foreground">
+                Hierbij verklaart de klant akkoord te gaan met de uitgevoerde schouw en de vastgelegde bevindingen.
+              </p>
+              <div>
+                <Label className="text-sm">Naam ondertekenaar</Label>
+                <Input value={ondertekenaarNaam} onChange={e => setOndertekenaarNaam(e.target.value)} placeholder="Volledige naam" />
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">Handtekening</Label>
+                <SignaturePad value={handtekeningData} onChange={setHandtekeningData} />
+              </div>
+              {!handtekeningData && (
+                <p className="text-xs text-destructive">* Een handtekening is verplicht om de schouw af te ronden</p>
+              )}
+
+              {!handtekeningData && (
+                <div className="bg-muted/50 border border-border rounded-xl p-3 text-sm text-muted-foreground">
+                  💡 Je kunt de schouw tussentijds opslaan en later afronden. Een handtekening is pas nodig bij het afronden.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Navigation */}
-      <div className="flex flex-col sm:flex-row justify-between gap-2">
-        <Button variant="outline" onClick={() => step > 0 ? setStep(step - 1) : navigate(`/schouwen/${id}`)} className="gap-2 w-full sm:w-auto">
+      {/* Navigation — sticky on mobile */}
+      <div className="flex flex-col sm:flex-row justify-between gap-2 sticky bottom-0 bg-background py-3 sm:static sm:py-0 border-t sm:border-t-0 -mx-3 px-3 sm:mx-0 sm:px-0">
+        <Button variant="outline" onClick={() => step > 0 ? setStep(step - 1) : navigate(`/schouwen/${id}`)} className="gap-2 w-full sm:w-auto min-h-[44px]">
           <ChevronLeft className="h-4 w-4" /> {step === 0 ? "Terug" : "Vorige"}
         </Button>
         <div className="flex gap-2 w-full sm:w-auto">
           {step === STEPS.length - 1 && (
             <>
-              <Button variant="outline" onClick={handleSaveDraft} disabled={savingDraft} className="gap-2 flex-1 sm:flex-initial">
+              <Button variant="outline" onClick={handleSaveDraft} disabled={savingDraft} className="gap-2 flex-1 sm:flex-initial min-h-[44px]">
                 {savingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Opslaan & later verder
+                <span className="hidden sm:inline">Opslaan & later verder</span>
+                <span className="sm:hidden">Opslaan</span>
               </Button>
-              <Button onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending || !handtekeningData} className="gap-2 flex-1 sm:flex-initial">
+              <Button onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending || !handtekeningData} className="gap-2 flex-1 sm:flex-initial min-h-[44px]">
                 {completeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Schouw afronden
+                Afronden
               </Button>
             </>
           )}
           {step < STEPS.length - 1 && (
-            <Button onClick={() => setStep(step + 1)} className="gap-2 w-full sm:w-auto">
+            <Button onClick={() => setStep(step + 1)} className="gap-2 w-full sm:w-auto min-h-[44px]">
               Volgende <ChevronRight className="h-4 w-4" />
             </Button>
           )}
