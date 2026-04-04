@@ -174,7 +174,18 @@ const SchouwUitvoeren = () => {
               adres={(schouw as any).adres}
               plaats={(schouw as any).plaats}
               postcode={(schouw as any).postcode}
+              onSolarData={handleSolarData}
             />
+            {solarScore && (
+              <div className="flex items-center gap-2">
+                <Badge className={scoreColors[solarScore.label] || ""}>
+                  <Sun className="h-3 w-3 mr-1" /> Zonnepotentie: {solarScore.label}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  ~{solarScore.yearlyEnergyAcKwh.toLocaleString("nl-NL")} kWh/jaar • max {solarScore.maxPanels} panelen
+                </span>
+              </div>
+            )
           )}
 
           {/* Paneel clusters */}
