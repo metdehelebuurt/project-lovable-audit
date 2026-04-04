@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, PlayCircle, Pencil } from "lucide-react";
+import { ArrowLeft, PlayCircle } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
+import PaneelClusterEditor from "@/components/schouwen/PaneelClusterEditor";
+import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
 import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
@@ -24,6 +26,9 @@ const statusColors: Record<string, string> = {
   geannuleerd: "bg-error-light text-error",
 };
 
+const showClusters = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
+const showSatellite = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
+
 const SchouwDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -40,12 +45,13 @@ const SchouwDetail = () => {
 
   if (isLoading || !schouw) return <div className="p-6 text-muted-foreground">Laden...</div>;
 
-  const gegevens = (schouw.gegevens as Record<string, string>) || {};
+  const gegevens = (schouw.gegevens as Record<string, any>) || {};
   const checklist = (schouw.checklist as Record<string, boolean>) || {};
   const fotos = (schouw.fotos as any[]) || [];
   const fields = categoryFields[schouw.categorie] || [];
   const sections = getSections(schouw.categorie);
   const checklistItems = categoryChecklists[schouw.categorie] || [];
+  const clusters = gegevens.paneel_clusters || [];
 
   return (
     <div className="space-y-6">
@@ -100,6 +106,25 @@ const SchouwDetail = () => {
         </Card>
       </div>
 
+      {/* Satellite map */}
+      {showSatellite(schouw.categorie) && (
+        <SchouwSatellietKaart
+          adres={(schouw as any).adres}
+          plaats={(schouw as any).plaats}
+          postcode={(schouw as any).postcode}
+        />
+      )}
+
+      {/* Paneel clusters */}
+      {showClusters(schouw.categorie) && clusters.length > 0 && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader><CardTitle className="text-lg">Paneel clusters ({clusters.length})</CardTitle></CardHeader>
+          <CardContent>
+            <PaneelClusterEditor clusters={clusters} onChange={() => {}} readOnly />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Technische gegevens per sectie */}
       {sections.map(section => {
         const sectionFields = fields.filter(f => (f.section || "Algemeen") === section);
@@ -134,21 +159,14 @@ const SchouwDetail = () => {
                 return (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
                     {isVideo ? (
-                      <video
-                        src={f.url}
-                        controls
-                        className="w-full h-full object-cover"
-                        preload="metadata"
-                      />
+                      <video src={f.url} controls className="w-full h-full object-cover" preload="metadata" />
                     ) : (
                       <img
                         src={f.url}
                         alt={label || `Foto ${i + 1}`}
                         className="w-full h-full object-cover"
                         loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder.svg";
-                        }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
                       />
                     )}
                     {label && (

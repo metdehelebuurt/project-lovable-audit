@@ -11,16 +11,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronLeft, ChevronRight, Check, Save, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Save, Loader2, CheckCircle2 } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
 import SignaturePad from "@/components/schouwen/SignaturePad";
+import PaneelClusterEditor, { type PaneelCluster } from "@/components/schouwen/PaneelClusterEditor";
+import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
 import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
 const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Klant akkoord", "Samenvatting"];
+const showClusters = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
+const showSatellite = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
 
 const SchouwUitvoeren = () => {
   const { id } = useParams();
@@ -39,7 +43,7 @@ const SchouwUitvoeren = () => {
     enabled: !!id,
   });
 
-  const [gegevens, setGegevens] = useState<Record<string, string>>({});
+  const [gegevens, setGegevens] = useState<Record<string, any>>({});
   const [fotos, setFotos] = useState<SchouwFoto[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [aandachtspunten, setAandachtspunten] = useState("");
@@ -49,13 +53,16 @@ const SchouwUitvoeren = () => {
 
   // Initialize from schouw data once loaded
   if (schouw && !initialized) {
-    setGegevens((schouw.gegevens as Record<string, string>) || {});
+    setGegevens((schouw.gegevens as Record<string, any>) || {});
     setFotos((schouw.fotos as unknown as SchouwFoto[]) || []);
     setChecklist((schouw.checklist as Record<string, boolean>) || {});
     setAandachtspunten(schouw.aandachtspunten || "");
     if (schouw.handtekening_data) setHandtekeningData(schouw.handtekening_data);
     setInitialized(true);
   }
+
+  const clusters: PaneelCluster[] = gegevens.paneel_clusters || [];
+  const setClusters = (c: PaneelCluster[]) => setGegevens(p => ({ ...p, paneel_clusters: c }));
 
   const getUpdatePayload = () => ({
     gegevens: Object.keys(gegevens).length > 0 ? gegevens : null,
@@ -64,7 +71,6 @@ const SchouwUitvoeren = () => {
     aandachtspunten: aandachtspunten || null,
   });
 
-  // Save draft (tussentijds opslaan)
   const handleSaveDraft = async () => {
     setSavingDraft(true);
     try {
@@ -78,12 +84,9 @@ const SchouwUitvoeren = () => {
     setSavingDraft(false);
   };
 
-  // Mark as complete (afgerond)
   const completeMutation = useMutation({
     mutationFn: async () => {
-      if (!handtekeningData) {
-        throw new Error("Handtekening is verplicht om de schouw af te ronden");
-      }
+      if (!handtekeningData) throw new Error("Handtekening is verplicht om de schouw af te ronden");
       const { error } = await supabase.from("schouwen").update({
         ...getUpdatePayload(),
         handtekening_data: handtekeningData,
@@ -110,8 +113,6 @@ const SchouwUitvoeren = () => {
   const updateGegevens = (key: string, value: string) => setGegevens(p => ({ ...p, [key]: value }));
   const toggleChecklist = (key: string) => setChecklist(p => ({ ...p, [key]: !p[key] }));
 
-  const isAlreadyCompleted = schouw.status === "uitgevoerd";
-
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
@@ -122,14 +123,7 @@ const SchouwUitvoeren = () => {
           <h1 className="text-xl md:text-2xl font-semibold text-foreground">Schouw uitvoeren: {schouw.schouw_nummer}</h1>
           <p className="text-muted-foreground text-sm truncate">{schouw.consument_naam}</p>
         </div>
-        {/* Tussentijds opslaan knop — altijd zichtbaar */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 rounded-pill shrink-0"
-          onClick={handleSaveDraft}
-          disabled={savingDraft}
-        >
+        <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={handleSaveDraft} disabled={savingDraft}>
           {savingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           <span className="hidden sm:inline">Opslaan</span>
         </Button>
@@ -146,6 +140,25 @@ const SchouwUitvoeren = () => {
       {/* Step 0: Technische inspectie */}
       {step === 0 && (
         <div className="space-y-6">
+          {/* Satellite map */}
+          {showSatellite(schouw.categorie) && (
+            <SchouwSatellietKaart
+              adres={(schouw as any).adres}
+              plaats={(schouw as any).plaats}
+              postcode={(schouw as any).postcode}
+            />
+          )}
+
+          {/* Paneel clusters */}
+          {showClusters(schouw.categorie) && (
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-lg">Paneel clusters (dakvlakken)</CardTitle></CardHeader>
+              <CardContent>
+                <PaneelClusterEditor clusters={clusters} onChange={setClusters} />
+              </CardContent>
+            </Card>
+          )}
+
           {sections.map(section => {
             const sectionFields = fields.filter(f => (f.section || "Algemeen") === section);
             return (
@@ -225,11 +238,7 @@ const SchouwUitvoeren = () => {
             </p>
             <div>
               <Label className="text-sm">Naam ondertekenaar</Label>
-              <Input
-                value={ondertekenaarNaam}
-                onChange={e => setOndertekenaarNaam(e.target.value)}
-                placeholder="Volledige naam"
-              />
+              <Input value={ondertekenaarNaam} onChange={e => setOndertekenaarNaam(e.target.value)} placeholder="Volledige naam" />
             </div>
             <div>
               <Label className="text-sm mb-2 block">Handtekening</Label>
@@ -247,7 +256,8 @@ const SchouwUitvoeren = () => {
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Samenvatting</CardTitle></CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <p><strong>Ingevulde velden:</strong> {Object.keys(gegevens).filter(k => gegevens[k]).length} van {fields.length}</p>
+            <p><strong>Ingevulde velden:</strong> {Object.keys(gegevens).filter(k => k !== "paneel_clusters" && gegevens[k]).length} van {fields.length}</p>
+            {showClusters(schouw.categorie) && <p><strong>Paneel clusters:</strong> {clusters.length}</p>}
             <p><strong>Foto's:</strong> {fotos.length}</p>
             <p><strong>Checklist:</strong> {Object.values(checklist).filter(Boolean).length} / {checklistItems.length} afgevinkt</p>
             {aandachtspunten && <p><strong>Aandachtspunten:</strong> {aandachtspunten}</p>}
@@ -255,7 +265,7 @@ const SchouwUitvoeren = () => {
             {ondertekenaarNaam && <p><strong>Ondertekenaar:</strong> {ondertekenaarNaam}</p>}
 
             {!handtekeningData && (
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm text-amber-800 dark:text-amber-200">
+              <div className="bg-muted/50 border border-border rounded-xl p-3 text-sm text-muted-foreground">
                 💡 Je kunt de schouw tussentijds opslaan en later afronden. Een handtekening is pas nodig bij het afronden.
               </div>
             )}
@@ -271,20 +281,11 @@ const SchouwUitvoeren = () => {
         <div className="flex gap-2 w-full sm:w-auto">
           {step === STEPS.length - 1 && (
             <>
-              <Button
-                variant="outline"
-                onClick={handleSaveDraft}
-                disabled={savingDraft}
-                className="gap-2 flex-1 sm:flex-initial"
-              >
+              <Button variant="outline" onClick={handleSaveDraft} disabled={savingDraft} className="gap-2 flex-1 sm:flex-initial">
                 {savingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Opslaan & later verder
               </Button>
-              <Button
-                onClick={() => completeMutation.mutate()}
-                disabled={completeMutation.isPending || !handtekeningData}
-                className="gap-2 flex-1 sm:flex-initial"
-              >
+              <Button onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending || !handtekeningData} className="gap-2 flex-1 sm:flex-initial">
                 {completeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Schouw afronden
               </Button>
