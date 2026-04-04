@@ -85,7 +85,7 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5" /> Satellietweergave</CardTitle></CardHeader>
         <CardContent>
-          <div className="flex items-center gap-2 text-amber-600 text-sm">
+          <div className="flex items-center gap-2 text-destructive text-sm">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
