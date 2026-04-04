@@ -62,7 +62,7 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
   // Init map
   useEffect(() => {
     if (!loaded || !mapRef.current || mapInstance.current) return;
-    mapInstance.current = new google.maps.Map(mapRef.current, {
+    mapInstance.current = new (window as any).google.maps.Map(mapRef.current, {
       center: { lat: 52.1326, lng: 5.2913 },
       zoom: 8,
       mapTypeId: "satellite",
