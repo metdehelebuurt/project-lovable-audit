@@ -193,7 +193,13 @@ const SchouwUitvoeren = () => {
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader><CardTitle className="text-lg">Paneel clusters (dakvlakken)</CardTitle></CardHeader>
               <CardContent>
-                <PaneelClusterEditor clusters={clusters} onChange={setClusters} />
+                <PaneelClusterEditor
+                  clusters={clusters}
+                  onChange={setClusters}
+                  solarSuggestions={solarSuggestions || undefined}
+                  onAcceptSuggestions={acceptSuggestions}
+                  onDismissSuggestions={dismissSuggestions}
+                />
               </CardContent>
             </Card>
           )}
