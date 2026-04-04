@@ -29,7 +29,7 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
       setError("Google Maps API key niet geconfigureerd. Voeg VITE_GOOGLE_MAPS_API_KEY toe.");
       return;
     }
-    if (window.google?.maps) {
+    if ((window as any).google?.maps) {
       setLoaded(true);
       return;
     }
