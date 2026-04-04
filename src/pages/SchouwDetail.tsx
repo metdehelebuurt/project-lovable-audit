@@ -107,13 +107,20 @@ const SchouwDetail = () => {
         </Card>
       </div>
 
-      {/* Satellite map */}
+      {/* Solar potentie score */}
       {showSatellite(schouw.categorie) && (
-        <SchouwSatellietKaart
-          adres={(schouw as any).adres}
-          plaats={(schouw as any).plaats}
-          postcode={(schouw as any).postcode}
-        />
+        <>
+          <SolarPotentieCheck
+            adres={(schouw as any).adres}
+            postcode={(schouw as any).postcode}
+            plaats={(schouw as any).plaats}
+          />
+          <SchouwSatellietKaart
+            adres={(schouw as any).adres}
+            plaats={(schouw as any).plaats}
+            postcode={(schouw as any).postcode}
+          />
+        </>
       )}
 
       {/* Paneel clusters */}
