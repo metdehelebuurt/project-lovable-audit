@@ -9,6 +9,7 @@ import { categoryFields, getSections } from "@/components/schouwen/SchouwCategor
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import PaneelClusterEditor from "@/components/schouwen/PaneelClusterEditor";
 import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
+import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
