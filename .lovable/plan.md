@@ -1,78 +1,166 @@
 
+## Plan: waarom "Dakgegevens ophalen" nu niet werkt in Nederland, en wat er moet gebeuren
 
-## Plan: Google Solar API Integratie
+### Do I know what the issue is?
+Ja.
 
-### Overzicht
+### Kernanalyse
+Er zijn meerdere concrete oorzaken in de huidige code:
 
-De Google Solar API wordt geintegreerd via een edge function (proxy) om automatisch dakgegevens op te halen, zonnepotentie-scores te berekenen, en een visuele schaduw/zonnekaart als overlay op de satellietkaart te tonen. De API key (`VITE_GOOGLE_MAPS_API_KEY`) wordt hergebruikt — dezelfde key werkt voor Maps, Geocoding en Solar API.
+1. **Frontend forceert altijd `HIGH` kwaliteit**
+   - In `src/components/schouwen/SchouwSatellietKaart.tsx` wordt de functie aangeroepen met:
+     `body: { lat, lng, quality: "HIGH" }`
+   - Daardoor krijgt de backend geen kans om slim terug te vallen naar lagere dekking.
 
-### Waar de API key instellen
+2. **De fallback in de edge function is fout**
+   - In `supabase/functions/solar-building-insights/index.ts` staat:
+     `["HIGH", "MEDIUM", "LOW"]`
+   - Volgens de officiële Google Solar documentatie is dat voor deze API **`HIGH`, `MEDIUM`, `BASE`**.
+   - `LOW` is dus verkeerd.
 
-De `VITE_GOOGLE_MAPS_API_KEY` is een **publieke** key die in de codebase wordt opgeslagen. Je moet:
+3. **Voor EEA/Nederland moet vaak `BASE` + `EXPANDED_COVERAGE` gebruikt worden**
+   - Google documentatie geeft expliciet aan dat in EEA-regio’s uitgebreide dekking via:
+     `requiredQuality=BASE` + `experiments=EXPANDED_COVERAGE`
+     beschikbaar kan zijn.
+   - Die fallback zit nu helemaal niet in de code.
 
-1. Ga naar [Google Cloud Console](https://console.cloud.google.com/)
-2. Maak een project aan (of gebruik bestaand)
-3. Schakel deze API's in: **Maps JavaScript API**, **Geocoding API**, **Solar API**
-4. Ga naar "Credentials" → "Create Credentials" → "API Key"
-5. Kopieer de key
-6. In Lovable: ga naar de code en voeg toe aan je `.env`-achtige variabelen als `VITE_GOOGLE_MAPS_API_KEY` — of ik bouw het zo dat je de key direct in de Settings/Instellingen pagina kunt invullen
+4. **De functie geeft nu een “geen data” fout terug, ook als de API technisch wel werkt**
+   - De network logs tonen `200` responses vanuit de edge function met:
+     “Geen zonnepotentie-data beschikbaar...”
+   - Dat betekent: de functie draait, maar de gevraagde Google Solar dataset wordt voor die call niet gevonden.
 
-Omdat het een publieke key is, wordt deze direct in de frontend code gebruikt (al aanwezig in `SchouwSatellietKaart.tsx`).
+5. **Er zit nog een extra bug in de data-layers code**
+   - In `solar-building-insights/index.ts` wordt `qualityParam` gebruikt, maar die variabele bestaat niet.
+   - Daardoor werkt de heatmap/data-layer logica nu niet goed.
 
-Voor de Solar API (server-side calls) maak ik een edge function die dezelfde key of een aparte server key gebruikt. Ik sla die op als runtime secret `GOOGLE_MAPS_API_KEY`.
-
----
-
-### Functies die worden gebouwd
-
-**1. Auto-fill daksegmenten vanuit Solar API**
-- Bij openen schouw voor zonnepanelen/thuisbatterij: knop "Dakgegevens ophalen"
-- Roept edge function `solar-building-insights` aan met lat/lng
-- Vult automatisch paneel clusters in met: oriëntatie, hellingshoek, maximaal aantal panelen, jaarlijkse zonuren per segment
-- Gebruiker kan suggesties accepteren of aanpassen
-
-**2. Zonnepotentie-score**
-- Score wordt berekend uit Solar API response (max zonuren, geschikt dakoppervlak)
-- Getoond als badge/meter op SchouwDetail en SchouwUitvoeren
-- Score: "Uitstekend / Goed / Matig / Beperkt" met kWh-schatting
-
-**3. Schaduw-heatmap overlay op satellietkaart**
-- Solar API Data Layers endpoint levert flux/schaduw GeoTIFFs
-- Edge function haalt de URL's op, frontend toont als overlay op de Google Map
-- Gebruiker ziet visueel waar schaduw valt op het dak
-
-**4. Zonnepotentie in Lead module**
-- Op LeadDetail: als adres bekend, automatisch Solar API check
-- Toont korte samenvatting: "Dak geschikt voor ~X panelen, ~Y kWh/jaar"
-
-**5. Energieadvies verrijking**
-- In de energieadvies wizard: Solar API data gebruiken als input voor nauwkeurigere opbrengstberekening
+6. **Nog een inconsistentie in een andere component**
+   - `src/components/schouwen/SolarPotentieCheck.tsx` gebruikt nog steeds `import.meta.env.VITE_GOOGLE_MAPS_API_KEY`.
+   - Dat past niet bij de gekozen proxy-aanpak via edge function en zal op andere plekken ook problemen geven.
 
 ---
 
-### Edge Function: `solar-building-insights`
+## Wat dit betekent voor Nederland
+De huidige implementatie is te optimistisch voor NL:
+- veel adressen hebben waarschijnlijk **geen `HIGH` of `MEDIUM` dekking**
+- een deel werkt mogelijk alleen met **`BASE`**
+- een deel werkt mogelijk alleen met **`BASE + EXPANDED_COVERAGE`**
+- sommige adressen zullen ook dán nog geen Google Solar-dekking hebben
 
-Proxy naar `https://solar.googleapis.com/v1/buildingInsights:findClosest`
+Dus: het probleem is waarschijnlijk **niet alleen de API key**, maar vooral de **verkeerde requeststrategie voor Nederland/EEA**.
 
-- Input: `{ lat, lng, quality? }`
-- Haalt building insights op (daksegmenten, zonuren, max panelen)
-- Optioneel: Data Layers URLs ophalen voor heatmap
-- Return: genormaliseerde data met clusters, score, heatmap URLs
+---
 
+## Wat ik zou bouwen
+### 1. Edge function robuust maken voor Nederland
+`supabase/functions/solar-building-insights/index.ts`
+
+Nieuwe volgorde:
+1. `HIGH`
+2. `MEDIUM`
+3. `BASE`
+4. `BASE + experiments=EXPANDED_COVERAGE`
+
+De functie moet per poging:
+- status en fouttype onderscheiden
+- alleen “geen dekking” tonen als alle varianten falen
+- teruggeven **welke quality uiteindelijk werkte**
+
+Ook toevoegen:
+- nette inputvalidatie
+- duidelijke response types:
+  - `success`
+  - `no_coverage`
+  - `api_not_enabled`
+  - `invalid_request`
+
+### 2. Frontend niet meer vastzetten op `HIGH`
+`src/components/schouwen/SchouwSatellietKaart.tsx`
+
+Aanpassen zodat:
+- de frontend **geen quality meer forceert**
+- de backend zelf de beste variant kiest
+- de UI laat zien:
+  - “Gedetailleerde data gevonden”
+  - “Basisdekking gevonden”
+  - “Uitgebreide dekking (experimenteel) gebruikt”
+  - “Geen Google Solar dekking voor dit adres”
+
+### 3. Data-layers/heatmap bug herstellen
+In de edge function:
+- `qualityParam` vervangen door de echt gebruikte quality
+- data layers alleen ophalen als een geldige quality beschikbaar is
+- bij expanded coverage ook correct `experiments=EXPANDED_COVERAGE` meesturen
+
+### 4. Alle solar-componenten gelijk trekken
+`src/components/schouwen/SolarPotentieCheck.tsx`
+
+Deze component moet ook:
+- niet meer afhankelijk zijn van `VITE_GOOGLE_MAPS_API_KEY`
+- dezelfde proxy-/serveraanpak gebruiken
+- dezelfde foutmeldingen en coverage-status tonen
+
+### 5. Nederlandse UX verbeteren
+Voor NL-specifiek gedrag:
+- geocoding beperken tot Nederland waar mogelijk
+- duidelijk tonen dat Google Solar-dekking **adresafhankelijk** is
+- bij geen dekking:
+  - satellietkaart wel tonen
+  - handmatige clusterinvoer blijven toestaan
+  - gebruiker niet blokkeren
+
+---
+
+## Hoe ik dit zou testen
+Ik zou een vaste testmatrix gebruiken met Nederlandse adressen in:
+- grote stad
+- woonwijk
+- dorp
+- landelijk gebied
+- nieuwbouw
+- oudere wijk
+
+Per adres controleren:
+1. laad de satellietkaart?
+2. lukt geocoding?
+3. welke Solar quality werkt?
+4. komen dakvlakken/clusters terug?
+5. werkt scoreweergave?
+6. wordt “geen dekking” correct getoond als niets beschikbaar is?
+
+Belangrijk:
+- het doel moet niet zijn dat **elk** Nederlands adres werkt
+- het doel moet zijn dat:
+  - adressen mét Google Solar-dekking goed werken
+  - adressen zónder dekking correct en duidelijk worden afgehandeld
+
+---
+
+## Verwachte uitkomst na deze fix
+Na implementatie verwacht ik:
+- “Dakgegevens ophalen” werkt voor Nederlandse adressen waar Google Solar data beschikbaar is
+- veel meer succes dan nu door `BASE` en `EXPANDED_COVERAGE`
+- correcte fallback als er geen dekking is
+- geen foutieve generieke melding “Solar API niet beschikbaar” terwijl de API eigenlijk wel werkt
+- consistente werking in zowel schouw als detail/lead checks
+
+---
+
+## Technische details
 ### Bestanden
+- `supabase/functions/solar-building-insights/index.ts`
+- `src/components/schouwen/SchouwSatellietKaart.tsx`
+- `src/components/schouwen/SolarPotentieCheck.tsx`
 
-| Bestand | Wijziging |
-|---------|-----------|
-| `supabase/functions/solar-building-insights/index.ts` | Nieuw: proxy naar Solar API |
-| `src/components/schouwen/SchouwSatellietKaart.tsx` | Heatmap overlay + "Dakgegevens ophalen" knop |
-| `src/components/schouwen/PaneelClusterEditor.tsx` | "Suggesties van Solar API" accept-flow |
-| `src/pages/SchouwUitvoeren.tsx` | Solar API knop + score weergave integreren |
-| `src/pages/SchouwDetail.tsx` | Zonnepotentie-score tonen |
-| `src/pages/LeadDetail.tsx` | Solar potentie mini-check bij adres |
-| `src/components/energieadvies/WizardStepWoning.tsx` | Solar data als input suggestie |
-| `supabase/config.toml` | Config voor solar-building-insights |
+### Concrete fixes
+- `LOW` vervangen door `BASE`
+- frontend `quality: "HIGH"` verwijderen
+- fallback toevoegen met `experiments=EXPANDED_COVERAGE`
+- `qualityParam` bug oplossen
+- response uitbreiden met metadata zoals:
+  - `usedQuality`
+  - `coverageMode`
+  - `limitations`
+  - `hasRoofSegments`
 
-### Runtime secret nodig
-
-`GOOGLE_MAPS_API_KEY` — dezelfde key als de frontend, maar dan als server-side secret voor de edge function. Ik vraag deze op zodra we gaan bouwen.
-
+### Belangrijke nuance
+Google Solar API is in Nederland niet hetzelfde als volledige gegarandeerde dekking op elk adres. Zelfs met een correcte implementatie zullen sommige adressen geen data hebben. De app moet dat daarom functioneel opvangen in plaats van dit als technische fout te behandelen.
