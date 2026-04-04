@@ -138,14 +138,25 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode, onSolarData }: Props) =
 
   const doFetchSolar = async (lat: number, lng: number) => {
     setSolarLoading(true);
+    setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("solar-building-insights", {
-        body: { lat, lng, quality: "HIGH" },
+        body: { lat, lng },
       });
       if (fnError) throw fnError;
+
+      if (data?.status === "no_coverage") {
+        setError("Geen Google Solar dekking voor dit adres. Handmatige invoer blijft mogelijk.");
+        setSolarLoading(false);
+        return;
+      }
+
       if (data?.error) throw new Error(data.error);
 
       setSolarScore(data.score);
+      if (data.coverageMode) {
+        console.log("Solar coverage:", data.coverageMode, "quality:", data.usedQuality);
+      }
       onSolarData?.(data as SolarResult);
     } catch (err: any) {
       console.error("Solar API error:", err);

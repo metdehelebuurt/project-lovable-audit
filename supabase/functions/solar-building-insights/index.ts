@@ -11,38 +11,54 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lat, lng, quality } = await req.json();
+    const { lat, lng } = await req.json();
 
     if (!lat || !lng) {
-      return new Response(JSON.stringify({ error: "lat en lng zijn verplicht" }), {
+      return new Response(JSON.stringify({ error: "lat en lng zijn verplicht", status: "invalid_request" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (!GOOGLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "GOOGLE_MAPS_API_KEY niet geconfigureerd" }), {
+      return new Response(JSON.stringify({ error: "GOOGLE_MAPS_API_KEY niet geconfigureerd", status: "api_not_enabled" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const qualities = quality ? [quality] : ["HIGH", "MEDIUM", "LOW"];
+    // Try quality levels in order, including EXPANDED_COVERAGE for EEA/NL
+    const attempts = [
+      { quality: "HIGH", experiments: "" },
+      { quality: "MEDIUM", experiments: "" },
+      { quality: "BASE", experiments: "" },
+      { quality: "BASE", experiments: "EXPANDED_COVERAGE" },
+    ];
 
-    // 1. Building Insights — try quality levels in order
     let insightsRes: Response | null = null;
-    let usedQuality = qualities[0];
-    for (const q of qualities) {
-      usedQuality = q;
-      const url = `https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=${lat}&location.longitude=${lng}&requiredQuality=${q}&key=${GOOGLE_API_KEY}`;
+    let usedQuality = "HIGH";
+    let usedExperiments = "";
+
+    for (const attempt of attempts) {
+      usedQuality = attempt.quality;
+      usedExperiments = attempt.experiments;
+      let url = `https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=${lat}&location.longitude=${lng}&requiredQuality=${attempt.quality}&key=${GOOGLE_API_KEY}`;
+      if (attempt.experiments) {
+        url += `&experiments=${attempt.experiments}`;
+      }
       insightsRes = await fetch(url);
       if (insightsRes.ok) break;
       // Consume body before retrying
       await insightsRes.text();
+      insightsRes = null;
     }
 
     if (!insightsRes || !insightsRes.ok) {
-      return new Response(JSON.stringify({ error: "Geen zonnepotentie-data beschikbaar voor deze locatie. De Google Solar API heeft geen gebouwgegevens voor dit adres." }), {
+      return new Response(JSON.stringify({
+        status: "no_coverage",
+        error: "Geen zonnepotentie-data beschikbaar voor deze locatie. De Google Solar API heeft geen gebouwgegevens voor dit adres.",
+        usedQuality: null,
+      }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -91,10 +107,23 @@ Deno.serve(async (req) => {
     else if (maxSunHours >= 1000) { scoreLabel = "Matig"; scoreValue = 2; }
     else { scoreLabel = "Beperkt"; scoreValue = 1; }
 
-    // 2. Data Layers (for heatmap URLs)
+    // Determine coverage mode label
+    let coverageMode = "Gedetailleerde data";
+    if (usedExperiments === "EXPANDED_COVERAGE") {
+      coverageMode = "Uitgebreide dekking (experimenteel)";
+    } else if (usedQuality === "BASE") {
+      coverageMode = "Basisdekking";
+    } else if (usedQuality === "MEDIUM") {
+      coverageMode = "Standaard dekking";
+    }
+
+    // Data Layers (for heatmap URLs) - use the quality that worked
     let dataLayers = null;
     try {
-      const layersUrl = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=50&view=FULL_LAYERS&requiredQuality=${qualityParam}&pixelSizeMeters=0.5&key=${GOOGLE_API_KEY}`;
+      let layersUrl = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=50&view=FULL_LAYERS&requiredQuality=${usedQuality}&pixelSizeMeters=0.5&key=${GOOGLE_API_KEY}`;
+      if (usedExperiments) {
+        layersUrl += `&experiments=${usedExperiments}`;
+      }
       const layersRes = await fetch(layersUrl);
       if (layersRes.ok) {
         const layers = await layersRes.json();
@@ -113,6 +142,7 @@ Deno.serve(async (req) => {
     }
 
     const result = {
+      status: "success",
       clusters,
       score: {
         label: scoreLabel,
@@ -127,13 +157,16 @@ Deno.serve(async (req) => {
       dataLayers,
       center: insights.center || { latitude: lat, longitude: lng },
       imageryDate: insights.imageryDate || null,
+      usedQuality,
+      coverageMode,
+      hasRoofSegments: roofSegments.length > 0,
     };
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || "Onbekende fout" }), {
+    return new Response(JSON.stringify({ error: err.message || "Onbekende fout", status: "error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
