@@ -641,6 +641,11 @@ const LeadDetail = () => {
             </Card>
           )}
 
+          {/* Solar potentie check - shown on overzicht tab when address is known */}
+          {activeTab === "overzicht" && lead.adres && (
+            <SolarPotentieCheck adres={lead.adres} postcode={lead.postcode} plaats={lead.plaats} />
+          )}
+
           {/* KLANTDATA */}
           {activeTab === "klantdata" && (
             <Card className="rounded-2xl border-0 shadow-sm">
