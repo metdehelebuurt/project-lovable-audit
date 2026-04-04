@@ -3,27 +3,58 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Search, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Search, AlertCircle, Loader2, Sun, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import type { PaneelCluster } from "./PaneelClusterEditor";
+
+export interface SolarScore {
+  label: string;
+  value: number;
+  maxSunHours: number;
+  maxPanels: number;
+  maxAreaM2: number;
+  yearlyEnergyDcKwh: number;
+  yearlyEnergyAcKwh: number;
+  carbonOffsetKg: number;
+}
+
+export interface SolarResult {
+  clusters: PaneelCluster[];
+  score: SolarScore;
+  dataLayers: any;
+  center: { latitude: number; longitude: number };
+}
 
 interface Props {
   adres?: string;
   plaats?: string;
   postcode?: string;
+  onSolarData?: (data: SolarResult) => void;
 }
 
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
-const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
+const scoreColors: Record<string, string> = {
+  "Uitstekend": "bg-green-100 text-green-800",
+  "Goed": "bg-emerald-100 text-emerald-700",
+  "Matig": "bg-amber-100 text-amber-700",
+  "Beperkt": "bg-red-100 text-red-700",
+};
+
+const SchouwSatellietKaart = ({ adres, plaats, postcode, onSolarData }: Props) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [solarLoading, setSolarLoading] = useState(false);
+  const [solarScore, setSolarScore] = useState<SolarScore | null>(null);
+  const [lastCoords, setLastCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const defaultAddress = [adres, postcode, plaats].filter(Boolean).join(", ");
 
-  // Load Google Maps script
   useEffect(() => {
     if (!MAPS_API_KEY) {
       setError("Google Maps API key niet geconfigureerd. Voeg VITE_GOOGLE_MAPS_API_KEY toe.");
@@ -47,6 +78,8 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
     geocoder.geocode({ address }, (results: any, status: string) => {
       if (status === "OK" && results && results[0]) {
         const loc = results[0].geometry.location;
+        const lat = loc.lat();
+        const lng = loc.lng();
         mapInstance.current!.setCenter(loc);
         mapInstance.current!.setZoom(20);
         if (markerRef.current) markerRef.current.setMap(null);
@@ -55,11 +88,11 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
           map: mapInstance.current!,
           title: address,
         });
+        setLastCoords({ lat, lng });
       }
     });
   }, []);
 
-  // Init map
   useEffect(() => {
     if (!loaded || !mapRef.current || mapInstance.current) return;
     mapInstance.current = new (window as any).google.maps.Map(mapRef.current, {
@@ -80,7 +113,41 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
     if (q) geocodeAndCenter(q);
   };
 
-  if (error) {
+  const fetchSolarData = async () => {
+    if (!lastCoords) {
+      // Try geocoding first
+      if (!defaultAddress) return;
+      const geocoder = new (window as any).google.maps.Geocoder();
+      geocoder.geocode({ address: defaultAddress }, async (results: any, status: string) => {
+        if (status === "OK" && results?.[0]) {
+          const loc = results[0].geometry.location;
+          await doFetchSolar(loc.lat(), loc.lng());
+        }
+      });
+      return;
+    }
+    await doFetchSolar(lastCoords.lat, lastCoords.lng);
+  };
+
+  const doFetchSolar = async (lat: number, lng: number) => {
+    setSolarLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("solar-building-insights", {
+        body: { lat, lng, quality: "HIGH" },
+      });
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
+
+      setSolarScore(data.score);
+      onSolarData?.(data as SolarResult);
+    } catch (err: any) {
+      console.error("Solar API error:", err);
+      setError("Solar API niet beschikbaar. Controleer of de Solar API is ingeschakeld in Google Cloud Console.");
+    }
+    setSolarLoading(false);
+  };
+
+  if (error && !loaded) {
     return (
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5" /> Satellietweergave</CardTitle></CardHeader>
@@ -97,7 +164,15 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5" /> Satellietweergave</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5" /> Satellietweergave & Zonnepotentie</CardTitle>
+          {solarScore && (
+            <Badge className={scoreColors[solarScore.label] || ""}>
+              <Sun className="h-3 w-3 mr-1" />
+              {solarScore.label}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex gap-2">
@@ -111,9 +186,61 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
           <Button variant="outline" size="icon" onClick={handleSearch}>
             <Search className="h-4 w-4" />
           </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={fetchSolarData}
+            disabled={solarLoading}
+            className="gap-2 shrink-0"
+          >
+            {solarLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sun className="h-4 w-4" />}
+            Dakgegevens ophalen
+          </Button>
         </div>
+
         <div ref={mapRef} className="w-full h-[400px] rounded-xl overflow-hidden bg-muted" />
-        <p className="text-xs text-muted-foreground">Zoom in om de zonnepanelen op het dak visueel te inspecteren</p>
+
+        {/* Solar score summary */}
+        {solarScore && (
+          <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+            <h4 className="font-medium text-sm flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" /> Zonnepotentie analyse
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div>
+                <span className="text-muted-foreground block text-xs">Max. zonuren/jaar</span>
+                <span className="font-semibold">{solarScore.maxSunHours}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-xs">Max. panelen</span>
+                <span className="font-semibold">{solarScore.maxPanels}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-xs">Geschatte opbrengst</span>
+                <span className="font-semibold">{solarScore.yearlyEnergyAcKwh.toLocaleString("nl-NL")} kWh/jaar</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-xs">CO₂ besparing</span>
+                <span className="font-semibold">{solarScore.carbonOffsetKg.toLocaleString("nl-NL")} kg/jaar</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Geschikt dakoppervlak:</span>
+              <span className="text-xs font-medium">{solarScore.maxAreaM2} m²</span>
+            </div>
+          </div>
+        )}
+
+        {error && loaded && (
+          <div className="flex items-center gap-2 text-amber-600 text-xs">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground">
+          Zoom in om de zonnepanelen op het dak visueel te inspecteren. Klik "Dakgegevens ophalen" voor automatische dakanalyse via Google Solar API.
+        </p>
       </CardContent>
     </Card>
   );

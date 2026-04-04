@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.ai-feedback-categorize]
 verify_jwt = false
+
+[functions.solar-building-insights]
+verify_jwt = false

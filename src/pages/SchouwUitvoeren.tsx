@@ -10,14 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronLeft, ChevronRight, Save, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Save, Loader2, CheckCircle2, Sun } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
 import SignaturePad from "@/components/schouwen/SignaturePad";
 import PaneelClusterEditor, { type PaneelCluster } from "@/components/schouwen/PaneelClusterEditor";
-import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
+import SchouwSatellietKaart, { type SolarResult, type SolarScore } from "@/components/schouwen/SchouwSatellietKaart";
 import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
@@ -25,6 +26,13 @@ type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Klant akkoord", "Samenvatting"];
 const showClusters = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
 const showSatellite = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
+
+const scoreColors: Record<string, string> = {
+  "Uitstekend": "bg-green-100 text-green-800",
+  "Goed": "bg-emerald-100 text-emerald-700",
+  "Matig": "bg-amber-100 text-amber-700",
+  "Beperkt": "bg-red-100 text-red-700",
+};
 
 const SchouwUitvoeren = () => {
   const { id } = useParams();
@@ -63,6 +71,26 @@ const SchouwUitvoeren = () => {
 
   const clusters: PaneelCluster[] = gegevens.paneel_clusters || [];
   const setClusters = (c: PaneelCluster[]) => setGegevens(p => ({ ...p, paneel_clusters: c }));
+
+  const [solarSuggestions, setSolarSuggestions] = useState<PaneelCluster[] | null>(null);
+  const [solarScore, setSolarScore] = useState<SolarScore | null>(gegevens.solar_score || null);
+
+  const handleSolarData = (data: SolarResult) => {
+    setSolarSuggestions(data.clusters);
+    setSolarScore(data.score);
+    setGegevens(p => ({ ...p, solar_score: data.score }));
+    toast.success(`${data.clusters.length} dakvlakken gevonden via Solar API`);
+  };
+
+  const acceptSuggestions = () => {
+    if (solarSuggestions) {
+      setClusters(solarSuggestions);
+      setSolarSuggestions(null);
+      toast.success("Dakgegevens overgenomen");
+    }
+  };
+
+  const dismissSuggestions = () => setSolarSuggestions(null);
 
   const getUpdatePayload = () => ({
     gegevens: Object.keys(gegevens).length > 0 ? gegevens : null,
@@ -142,11 +170,24 @@ const SchouwUitvoeren = () => {
         <div className="space-y-6">
           {/* Satellite map */}
           {showSatellite(schouw.categorie) && (
-            <SchouwSatellietKaart
-              adres={(schouw as any).adres}
-              plaats={(schouw as any).plaats}
-              postcode={(schouw as any).postcode}
-            />
+            <>
+              <SchouwSatellietKaart
+                adres={(schouw as any).adres}
+                plaats={(schouw as any).plaats}
+                postcode={(schouw as any).postcode}
+                onSolarData={handleSolarData}
+              />
+              {solarScore && (
+                <div className="flex items-center gap-2">
+                  <Badge className={scoreColors[solarScore.label] || ""}>
+                    <Sun className="h-3 w-3 mr-1" /> Zonnepotentie: {solarScore.label}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    ~{solarScore.yearlyEnergyAcKwh.toLocaleString("nl-NL")} kWh/jaar • max {solarScore.maxPanels} panelen
+                  </span>
+                </div>
+              )}
+            </>
           )}
 
           {/* Paneel clusters */}
@@ -154,7 +195,13 @@ const SchouwUitvoeren = () => {
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader><CardTitle className="text-lg">Paneel clusters (dakvlakken)</CardTitle></CardHeader>
               <CardContent>
-                <PaneelClusterEditor clusters={clusters} onChange={setClusters} />
+                <PaneelClusterEditor
+                  clusters={clusters}
+                  onChange={setClusters}
+                  solarSuggestions={solarSuggestions || undefined}
+                  onAcceptSuggestions={acceptSuggestions}
+                  onDismissSuggestions={dismissSuggestions}
+                />
               </CardContent>
             </Card>
           )}

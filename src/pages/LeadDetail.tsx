@@ -27,6 +27,7 @@ import {
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
+import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -638,6 +639,11 @@ const LeadDetail = () => {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Solar potentie check - shown on overzicht tab when address is known */}
+          {activeTab === "overzicht" && lead.adres && (
+            <SolarPotentieCheck adres={lead.adres} postcode={lead.postcode} plaats={lead.plaats} />
           )}
 
           {/* KLANTDATA */}

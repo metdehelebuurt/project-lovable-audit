@@ -93,6 +93,7 @@ export default function WizardStepWoning({ data, onChange }: Props) {
               onChange={e => onChange({ dakOppervlakte: parseInt(e.target.value) || null })}
               className="rounded-xl"
             />
+            <p className="text-xs text-muted-foreground mt-1">💡 Tip: gebruik de Solar API in de schouwmodule voor exacte dakdata</p>
           </div>
 
           <div>
