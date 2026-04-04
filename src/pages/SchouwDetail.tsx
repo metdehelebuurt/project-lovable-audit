@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, PlayCircle } from "lucide-react";
-import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
+import { categoryFields, getSections, isFieldVisible, type WizardStep } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import PaneelClusterEditor from "@/components/schouwen/PaneelClusterEditor";
 import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
@@ -30,6 +30,12 @@ const statusColors: Record<string, string> = {
 const showClusters = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
 const showSatellite = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
 
+const wizardStepLabels: Record<WizardStep, string> = {
+  wensen: "Wensen & Verwachtingen",
+  situatie: "Situatie & Woning",
+  technisch: "Technische inspectie",
+};
+
 const SchouwDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -50,9 +56,48 @@ const SchouwDetail = () => {
   const checklist = (schouw.checklist as Record<string, boolean>) || {};
   const fotos = (schouw.fotos as any[]) || [];
   const fields = categoryFields[schouw.categorie] || [];
-  const sections = getSections(schouw.categorie);
   const checklistItems = categoryChecklists[schouw.categorie] || [];
   const clusters = gegevens.paneel_clusters || [];
+
+  const renderFieldsForStep = (wizardStep: WizardStep) => {
+    const stepFields = fields.filter(f => f.wizardStep === wizardStep);
+    const visibleFields = stepFields.filter(f => isFieldVisible(f, gegevens));
+    const hasValues = visibleFields.some(f => gegevens[f.key]);
+    if (!hasValues && schouw.status === "gepland") return null;
+
+    const sections = getSections(schouw.categorie, wizardStep);
+    const visibleSections = sections.filter(section => {
+      const sectionFields = visibleFields.filter(f => (f.section || "Algemeen") === section);
+      return sectionFields.some(f => gegevens[f.key]);
+    });
+
+    if (visibleSections.length === 0 && schouw.status === "gepland") return null;
+
+    return (
+      <div key={wizardStep} className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">{wizardStepLabels[wizardStep]}</h2>
+        {(visibleSections.length > 0 ? visibleSections : sections).map(section => {
+          const sectionFields = visibleFields.filter(f => (f.section || "Algemeen") === section);
+          if (sectionFields.length === 0) return null;
+          return (
+            <Card key={section} className="rounded-2xl border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-base">{section}</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                  {sectionFields.map(f => (
+                    <div key={f.key}>
+                      <span className="text-muted-foreground">{f.label}:</span>{" "}
+                      <span className="font-medium">{gegevens[f.key] || "-"}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -86,7 +131,6 @@ const SchouwDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Checklist */}
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Checklist</CardTitle></CardHeader>
           <CardContent className="space-y-1 text-sm">
@@ -107,7 +151,7 @@ const SchouwDetail = () => {
         </Card>
       </div>
 
-      {/* Solar potentie score */}
+      {/* Solar potentie */}
       {showSatellite(schouw.categorie) && (
         <>
           <SolarPotentieCheck
@@ -133,29 +177,10 @@ const SchouwDetail = () => {
         </Card>
       )}
 
-      {/* Technische gegevens per sectie */}
-      {sections.map(section => {
-        const sectionFields = fields.filter(f => (f.section || "Algemeen") === section);
-        const hasValues = sectionFields.some(f => gegevens[f.key]);
-        if (!hasValues && schouw.status === "gepland") return null;
-        return (
-          <Card key={section} className="rounded-2xl border-0 shadow-sm">
-            <CardHeader><CardTitle className="text-lg">{section}</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                {sectionFields.map(f => (
-                  <div key={f.key}>
-                    <span className="text-muted-foreground">{f.label}:</span>{" "}
-                    <span className="font-medium">{gegevens[f.key] || "-"}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+      {/* Gegevens per wizard stap */}
+      {(["wensen", "situatie", "technisch"] as WizardStep[]).map(renderFieldsForStep)}
 
-      {/* Foto's & Video's */}
+      {/* Foto's */}
       {fotos.length > 0 && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Foto's & Media ({fotos.length})</CardTitle></CardHeader>
@@ -188,7 +213,7 @@ const SchouwDetail = () => {
         </Card>
       )}
 
-      {/* Handtekening klant */}
+      {/* Handtekening */}
       {schouw.handtekening_data && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Klant akkoord</CardTitle></CardHeader>

@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Sparkles, Check, X } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Trash2, Sparkles, Check, X, ChevronDown } from "lucide-react";
 
 export interface PaneelCluster {
   naam: string;
@@ -21,14 +22,8 @@ export interface PaneelCluster {
 }
 
 const emptyCluster: PaneelCluster = {
-  naam: "",
-  orientatie: "",
-  hellingshoek: "",
-  aantal_panelen: "",
-  vermogen_per_paneel_wp: "",
-  schaduw: "",
-  schaduw_bron: "",
-  daktype: "",
+  naam: "", orientatie: "", hellingshoek: "", aantal_panelen: "",
+  vermogen_per_paneel_wp: "", schaduw: "", schaduw_bron: "", daktype: "",
 };
 
 const orientaties = ["N", "NO", "O", "ZO", "Z", "ZW", "W", "NW"];
@@ -53,15 +48,14 @@ const PaneelClusterEditor = ({ clusters, onChange, readOnly, solarSuggestions, o
     onChange(updated);
   };
 
-  // Solar suggestions banner
   if (solarSuggestions && solarSuggestions.length > 0 && onAcceptSuggestions) {
     return (
       <div className="space-y-4">
         <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <h4 className="font-medium text-sm flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              Solar API suggesties ({solarSuggestions.length} dakvlakken gevonden)
+              Solar API suggesties ({solarSuggestions.length} dakvlakken)
             </h4>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={onDismissSuggestions} className="gap-1">
@@ -81,19 +75,18 @@ const PaneelClusterEditor = ({ clusters, onChange, readOnly, solarSuggestions, o
                   <span>Helling: {c.hellingshoek}°</span>
                   <span>Max panelen: ~{c.aantal_panelen}</span>
                   <span>Type: {c.daktype}</span>
-                  {c.oppervlakte_m2 && <span>Oppervlakte: {c.oppervlakte_m2} m²</span>}
-                  {c.zonuren_per_jaar && <span>Zonuren: {c.zonuren_per_jaar}/jaar</span>}
+                  {c.oppervlakte_m2 && <span>Opp: {c.oppervlakte_m2} m²</span>}
+                  {c.zonuren_per_jaar && <span>Zonuren: {c.zonuren_per_jaar}/jr</span>}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Still show existing clusters below */}
         {clusters.length > 0 && (
           <>
             <p className="text-xs text-muted-foreground">Huidige clusters:</p>
-            {renderClusters(clusters, update, removeCluster, false)}
+            {renderClusters(clusters, update, removeCluster)}
           </>
         )}
         <Button variant="outline" size="sm" onClick={addCluster} className="gap-2">
@@ -119,7 +112,7 @@ const PaneelClusterEditor = ({ clusters, onChange, readOnly, solarSuggestions, o
               {c.schaduw_bron && <span>Bron: {c.schaduw_bron}</span>}
               {c.daktype && <span>Daktype: {c.daktype}</span>}
               {c.oppervlakte_m2 && <span>Opp: {c.oppervlakte_m2} m²</span>}
-              {c.zonuren_per_jaar && <span>Zonuren: {c.zonuren_per_jaar}/jaar</span>}
+              {c.zonuren_per_jaar && <span>Zonuren: {c.zonuren_per_jaar}/jr</span>}
             </div>
           </div>
         ))}
@@ -129,8 +122,8 @@ const PaneelClusterEditor = ({ clusters, onChange, readOnly, solarSuggestions, o
 
   return (
     <div className="space-y-4">
-      {renderClusters(clusters, update, removeCluster, false)}
-      <Button variant="outline" size="sm" onClick={addCluster} className="gap-2">
+      {renderClusters(clusters, update, removeCluster)}
+      <Button variant="outline" size="sm" onClick={addCluster} className="gap-2 min-h-[44px]">
         <Plus className="h-4 w-4" /> Dakvlak toevoegen
       </Button>
     </div>
@@ -141,73 +134,80 @@ function renderClusters(
   clusters: PaneelCluster[],
   update: (i: number, key: keyof PaneelCluster, value: string) => void,
   removeCluster: (i: number) => void,
-  _readOnly: boolean
 ) {
   return clusters.map((cluster, i) => (
-    <Card key={i} className="rounded-xl border shadow-sm">
-      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-medium">
-          {cluster.naam || `Cluster ${i + 1}`}
-          {cluster.zonuren_per_jaar && (
-            <Badge variant="outline" className="ml-2 text-xs">{cluster.zonuren_per_jaar} zonuren/jr</Badge>
-          )}
-        </CardTitle>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeCluster(i)}>
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
-            <Label className="text-xs">Naam dakvlak</Label>
-            <Input value={cluster.naam} onChange={e => update(i, "naam", e.target.value)} placeholder="Bijv. Zuid-dak" />
-          </div>
-          <div>
-            <Label className="text-xs">Oriëntatie</Label>
-            <Select value={cluster.orientatie} onValueChange={v => update(i, "orientatie", v)}>
-              <SelectTrigger><SelectValue placeholder="Kies..." /></SelectTrigger>
-              <SelectContent>
-                {orientaties.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Hellingshoek (°)</Label>
-            <Input type="number" value={cluster.hellingshoek} onChange={e => update(i, "hellingshoek", e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-xs">Aantal panelen</Label>
-            <Input type="number" value={cluster.aantal_panelen} onChange={e => update(i, "aantal_panelen", e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-xs">Vermogen per paneel (Wp)</Label>
-            <Input type="number" value={cluster.vermogen_per_paneel_wp} onChange={e => update(i, "vermogen_per_paneel_wp", e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-xs">Schaduw</Label>
-            <Select value={cluster.schaduw} onValueChange={v => update(i, "schaduw", v)}>
-              <SelectTrigger><SelectValue placeholder="Kies..." /></SelectTrigger>
-              <SelectContent>
-                {schaduwOpties.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Schaduwbron</Label>
-            <Input value={cluster.schaduw_bron} onChange={e => update(i, "schaduw_bron", e.target.value)} placeholder="Bijv. boom, schoorsteen" />
-          </div>
-          <div>
-            <Label className="text-xs">Daktype</Label>
-            <Select value={cluster.daktype} onValueChange={v => update(i, "daktype", v)}>
-              <SelectTrigger><SelectValue placeholder="Kies..." /></SelectTrigger>
-              <SelectContent>
-                {daktypen.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <Collapsible key={i} defaultOpen={i === 0 || clusters.length <= 3}>
+      <Card className="rounded-xl border shadow-sm">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="py-3 px-4 flex flex-row items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              {cluster.naam || `Cluster ${i + 1}`}
+              {cluster.orientatie && <Badge variant="outline" className="text-xs">{cluster.orientatie}</Badge>}
+              {cluster.zonuren_per_jaar && (
+                <Badge variant="outline" className="text-xs">{cluster.zonuren_per_jaar} zonuren/jr</Badge>
+              )}
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform" />
+            </CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); removeCluster(i); }}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="px-4 pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <Label className="text-xs">Naam dakvlak</Label>
+                <Input value={cluster.naam} onChange={e => update(i, "naam", e.target.value)} placeholder="Bijv. Zuid-dak" />
+              </div>
+              <div>
+                <Label className="text-xs">Oriëntatie</Label>
+                <Select value={cluster.orientatie} onValueChange={v => update(i, "orientatie", v)}>
+                  <SelectTrigger><SelectValue placeholder="Kies..." /></SelectTrigger>
+                  <SelectContent>
+                    {orientaties.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Hellingshoek (°)</Label>
+                <Input type="number" value={cluster.hellingshoek} onChange={e => update(i, "hellingshoek", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Aantal panelen</Label>
+                <Input type="number" value={cluster.aantal_panelen} onChange={e => update(i, "aantal_panelen", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Vermogen per paneel (Wp)</Label>
+                <Input type="number" value={cluster.vermogen_per_paneel_wp} onChange={e => update(i, "vermogen_per_paneel_wp", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Schaduw</Label>
+                <Select value={cluster.schaduw} onValueChange={v => update(i, "schaduw", v)}>
+                  <SelectTrigger><SelectValue placeholder="Kies..." /></SelectTrigger>
+                  <SelectContent>
+                    {schaduwOpties.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Schaduwbron</Label>
+                <Input value={cluster.schaduw_bron} onChange={e => update(i, "schaduw_bron", e.target.value)} placeholder="Bijv. boom, schoorsteen" />
+              </div>
+              <div>
+                <Label className="text-xs">Daktype</Label>
+                <Select value={cluster.daktype} onValueChange={v => update(i, "daktype", v)}>
+                  <SelectTrigger><SelectValue placeholder="Kies..." /></SelectTrigger>
+                  <SelectContent>
+                    {daktypen.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   ));
 }
 
