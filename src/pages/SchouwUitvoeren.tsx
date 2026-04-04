@@ -10,14 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronLeft, ChevronRight, Save, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Save, Loader2, CheckCircle2, Sun } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import SchouwMediaUpload, { type SchouwFoto } from "@/components/schouwen/SchouwMediaUpload";
 import SignaturePad from "@/components/schouwen/SignaturePad";
 import PaneelClusterEditor, { type PaneelCluster } from "@/components/schouwen/PaneelClusterEditor";
-import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
+import SchouwSatellietKaart, { type SolarResult, type SolarScore } from "@/components/schouwen/SchouwSatellietKaart";
 import type { Database } from "@/integrations/supabase/types";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
@@ -25,6 +26,13 @@ type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 const STEPS = ["Technische inspectie", "Foto's & Media", "Checklist", "Klant akkoord", "Samenvatting"];
 const showClusters = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
 const showSatellite = (cat: SchouwCategorie) => cat === "zonnepanelen" || cat === "thuisbatterij";
+
+const scoreColors: Record<string, string> = {
+  "Uitstekend": "bg-green-100 text-green-800",
+  "Goed": "bg-emerald-100 text-emerald-700",
+  "Matig": "bg-amber-100 text-amber-700",
+  "Beperkt": "bg-red-100 text-red-700",
+};
 
 const SchouwUitvoeren = () => {
   const { id } = useParams();
