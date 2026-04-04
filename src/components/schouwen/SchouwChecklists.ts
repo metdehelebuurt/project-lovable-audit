@@ -73,6 +73,12 @@ export const categoryChecklists: Record<SchouwCategorie, ChecklistItem[]> = {
     { key: "batterij_locatie_bepaald", label: "Batterij locatie bepaald", required: true },
     { key: "zonnepanelen_gegevens_genoteerd", label: "Zonnepanelen gegevens genoteerd", required: true },
     { key: "kabelroute_bepaald", label: "Kabelroute bepaald", required: true },
+    { key: "omvormer_compatibiliteit_gecontroleerd", label: "Omvormer compatibiliteit met batterij gecontroleerd", required: true },
+    { key: "offgrid_vereisten_besproken", label: "Off-grid vereisten besproken met klant", required: true },
+    { key: "noodstroom_scenario_doorgenomen", label: "Noodstroomscenario doorgenomen", required: false },
+    { key: "teruglevering_netbeheerder_gecontroleerd", label: "Teruglevering bij netbeheerder gecontroleerd", required: false },
+    { key: "ventilatie_batterijruimte_gecontroleerd", label: "Ventilatie batterijruimte gecontroleerd", required: true },
+    { key: "brandveiligheid_locatie_beoordeeld", label: "Brandveiligheid locatie beoordeeld", required: true },
     { key: "netaansluiting_gecontroleerd", label: "Netaansluiting gecontroleerd", required: false },
   ],
 };

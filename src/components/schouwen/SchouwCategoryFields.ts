@@ -19,8 +19,6 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "daktype", label: "Daktype", type: "select", options: ["schuin", "plat", "combinatie"], section: "Dak" },
     { key: "dakbedekking", label: "Dakbedekking", type: "select", options: ["pannen", "bitumen", "metaal", "riet", "leien", "EPDM"], section: "Dak" },
     { key: "dakoppervlakte_m2", label: "Dakoppervlakte (m²)", type: "number", section: "Dak" },
-    { key: "orientatie", label: "Oriëntatie", type: "select", options: ["noord", "oost", "zuid", "west", "NO", "NW", "ZO", "ZW"], section: "Dak" },
-    { key: "hellingshoek", label: "Hellingshoek (°)", type: "number", section: "Dak" },
     { key: "dakconstructie_materiaal", label: "Dakconstructie materiaal", type: "text", section: "Dak" },
     { key: "draagkracht_dak_kg_m2", label: "Draagkracht dak (kg/m²)", type: "number", section: "Dak" },
     { key: "aantal_dakpannen_rij", label: "Aantal dakpannen per rij", type: "number", section: "Dak" },
@@ -28,6 +26,15 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "dakdoorvoer_nodig", label: "Dakdoorvoer nodig", type: "select", options: ["ja", "nee"], section: "Dak" },
     { key: "toegankelijkheid_dak", label: "Toegankelijkheid dak", type: "select", options: ["goed", "matig", "slecht", "steiger_nodig"], section: "Dak" },
     { key: "type_bevestigingssysteem", label: "Type bevestigingssysteem", type: "text", section: "Dak" },
+    // Installatie details (nieuw)
+    { key: "installatie_jaar", label: "Installatie jaar", type: "number", section: "Installatie details" },
+    { key: "omvormer_merk", label: "Omvormer merk", type: "text", section: "Installatie details" },
+    { key: "omvormer_model", label: "Omvormer model", type: "text", section: "Installatie details" },
+    { key: "omvormer_vermogen_kw", label: "Omvormer vermogen (kW)", type: "number", section: "Installatie details" },
+    { key: "omvormer_type", label: "Omvormer type", type: "select", options: ["string", "micro", "optimizers", "hybride"], section: "Installatie details" },
+    { key: "omvormer_serienummer", label: "Serienummer omvormer", type: "text", section: "Installatie details" },
+    { key: "monitoring_aanwezig", label: "Monitoring aanwezig", type: "select", options: ["ja", "nee"], section: "Installatie details" },
+    { key: "opmerkingen_installatie", label: "Opmerkingen installatie", type: "text", section: "Installatie details" },
     // Schaduw
     { key: "schaduw", label: "Schaduw", type: "select", options: ["geen", "licht", "matig", "veel"], section: "Schaduw" },
     { key: "schaduw_bron", label: "Schaduwbron", type: "text", section: "Schaduw" },
@@ -41,30 +48,25 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "omvormer_locatie", label: "Omvormer locatie", type: "select", options: ["zolder", "garage", "meterkast", "buiten", "anders"], section: "Elektra" },
   ],
   warmtepomp: [
-    // Woning
     { key: "bouwjaar", label: "Bouwjaar woning", type: "number", section: "Woning" },
     { key: "woningtype", label: "Woningtype", type: "select", options: ["vrijstaand", "2_onder_1_kap", "hoekwoning", "tussenwoning", "appartement"], section: "Woning" },
     { key: "woonoppervlakte_m2", label: "Woonoppervlakte (m²)", type: "number", section: "Woning" },
     { key: "energielabel", label: "Energielabel woning", type: "select", options: ["A++++", "A+++", "A++", "A+", "A", "B", "C", "D", "E", "F", "G", "onbekend"], section: "Woning" },
     { key: "isolatieniveau", label: "Isolatieniveau", type: "select", options: ["goed", "matig", "slecht"], section: "Woning" },
-    // Huidig systeem
     { key: "huidig_verwarmingssysteem", label: "Huidig verwarmingssysteem", type: "select", options: ["cv_ketel", "stadsverwarming", "elektrisch", "anders"], section: "Huidig systeem" },
     { key: "huidige_gasverbruik_m3", label: "Huidig gasverbruik (m³/jaar)", type: "number", section: "Huidig systeem" },
     { key: "huidige_elektraverbruik_kwh", label: "Huidig elektraverbruik (kWh/jaar)", type: "number", section: "Huidig systeem" },
     { key: "terugvoertemp_bestaand", label: "Terugvoertemperatuur bestaand systeem (°C)", type: "number", section: "Huidig systeem" },
-    // Afgiftesysteem
     { key: "radiatoren_type", label: "Radiatoren type", type: "select", options: ["regulier", "laagtemperatuur", "vloerverwarming", "combinatie"], section: "Afgiftesysteem" },
     { key: "type_vloerverwarming", label: "Type vloerverwarming", type: "select", options: ["nat", "droog", "nvt"], section: "Afgiftesysteem" },
     { key: "aantal_radiatoren", label: "Aantal radiatoren", type: "number", section: "Afgiftesysteem" },
     { key: "cv_buisdiameter_mm", label: "CV-buisdiameter (mm)", type: "number", section: "Afgiftesysteem" },
-    // Buitenunit
     { key: "buitenruimte_geschikt", label: "Buitenruimte geschikt", type: "select", options: ["ja", "nee", "beperkt"], section: "Buitenunit" },
     { key: "afstand_meterkast_buitenunit_m", label: "Afstand meterkast – buitenunit (m)", type: "number", section: "Buitenunit" },
     { key: "afstand_buitenunit_binnenunit_m", label: "Afstand buitenunit – binnenunit (m)", type: "number", section: "Buitenunit" },
     { key: "leidingdoorvoer_locatie", label: "Leidingdoorvoer locatie", type: "text", section: "Buitenunit" },
     { key: "geluidseis_db", label: "Geluidseis (dB)", type: "number", section: "Buitenunit" },
     { key: "bodemgesteldheid", label: "Bodemgesteldheid (voor bronpomp)", type: "select", options: ["zand", "klei", "veen", "nvt"], section: "Buitenunit" },
-    // Elektra
     { key: "type_aansluiting", label: "Type aansluiting", type: "select", options: ["1-fase", "3-fase"], section: "Elektra" },
     { key: "elektrische_aansluiting_a", label: "Elektrische aansluiting (A)", type: "number", section: "Elektra" },
   ],
@@ -145,13 +147,48 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "brandklep_locaties", label: "Brandklep locaties", type: "text", section: "Installatie" },
   ],
   thuisbatterij: [
+    // Woning
     { key: "bouwjaar", label: "Bouwjaar woning", type: "number", section: "Woning" },
-    // Zonnepanelen
-    { key: "zonnepanelen_aanwezig", label: "Zonnepanelen aanwezig", type: "select", options: ["ja", "nee"], section: "Zonnepanelen" },
-    { key: "aantal_zonnepanelen", label: "Aantal zonnepanelen", type: "number", section: "Zonnepanelen" },
-    { key: "zonnepanelen_wp", label: "Vermogen zonnepanelen (Wp)", type: "number", section: "Zonnepanelen" },
-    { key: "piekvermogen_systeem_kw", label: "Piekvermogen systeem (kW)", type: "number", section: "Zonnepanelen" },
-    { key: "omvormer_type", label: "Omvormer type (merk/model)", type: "text", section: "Zonnepanelen" },
+    { key: "woningtype", label: "Woningtype", type: "select", options: ["vrijstaand", "2_onder_1_kap", "hoekwoning", "tussenwoning", "appartement"], section: "Woning" },
+    // Huidige zonnepanelen
+    { key: "zonnepanelen_aanwezig", label: "Zonnepanelen aanwezig", type: "select", options: ["ja", "nee"], section: "Huidige zonnepanelen" },
+    { key: "aantal_zonnepanelen", label: "Aantal zonnepanelen", type: "number", section: "Huidige zonnepanelen" },
+    { key: "zonnepanelen_wp", label: "Vermogen per paneel (Wp)", type: "number", section: "Huidige zonnepanelen" },
+    { key: "piekvermogen_systeem_kw", label: "Piekvermogen systeem (kW)", type: "number", section: "Huidige zonnepanelen" },
+    { key: "installatie_jaar", label: "Installatie jaar zonnepanelen", type: "number", section: "Huidige zonnepanelen" },
+    { key: "omvormer_merk", label: "Omvormer merk", type: "text", section: "Huidige zonnepanelen" },
+    { key: "omvormer_model", label: "Omvormer model", type: "text", section: "Huidige zonnepanelen" },
+    { key: "omvormer_vermogen_kw", label: "Omvormer vermogen (kW)", type: "number", section: "Huidige zonnepanelen" },
+    { key: "omvormer_type", label: "Omvormer type", type: "select", options: ["string", "micro", "hybride", "optimizers"], section: "Huidige zonnepanelen" },
+    { key: "hybride_omvormer", label: "Hybride omvormer", type: "select", options: ["ja", "nee", "onbekend"], section: "Huidige zonnepanelen" },
+    { key: "monitoring_aanwezig", label: "Monitoring aanwezig", type: "select", options: ["ja", "nee"], section: "Huidige zonnepanelen" },
+    // Verbruik
+    { key: "jaarlijks_verbruik_kwh", label: "Jaarlijks verbruik (kWh)", type: "number", section: "Verbruik" },
+    { key: "jaarlijkse_teruglevering_kwh", label: "Jaarlijkse teruglevering (kWh)", type: "number", section: "Verbruik" },
+    { key: "energiecontract_type", label: "Energiecontract type", type: "select", options: ["vast", "dynamisch", "variabel"], section: "Verbruik" },
+    // Wensen & verwachtingen
+    { key: "motivatie_zelfconsumptie", label: "Zelfconsumptie verhogen", type: "select", options: ["ja", "nee"], section: "Wensen & verwachtingen" },
+    { key: "motivatie_piekshaving", label: "Piekshaving", type: "select", options: ["ja", "nee"], section: "Wensen & verwachtingen" },
+    { key: "motivatie_noodstroom", label: "Noodstroom/backup", type: "select", options: ["ja", "nee"], section: "Wensen & verwachtingen" },
+    { key: "motivatie_dynamisch_laden", label: "Dynamisch laden (spotprijzen)", type: "select", options: ["ja", "nee"], section: "Wensen & verwachtingen" },
+    { key: "motivatie_offgrid", label: "Off-grid / autarkie", type: "select", options: ["ja", "nee"], section: "Wensen & verwachtingen" },
+    { key: "gewenste_capaciteit_kwh", label: "Gewenste capaciteit (kWh)", type: "number", section: "Wensen & verwachtingen" },
+    { key: "budget_min", label: "Budget minimum (€)", type: "number", section: "Wensen & verwachtingen" },
+    { key: "budget_max", label: "Budget maximum (€)", type: "number", section: "Wensen & verwachtingen" },
+    { key: "merkvoorkeur", label: "Merkvoorkeur", type: "text", section: "Wensen & verwachtingen" },
+    { key: "prioriteit_besparing_onafhankelijkheid", label: "Prioriteit", type: "select", options: ["besparing", "onafhankelijkheid", "beide"], section: "Wensen & verwachtingen" },
+    // Off-grid vereisten
+    { key: "volledige_offgrid", label: "Volledige off-grid gewenst", type: "select", options: ["ja", "nee"], section: "Off-grid vereisten" },
+    { key: "essentiele_apparaten_uitval", label: "Essentiële apparaten bij stroomuitval", type: "text", section: "Off-grid vereisten" },
+    { key: "noodstroom_verbruik_kwh_dag", label: "Geschat noodstroomverbruik (kWh/dag)", type: "number", section: "Off-grid vereisten" },
+    { key: "gewenste_autonomie_uren", label: "Gewenste autonomie (uren)", type: "number", section: "Off-grid vereisten" },
+    { key: "generator_backup", label: "Generator aanwezig als backup", type: "select", options: ["ja", "nee"], section: "Off-grid vereisten" },
+    { key: "eilandbedrijf_vereist", label: "Eilandbedrijf (islanding) vereist", type: "select", options: ["ja", "nee"], section: "Off-grid vereisten" },
+    { key: "driefase_offgrid", label: "3-fase nodig bij off-grid", type: "select", options: ["ja", "nee", "onbekend"], section: "Off-grid vereisten" },
+    // Omvormer compatibiliteit
+    { key: "omvormer_compatibel_batterij", label: "Huidige omvormer compatibel met batterij", type: "select", options: ["ja", "nee", "onbekend"], section: "Omvormer compatibiliteit" },
+    { key: "omvormer_vervanging_nodig", label: "Omvormer vervanging nodig", type: "select", options: ["ja", "nee", "onbekend"], section: "Omvormer compatibiliteit" },
+    { key: "gewenst_omvormertype_vervanging", label: "Gewenst omvormertype bij vervanging", type: "select", options: ["hybride", "ac_gekoppeld", "nvt"], section: "Omvormer compatibiliteit" },
     // Elektra
     { key: "type_aansluiting", label: "Type aansluiting", type: "select", options: ["1-fase", "3-fase"], section: "Elektra" },
     { key: "meterkast_geschikt", label: "Meterkast geschikt", type: "select", options: ["ja", "nee", "aanpassing_nodig"], section: "Elektra" },
@@ -162,7 +199,9 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "batterij_locatie", label: "Batterij locatie", type: "select", options: ["garage", "berging", "zolder", "kelder", "buiten", "anders"], section: "Batterij locatie" },
     { key: "beschikbare_wandruimte", label: "Beschikbare wandruimte (BxH cm)", type: "text", section: "Batterij locatie" },
     { key: "gewichtscapaciteit_vloer_wand", label: "Gewichtscapaciteit vloer/wand", type: "select", options: ["voldoende", "onvoldoende", "onbekend"], section: "Batterij locatie" },
-    { key: "gewenste_capaciteit_kwh", label: "Gewenste capaciteit (kWh)", type: "number", section: "Batterij locatie" },
+    { key: "ventilatie_batterijruimte", label: "Ventilatie batterijruimte", type: "select", options: ["goed", "matig", "onvoldoende"], section: "Batterij locatie" },
+    { key: "temperatuur_batterijruimte", label: "Temperatuur batterijruimte", type: "select", options: ["stabiel_15_25", "wisselend", "te_koud", "te_warm"], section: "Batterij locatie" },
+    { key: "brandveiligheid_locatie", label: "Brandveiligheid locatie", type: "select", options: ["goed", "aandachtspunten", "onvoldoende"], section: "Batterij locatie" },
   ],
 };
 
