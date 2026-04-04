@@ -72,6 +72,26 @@ const SchouwUitvoeren = () => {
   const clusters: PaneelCluster[] = gegevens.paneel_clusters || [];
   const setClusters = (c: PaneelCluster[]) => setGegevens(p => ({ ...p, paneel_clusters: c }));
 
+  const [solarSuggestions, setSolarSuggestions] = useState<PaneelCluster[] | null>(null);
+  const [solarScore, setSolarScore] = useState<SolarScore | null>(gegevens.solar_score || null);
+
+  const handleSolarData = (data: SolarResult) => {
+    setSolarSuggestions(data.clusters);
+    setSolarScore(data.score);
+    setGegevens(p => ({ ...p, solar_score: data.score }));
+    toast.success(`${data.clusters.length} dakvlakken gevonden via Solar API`);
+  };
+
+  const acceptSuggestions = () => {
+    if (solarSuggestions) {
+      setClusters(solarSuggestions);
+      setSolarSuggestions(null);
+      toast.success("Dakgegevens overgenomen");
+    }
+  };
+
+  const dismissSuggestions = () => setSolarSuggestions(null);
+
   const getUpdatePayload = () => ({
     gegevens: Object.keys(gegevens).length > 0 ? gegevens : null,
     fotos: fotos.length > 0 ? fotos as any : [],
