@@ -27,16 +27,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const qualityParam = quality || "HIGH";
+    const qualities = quality ? [quality] : ["HIGH", "MEDIUM", "LOW"];
 
-    // 1. Building Insights
-    const insightsUrl = `https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=${lat}&location.longitude=${lng}&requiredQuality=${qualityParam}&key=${GOOGLE_API_KEY}`;
-    const insightsRes = await fetch(insightsUrl);
-    
-    if (!insightsRes.ok) {
-      const errText = await insightsRes.text();
-      return new Response(JSON.stringify({ error: "Solar API fout", details: errText }), {
-        status: insightsRes.status,
+    // 1. Building Insights — try quality levels in order
+    let insightsRes: Response | null = null;
+    let usedQuality = qualities[0];
+    for (const q of qualities) {
+      usedQuality = q;
+      const url = `https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=${lat}&location.longitude=${lng}&requiredQuality=${q}&key=${GOOGLE_API_KEY}`;
+      insightsRes = await fetch(url);
+      if (insightsRes.ok) break;
+      // Consume body before retrying
+      await insightsRes.text();
+    }
+
+    if (!insightsRes || !insightsRes.ok) {
+      return new Response(JSON.stringify({ error: "Geen zonnepotentie-data beschikbaar voor deze locatie. De Google Solar API heeft geen gebouwgegevens voor dit adres." }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
