@@ -33,8 +33,6 @@ interface Props {
   onSolarData?: (data: SolarResult) => void;
 }
 
-const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
 const scoreColors: Record<string, string> = {
   "Uitstekend": "bg-green-100 text-green-800",
   "Goed": "bg-emerald-100 text-emerald-700",
@@ -56,20 +54,29 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode, onSolarData }: Props) =
   const defaultAddress = [adres, postcode, plaats].filter(Boolean).join(", ");
 
   useEffect(() => {
-    if (!MAPS_API_KEY) {
-      setError("Google Maps API key niet geconfigureerd. Voeg VITE_GOOGLE_MAPS_API_KEY toe.");
-      return;
-    }
     if ((window as any).google?.maps) {
       setLoaded(true);
       return;
     }
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places`;
-    script.async = true;
-    script.onload = () => setLoaded(true);
-    script.onerror = () => setError("Kan Google Maps niet laden");
-    document.head.appendChild(script);
+    // Fetch API key from edge function
+    const loadMaps = async () => {
+      try {
+        const { data, error: fnErr } = await supabase.functions.invoke("google-maps-config");
+        if (fnErr || !data?.apiKey) {
+          setError("Google Maps API key niet geconfigureerd. Voeg GOOGLE_MAPS_API_KEY toe als secret.");
+          return;
+        }
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places`;
+        script.async = true;
+        script.onload = () => setLoaded(true);
+        script.onerror = () => setError("Kan Google Maps niet laden");
+        document.head.appendChild(script);
+      } catch {
+        setError("Kan Google Maps configuratie niet ophalen");
+      }
+    };
+    loadMaps();
   }, []);
 
   const geocodeAndCenter = useCallback((address: string) => {
