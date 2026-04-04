@@ -42,15 +42,15 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode }: Props) => {
   }, []);
 
   const geocodeAndCenter = useCallback((address: string) => {
-    if (!window.google?.maps || !mapInstance.current) return;
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address }, (results, status) => {
+    if (!(window as any).google?.maps || !mapInstance.current) return;
+    const geocoder = new (window as any).google.maps.Geocoder();
+    geocoder.geocode({ address }, (results: any, status: string) => {
       if (status === "OK" && results && results[0]) {
         const loc = results[0].geometry.location;
         mapInstance.current!.setCenter(loc);
         mapInstance.current!.setZoom(20);
         if (markerRef.current) markerRef.current.setMap(null);
-        markerRef.current = new google.maps.Marker({
+        markerRef.current = new (window as any).google.maps.Marker({
           position: loc,
           map: mapInstance.current!,
           title: address,
