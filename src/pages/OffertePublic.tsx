@@ -278,7 +278,11 @@ export default function OffertePublic() {
                 </h3>
                 <div className="space-y-2">
                   {regels.map((r, i) => {
-                    const sub = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
+                    const sub = regelSubtotaal(r);
+                    const hasKorting = r.korting_type === "bedrag" ? (r.korting_bedrag || 0) > 0 : (r.korting_percentage || 0) > 0;
+                    const kortingLabel = r.korting_type === "bedrag"
+                      ? `-${formatCurrency(r.korting_bedrag || 0)}`
+                      : `-${r.korting_percentage || 0}%`;
                     return (
                       <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                         <div>
@@ -286,7 +290,7 @@ export default function OffertePublic() {
                           {r.offerte_tekst && <p className="text-xs text-muted-foreground/80 mt-0.5">{r.offerte_tekst}</p>}
                           <p className="text-xs text-muted-foreground">
                             {r.aantal}× {formatCurrency(r.prijs_per_stuk)}
-                            {r.korting_percentage > 0 ? ` (-${r.korting_percentage}%)` : ""}
+                            {hasKorting ? ` (${kortingLabel})` : ""}
                           </p>
                         </div>
                         <span className="text-sm font-semibold text-foreground">{formatCurrency(sub)}</span>

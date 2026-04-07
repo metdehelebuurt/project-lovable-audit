@@ -50,7 +50,7 @@ serve(async (req) => {
     if (offerte.partner_id) {
       const { data: p } = await supabase
         .from("partners")
-        .select("naam, logo_url, primaire_kleur, secundaire_kleur, bedrijfsslogan, telefoonnummer, email, website, adres, postcode, plaats, kvk, btw")
+        .select("naam, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan, telefoonnummer, email, website, adres, postcode, plaats, kvk, btw, feature_flags_json")
         .eq("id", offerte.partner_id)
         .single();
       if (p) partner = p;
