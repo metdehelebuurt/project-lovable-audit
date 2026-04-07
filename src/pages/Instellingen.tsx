@@ -314,7 +314,7 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
 
   useEffect(() => {
     supabase.from("partners")
-      .select("naam, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan")
+      .select("naam, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json")
       .eq("id", partnerId).single()
       .then(({ data }) => {
         if (data) {
@@ -324,6 +324,10 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
           setBedrijfsslogan(data.bedrijfsslogan || "");
           setLogoUrl(data.logo_url);
           setLogoUrlDonker((data as any).logo_url_donker || null);
+          const flags = (data as any).feature_flags_json;
+          if (flags && typeof flags === "object" && flags.logo_variant_voorkeur) {
+            setLogoVoorkeur(flags.logo_variant_voorkeur);
+          }
         }
         setLoading(false);
       });
