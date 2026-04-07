@@ -437,6 +437,31 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
             </div>
           </div>
         </div>
+        <div>
+          <Label>Logo-voorkeur voor offertes</Label>
+          <p className="text-xs text-muted-foreground mb-2">Bepaal welke logovariant standaard wordt gebruikt op offertes en documenten</p>
+          <div className="flex gap-2">
+            {([
+              { value: "auto", label: "Auto", desc: "Automatisch op basis van achtergrond" },
+              { value: "licht", label: "Altijd licht", desc: "Standaard logo" },
+              { value: "donker", label: "Altijd donker", desc: "Logo voor donkere achtergrond" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setLogoVoorkeur(opt.value)}
+                className={cn(
+                  "flex-1 rounded-xl border p-3 text-left text-sm transition-all",
+                  logoVoorkeur === opt.value
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border hover:border-muted-foreground/30"
+                )}
+              >
+                <p className="font-medium text-foreground">{opt.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label>Primaire kleur</Label>
