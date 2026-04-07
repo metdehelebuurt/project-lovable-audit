@@ -13,22 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { ensureHtml } from "@/types/offerte";
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
+import { ensureHtml, formatCurrency, regelSubtotaal, type OfferteRegel } from "@/types/offerte";
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
-
-interface OfferteRegel {
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-}
 
 interface ChatMessage {
   id: string;
