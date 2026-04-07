@@ -360,10 +360,15 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
 
   const handleSave = async () => {
     setSaving(true);
+    // First get current feature_flags_json to merge
+    const { data: current } = await supabase.from("partners").select("feature_flags_json").eq("id", partnerId).single();
+    const existingFlags = (current as any)?.feature_flags_json || {};
+    const updatedFlags = { ...existingFlags, logo_variant_voorkeur: logoVoorkeur };
     const { error } = await supabase.from("partners").update({
       primaire_kleur: primaireKleur, secundaire_kleur: secundaireKleur,
       bedrijfsslogan: bedrijfsslogan.trim() || null,
-    }).eq("id", partnerId);
+      feature_flags_json: updatedFlags,
+    } as any).eq("id", partnerId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Huisstijl opgeslagen");
