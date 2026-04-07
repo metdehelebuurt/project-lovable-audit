@@ -230,10 +230,10 @@ export default function OffertePublic() {
         </div>
 
         <Tabs defaultValue="offerte" className="space-y-6">
-          <TabsList className="bg-muted/50 p-1 rounded-xl">
+          <TabsList className="bg-muted/60 p-1.5 rounded-xl h-auto flex-wrap">
             {tabs.map((t) => (
-              <TabsTrigger key={t.id} value={t.id} className="rounded-lg gap-1.5 data-[state=active]:shadow-sm">
-                <t.icon className="h-3.5 w-3.5" />
+              <TabsTrigger key={t.id} value={t.id} className="rounded-lg gap-2 px-4 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all">
+                <t.icon className="h-4 w-4" />
                 {t.label}
               </TabsTrigger>
             ))}
