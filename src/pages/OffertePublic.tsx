@@ -13,22 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { ensureHtml } from "@/types/offerte";
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
+import { ensureHtml, formatCurrency, regelSubtotaal, type OfferteRegel } from "@/types/offerte";
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
-
-interface OfferteRegel {
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-}
 
 interface ChatMessage {
   id: string;
@@ -242,10 +230,10 @@ export default function OffertePublic() {
         </div>
 
         <Tabs defaultValue="offerte" className="space-y-6">
-          <TabsList className="bg-muted/50 p-1 rounded-xl">
+          <TabsList className="bg-muted/60 p-1.5 rounded-xl h-auto flex-wrap">
             {tabs.map((t) => (
-              <TabsTrigger key={t.id} value={t.id} className="rounded-lg gap-1.5 data-[state=active]:shadow-sm">
-                <t.icon className="h-3.5 w-3.5" />
+              <TabsTrigger key={t.id} value={t.id} className="rounded-lg gap-2 px-4 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all">
+                <t.icon className="h-4 w-4" />
                 {t.label}
               </TabsTrigger>
             ))}
@@ -290,7 +278,11 @@ export default function OffertePublic() {
                 </h3>
                 <div className="space-y-2">
                   {regels.map((r, i) => {
-                    const sub = r.aantal * r.prijs_per_stuk * (1 - r.korting_percentage / 100);
+                    const sub = regelSubtotaal(r);
+                    const hasKorting = r.korting_type === "bedrag" ? (r.korting_bedrag || 0) > 0 : (r.korting_percentage || 0) > 0;
+                    const kortingLabel = r.korting_type === "bedrag"
+                      ? `-${formatCurrency(r.korting_bedrag || 0)}`
+                      : `-${r.korting_percentage || 0}%`;
                     return (
                       <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                         <div>
@@ -298,7 +290,7 @@ export default function OffertePublic() {
                           {r.offerte_tekst && <p className="text-xs text-muted-foreground/80 mt-0.5">{r.offerte_tekst}</p>}
                           <p className="text-xs text-muted-foreground">
                             {r.aantal}× {formatCurrency(r.prijs_per_stuk)}
-                            {r.korting_percentage > 0 ? ` (-${r.korting_percentage}%)` : ""}
+                            {hasKorting ? ` (${kortingLabel})` : ""}
                           </p>
                         </div>
                         <span className="text-sm font-semibold text-foreground">{formatCurrency(sub)}</span>
@@ -310,6 +302,11 @@ export default function OffertePublic() {
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Subtotaal excl. BTW</span><span>{formatCurrency(offerte.subtotaal)}</span>
                   </div>
+                  {(offerte.korting_totaal ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Korting</span><span>-{formatCurrency(offerte.korting_totaal)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>BTW</span><span>{formatCurrency(offerte.btw_bedrag)}</span>
                   </div>

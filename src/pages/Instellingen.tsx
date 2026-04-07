@@ -310,10 +310,11 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUrlDonker, setLogoUrlDonker] = useState<string | null>(null);
   const [partnerNaam, setPartnerNaam] = useState("");
+  const [logoVoorkeur, setLogoVoorkeur] = useState<string>("auto");
 
   useEffect(() => {
     supabase.from("partners")
-      .select("naam, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan")
+      .select("naam, logo_url, logo_url_donker, primaire_kleur, secundaire_kleur, bedrijfsslogan, feature_flags_json")
       .eq("id", partnerId).single()
       .then(({ data }) => {
         if (data) {
@@ -323,6 +324,10 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
           setBedrijfsslogan(data.bedrijfsslogan || "");
           setLogoUrl(data.logo_url);
           setLogoUrlDonker((data as any).logo_url_donker || null);
+          const flags = (data as any).feature_flags_json;
+          if (flags && typeof flags === "object" && flags.logo_variant_voorkeur) {
+            setLogoVoorkeur(flags.logo_variant_voorkeur);
+          }
         }
         setLoading(false);
       });
@@ -355,10 +360,15 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
 
   const handleSave = async () => {
     setSaving(true);
+    // First get current feature_flags_json to merge
+    const { data: current } = await supabase.from("partners").select("feature_flags_json").eq("id", partnerId).single();
+    const existingFlags = (current as any)?.feature_flags_json || {};
+    const updatedFlags = { ...existingFlags, logo_variant_voorkeur: logoVoorkeur };
     const { error } = await supabase.from("partners").update({
       primaire_kleur: primaireKleur, secundaire_kleur: secundaireKleur,
       bedrijfsslogan: bedrijfsslogan.trim() || null,
-    }).eq("id", partnerId);
+      feature_flags_json: updatedFlags,
+    } as any).eq("id", partnerId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Huisstijl opgeslagen");
@@ -425,6 +435,31 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
               }} disabled={uploadingDark} className="text-sm" />
               <p className="text-xs text-muted-foreground mt-1">Max 2MB, voor donkere/gekleurde achtergronden op offertes</p>
             </div>
+          </div>
+        </div>
+        <div>
+          <Label>Logo-voorkeur voor offertes</Label>
+          <p className="text-xs text-muted-foreground mb-2">Bepaal welke logovariant standaard wordt gebruikt op offertes en documenten</p>
+          <div className="flex gap-2">
+            {([
+              { value: "auto", label: "Auto", desc: "Automatisch op basis van achtergrond" },
+              { value: "licht", label: "Altijd licht", desc: "Standaard logo" },
+              { value: "donker", label: "Altijd donker", desc: "Logo voor donkere achtergrond" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setLogoVoorkeur(opt.value)}
+                className={cn(
+                  "flex-1 rounded-xl border p-3 text-left text-sm transition-all",
+                  logoVoorkeur === opt.value
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border hover:border-muted-foreground/30"
+                )}
+              >
+                <p className="font-medium text-foreground">{opt.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+              </button>
+            ))}
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
