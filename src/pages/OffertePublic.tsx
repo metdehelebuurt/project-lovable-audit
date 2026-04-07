@@ -302,6 +302,11 @@ export default function OffertePublic() {
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Subtotaal excl. BTW</span><span>{formatCurrency(offerte.subtotaal)}</span>
                   </div>
+                  {(offerte.korting_totaal ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Korting</span><span>-{formatCurrency(offerte.korting_totaal)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>BTW</span><span>{formatCurrency(offerte.btw_bedrag)}</span>
                   </div>

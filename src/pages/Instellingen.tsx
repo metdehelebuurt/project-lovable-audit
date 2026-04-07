@@ -310,6 +310,7 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUrlDonker, setLogoUrlDonker] = useState<string | null>(null);
   const [partnerNaam, setPartnerNaam] = useState("");
+  const [logoVoorkeur, setLogoVoorkeur] = useState<string>("auto");
 
   useEffect(() => {
     supabase.from("partners")
