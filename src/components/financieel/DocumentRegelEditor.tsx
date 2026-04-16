@@ -112,9 +112,15 @@ export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
       <div className="flex justify-end">
         <div className="w-64 space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotaal</span>
-            <span>{formatCurrency(subtotaal)}</span>
+            <span className="text-muted-foreground">Subtotaal (bruto)</span>
+            <span>{formatCurrency(brutoTotaal)}</span>
           </div>
+          {kortingTotaal > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>Korting</span>
+              <span>-{formatCurrency(kortingTotaal)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">BTW</span>
             <span>{formatCurrency(btwBedrag)}</span>
