@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ const isInkoop = (t: DocType) => t === "inkoopfactuur" || t === "inkooporder";
 
 export default function FactuurNieuw() {
   const { type } = useParams<{ type: string }>();
+  const [searchParams] = useSearchParams();
   const docType = (type as DocType) || "verkoopfactuur";
   const navigate = useNavigate();
   const { profile, user } = useAuth();
@@ -40,7 +41,11 @@ export default function FactuurNieuw() {
   const [betalingstermijn, setBetalingstermijn] = useState(30);
   const [notities, setNotities] = useState("");
   const [saving, setSaving] = useState(false);
+  const [bronOfferteId, setBronOfferteId] = useState<string | null>(null);
+  const [bronDocId, setBronDocId] = useState<string | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
 
+  // Load klanten/leveranciers
   useEffect(() => {
     if (!profile?.partner_id) return;
     if (isInkoop(docType)) {
@@ -50,6 +55,68 @@ export default function FactuurNieuw() {
     }
   }, [profile?.partner_id, docType]);
 
+  // Pre-fill from source document (creditnota) or offerte
+  useEffect(() => {
+    if (prefilled) return;
+    const bronId = searchParams.get("bron");
+    const offerteId = searchParams.get("offerte");
+
+    if (bronId) {
+      setBronDocId(bronId);
+      supabase
+        .from("financiele_documenten")
+        .select("*")
+        .eq("id", bronId)
+        .single()
+        .then(({ data }) => {
+          if (!data) return;
+          const bronRegels = (Array.isArray(data.regels) ? data.regels : []) as unknown as OfferteRegel[];
+          setRegels(bronRegels.length > 0 ? bronRegels : [{ ...emptyOfferteRegel }]);
+          if (data.klant_id) setKlantId(data.klant_id);
+          if (data.leverancier_id) setLeverancierId(data.leverancier_id);
+          setBetalingstermijn(data.betalingstermijn_dagen || 30);
+          setNotities(`Creditnota bij ${data.documentnummer}`);
+          setPrefilled(true);
+        });
+    } else if (offerteId) {
+      setBronOfferteId(offerteId);
+      supabase
+        .from("offertes")
+        .select("*")
+        .eq("id", offerteId)
+        .single()
+        .then(({ data: offerte }) => {
+          if (!offerte) return;
+          const offerteRegels = (offerte.regels || []) as any[];
+          const mapped: OfferteRegel[] = offerteRegels.map((r: any) => ({
+            omschrijving: r.omschrijving || "",
+            offerte_tekst: r.offerte_tekst || "",
+            aantal: r.aantal || 1,
+            prijs_per_stuk: r.prijs_per_stuk || 0,
+            btw_percentage: r.btw_percentage ?? 21,
+            korting_percentage: r.korting_percentage || 0,
+            korting_bedrag: r.korting_bedrag || 0,
+            korting_type: r.korting_type || "percentage",
+          }));
+          setRegels(mapped.length > 0 ? mapped : [{ ...emptyOfferteRegel }]);
+          setNotities(`Factuur bij offerte ${offerte.offertenummer}`);
+          // Try to find klant by offerte klant_email
+          if (profile?.partner_id && offerte.klant_email) {
+            supabase
+              .from("klanten")
+              .select("id")
+              .eq("partner_id", profile.partner_id)
+              .eq("email", offerte.klant_email)
+              .limit(1)
+              .then(({ data: klantData }) => {
+                if (klantData && klantData.length > 0) setKlantId(klantData[0].id);
+              });
+          }
+          setPrefilled(true);
+        });
+    }
+  }, [searchParams, prefilled, profile?.partner_id]);
+
   const handleSave = async (status: "concept" | "verzonden") => {
     if (!profile?.partner_id || !user?.id) return;
     setSaving(true);
@@ -57,7 +124,6 @@ export default function FactuurNieuw() {
     const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
     const btwBedrag = regels.reduce((s, r) => s + regelSubtotaal(r) * (r.btw_percentage / 100), 0);
 
-    // Generate document number via RPC
     const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
       _partner_id: profile.partner_id,
       _type: docType,
@@ -70,6 +136,7 @@ export default function FactuurNieuw() {
       status: status as any,
       klant_id: !isInkoop(docType) && klantId ? klantId : null,
       leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
+      offerte_id: bronOfferteId || null,
       regels: regels as any,
       subtotaal,
       btw_bedrag: btwBedrag,
