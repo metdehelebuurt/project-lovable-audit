@@ -14,6 +14,7 @@ interface PartnerBranding {
   primaire_kleur: string;
   secundaire_kleur: string;
   bedrijfsslogan: string | null;
+  iban?: string | null;
 }
 
 interface OfferteRegel {
@@ -40,6 +41,9 @@ interface OpdrachtData {
   created_at: string;
   bevestiging_verzonden_op: string | null;
   status: string;
+  opdrachtnummer?: string;
+  betalingstermijn_dagen?: number;
+  geschatte_leverdatum?: string | null;
 }
 
 interface Props {
@@ -50,6 +54,27 @@ interface Props {
 const fmt = (n: number) =>
   new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
 
+/** Group VAT by percentage for legal compliance */
+function buildBtwOverzicht(regels: OfferteRegel[]) {
+  const map: Record<number, { grondslag: number; bedrag: number }> = {};
+  for (const r of regels) {
+    const pct = r.btw_percentage ?? 21;
+    if (!map[pct]) map[pct] = { grondslag: 0, bedrag: 0 };
+    const sub = regelSub(r);
+    map[pct].grondslag += sub;
+    map[pct].bedrag += sub * (pct / 100);
+  }
+  return Object.entries(map)
+    .map(([pct, v]) => ({ percentage: Number(pct), ...v }))
+    .sort((a, b) => b.percentage - a.percentage);
+}
+
+const regelSub = (r: OfferteRegel) => {
+  const bruto = r.aantal * r.prijs_per_stuk;
+  if (r.korting_type === "bedrag") return bruto - (r.korting_bedrag || 0);
+  return bruto * (1 - (r.korting_percentage || 0) / 100);
+};
+
 const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partner }, ref) => {
   const primary = partner.primaire_kleur || "#5B58E1";
   const secondary = partner.secundaire_kleur || "#1a1a2e";
@@ -59,21 +84,17 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
     ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url}`
     : null;
 
-  const regelSub = (r: OfferteRegel) => {
-    const bruto = r.aantal * r.prijs_per_stuk;
-    if ((r as any).korting_type === "bedrag") return bruto - ((r as any).korting_bedrag || 0);
-    return bruto * (1 - (r.korting_percentage || 0) / 100);
-  };
   const subtotaal = regels.reduce((s, r) => s + regelSub(r), 0);
-  const btwBedrag = regels.reduce((s, r) => {
-    return s + regelSub(r) * ((r.btw_percentage || 21) / 100);
-  }, 0);
+  const btwOverzicht = buildBtwOverzicht(regels);
+  const btwTotaal = btwOverzicht.reduce((s, b) => s + b.bedrag, 0);
+  const ordernummer = opdracht.opdrachtnummer || opdracht.id.substring(0, 8).toUpperCase();
+  const betalingstermijn = opdracht.betalingstermijn_dagen || 14;
 
   return (
     <div
       ref={ref}
       className="bg-white text-gray-900 print:text-black"
-      style={{ fontFamily: "'Rubik', 'Inter', sans-serif", width: "210mm", minHeight: "297mm", margin: "0 auto" }}
+      style={{ fontFamily: "'Rubik', 'Inter', sans-serif", width: "210mm", minHeight: "297mm", margin: "0 auto", position: "relative" }}
     >
       {/* Header */}
       <div className="px-12 pt-10 pb-6 flex items-start justify-between">
@@ -90,8 +111,10 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
         <div className="text-right text-xs text-gray-500 space-y-0.5">
           {partner.adres && <p>{partner.adres}</p>}
           {(partner.postcode || partner.plaats) && <p>{partner.postcode} {partner.plaats}</p>}
-          {partner.telefoonnummer && <p>{partner.telefoonnummer}</p>}
+          {partner.telefoonnummer && <p>Tel: {partner.telefoonnummer}</p>}
           {partner.email && <p>{partner.email}</p>}
+          {partner.kvk && <p>KvK: {partner.kvk}</p>}
+          {partner.btw && <p>BTW-nr: {partner.btw}</p>}
           {partner.website && <p>{partner.website}</p>}
         </div>
       </div>
@@ -99,12 +122,15 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
       {/* Accent line */}
       <div className="mx-12 h-1 rounded-full" style={{ background: `linear-gradient(to right, ${primary}, ${primary}44)` }} />
 
-      {/* Title */}
+      {/* Title + ordernummer */}
       <div className="px-12 pt-8 pb-6">
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: secondary }}>
           Orderbevestiging
         </h1>
         <p className="text-sm text-gray-500 mt-1">
+          Ordernummer: <span className="font-mono font-semibold text-gray-700">{ordernummer}</span>
+        </p>
+        <p className="text-sm text-gray-500">
           Datum: {new Date(datum).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}
         </p>
       </div>
@@ -133,6 +159,16 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
                 <span className="text-gray-500">Orderdatum</span>
                 <span className="font-medium">{new Date(opdracht.created_at).toLocaleDateString("nl-NL")}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Betalingstermijn</span>
+                <span className="font-medium">{betalingstermijn} dagen</span>
+              </div>
+              {opdracht.geschatte_leverdatum && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Geschatte levering</span>
+                  <span className="font-medium">{new Date(opdracht.geschatte_leverdatum).toLocaleDateString("nl-NL")}</span>
+                </div>
+              )}
               {opdracht.bevestiging_verzonden_op && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Bevestigd op</span>
@@ -156,7 +192,10 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
                 Aantal
               </th>
               <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider" style={{ color: primary }}>
-                Prijs
+                Prijs excl.
+              </th>
+              <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider" style={{ color: primary }}>
+                BTW
               </th>
               <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider" style={{ color: primary }}>
                 Subtotaal
@@ -165,17 +204,23 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
           </thead>
           <tbody>
             {regels.map((r, i) => {
-              const sub = r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100);
+              const sub = regelSub(r);
               return (
                 <tr key={i} className={i % 2 === 1 ? "bg-gray-50/50" : ""}>
                   <td className="py-3 px-4">
-                    <div className="font-medium">{r.omschrijving}</div>
+                    <div className="font-medium">
+                      {r.omschrijving}
+                      {r.btw_percentage === 0 && (
+                        <span className="text-xs text-red-600 ml-2 italic">BTW verlegd</span>
+                      )}
+                    </div>
                     {r.offerte_tekst && (
                       <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{r.offerte_tekst}</p>
                     )}
                   </td>
                   <td className="py-3 px-4 text-right tabular-nums">{r.aantal}</td>
                   <td className="py-3 px-4 text-right tabular-nums">{fmt(r.prijs_per_stuk)}</td>
+                  <td className="py-3 px-4 text-right tabular-nums">{r.btw_percentage}%</td>
                   <td className="py-3 px-4 text-right tabular-nums font-medium">{fmt(sub)}</td>
                 </tr>
               );
@@ -184,17 +229,22 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
         </table>
       </div>
 
-      {/* Totals */}
+      {/* Totals with BTW per tarief */}
       <div className="px-12 pb-8">
-        <div className="ml-auto w-64 space-y-1.5 text-sm">
+        <div className="ml-auto w-72 space-y-1.5 text-sm">
           <div className="flex justify-between py-1">
             <span className="text-gray-500">Subtotaal excl. BTW</span>
             <span className="font-medium tabular-nums">{fmt(subtotaal)}</span>
           </div>
-          <div className="flex justify-between py-1">
-            <span className="text-gray-500">BTW</span>
-            <span className="font-medium tabular-nums">{fmt(btwBedrag)}</span>
-          </div>
+          {/* BTW per tarief (Art. 35a Wet OB) */}
+          {btwOverzicht.map((b) => (
+            <div key={b.percentage} className="flex justify-between py-1">
+              <span className="text-gray-500">
+                {b.percentage === 0 ? "BTW verlegd (0%)" : `BTW ${b.percentage}% over ${fmt(b.grondslag)}`}
+              </span>
+              <span className="font-medium tabular-nums">{fmt(b.bedrag)}</span>
+            </div>
+          ))}
           <div className="h-px bg-gray-200 my-1" />
           <div className="flex justify-between py-2">
             <span className="font-bold">Totaal incl. BTW</span>
@@ -205,12 +255,28 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
         </div>
       </div>
 
+      {/* Betalingsgegevens */}
+      {partner.iban && (
+        <div className="mx-12 mb-8 p-4 rounded-lg border border-gray-100 bg-gray-50/50">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Betalingsgegevens</p>
+          <div className="flex gap-8 text-sm">
+            <div><span className="text-gray-500">T.n.v.:</span> {partner.naam}</div>
+            <div><span className="text-gray-500">IBAN:</span> <strong>{partner.iban}</strong></div>
+            <div><span className="text-gray-500">Kenmerk:</span> <strong>{ordernummer}</strong></div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className="mt-auto px-12 py-6 text-center" style={{ backgroundColor: secondary, color: "white" }}>
+      <div
+        className="px-12 py-6 text-center"
+        style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: secondary, color: "white" }}
+      >
         <p className="text-sm font-medium">{partner.naam}</p>
-        <div className="flex items-center justify-center gap-4 mt-1 text-xs opacity-70">
-          {partner.kvk && <span>KVK: {partner.kvk}</span>}
+        <div className="flex items-center justify-center gap-4 mt-1 text-xs opacity-70 flex-wrap">
+          {partner.kvk && <span>KvK: {partner.kvk}</span>}
           {partner.btw && <span>BTW: {partner.btw}</span>}
+          {partner.iban && <span>IBAN: {partner.iban}</span>}
           {partner.email && <span>{partner.email}</span>}
         </div>
       </div>

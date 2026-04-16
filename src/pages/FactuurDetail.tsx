@@ -51,7 +51,7 @@ export default function FactuurDetail() {
     if (!id) return;
     supabase
       .from("financiele_documenten")
-      .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer)")
+      .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon, btw_nummer:notities, kvk_nummer:bedrijfsnaam), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer)")
       .eq("id", id)
       .single()
       .then(({ data, error }) => {
