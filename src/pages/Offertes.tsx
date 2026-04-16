@@ -491,6 +491,11 @@ const Offertes = () => {
                         </TableCell>
                         <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
+                            {o.status === "geaccepteerd" && (
+                              <Button variant="ghost" size="icon" onClick={() => navigate(`/financieel/nieuw/verkoopfactuur?offerte=${o.id}`)} title="Factuur aanmaken">
+                                <Receipt className="h-4 w-4 text-green-600" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${o.id}/pdf`)} title="PDF">
                               <FileDown className="h-4 w-4" />
                             </Button>
