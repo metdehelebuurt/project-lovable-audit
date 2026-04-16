@@ -2,15 +2,19 @@ import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
-  MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck
+  MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck,
+  ChevronRight
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
@@ -20,6 +24,7 @@ interface NavItem {
   title: string;
   url: string;
   icon: React.ElementType;
+  children?: NavItem[];
 }
 
 interface NavGroup {
@@ -44,15 +49,49 @@ const getNavGroups = (rol: string): NavGroup[] => {
   const werk: NavItem[] = [];
   if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"].includes(rol))
     werk.push({ title: rol === "consument" ? "Mijn Schouwen" : "Schouwen", url: "/schouwen", icon: ClipboardList });
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"].includes(rol))
-    werk.push({ title: rol === "consument" ? "Mijn Offertes" : "Offertes", url: "/offertes", icon: FileText });
-  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
-    werk.push({ title: "Offerte Feedback", url: "/offertes/feedback", icon: MessageCircleWarning });
+  
+  // Offertes with sub-items
+  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"].includes(rol)) {
+    const offerteItem: NavItem = {
+      title: rol === "consument" ? "Mijn Offertes" : "Offertes",
+      url: "/offertes",
+      icon: FileText,
+    };
+    if (["superadmin", "partner_admin", "partner_staff"].includes(rol)) {
+      offerteItem.children = [
+        { title: "Alle Offertes", url: "/offertes", icon: FileText },
+        { title: "Offerte Feedback", url: "/offertes/feedback", icon: MessageCircleWarning },
+      ];
+    }
+    werk.push(offerteItem);
+  }
+
   if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))
     werk.push({ title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck });
   if (["partner_admin", "partner_staff", "installateur"].includes(rol))
     werk.push({ title: rol === "installateur" ? "Mijn Opdrachten" : "Installaties", url: "/installaties", icon: Wrench });
   if (werk.length) groups.push({ label: "Werkproces", items: werk });
+
+  // Financieel with sub-items
+  const financieel: NavItem[] = [];
+  if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol)) {
+    financieel.push({
+      title: "Financieel",
+      url: "/financieel",
+      icon: Receipt,
+      children: [
+        { title: "Dashboard", url: "/financieel?tab=overzicht", icon: LayoutDashboard },
+        { title: "Verkoopfacturen", url: "/financieel?tab=verkoop", icon: FileText },
+        { title: "Inkoopfacturen", url: "/financieel?tab=inkoop", icon: Receipt },
+        { title: "Pakbonnen", url: "/financieel?tab=pakbonnen", icon: ClipboardList },
+        { title: "Openstaand", url: "/financieel?tab=openstaand", icon: Clock },
+        { title: "BTW", url: "/financieel?tab=btw", icon: BarChart3 },
+      ],
+    });
+  }
+  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
+    financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Truck });
+  if (financieel.length) groups.push({ label: "Financieel", items: financieel });
 
   const planning: NavItem[] = [];
   if (["partner_admin", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
@@ -64,13 +103,6 @@ const getNavGroups = (rol: string): NavGroup[] => {
   if (["partner_admin", "partner_staff"].includes(rol))
     planning.push({ title: "Analytics", url: "/analytics", icon: BarChart3 });
   if (planning.length) groups.push({ label: "Planning & Tools", items: planning });
-
-  const financieel: NavItem[] = [];
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol))
-    financieel.push({ title: "Financieel", url: "/financieel", icon: Receipt });
-  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
-    financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Truck });
-  if (financieel.length) groups.push({ label: "Financieel", items: financieel });
 
   const beheer: NavItem[] = [];
   if (rol === "superadmin")
@@ -101,6 +133,74 @@ const getNavGroups = (rol: string): NavGroup[] => {
 
   return groups;
 };
+
+// Need Clock icon for "Openstaand"
+import { Clock } from "lucide-react";
+
+function SidebarNavItem({ item, collapsed, isMobile, pathname }: { item: NavItem; collapsed: boolean; isMobile: boolean; pathname: string }) {
+  const hasChildren = item.children && item.children.length > 0;
+  const isChildActive = hasChildren && item.children!.some(c => {
+    const [path, query] = c.url.split("?");
+    return pathname === path || pathname.startsWith(path + "/");
+  });
+  const isActive = pathname === item.url || pathname.startsWith(item.url + "/") || isChildActive;
+
+  if (!hasChildren) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild>
+          <NavLink
+            to={item.url}
+            end={item.url === "/dashboard"}
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[44px]"
+            activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+          >
+            <item.icon className="h-4.5 w-4.5 shrink-0" />
+            {(!collapsed || isMobile) && <span className="text-sm">{item.title}</span>}
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <Collapsible defaultOpen={isActive} className="group/collapsible">
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton className="flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[44px] w-full">
+            <item.icon className="h-4.5 w-4.5 shrink-0" />
+            {(!collapsed || isMobile) && (
+              <>
+                <span className="text-sm flex-1 text-left">{item.title}</span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+              </>
+            )}
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        {(!collapsed || isMobile) && (
+          <CollapsibleContent>
+            <SidebarMenuSub>
+              {item.children!.map(child => (
+                <SidebarMenuSubItem key={child.title}>
+                  <SidebarMenuSubButton asChild>
+                    <NavLink
+                      to={child.url}
+                      end
+                      className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                      activeClassName="text-sidebar-primary font-medium"
+                    >
+                      <span className="text-sm">{child.title}</span>
+                    </NavLink>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              ))}
+            </SidebarMenuSub>
+          </CollapsibleContent>
+        )}
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
 
 export function AppSidebar() {
   const { profile } = useAuth();
@@ -139,19 +239,13 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          end={item.url === "/dashboard"}
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[44px]"
-                          activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                        >
-                          <item.icon className="h-4.5 w-4.5 shrink-0" />
-                          {(!collapsed || isMobile) && <span className="text-sm">{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <SidebarNavItem
+                      key={item.title}
+                      item={item}
+                      collapsed={collapsed}
+                      isMobile={isMobile}
+                      pathname={location.pathname}
+                    />
                   ))}
                 </SidebarMenu>
               </SidebarGroupContent>

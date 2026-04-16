@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, FileText, Download, Eye, TrendingUp, TrendingDown, Clock, CheckCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, FileText, Eye } from "lucide-react";
 import { formatCurrency } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
 import { FinancieelDashboard } from "@/components/financieel/FinancieelDashboard";
@@ -38,13 +39,35 @@ const statusColors: Record<string, string> = {
   afgeleverd: "bg-green-100 text-green-800",
 };
 
+const verkoopStatussen = ["concept", "verzonden", "betaald", "verlopen", "gecrediteerd"];
+const inkoopStatussen = ["concept", "ontvangen", "goedgekeurd", "betaald"];
+const pakbonStatussen = ["aangemaakt", "verzonden", "afgeleverd"];
+
 export default function Financieel() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overzicht");
+
+  const tabFromUrl = searchParams.get("tab") || "overzicht";
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+  const [statusFilterVerkoop, setStatusFilterVerkoop] = useState("alle");
+  const [statusFilterInkoop, setStatusFilterInkoop] = useState("alle");
+  const [statusFilterPakbon, setStatusFilterPakbon] = useState("alle");
+
+  // Sync tab from URL
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && t !== activeTab) setActiveTab(t);
+  }, [searchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
+  };
 
   useEffect(() => {
     if (!profile?.partner_id) return;
@@ -64,7 +87,26 @@ export default function Financieel() {
     fetchDocs();
   }, [profile?.partner_id]);
 
-  const filteredDocs = (types: DocType[]) => docs.filter((d) => types.includes(d.type));
+  const filteredDocs = (types: DocType[], statusFilter: string) =>
+    docs.filter((d) => types.includes(d.type) && (statusFilter === "alle" || d.status === statusFilter));
+
+  const renderStatusFilter = (
+    value: string,
+    onChange: (v: string) => void,
+    statussen: string[]
+  ) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-48 rounded-xl">
+        <SelectValue placeholder="Filter op status" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="alle">Alle statussen</SelectItem>
+        {statussen.map(s => (
+          <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ")}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
   const renderTable = (items: any[]) => (
     <Table>
@@ -137,7 +179,7 @@ export default function Financieel() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="w-full justify-start">
           <TabsTrigger value="overzicht">Dashboard</TabsTrigger>
           <TabsTrigger value="verkoop">Verkoop</TabsTrigger>
@@ -156,6 +198,7 @@ export default function Financieel() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Verkoopfacturen & Creditnota's</CardTitle>
               <div className="flex gap-2">
+                {renderStatusFilter(statusFilterVerkoop, setStatusFilterVerkoop, verkoopStatussen)}
                 <Button size="sm" onClick={() => navigate("/financieel/nieuw/verkoopfactuur")}>
                   <Plus className="h-4 w-4 mr-1" /> Factuur
                 </Button>
@@ -165,7 +208,7 @@ export default function Financieel() {
               </div>
             </CardHeader>
             <CardContent>
-              {renderTable(filteredDocs(["verkoopfactuur", "creditnota"]))}
+              {renderTable(filteredDocs(["verkoopfactuur", "creditnota"], statusFilterVerkoop))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -175,6 +218,7 @@ export default function Financieel() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Inkoopfacturen & Inkooporders</CardTitle>
               <div className="flex gap-2">
+                {renderStatusFilter(statusFilterInkoop, setStatusFilterInkoop, inkoopStatussen)}
                 <Button size="sm" onClick={() => navigate("/financieel/nieuw/inkoopfactuur")}>
                   <Plus className="h-4 w-4 mr-1" /> Inkoopfactuur
                 </Button>
@@ -184,7 +228,7 @@ export default function Financieel() {
               </div>
             </CardHeader>
             <CardContent>
-              {renderTable(filteredDocs(["inkoopfactuur", "inkooporder"]))}
+              {renderTable(filteredDocs(["inkoopfactuur", "inkooporder"], statusFilterInkoop))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -193,12 +237,15 @@ export default function Financieel() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Pakbonnen</CardTitle>
-              <Button size="sm" onClick={() => navigate("/financieel/nieuw/pakbon")}>
-                <Plus className="h-4 w-4 mr-1" /> Pakbon
-              </Button>
+              <div className="flex gap-2">
+                {renderStatusFilter(statusFilterPakbon, setStatusFilterPakbon, pakbonStatussen)}
+                <Button size="sm" onClick={() => navigate("/financieel/nieuw/pakbon")}>
+                  <Plus className="h-4 w-4 mr-1" /> Pakbon
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {renderTable(filteredDocs(["pakbon"]))}
+              {renderTable(filteredDocs(["pakbon"], statusFilterPakbon))}
             </CardContent>
           </Card>
         </TabsContent>

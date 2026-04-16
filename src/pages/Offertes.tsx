@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare, FileDown, Send, Link2, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, FileText, Eye, X, Check, XCircle, MessageSquare, FileDown, Send, Link2, Copy, Receipt } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
@@ -491,6 +491,11 @@ const Offertes = () => {
                         </TableCell>
                         <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
+                            {o.status === "geaccepteerd" && (
+                              <Button variant="ghost" size="icon" onClick={() => navigate(`/financieel/nieuw/verkoopfactuur?offerte=${o.id}`)} title="Factuur aanmaken">
+                                <Receipt className="h-4 w-4 text-green-600" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${o.id}/pdf`)} title="PDF">
                               <FileDown className="h-4 w-4" />
                             </Button>
