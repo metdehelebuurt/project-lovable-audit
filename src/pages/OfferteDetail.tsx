@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Send, Link2, Copy, FileDown, Pencil, Trash2,
   Check, XCircle, MessageSquare, Calendar, MapPin, Phone, Mail,
-  User, Clock, StickyNote, FileText, Bell
+  User, Clock, StickyNote, FileText, Bell, Receipt
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
@@ -282,6 +282,11 @@ const OfferteDetail = () => {
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={handleShareLink}>
             <Link2 className="h-4 w-4" /> Delen
           </Button>
+          {offerte.status === "geaccepteerd" && canEdit && (
+            <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => navigate(`/financieel/nieuw/verkoopfactuur?offerte=${offerte.id}`)}>
+              <Receipt className="h-4 w-4" /> Factuur aanmaken
+            </Button>
+          )}
           {offerte.status === "concept" && canEdit && (
             <Button size="sm" className="rounded-pill gap-2" onClick={() => navigate(`/offertes/nieuw?edit=${offerte.id}`)}>
               <Pencil className="h-4 w-4" /> Bewerken
