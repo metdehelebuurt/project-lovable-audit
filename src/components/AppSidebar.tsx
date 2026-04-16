@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
-  MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard
+  MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,6 +64,13 @@ const getNavGroups = (rol: string): NavGroup[] => {
   if (["partner_admin", "partner_staff"].includes(rol))
     planning.push({ title: "Analytics", url: "/analytics", icon: BarChart3 });
   if (planning.length) groups.push({ label: "Planning & Tools", items: planning });
+
+  const financieel: NavItem[] = [];
+  if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol))
+    financieel.push({ title: "Financieel", url: "/financieel", icon: Receipt });
+  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
+    financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Truck });
+  if (financieel.length) groups.push({ label: "Financieel", items: financieel });
 
   const beheer: NavItem[] = [];
   if (rol === "superadmin")

@@ -1,0 +1,188 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
+import { OfferteRegel, emptyOfferteRegel, regelSubtotaal } from "@/types/offerte";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Save } from "lucide-react";
+
+type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
+
+const typeLabels: Record<DocType, string> = {
+  verkoopfactuur: "Verkoopfactuur",
+  creditnota: "Creditnota",
+  inkoopfactuur: "Inkoopfactuur",
+  inkooporder: "Inkooporder",
+  pakbon: "Pakbon",
+};
+
+const isInkoop = (t: DocType) => t === "inkoopfactuur" || t === "inkooporder";
+
+export default function FactuurNieuw() {
+  const { type } = useParams<{ type: string }>();
+  const docType = (type as DocType) || "verkoopfactuur";
+  const navigate = useNavigate();
+  const { profile, user } = useAuth();
+  const { toast } = useToast();
+
+  const [klanten, setKlanten] = useState<any[]>([]);
+  const [leveranciers, setLeveranciers] = useState<any[]>([]);
+  const [regels, setRegels] = useState<OfferteRegel[]>([{ ...emptyOfferteRegel }]);
+  const [klantId, setKlantId] = useState("");
+  const [leverancierId, setLeverancierId] = useState("");
+  const [betalingstermijn, setBetalingstermijn] = useState(30);
+  const [notities, setNotities] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!profile?.partner_id) return;
+    if (isInkoop(docType)) {
+      supabase.from("leveranciers").select("id, naam").eq("partner_id", profile.partner_id).then(({ data }) => setLeveranciers(data || []));
+    } else {
+      supabase.from("klanten").select("id, voornaam, achternaam, bedrijfsnaam").eq("partner_id", profile.partner_id).then(({ data }) => setKlanten(data || []));
+    }
+  }, [profile?.partner_id, docType]);
+
+  const handleSave = async (status: "concept" | "verzonden") => {
+    if (!profile?.partner_id || !user?.id) return;
+    setSaving(true);
+
+    const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+    const btwBedrag = regels.reduce((s, r) => s + regelSubtotaal(r) * (r.btw_percentage / 100), 0);
+
+    // Generate document number via RPC
+    const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
+      _partner_id: profile.partner_id,
+      _type: docType,
+    });
+
+    const doc = {
+      partner_id: profile.partner_id,
+      type: docType as any,
+      documentnummer: numData || `${docType.substring(0, 2).toUpperCase()}-${Date.now()}`,
+      status: status as any,
+      klant_id: !isInkoop(docType) && klantId ? klantId : null,
+      leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
+      regels: regels as any,
+      subtotaal,
+      btw_bedrag: btwBedrag,
+      totaal_bedrag: subtotaal + btwBedrag,
+      korting_totaal: 0,
+      betalingstermijn_dagen: betalingstermijn,
+      factuurdatum: new Date().toISOString().split("T")[0],
+      vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
+      notities,
+      created_by: user.id,
+    };
+
+    const { data, error } = await supabase.from("financiele_documenten").insert(doc).select().single();
+    setSaving(false);
+
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Opgeslagen", description: `${typeLabels[docType]} ${data.documentnummer} aangemaakt` });
+      navigate(`/financieel/${data.id}`);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/financieel")}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Nieuwe {typeLabels[docType]}</h1>
+          <p className="text-muted-foreground">Vul de gegevens in en voeg regels toe</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-lg">Gegevens</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isInkoop(docType) ? (
+              <div className="space-y-2">
+                <Label>Leverancier</Label>
+                <Select value={leverancierId} onValueChange={setLeverancierId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer leverancier" /></SelectTrigger>
+                  <SelectContent>
+                    {leveranciers.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>{l.naam}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {leveranciers.length === 0 && (
+                  <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/leveranciers")}>
+                    + Leverancier toevoegen
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Klant</Label>
+                <Select value={klantId} onValueChange={setKlantId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer klant" /></SelectTrigger>
+                  <SelectContent>
+                    {klanten.map((k) => (
+                      <SelectItem key={k.id} value={k.id}>
+                        {k.bedrijfsnaam || `${k.voornaam} ${k.achternaam}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {docType !== "pakbon" && (
+              <div className="space-y-2">
+                <Label>Betalingstermijn (dagen)</Label>
+                <Select value={String(betalingstermijn)} onValueChange={(v) => setBetalingstermijn(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="14">14 dagen</SelectItem>
+                    <SelectItem value="30">30 dagen</SelectItem>
+                    <SelectItem value="60">60 dagen</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Notities</Label>
+              <Textarea value={notities} onChange={(e) => setNotities(e.target.value)} placeholder="Interne notities..." rows={3} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Regels</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DocumentRegelEditor regels={regels} onChange={setRegels} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={() => handleSave("concept")} disabled={saving}>
+          <Save className="h-4 w-4 mr-2" /> Opslaan als concept
+        </Button>
+        <Button onClick={() => handleSave("verzonden")} disabled={saving}>
+          Opslaan & Verzenden
+        </Button>
+      </div>
+    </div>
+  );
+}
