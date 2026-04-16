@@ -169,12 +169,18 @@ export default function Financieel() {
           <h1 className="text-2xl font-bold tracking-tight">Financieel</h1>
           <p className="text-muted-foreground">Beheer al je financiële documenten op één plek</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={() => navigate("/financieel/nieuw/verkoopfactuur")}>
             <Plus className="h-4 w-4 mr-2" /> Verkoopfactuur
           </Button>
+          <Button variant="outline" onClick={() => navigate("/financieel/nieuw/inkooporder")}>
+            <Plus className="h-4 w-4 mr-2" /> Inkooporder
+          </Button>
           <Button variant="outline" onClick={() => navigate("/financieel/nieuw/inkoopfactuur")}>
             <Plus className="h-4 w-4 mr-2" /> Inkoopfactuur
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/financieel/nieuw/pakbon")}>
+            <Plus className="h-4 w-4 mr-2" /> Pakbon
           </Button>
         </div>
       </div>

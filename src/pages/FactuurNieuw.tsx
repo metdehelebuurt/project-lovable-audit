@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Send } from "lucide-react";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -35,9 +35,11 @@ export default function FactuurNieuw() {
 
   const [klanten, setKlanten] = useState<any[]>([]);
   const [leveranciers, setLeveranciers] = useState<any[]>([]);
+  const [installaties, setInstallaties] = useState<any[]>([]);
   const [regels, setRegels] = useState<OfferteRegel[]>([{ ...emptyOfferteRegel }]);
   const [klantId, setKlantId] = useState("");
   const [leverancierId, setLeverancierId] = useState("");
+  const [installatieId, setInstallatieId] = useState("");
   const [betalingstermijn, setBetalingstermijn] = useState(30);
   const [notities, setNotities] = useState("");
   const [saving, setSaving] = useState(false);
@@ -45,13 +47,22 @@ export default function FactuurNieuw() {
   const [bronDocId, setBronDocId] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
 
-  // Load klanten/leveranciers
+  // Load klanten/leveranciers/installaties
   useEffect(() => {
     if (!profile?.partner_id) return;
     if (isInkoop(docType)) {
-      supabase.from("leveranciers").select("id, naam").eq("partner_id", profile.partner_id).then(({ data }) => setLeveranciers(data || []));
+      supabase.from("leveranciers").select("id, naam, email").eq("partner_id", profile.partner_id).then(({ data }) => setLeveranciers(data || []));
     } else {
       supabase.from("klanten").select("id, voornaam, achternaam, bedrijfsnaam").eq("partner_id", profile.partner_id).then(({ data }) => setKlanten(data || []));
+    }
+    if (docType === "pakbon") {
+      supabase
+        .from("installaties")
+        .select("id, consument_naam, geplande_startdatum, status")
+        .eq("partner_id", profile.partner_id)
+        .in("status", ["gepland", "in_uitvoering"])
+        .order("geplande_startdatum", { ascending: true })
+        .then(({ data }) => setInstallaties(data || []));
     }
   }, [profile?.partner_id, docType]);
 
@@ -100,7 +111,6 @@ export default function FactuurNieuw() {
           }));
           setRegels(mapped.length > 0 ? mapped : [{ ...emptyOfferteRegel }]);
           setNotities(`Factuur bij offerte ${offerte.offertenummer}`);
-          // Try to find klant by offerte klant_email
           if (profile?.partner_id && offerte.klant_email) {
             supabase
               .from("klanten")
@@ -119,6 +129,17 @@ export default function FactuurNieuw() {
 
   const handleSave = async (status: "concept" | "verzonden") => {
     if (!profile?.partner_id || !user?.id) return;
+
+    // Validation
+    if (isInkoop(docType) && !leverancierId) {
+      toast({ title: "Selecteer een leverancier", variant: "destructive" });
+      return;
+    }
+    if (!isInkoop(docType) && docType !== "pakbon" && !klantId) {
+      toast({ title: "Selecteer een klant", variant: "destructive" });
+      return;
+    }
+
     setSaving(true);
 
     const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
@@ -131,14 +152,15 @@ export default function FactuurNieuw() {
       _type: docType,
     });
 
-    const doc = {
+    const doc: any = {
       partner_id: profile.partner_id,
-      type: docType as any,
+      type: docType,
       documentnummer: numData || `${docType.substring(0, 2).toUpperCase()}-${Date.now()}`,
-      status: status as any,
+      status,
       klant_id: !isInkoop(docType) && klantId ? klantId : null,
       leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
       offerte_id: bronOfferteId || null,
+      installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
       regels: regels as any,
       subtotaal,
       btw_bedrag: btwBedrag,
@@ -162,6 +184,8 @@ export default function FactuurNieuw() {
     }
   };
 
+  const saveLabel = docType === "inkooporder" ? "Opslaan & Bestelling verzenden" : "Opslaan & Verzenden";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -170,7 +194,13 @@ export default function FactuurNieuw() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Nieuwe {typeLabels[docType]}</h1>
-          <p className="text-muted-foreground">Vul de gegevens in en voeg regels toe</p>
+          <p className="text-muted-foreground">
+            {docType === "inkooporder"
+              ? "Stel een bestelling samen voor je leverancier"
+              : docType === "pakbon"
+              ? "Maak een pakbon/afleverbon aan voor een installatie"
+              : "Vul de gegevens in en voeg regels toe"}
+          </p>
         </div>
       </div>
 
@@ -197,6 +227,20 @@ export default function FactuurNieuw() {
                   </Button>
                 )}
               </div>
+            ) : docType === "pakbon" ? (
+              <div className="space-y-2">
+                <Label>Klant (optioneel)</Label>
+                <Select value={klantId} onValueChange={setKlantId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer klant" /></SelectTrigger>
+                  <SelectContent>
+                    {klanten.map((k) => (
+                      <SelectItem key={k.id} value={k.id}>
+                        {k.bedrijfsnaam || `${k.voornaam} ${k.achternaam}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : (
               <div className="space-y-2">
                 <Label>Klant</Label>
@@ -210,6 +254,28 @@ export default function FactuurNieuw() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {/* Installatie koppeling voor pakbonnen */}
+            {docType === "pakbon" && (
+              <div className="space-y-2">
+                <Label>Gekoppelde installatie</Label>
+                <Select value={installatieId} onValueChange={setInstallatieId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer installatie" /></SelectTrigger>
+                  <SelectContent>
+                    {installaties.map((inst) => (
+                      <SelectItem key={inst.id} value={inst.id}>
+                        {inst.consument_naam || "Installatie"} — {inst.geplande_startdatum
+                          ? new Date(inst.geplande_startdatum).toLocaleDateString("nl-NL")
+                          : "Geen datum"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {installaties.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Geen geplande installaties gevonden</p>
+                )}
               </div>
             )}
 
@@ -236,10 +302,12 @@ export default function FactuurNieuw() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">Regels</CardTitle>
+            <CardTitle className="text-lg">
+              {docType === "pakbon" ? "Artikelen" : docType === "inkooporder" ? "Bestelregels" : "Regels"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <DocumentRegelEditor regels={regels} onChange={setRegels} />
+            <DocumentRegelEditor regels={regels} onChange={setRegels} hidePricing={docType === "pakbon"} />
           </CardContent>
         </Card>
       </div>
@@ -249,7 +317,7 @@ export default function FactuurNieuw() {
           <Save className="h-4 w-4 mr-2" /> Opslaan als concept
         </Button>
         <Button onClick={() => handleSave("verzonden")} disabled={saving}>
-          Opslaan & Verzenden
+          <Send className="h-4 w-4 mr-2" /> {saveLabel}
         </Button>
       </div>
     </div>
