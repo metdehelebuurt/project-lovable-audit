@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download } from "lucide-react";
+import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 
@@ -155,6 +155,55 @@ const OpdrachtDetail = () => {
     toast.success("Installatie gepland en monteur toegewezen");
   };
 
+  const handleCreateFinancieel = async (docType: "verkoopfactuur" | "pakbon") => {
+    if (!profile?.partner_id || !profile?.id) return;
+    // Generate doc number
+    const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
+      _partner_id: profile.partner_id,
+      _type: docType,
+    });
+
+    const subtotaal = opdracht.totaal_bedrag || 0;
+    const btwBedrag = regels.reduce((s: number, r: any) => {
+      const regelSub = r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100);
+      return s + regelSub * ((r.btw_percentage || 21) / 100);
+    }, 0);
+
+    const doc: any = {
+      partner_id: profile.partner_id,
+      type: docType,
+      documentnummer: numData || `${docType === "pakbon" ? "PB" : "VF"}-${Date.now()}`,
+      status: "concept",
+      opdracht_id: opdracht.id,
+      offerte_id: opdracht.offerte_id || null,
+      regels: regels.map((r: any) => ({
+        omschrijving: r.omschrijving,
+        aantal: r.aantal,
+        prijs_per_stuk: r.prijs_per_stuk,
+        btw_percentage: r.btw_percentage || 21,
+        korting_percentage: r.korting_percentage || 0,
+        korting_bedrag: 0,
+        korting_type: "percentage",
+      })),
+      subtotaal,
+      btw_bedrag: btwBedrag,
+      totaal_bedrag: subtotaal + btwBedrag,
+      korting_totaal: 0,
+      betalingstermijn_dagen: 30,
+      factuurdatum: new Date().toISOString().split("T")[0],
+      vervaldatum: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+      created_by: profile.id,
+    };
+
+    const { data, error } = await supabase.from("financiele_documenten").insert(doc).select("id").single();
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`${docType === "pakbon" ? "Pakbon" : "Factuur"} aangemaakt`);
+      navigate(`/financieel/${data.id}`);
+    }
+  };
+
   if (isLoading || !opdracht) return <div className="p-6 text-muted-foreground">Laden...</div>;
 
   const regels = (opdracht.regels || []) as OfferteRegel[];
@@ -189,6 +238,12 @@ const OpdrachtDetail = () => {
             )}
             <Button variant="outline" onClick={() => setOrderPdfOpen(true)} className="gap-2">
               <FileText className="h-4 w-4" /> Orderbevestiging
+            </Button>
+            <Button variant="outline" onClick={() => handleCreateFinancieel("verkoopfactuur")} className="gap-2">
+              <Receipt className="h-4 w-4" /> Factuur aanmaken
+            </Button>
+            <Button variant="outline" onClick={() => handleCreateFinancieel("pakbon")} className="gap-2">
+              <Package className="h-4 w-4" /> Pakbon aanmaken
             </Button>
             <Button variant="destructive" onClick={() => setCancelDialog(true)} className="gap-2 ml-auto"><XCircle className="h-4 w-4" /> Annuleren</Button>
           </CardContent>
