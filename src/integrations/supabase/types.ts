@@ -1269,6 +1269,112 @@ export type Database = {
           },
         ]
       }
+      financiele_documenten: {
+        Row: {
+          betaald_op: string | null
+          betaald_via: string | null
+          betalingstermijn_dagen: number
+          btw_bedrag: number
+          created_at: string
+          created_by: string
+          documentnummer: string
+          factuurdatum: string
+          id: string
+          klant_id: string | null
+          korting_totaal: number
+          leverancier_id: string | null
+          notities: string | null
+          offerte_id: string | null
+          opdracht_id: string | null
+          partner_id: string
+          pdf_url: string | null
+          regels: Json
+          status: Database["public"]["Enums"]["financieel_document_status"]
+          subtotaal: number
+          totaal_bedrag: number
+          type: Database["public"]["Enums"]["financieel_document_type"]
+          updated_at: string
+          vervaldatum: string | null
+          verzonden_op: string | null
+        }
+        Insert: {
+          betaald_op?: string | null
+          betaald_via?: string | null
+          betalingstermijn_dagen?: number
+          btw_bedrag?: number
+          created_at?: string
+          created_by: string
+          documentnummer: string
+          factuurdatum?: string
+          id?: string
+          klant_id?: string | null
+          korting_totaal?: number
+          leverancier_id?: string | null
+          notities?: string | null
+          offerte_id?: string | null
+          opdracht_id?: string | null
+          partner_id: string
+          pdf_url?: string | null
+          regels?: Json
+          status?: Database["public"]["Enums"]["financieel_document_status"]
+          subtotaal?: number
+          totaal_bedrag?: number
+          type: Database["public"]["Enums"]["financieel_document_type"]
+          updated_at?: string
+          vervaldatum?: string | null
+          verzonden_op?: string | null
+        }
+        Update: {
+          betaald_op?: string | null
+          betaald_via?: string | null
+          betalingstermijn_dagen?: number
+          btw_bedrag?: number
+          created_at?: string
+          created_by?: string
+          documentnummer?: string
+          factuurdatum?: string
+          id?: string
+          klant_id?: string | null
+          korting_totaal?: number
+          leverancier_id?: string | null
+          notities?: string | null
+          offerte_id?: string | null
+          opdracht_id?: string | null
+          partner_id?: string
+          pdf_url?: string | null
+          regels?: Json
+          status?: Database["public"]["Enums"]["financieel_document_status"]
+          subtotaal?: number
+          totaal_bedrag?: number
+          type?: Database["public"]["Enums"]["financieel_document_type"]
+          updated_at?: string
+          vervaldatum?: string | null
+          verzonden_op?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financiele_documenten_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financiele_documenten_leverancier_id_fkey"
+            columns: ["leverancier_id"]
+            isOneToOne: false
+            referencedRelation: "leveranciers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financiele_documenten_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installaties: {
         Row: {
           consument_id: string | null
@@ -1784,6 +1890,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leveranciers: {
+        Row: {
+          adres: string | null
+          btw_nummer: string | null
+          contactpersoon: string | null
+          created_at: string
+          email: string | null
+          iban: string | null
+          id: string
+          kvk_nummer: string | null
+          naam: string
+          notities: string | null
+          partner_id: string
+          plaats: string | null
+          postcode: string | null
+          telefoon: string | null
+          updated_at: string
+        }
+        Insert: {
+          adres?: string | null
+          btw_nummer?: string | null
+          contactpersoon?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          kvk_nummer?: string | null
+          naam: string
+          notities?: string | null
+          partner_id: string
+          plaats?: string | null
+          postcode?: string | null
+          telefoon?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adres?: string | null
+          btw_nummer?: string | null
+          contactpersoon?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          kvk_nummer?: string | null
+          naam?: string
+          notities?: string | null
+          partner_id?: string
+          plaats?: string | null
+          postcode?: string | null
+          telefoon?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       notificaties: {
         Row: {
@@ -2922,6 +3082,13 @@ export type Database = {
       }
     }
     Functions: {
+      generate_financieel_documentnummer: {
+        Args: {
+          _partner_id: string
+          _type: Database["public"]["Enums"]["financieel_document_type"]
+        }
+        Returns: string
+      }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -2940,6 +3107,24 @@ export type Database = {
         | "affiliate"
       document_entity_type: "lead" | "schouw" | "offerte" | "installatie"
       document_type: "contract" | "foto" | "certificaat" | "rapport" | "overig"
+      financieel_document_status:
+        | "concept"
+        | "verzonden"
+        | "betaald"
+        | "verlopen"
+        | "gecrediteerd"
+        | "ontvangen"
+        | "goedgekeurd"
+        | "deels_ontvangen"
+        | "volledig_ontvangen"
+        | "aangemaakt"
+        | "afgeleverd"
+      financieel_document_type:
+        | "verkoopfactuur"
+        | "creditnota"
+        | "inkoopfactuur"
+        | "inkooporder"
+        | "pakbon"
       installatie_status:
         | "gepland"
         | "in_uitvoering"
@@ -3144,6 +3329,26 @@ export const Constants = {
       ],
       document_entity_type: ["lead", "schouw", "offerte", "installatie"],
       document_type: ["contract", "foto", "certificaat", "rapport", "overig"],
+      financieel_document_status: [
+        "concept",
+        "verzonden",
+        "betaald",
+        "verlopen",
+        "gecrediteerd",
+        "ontvangen",
+        "goedgekeurd",
+        "deels_ontvangen",
+        "volledig_ontvangen",
+        "aangemaakt",
+        "afgeleverd",
+      ],
+      financieel_document_type: [
+        "verkoopfactuur",
+        "creditnota",
+        "inkoopfactuur",
+        "inkooporder",
+        "pakbon",
+      ],
       installatie_status: [
         "gepland",
         "in_uitvoering",
