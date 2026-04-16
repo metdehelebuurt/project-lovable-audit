@@ -56,6 +56,10 @@ import FeedbackNieuw from "@/pages/FeedbackNieuw";
 import FeedbackOverzicht from "@/pages/FeedbackOverzicht";
 import FeedbackAdmin from "@/pages/FeedbackAdmin";
 import AdminAbonnementen from "@/pages/AdminAbonnementen";
+import Financieel from "@/pages/Financieel";
+import FactuurNieuw from "@/pages/FactuurNieuw";
+import FactuurDetail from "@/pages/FactuurDetail";
+import Leveranciers from "@/pages/Leveranciers";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
@@ -231,6 +235,18 @@ const App = () => (
               } />
               <Route path="/admin/abonnementen" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><AdminAbonnementen /></ProtectedRoute>
+              } />
+              <Route path="/financieel" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Financieel /></ProtectedRoute>
+              } />
+              <Route path="/financieel/nieuw/:type" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><FactuurNieuw /></ProtectedRoute>
+              } />
+              <Route path="/financieel/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><FactuurDetail /></ProtectedRoute>
+              } />
+              <Route path="/leveranciers" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Leveranciers /></ProtectedRoute>
               } />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />

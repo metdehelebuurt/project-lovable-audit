@@ -65,6 +65,13 @@ const getNavGroups = (rol: string): NavGroup[] => {
     planning.push({ title: "Analytics", url: "/analytics", icon: BarChart3 });
   if (planning.length) groups.push({ label: "Planning & Tools", items: planning });
 
+  const financieel: NavItem[] = [];
+  if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol))
+    financieel.push({ title: "Financieel", url: "/financieel", icon: FileText });
+  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
+    financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Building2 });
+  if (financieel.length) groups.push({ label: "Financieel", items: financieel });
+
   const beheer: NavItem[] = [];
   if (rol === "superadmin")
     beheer.push({ title: "Partners", url: "/partners", icon: Building2 });
