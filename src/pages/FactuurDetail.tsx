@@ -45,16 +45,27 @@ export default function FactuurDetail() {
   const [loading, setLoading] = useState(true);
   const [pdfOpen, setPdfOpen] = useState(false);
 
+  const [installatieData, setInstallatieData] = useState<any>(null);
+
   useEffect(() => {
     if (!id) return;
     supabase
       .from("financiele_documenten")
-      .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats), leveranciers(naam, email, adres, postcode, plaats)")
+      .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer)")
       .eq("id", id)
       .single()
       .then(({ data, error }) => {
         if (error) toast({ title: "Fout", description: error.message, variant: "destructive" });
-        else setDoc(data);
+        else {
+          setDoc(data);
+          if (data?.installatie_id) {
+            supabase.from("installaties")
+              .select("consument_naam, geplande_startdatum, geplande_einddatum, status")
+              .eq("id", data.installatie_id)
+              .single()
+              .then(({ data: inst }) => setInstallatieData(inst));
+          }
+        }
         setLoading(false);
       });
   }, [id]);
