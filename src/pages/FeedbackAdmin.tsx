@@ -263,7 +263,7 @@ export default function FeedbackAdmin() {
                   </div>
                 )}
 
-                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: selectedItem.beschrijving }} />
+                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedItem.beschrijving) }} />
 
                 {selectedItem.bijlagen && (selectedItem.bijlagen as any[]).length > 0 && (
                   <div>

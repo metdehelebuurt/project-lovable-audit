@@ -80,6 +80,24 @@ serve(async (req) => {
           });
         }
 
+        // Role cap: partner_admin can only assign limited roles
+        const allowedRolesForPartnerAdmin = ["partner_staff", "adviseur", "installateur"];
+        const allowedRolesForSuperadmin = ["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "affiliate"];
+
+        if (callerProfile.rol === "partner_admin" && !allowedRolesForPartnerAdmin.includes(rol)) {
+          return new Response(JSON.stringify({ error: "Rol niet toegestaan" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (callerProfile.rol === "superadmin" && !allowedRolesForSuperadmin.includes(rol)) {
+          return new Response(JSON.stringify({ error: "Ongeldige rol" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         // Partner admin can only create users within their own partner
         if (callerProfile.rol === "partner_admin" && partner_id !== callerProfile.partner_id) {
           return new Response(JSON.stringify({ error: "Kan alleen gebruikers binnen eigen organisatie aanmaken" }), {
@@ -177,6 +195,21 @@ serve(async (req) => {
             status: 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
+        }
+
+        // Partner admin scope check - can only reset passwords within own partner
+        if (callerProfile.rol === "partner_admin") {
+          const { data: targetUser } = await supabaseAdmin
+            .from("users")
+            .select("partner_id")
+            .eq("id", user_id)
+            .single();
+          if (!targetUser || targetUser.partner_id !== callerProfile.partner_id) {
+            return new Response(JSON.stringify({ error: "Geen rechten" }), {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
         }
 
         const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
