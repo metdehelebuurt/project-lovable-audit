@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { formatCurrency, type OfferteRegel } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
@@ -110,10 +110,29 @@ export default function FactuurDetail() {
   }
 
   const regels = (doc.regels || []) as OfferteRegel[];
+  const eenmalig = doc.eenmalige_relatie as any;
   const relatie = doc.klanten
     ? doc.klanten.bedrijfsnaam || `${doc.klanten.voornaam} ${doc.klanten.achternaam}`
-    : doc.leveranciers?.naam || "—";
-  const relatieDetails = doc.klanten || doc.leveranciers;
+    : doc.leveranciers?.naam
+    ? doc.leveranciers.naam
+    : eenmalig?.naam || "—";
+  const relatieDetails = doc.klanten || doc.leveranciers || eenmalig;
+
+  // Build klant data for PDF from eenmalige_relatie if no klant linked
+  const pdfKlant = doc.klanten
+    ? doc.klanten
+    : eenmalig
+    ? {
+        voornaam: eenmalig.naam,
+        achternaam: "",
+        bedrijfsnaam: eenmalig.naam,
+        email: eenmalig.email,
+        adres: eenmalig.adres,
+        postcode: eenmalig.postcode,
+        plaats: eenmalig.plaats,
+        telefoon: eenmalig.telefoon,
+      }
+    : null;
 
   return (
     <div className="space-y-6">
@@ -133,6 +152,13 @@ export default function FactuurDetail() {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {/* Bewerken knop voor concept documenten */}
+          {doc.status === "concept" && (
+            <Button variant="outline" onClick={() => navigate(`/financieel/bewerken/${doc.type}/${id}`)}>
+              <Pencil className="h-4 w-4 mr-2" /> Bewerken
+            </Button>
+          )}
+
           {/* Verkoopfactuur flow: concept → verzonden → betaald */}
           {doc.status === "concept" && (
             <Button onClick={() => updateStatus("verzonden")}>
@@ -150,7 +176,7 @@ export default function FactuurDetail() {
             </Button>
           )}
 
-          {/* Inkoopfactuur flow: ontvangen → goedgekeurd → betaald */}
+          {/* Inkoopfactuur flow */}
           {doc.type === "inkoopfactuur" && doc.status === "concept" && (
             <Button onClick={() => updateStatus("ontvangen")}>
               <CheckCircle className="h-4 w-4 mr-2" /> Ontvangen
@@ -167,7 +193,7 @@ export default function FactuurDetail() {
             </Button>
           )}
 
-          {/* Inkooporder flow: concept → verzonden → deels_ontvangen → volledig_ontvangen */}
+          {/* Inkooporder flow */}
           {doc.type === "inkooporder" && doc.status === "verzonden" && (
             <>
               <Button variant="outline" onClick={() => updateStatus("deels_ontvangen")}>
@@ -184,7 +210,7 @@ export default function FactuurDetail() {
             </Button>
           )}
 
-          {/* Pakbon flow: aangemaakt → verzonden → afgeleverd */}
+          {/* Pakbon flow */}
           {doc.type === "pakbon" && doc.status === "concept" && (
             <Button onClick={() => updateStatus("aangemaakt")}>
               Aanmaken
@@ -241,11 +267,15 @@ export default function FactuurDetail() {
             )}
             <div className="border-t pt-3 space-y-1">
               <p className="font-medium">{relatie}</p>
+              {eenmalig && !doc.klanten && (
+                <Badge variant="outline" className="text-xs mb-1">Eenmalige relatie</Badge>
+              )}
               {relatieDetails?.email && <p className="text-muted-foreground">{relatieDetails.email}</p>}
               {relatieDetails?.adres && <p className="text-muted-foreground">{relatieDetails.adres}</p>}
-              {relatieDetails?.postcode && relatieDetails?.plaats && (
+              {(relatieDetails?.postcode || relatieDetails?.plaats) && (
                 <p className="text-muted-foreground">{relatieDetails.postcode} {relatieDetails.plaats}</p>
               )}
+              {relatieDetails?.telefoon && <p className="text-muted-foreground">{relatieDetails.telefoon}</p>}
             </div>
             {doc.notities && (
               <div className="border-t pt-3">
@@ -277,7 +307,7 @@ export default function FactuurDetail() {
           </div>
           <FinancieelPDF
             doc={{ ...doc, regels }}
-            klant={doc.klanten}
+            klant={pdfKlant}
             leverancier={doc.leveranciers}
             partner={partnerData}
             installatie={installatieData}
