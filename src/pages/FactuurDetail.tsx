@@ -2,14 +2,17 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { formatCurrency, type OfferteRegel } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, CheckCircle, XCircle, Copy } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -37,8 +40,10 @@ export default function FactuurDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile } = useAuth();
   const [doc, setDoc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
