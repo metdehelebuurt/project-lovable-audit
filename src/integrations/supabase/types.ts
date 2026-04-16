@@ -3080,6 +3080,54 @@ export type Database = {
         }
         Relationships: []
       }
+      web_widgets_public: {
+        Row: {
+          actief: boolean | null
+          config: Json | null
+          created_at: string | null
+          id: string | null
+          naam: string | null
+          partner_id: string | null
+          type: Database["public"]["Enums"]["widget_type"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          actief?: boolean | null
+          config?: Json | null
+          created_at?: string | null
+          id?: string | null
+          naam?: string | null
+          partner_id?: string | null
+          type?: Database["public"]["Enums"]["widget_type"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          actief?: boolean | null
+          config?: Json | null
+          created_at?: string | null
+          id?: string | null
+          naam?: string | null
+          partner_id?: string | null
+          type?: Database["public"]["Enums"]["widget_type"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_widgets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "web_widgets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       generate_financieel_documentnummer: {
