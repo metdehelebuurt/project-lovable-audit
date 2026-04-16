@@ -121,17 +121,76 @@ export default function FactuurDetail() {
             <p className="text-muted-foreground">{typeLabels[doc.type]} — {relatie}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Verkoopfactuur flow: concept → verzonden → betaald */}
           {doc.status === "concept" && (
             <Button onClick={() => updateStatus("verzonden")}>
               <Send className="h-4 w-4 mr-2" /> Verzenden
             </Button>
           )}
-          {doc.status === "verzonden" && (
+          {doc.status === "verzonden" && doc.type === "verkoopfactuur" && (
             <Button onClick={() => updateStatus("betaald")} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="h-4 w-4 mr-2" /> Betaald markeren
             </Button>
           )}
+          {doc.status === "verzonden" && doc.type === "verkoopfactuur" && (
+            <Button variant="outline" onClick={() => updateStatus("verlopen")}>
+              <XCircle className="h-4 w-4 mr-2" /> Verlopen markeren
+            </Button>
+          )}
+
+          {/* Inkoopfactuur flow: ontvangen → goedgekeurd → betaald */}
+          {doc.type === "inkoopfactuur" && doc.status === "concept" && (
+            <Button onClick={() => updateStatus("ontvangen")}>
+              <CheckCircle className="h-4 w-4 mr-2" /> Ontvangen
+            </Button>
+          )}
+          {doc.type === "inkoopfactuur" && doc.status === "ontvangen" && (
+            <Button onClick={() => updateStatus("goedgekeurd")}>
+              <CheckCircle className="h-4 w-4 mr-2" /> Goedkeuren
+            </Button>
+          )}
+          {doc.type === "inkoopfactuur" && doc.status === "goedgekeurd" && (
+            <Button onClick={() => updateStatus("betaald")} className="bg-green-600 hover:bg-green-700">
+              <CheckCircle className="h-4 w-4 mr-2" /> Betaald markeren
+            </Button>
+          )}
+
+          {/* Inkooporder flow: concept → verzonden → deels_ontvangen → volledig_ontvangen */}
+          {doc.type === "inkooporder" && doc.status === "verzonden" && (
+            <>
+              <Button variant="outline" onClick={() => updateStatus("deels_ontvangen")}>
+                Deels ontvangen
+              </Button>
+              <Button onClick={() => updateStatus("volledig_ontvangen")} className="bg-green-600 hover:bg-green-700">
+                Volledig ontvangen
+              </Button>
+            </>
+          )}
+          {doc.type === "inkooporder" && doc.status === "deels_ontvangen" && (
+            <Button onClick={() => updateStatus("volledig_ontvangen")} className="bg-green-600 hover:bg-green-700">
+              Volledig ontvangen
+            </Button>
+          )}
+
+          {/* Pakbon flow: aangemaakt → verzonden → afgeleverd */}
+          {doc.type === "pakbon" && doc.status === "concept" && (
+            <Button onClick={() => updateStatus("aangemaakt")}>
+              Aanmaken
+            </Button>
+          )}
+          {doc.type === "pakbon" && doc.status === "aangemaakt" && (
+            <Button onClick={() => updateStatus("verzonden")}>
+              <Send className="h-4 w-4 mr-2" /> Verzonden
+            </Button>
+          )}
+          {doc.type === "pakbon" && doc.status === "verzonden" && (
+            <Button onClick={() => updateStatus("afgeleverd")} className="bg-green-600 hover:bg-green-700">
+              <CheckCircle className="h-4 w-4 mr-2" /> Afgeleverd
+            </Button>
+          )}
+
+          {/* Creditnota vanuit betaalde verkoopfactuur */}
           {doc.type === "verkoopfactuur" && doc.status === "betaald" && (
             <Button variant="outline" onClick={handleCreditnota}>
               <Copy className="h-4 w-4 mr-2" /> Creditnota
