@@ -1280,6 +1280,7 @@ export type Database = {
           documentnummer: string
           factuurdatum: string
           id: string
+          installatie_id: string | null
           klant_id: string | null
           korting_totaal: number
           leverancier_id: string | null
@@ -1307,6 +1308,7 @@ export type Database = {
           documentnummer: string
           factuurdatum?: string
           id?: string
+          installatie_id?: string | null
           klant_id?: string | null
           korting_totaal?: number
           leverancier_id?: string | null
@@ -1334,6 +1336,7 @@ export type Database = {
           documentnummer?: string
           factuurdatum?: string
           id?: string
+          installatie_id?: string | null
           klant_id?: string | null
           korting_totaal?: number
           leverancier_id?: string | null
@@ -1352,6 +1355,13 @@ export type Database = {
           verzonden_op?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "financiele_documenten_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "financiele_documenten_klant_id_fkey"
             columns: ["klant_id"]
