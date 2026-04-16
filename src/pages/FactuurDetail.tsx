@@ -137,6 +137,9 @@ export default function FactuurDetail() {
               <Copy className="h-4 w-4 mr-2" /> Creditnota
             </Button>
           )}
+          <Button variant="outline" onClick={() => setPdfOpen(true)}>
+            <FileText className="h-4 w-4 mr-2" /> PDF Preview
+          </Button>
         </div>
       </div>
 
@@ -192,6 +195,24 @@ export default function FactuurDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
+        <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
+          <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
+            <DialogHeader><DialogTitle>PDF Preview — {doc.documentnummer}</DialogTitle></DialogHeader>
+            <Button size="sm" onClick={() => window.print()}>
+              <Download className="h-4 w-4 mr-2" /> PDF downloaden
+            </Button>
+          </div>
+          <FinancieelPDF
+            doc={{ ...doc, regels }}
+            klant={doc.klanten}
+            leverancier={doc.leveranciers}
+            partner={partnerData}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
