@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -323,7 +324,7 @@ export default function FeedbackNieuw() {
                 {beschrijving && beschrijving !== "<p></p>" && (
                   <div className="border-t pt-3">
                     <p className="text-xs font-medium text-muted-foreground mb-1">Beschrijving:</p>
-                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: beschrijving }} />
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(beschrijving) }} />
                   </div>
                 )}
               </div>

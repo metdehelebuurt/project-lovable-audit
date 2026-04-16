@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,7 +128,7 @@ const EmailTab = ({ leadId, klantId, email }: Props) => {
               </div>
               <div className="border-t pt-3">
                 {selectedEmail.body_html ? (
-                  <div dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }} className="prose prose-sm max-w-none" />
+                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedEmail.body_html, { ALLOWED_TAGS: ['b','i','u','p','br','a','ul','ol','li','div','span','strong','em','h1','h2','h3','h4','table','tr','td','th','thead','tbody','img'], ALLOWED_ATTR: ['href','src','alt','style','class','target'] }) }} className="prose prose-sm max-w-none" />
                 ) : (
                   <pre className="text-sm whitespace-pre-wrap font-sans">{selectedEmail.body_text || "Geen inhoud"}</pre>
                 )}

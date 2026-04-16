@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,7 +160,7 @@ export default function FeedbackOverzicht() {
 
                       {expanded && (
                         <div className="mt-3 space-y-3">
-                          <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: item.beschrijving }} />
+                          <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.beschrijving) }} />
 
                           {item.bijlagen && (item.bijlagen as any[]).length > 0 && (
                             <div className="space-y-1">
@@ -184,7 +185,7 @@ export default function FeedbackOverzicht() {
                           {item.admin_reactie && (
                             <div className="bg-muted/50 rounded-lg p-3">
                               <p className="text-xs font-medium mb-1">Admin reactie:</p>
-                              <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: item.admin_reactie }} />
+                              <div className="prose prose-sm max-w-none text-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.admin_reactie) }} />
                             </div>
                           )}
                         </div>

@@ -10,23 +10,51 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { lead_id } = await req.json();
-    if (!lead_id) throw new Error("lead_id is vereist");
+    // Authentication check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
 
+    // Verify the user
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { lead_id } = await req.json();
+    if (!lead_id) throw new Error("lead_id is vereist");
+
     const sb = createClient(supabaseUrl, serviceKey);
 
-    // Fetch lead + related data
+    // Verify user has access to this lead via their partner_id
+    const { data: userProfile } = await sb.from("users").select("partner_id").eq("id", user.id).single();
+    if (!userProfile?.partner_id) {
+      return new Response(JSON.stringify({ error: "Geen toegang" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fetch lead and verify it belongs to user's partner
     const [leadRes, offertesRes, schouwendRes] = await Promise.all([
-      sb.from("leads").select("*").eq("id", lead_id).single(),
+      sb.from("leads").select("*").eq("id", lead_id).eq("partner_id", userProfile.partner_id).single(),
       sb.from("offertes").select("id, offertenummer, status, totaal_bedrag, created_at, regels").eq("lead_id", lead_id),
       sb.from("schouwen").select("id, schouw_nummer, categorie, status, gegevens, aandachtspunten").eq("lead_id", lead_id),
     ]);
 
-    if (leadRes.error) throw new Error("Lead niet gevonden");
+    if (leadRes.error) throw new Error("Lead niet gevonden of geen toegang");
     const lead = leadRes.data;
     const offertes = offertesRes.data || [];
     const schouwen = schouwendRes.data || [];

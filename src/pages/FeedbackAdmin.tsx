@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -263,7 +264,7 @@ export default function FeedbackAdmin() {
                   </div>
                 )}
 
-                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: selectedItem.beschrijving }} />
+                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedItem.beschrijving) }} />
 
                 {selectedItem.bijlagen && (selectedItem.bijlagen as any[]).length > 0 && (
                   <div>
