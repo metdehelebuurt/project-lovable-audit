@@ -12,6 +12,7 @@ import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Send } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -26,9 +27,10 @@ const typeLabels: Record<DocType, string> = {
 const isInkoop = (t: DocType) => t === "inkoopfactuur" || t === "inkooporder";
 
 export default function FactuurNieuw() {
-  const { type } = useParams<{ type: string }>();
+  const { type, id: editId } = useParams<{ type: string; id: string }>();
   const [searchParams] = useSearchParams();
   const docType = (type as DocType) || "verkoopfactuur";
+  const isEdit = !!editId;
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const { toast } = useToast();
@@ -46,6 +48,18 @@ export default function FactuurNieuw() {
   const [bronOfferteId, setBronOfferteId] = useState<string | null>(null);
   const [bronDocId, setBronDocId] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
+
+  // Eenmalige relatie state
+  const [useEenmalig, setUseEenmalig] = useState(false);
+  const [eenmaligNaam, setEenmaligNaam] = useState("");
+  const [eenmaligEmail, setEenmaligEmail] = useState("");
+  const [eenmaligAdres, setEenmaligAdres] = useState("");
+  const [eenmaligPostcode, setEenmaligPostcode] = useState("");
+  const [eenmaligPlaats, setEenmaligPlaats] = useState("");
+  const [eenmaligTelefoon, setEenmaligTelefoon] = useState("");
+
+  // Existing documentnummer for editing
+  const [existingDocNummer, setExistingDocNummer] = useState("");
 
   // Load klanten/leveranciers/installaties
   useEffect(() => {
@@ -66,9 +80,43 @@ export default function FactuurNieuw() {
     }
   }, [profile?.partner_id, docType]);
 
+  // Load existing document for editing
+  useEffect(() => {
+    if (!editId || prefilled) return;
+    supabase
+      .from("financiele_documenten")
+      .select("*")
+      .eq("id", editId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        const docRegels = (Array.isArray(data.regels) ? data.regels : []) as unknown as OfferteRegel[];
+        setRegels(docRegels.length > 0 ? docRegels : [{ ...emptyOfferteRegel }]);
+        if (data.klant_id) setKlantId(data.klant_id);
+        if (data.leverancier_id) setLeverancierId(data.leverancier_id);
+        if (data.installatie_id) setInstallatieId(data.installatie_id);
+        setBetalingstermijn(data.betalingstermijn_dagen || 30);
+        setNotities(data.notities || "");
+        setExistingDocNummer(data.documentnummer);
+        if (data.offerte_id) setBronOfferteId(data.offerte_id);
+        // Eenmalige relatie
+        const er = data.eenmalige_relatie as any;
+        if (er && typeof er === "object" && er.naam) {
+          setUseEenmalig(true);
+          setEenmaligNaam(er.naam || "");
+          setEenmaligEmail(er.email || "");
+          setEenmaligAdres(er.adres || "");
+          setEenmaligPostcode(er.postcode || "");
+          setEenmaligPlaats(er.plaats || "");
+          setEenmaligTelefoon(er.telefoon || "");
+        }
+        setPrefilled(true);
+      });
+  }, [editId, prefilled]);
+
   // Pre-fill from source document (creditnota) or offerte
   useEffect(() => {
-    if (prefilled) return;
+    if (prefilled || isEdit) return;
     const bronId = searchParams.get("bron");
     const offerteId = searchParams.get("offerte");
 
@@ -125,7 +173,7 @@ export default function FactuurNieuw() {
           setPrefilled(true);
         });
     }
-  }, [searchParams, prefilled, profile?.partner_id]);
+  }, [searchParams, prefilled, profile?.partner_id, isEdit]);
 
   const handleSave = async (status: "concept" | "verzonden") => {
     if (!profile?.partner_id || !user?.id) return;
@@ -135,8 +183,12 @@ export default function FactuurNieuw() {
       toast({ title: "Selecteer een leverancier", variant: "destructive" });
       return;
     }
-    if (!isInkoop(docType) && docType !== "pakbon" && !klantId) {
-      toast({ title: "Selecteer een klant", variant: "destructive" });
+    if (!isInkoop(docType) && docType !== "pakbon" && !klantId && !useEenmalig) {
+      toast({ title: "Selecteer een klant of vul eenmalige gegevens in", variant: "destructive" });
+      return;
+    }
+    if (useEenmalig && !eenmaligNaam.trim()) {
+      toast({ title: "Vul minimaal een naam in voor de eenmalige relatie", variant: "destructive" });
       return;
     }
 
@@ -147,60 +199,109 @@ export default function FactuurNieuw() {
     const kortingTotaal = brutoTotaal - subtotaal;
     const btwBedrag = regels.reduce((s, r) => s + regelSubtotaal(r) * (r.btw_percentage / 100), 0);
 
-    const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
-      _partner_id: profile.partner_id,
-      _type: docType,
-    });
+    const eenmaligData = useEenmalig
+      ? {
+          naam: eenmaligNaam.trim(),
+          email: eenmaligEmail.trim() || null,
+          adres: eenmaligAdres.trim() || null,
+          postcode: eenmaligPostcode.trim() || null,
+          plaats: eenmaligPlaats.trim() || null,
+          telefoon: eenmaligTelefoon.trim() || null,
+        }
+      : null;
 
-    const doc: any = {
-      partner_id: profile.partner_id,
-      type: docType,
-      documentnummer: numData || `${docType.substring(0, 2).toUpperCase()}-${Date.now()}`,
-      status,
-      klant_id: !isInkoop(docType) && klantId ? klantId : null,
-      leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
-      offerte_id: bronOfferteId || null,
-      installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
-      regels: regels as any,
-      subtotaal,
-      btw_bedrag: btwBedrag,
-      totaal_bedrag: subtotaal + btwBedrag,
-      korting_totaal: kortingTotaal,
-      betalingstermijn_dagen: betalingstermijn,
-      factuurdatum: new Date().toISOString().split("T")[0],
-      vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
-      notities,
-      created_by: user.id,
-    };
+    if (isEdit) {
+      // UPDATE bestaand document
+      const updates: any = {
+        klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
+        leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
+        installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
+        regels: regels as any,
+        subtotaal,
+        btw_bedrag: btwBedrag,
+        totaal_bedrag: subtotaal + btwBedrag,
+        korting_totaal: kortingTotaal,
+        betalingstermijn_dagen: betalingstermijn,
+        vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
+        notities,
+        eenmalige_relatie: eenmaligData,
+        status,
+      };
 
-    const { data, error } = await supabase.from("financiele_documenten").insert(doc).select().single();
-    setSaving(false);
-
-    if (error) {
-      toast({ title: "Fout", description: error.message, variant: "destructive" });
+      const { error } = await supabase.from("financiele_documenten").update(updates).eq("id", editId);
+      setSaving(false);
+      if (error) {
+        toast({ title: "Fout", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Opgeslagen", description: `${typeLabels[docType]} ${existingDocNummer} bijgewerkt` });
+        navigate(`/financieel/${editId}`);
+      }
     } else {
-      toast({ title: "Opgeslagen", description: `${typeLabels[docType]} ${data.documentnummer} aangemaakt` });
-      navigate(`/financieel/${data.id}`);
+      // INSERT nieuw document
+      const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
+        _partner_id: profile.partner_id,
+        _type: docType,
+      });
+
+      const doc: any = {
+        partner_id: profile.partner_id,
+        type: docType,
+        documentnummer: numData || `${docType.substring(0, 2).toUpperCase()}-${Date.now()}`,
+        status,
+        klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
+        leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
+        offerte_id: bronOfferteId || null,
+        installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
+        regels: regels as any,
+        subtotaal,
+        btw_bedrag: btwBedrag,
+        totaal_bedrag: subtotaal + btwBedrag,
+        korting_totaal: kortingTotaal,
+        betalingstermijn_dagen: betalingstermijn,
+        factuurdatum: new Date().toISOString().split("T")[0],
+        vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
+        notities,
+        created_by: user.id,
+        eenmalige_relatie: eenmaligData,
+      };
+
+      const { data, error } = await supabase.from("financiele_documenten").insert(doc).select().single();
+      setSaving(false);
+
+      if (error) {
+        toast({ title: "Fout", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Opgeslagen", description: `${typeLabels[docType]} ${data.documentnummer} aangemaakt` });
+        navigate(`/financieel/${data.id}`);
+      }
     }
   };
 
   const saveLabel = docType === "inkooporder" ? "Opslaan & Bestelling verzenden" : "Opslaan & Verzenden";
+  const showKlantSection = !isInkoop(docType) && docType !== "pakbon";
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/financieel")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(isEdit ? `/financieel/${editId}` : "/financieel")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Nieuwe {typeLabels[docType]}</h1>
-          <p className="text-muted-foreground">
-            {docType === "inkooporder"
-              ? "Stel een bestelling samen voor je leverancier"
-              : docType === "pakbon"
-              ? "Maak een pakbon/afleverbon aan voor een installatie"
-              : "Vul de gegevens in en voeg regels toe"}
-          </p>
+          <h1 className="text-2xl font-bold">
+            {isEdit ? `${typeLabels[docType]} bewerken` : `Nieuwe ${typeLabels[docType]}`}
+          </h1>
+          {isEdit && existingDocNummer && (
+            <p className="text-muted-foreground">{existingDocNummer}</p>
+          )}
+          {!isEdit && (
+            <p className="text-muted-foreground">
+              {docType === "inkooporder"
+                ? "Stel een bestelling samen voor je leverancier"
+                : docType === "pakbon"
+                ? "Maak een pakbon/afleverbon aan voor een installatie"
+                : "Vul de gegevens in en voeg regels toe"}
+            </p>
+          )}
         </div>
       </div>
 
@@ -242,19 +343,64 @@ export default function FactuurNieuw() {
                 </Select>
               </div>
             ) : (
-              <div className="space-y-2">
-                <Label>Klant</Label>
-                <Select value={klantId} onValueChange={setKlantId}>
-                  <SelectTrigger><SelectValue placeholder="Selecteer klant" /></SelectTrigger>
-                  <SelectContent>
-                    {klanten.map((k) => (
-                      <SelectItem key={k.id} value={k.id}>
-                        {k.bedrijfsnaam || `${k.voornaam} ${k.achternaam}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                {/* Toggle: bestaande klant of eenmalige relatie */}
+                <div className="flex items-center justify-between">
+                  <Label>Eenmalige relatie</Label>
+                  <Switch
+                    checked={useEenmalig}
+                    onCheckedChange={(v) => {
+                      setUseEenmalig(v);
+                      if (v) setKlantId("");
+                    }}
+                  />
+                </div>
+
+                {!useEenmalig ? (
+                  <div className="space-y-2">
+                    <Label>Klant</Label>
+                    <Select value={klantId} onValueChange={setKlantId}>
+                      <SelectTrigger><SelectValue placeholder="Selecteer klant" /></SelectTrigger>
+                      <SelectContent>
+                        {klanten.map((k) => (
+                          <SelectItem key={k.id} value={k.id}>
+                            {k.bedrijfsnaam || `${k.voornaam} ${k.achternaam}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Naam *</Label>
+                      <Input value={eenmaligNaam} onChange={(e) => setEenmaligNaam(e.target.value)} placeholder="Naam of bedrijfsnaam" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">E-mail</Label>
+                      <Input value={eenmaligEmail} onChange={(e) => setEenmaligEmail(e.target.value)} placeholder="email@voorbeeld.nl" type="email" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Adres</Label>
+                      <Input value={eenmaligAdres} onChange={(e) => setEenmaligAdres(e.target.value)} placeholder="Straat + nummer" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Postcode</Label>
+                        <Input value={eenmaligPostcode} onChange={(e) => setEenmaligPostcode(e.target.value)} placeholder="1234 AB" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Plaats</Label>
+                        <Input value={eenmaligPlaats} onChange={(e) => setEenmaligPlaats(e.target.value)} placeholder="Plaats" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Telefoon</Label>
+                      <Input value={eenmaligTelefoon} onChange={(e) => setEenmaligTelefoon(e.target.value)} placeholder="06-12345678" />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Installatie koppeling voor pakbonnen */}
