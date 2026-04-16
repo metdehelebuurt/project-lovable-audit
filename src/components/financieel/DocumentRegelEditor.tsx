@@ -1,0 +1,128 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Trash2 } from "lucide-react";
+import { OfferteRegel, emptyOfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
+
+interface Props {
+  regels: OfferteRegel[];
+  onChange: (regels: OfferteRegel[]) => void;
+  readOnly?: boolean;
+}
+
+export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
+  const update = (idx: number, field: keyof OfferteRegel, value: any) => {
+    const copy = [...regels];
+    copy[idx] = { ...copy[idx], [field]: value };
+    onChange(copy);
+  };
+
+  const addRegel = () => onChange([...regels, { ...emptyOfferteRegel }]);
+  const removeRegel = (idx: number) => onChange(regels.filter((_, i) => i !== idx));
+
+  const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+  const btwBedrag = regels.reduce((s, r) => s + regelSubtotaal(r) * (r.btw_percentage / 100), 0);
+  const totaal = subtotaal + btwBedrag;
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[200px]">Omschrijving</TableHead>
+              <TableHead className="w-20">Aantal</TableHead>
+              <TableHead className="w-28">Prijs</TableHead>
+              <TableHead className="w-20">BTW %</TableHead>
+              <TableHead className="w-24">Korting</TableHead>
+              <TableHead className="w-28 text-right">Subtotaal</TableHead>
+              {!readOnly && <TableHead className="w-10"></TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {regels.map((r, i) => (
+              <TableRow key={i}>
+                <TableCell>
+                  {readOnly ? r.omschrijving : (
+                    <Input value={r.omschrijving} onChange={(e) => update(i, "omschrijving", e.target.value)} placeholder="Product of dienst" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {readOnly ? r.aantal : (
+                    <Input type="number" min={1} value={r.aantal} onChange={(e) => update(i, "aantal", Number(e.target.value))} />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {readOnly ? formatCurrency(r.prijs_per_stuk) : (
+                    <Input type="number" step="0.01" value={r.prijs_per_stuk} onChange={(e) => update(i, "prijs_per_stuk", Number(e.target.value))} />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {readOnly ? `${r.btw_percentage}%` : (
+                    <Select value={String(r.btw_percentage)} onValueChange={(v) => update(i, "btw_percentage", Number(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="21">21%</SelectItem>
+                        <SelectItem value="9">9%</SelectItem>
+                        <SelectItem value="0">0%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {readOnly ? (
+                    r.korting_type === "bedrag" ? formatCurrency(r.korting_bedrag || 0) : `${r.korting_percentage || 0}%`
+                  ) : (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={r.korting_type === "bedrag" ? r.korting_bedrag : r.korting_percentage}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (r.korting_type === "bedrag") update(i, "korting_bedrag", v);
+                        else update(i, "korting_percentage", v);
+                      }}
+                      placeholder="0"
+                    />
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-medium">{formatCurrency(regelSubtotaal(r))}</TableCell>
+                {!readOnly && (
+                  <TableCell>
+                    <Button size="icon" variant="ghost" onClick={() => removeRegel(i)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {!readOnly && (
+        <Button variant="outline" onClick={addRegel} className="w-full">
+          <Plus className="h-4 w-4 mr-2" /> Regel toevoegen
+        </Button>
+      )}
+
+      <div className="flex justify-end">
+        <div className="w-64 space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Subtotaal</span>
+            <span>{formatCurrency(subtotaal)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">BTW</span>
+            <span>{formatCurrency(btwBedrag)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-base border-t pt-1">
+            <span>Totaal</span>
+            <span>{formatCurrency(totaal)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
