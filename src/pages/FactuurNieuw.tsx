@@ -70,7 +70,7 @@ export default function FactuurNieuw() {
         .single()
         .then(({ data }) => {
           if (!data) return;
-          const bronRegels = (data.regels || []) as OfferteRegel[];
+          const bronRegels = (Array.isArray(data.regels) ? data.regels : []) as unknown as OfferteRegel[];
           setRegels(bronRegels.length > 0 ? bronRegels : [{ ...emptyOfferteRegel }]);
           if (data.klant_id) setKlantId(data.klant_id);
           if (data.leverancier_id) setLeverancierId(data.leverancier_id);
