@@ -21,7 +21,9 @@ export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
   const addRegel = () => onChange([...regels, { ...emptyOfferteRegel }]);
   const removeRegel = (idx: number) => onChange(regels.filter((_, i) => i !== idx));
 
+  const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
   const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+  const kortingTotaal = brutoTotaal - subtotaal;
   const btwBedrag = regels.reduce((s, r) => s + regelSubtotaal(r) * (r.btw_percentage / 100), 0);
   const totaal = subtotaal + btwBedrag;
 
@@ -110,9 +112,15 @@ export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
       <div className="flex justify-end">
         <div className="w-64 space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotaal</span>
-            <span>{formatCurrency(subtotaal)}</span>
+            <span className="text-muted-foreground">Subtotaal (bruto)</span>
+            <span>{formatCurrency(brutoTotaal)}</span>
           </div>
+          {kortingTotaal > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>Korting</span>
+              <span>-{formatCurrency(kortingTotaal)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">BTW</span>
             <span>{formatCurrency(btwBedrag)}</span>
