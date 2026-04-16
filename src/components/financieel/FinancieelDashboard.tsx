@@ -1,7 +1,10 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/types/offerte";
-import { TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, FileText } from "lucide-react";
+import { TrendingUp, TrendingDown, Clock, AlertTriangle, BarChart3, Wallet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
 interface Props {
   docs: any[];
@@ -26,6 +29,7 @@ export function FinancieelDashboard({ docs, loading }: Props) {
   const openstaandVerkoop = verkoop.filter((d) => ["verzonden", "verlopen"].includes(d.status)).reduce((s, d) => s + d.totaal_bedrag, 0);
   const openstaandInkoop = inkoop.filter((d) => ["ontvangen", "goedgekeurd"].includes(d.status)).reduce((s, d) => s + d.totaal_bedrag, 0);
   const verlopenCount = verkoop.filter((d) => d.status === "verlopen").length;
+  const totaalKosten = inkoop.filter((d) => d.status === "betaald").reduce((s, d) => s + d.totaal_bedrag, 0);
 
   const cards = [
     { title: "Omzet (betaald)", value: formatCurrency(omzetBetaald), icon: TrendingUp, color: "text-green-600" },
@@ -34,12 +38,52 @@ export function FinancieelDashboard({ docs, loading }: Props) {
     { title: "Verlopen facturen", value: verlopenCount.toString(), icon: AlertTriangle, color: verlopenCount > 0 ? "text-red-600" : "text-muted-foreground" },
   ];
 
+  // Maandelijkse omzet- en kostendata (afgelopen 12 maanden)
+  const maandData = useMemo(() => {
+    const now = new Date();
+    const months: { label: string; omzet: number; kosten: number; winst: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const label = d.toLocaleDateString("nl-NL", { month: "short", year: "2-digit" });
+
+      const omzet = verkoop
+        .filter((doc) => doc.status === "betaald" && new Date(doc.factuurdatum).getFullYear() === y && new Date(doc.factuurdatum).getMonth() === m)
+        .reduce((s, doc) => s + doc.totaal_bedrag, 0);
+
+      const kosten = inkoop
+        .filter((doc) => doc.status === "betaald" && new Date(doc.factuurdatum).getFullYear() === y && new Date(doc.factuurdatum).getMonth() === m)
+        .reduce((s, doc) => s + doc.totaal_bedrag, 0);
+
+      months.push({ label, omzet, kosten, winst: omzet - kosten });
+    }
+    return months;
+  }, [docs]);
+
+  // Cashflow: cumulatieve ontvangsten - uitgaven per maand
+  const cashflowData = useMemo(() => {
+    let cumulative = 0;
+    return maandData.map((m) => {
+      cumulative += m.winst;
+      return { label: m.label, cashflow: cumulative };
+    });
+  }, [maandData]);
+
   // BTW summary
   const btwVerkoop = verkoop.filter((d) => d.status === "betaald").reduce((s, d) => s + d.btw_bedrag, 0);
   const btwInkoop = inkoop.filter((d) => d.status === "betaald").reduce((s, d) => s + d.btw_bedrag, 0);
 
+  const chartConfig = {
+    omzet: { label: "Omzet", color: "hsl(var(--primary))" },
+    kosten: { label: "Kosten", color: "hsl(var(--destructive))" },
+    winst: { label: "Winst", color: "hsl(142, 76%, 36%)" },
+    cashflow: { label: "Cashflow", color: "hsl(var(--primary))" },
+  };
+
   return (
     <div className="space-y-6">
+      {/* KPI kaarten */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
           <Card key={c.title}>
@@ -54,6 +98,87 @@ export function FinancieelDashboard({ docs, loading }: Props) {
         ))}
       </div>
 
+      {/* Winst & Verlies kaarten */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Totale omzet</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(omzetBetaald)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Betaalde verkoopfacturen</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Totale kosten</CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{formatCurrency(totaalKosten)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Betaalde inkoopfacturen</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Brutowinst</CardTitle>
+            <Wallet className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${omzetBetaald - totaalKosten >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {formatCurrency(omzetBetaald - totaalKosten)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Omzet minus kosten</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Grafieken */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Omzet & Kosten per maand */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" /> Omzet & Kosten per maand
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <BarChart data={maandData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="label" className="text-xs" tick={{ fontSize: 11 }} />
+                <YAxis className="text-xs" tick={{ fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="omzet" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="kosten" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Cashflow */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" /> Cashflow (cumulatief)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <LineChart data={cashflowData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="label" className="text-xs" tick={{ fontSize: 11 }} />
+                <YAxis className="text-xs" tick={{ fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="cashflow" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* BTW & Documenten overzicht */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
