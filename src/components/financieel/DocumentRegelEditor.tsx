@@ -21,7 +21,9 @@ export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
   const addRegel = () => onChange([...regels, { ...emptyOfferteRegel }]);
   const removeRegel = (idx: number) => onChange(regels.filter((_, i) => i !== idx));
 
+  const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
   const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+  const kortingTotaal = brutoTotaal - subtotaal;
   const btwBedrag = regels.reduce((s, r) => s + regelSubtotaal(r) * (r.btw_percentage / 100), 0);
   const totaal = subtotaal + btwBedrag;
 

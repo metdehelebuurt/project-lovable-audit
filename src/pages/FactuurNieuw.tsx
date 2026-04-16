@@ -121,7 +121,9 @@ export default function FactuurNieuw() {
     if (!profile?.partner_id || !user?.id) return;
     setSaving(true);
 
+    const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
     const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+    const kortingTotaal = brutoTotaal - subtotaal;
     const btwBedrag = regels.reduce((s, r) => s + regelSubtotaal(r) * (r.btw_percentage / 100), 0);
 
     const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
@@ -141,7 +143,7 @@ export default function FactuurNieuw() {
       subtotaal,
       btw_bedrag: btwBedrag,
       totaal_bedrag: subtotaal + btwBedrag,
-      korting_totaal: 0,
+      korting_totaal: kortingTotaal,
       betalingstermijn_dagen: betalingstermijn,
       factuurdatum: new Date().toISOString().split("T")[0],
       vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
