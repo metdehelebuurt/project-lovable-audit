@@ -87,7 +87,7 @@ export default function FactuurDetail() {
 
   const handleCreditnota = async () => {
     if (!doc) return;
-    navigate(`/financieel/nieuw/creditnota`);
+    navigate(`/financieel/nieuw/creditnota?bron=${doc.id}`);
   };
 
   if (loading) {
