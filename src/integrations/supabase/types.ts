@@ -1278,6 +1278,7 @@ export type Database = {
           created_at: string
           created_by: string
           documentnummer: string
+          eenmalige_relatie: Json | null
           factuurdatum: string
           id: string
           installatie_id: string | null
@@ -1306,6 +1307,7 @@ export type Database = {
           created_at?: string
           created_by: string
           documentnummer: string
+          eenmalige_relatie?: Json | null
           factuurdatum?: string
           id?: string
           installatie_id?: string | null
@@ -1334,6 +1336,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           documentnummer?: string
+          eenmalige_relatie?: Json | null
           factuurdatum?: string
           id?: string
           installatie_id?: string | null
