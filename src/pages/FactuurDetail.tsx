@@ -280,6 +280,7 @@ export default function FactuurDetail() {
             klant={doc.klanten}
             leverancier={doc.leveranciers}
             partner={partnerData}
+            installatie={installatieData}
           />
         </DialogContent>
       </Dialog>
