@@ -2,14 +2,17 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { formatCurrency, type OfferteRegel } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, CheckCircle, XCircle, Copy } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -37,8 +40,10 @@ export default function FactuurDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile } = useAuth();
   const [doc, setDoc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -53,6 +58,18 @@ export default function FactuurDetail() {
         setLoading(false);
       });
   }, [id]);
+
+  const { data: partnerData } = useQuery({
+    queryKey: ["partner-branding", profile?.partner_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("partners")
+        .select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, logo_url, primaire_kleur")
+        .eq("id", profile!.partner_id)
+        .single();
+      return data;
+    },
+    enabled: !!profile?.partner_id,
+  });
 
   const updateStatus = async (newStatus: string) => {
     const updates: any = { status: newStatus };
@@ -120,6 +137,9 @@ export default function FactuurDetail() {
               <Copy className="h-4 w-4 mr-2" /> Creditnota
             </Button>
           )}
+          <Button variant="outline" onClick={() => setPdfOpen(true)}>
+            <FileText className="h-4 w-4 mr-2" /> PDF Preview
+          </Button>
         </div>
       </div>
 
@@ -175,6 +195,24 @@ export default function FactuurDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
+        <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
+          <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
+            <DialogHeader><DialogTitle>PDF Preview — {doc.documentnummer}</DialogTitle></DialogHeader>
+            <Button size="sm" onClick={() => window.print()}>
+              <Download className="h-4 w-4 mr-2" /> PDF downloaden
+            </Button>
+          </div>
+          <FinancieelPDF
+            doc={{ ...doc, regels }}
+            klant={doc.klanten}
+            leverancier={doc.leveranciers}
+            partner={partnerData}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

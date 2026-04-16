@@ -11,6 +11,8 @@ import { Plus, FileText, Download, Eye, TrendingUp, TrendingDown, Clock, CheckCi
 import { formatCurrency } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
 import { FinancieelDashboard } from "@/components/financieel/FinancieelDashboard";
+import { BTWOverzicht } from "@/components/financieel/BTWOverzicht";
+import { DebiteurenCrediteuren } from "@/components/financieel/DebiteurenCrediteuren";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -141,6 +143,8 @@ export default function Financieel() {
           <TabsTrigger value="verkoop">Verkoop</TabsTrigger>
           <TabsTrigger value="inkoop">Inkoop</TabsTrigger>
           <TabsTrigger value="pakbonnen">Pakbonnen</TabsTrigger>
+          <TabsTrigger value="openstaand">Openstaand</TabsTrigger>
+          <TabsTrigger value="btw">BTW</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overzicht">
@@ -197,6 +201,14 @@ export default function Financieel() {
               {renderTable(filteredDocs(["pakbon"]))}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="openstaand">
+          <DebiteurenCrediteuren docs={docs} />
+        </TabsContent>
+
+        <TabsContent value="btw">
+          <BTWOverzicht docs={docs} />
         </TabsContent>
       </Tabs>
     </div>
