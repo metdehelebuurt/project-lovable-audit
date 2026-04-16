@@ -9,9 +9,10 @@ interface Props {
   regels: OfferteRegel[];
   onChange: (regels: OfferteRegel[]) => void;
   readOnly?: boolean;
+  hidePricing?: boolean;
 }
 
-export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
+export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }: Props) {
   const update = (idx: number, field: keyof OfferteRegel, value: any) => {
     const copy = [...regels];
     copy[idx] = { ...copy[idx], [field]: value };
@@ -35,10 +36,14 @@ export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
             <TableRow>
               <TableHead className="min-w-[200px]">Omschrijving</TableHead>
               <TableHead className="w-20">Aantal</TableHead>
-              <TableHead className="w-28">Prijs</TableHead>
-              <TableHead className="w-20">BTW %</TableHead>
-              <TableHead className="w-24">Korting</TableHead>
-              <TableHead className="w-28 text-right">Subtotaal</TableHead>
+              {!hidePricing && (
+                <>
+                  <TableHead className="w-28">Prijs</TableHead>
+                  <TableHead className="w-20">BTW %</TableHead>
+                  <TableHead className="w-24">Korting</TableHead>
+                  <TableHead className="w-28 text-right">Subtotaal</TableHead>
+                </>
+              )}
               {!readOnly && <TableHead className="w-10"></TableHead>}
             </TableRow>
           </TableHeader>
@@ -55,41 +60,45 @@ export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
                     <Input type="number" min={1} value={r.aantal} onChange={(e) => update(i, "aantal", Number(e.target.value))} />
                   )}
                 </TableCell>
-                <TableCell>
-                  {readOnly ? formatCurrency(r.prijs_per_stuk) : (
-                    <Input type="number" step="0.01" value={r.prijs_per_stuk} onChange={(e) => update(i, "prijs_per_stuk", Number(e.target.value))} />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {readOnly ? `${r.btw_percentage}%` : (
-                    <Select value={String(r.btw_percentage)} onValueChange={(v) => update(i, "btw_percentage", Number(v))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="21">21%</SelectItem>
-                        <SelectItem value="9">9%</SelectItem>
-                        <SelectItem value="0">0%</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {readOnly ? (
-                    r.korting_type === "bedrag" ? formatCurrency(r.korting_bedrag || 0) : `${r.korting_percentage || 0}%`
-                  ) : (
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={r.korting_type === "bedrag" ? r.korting_bedrag : r.korting_percentage}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        if (r.korting_type === "bedrag") update(i, "korting_bedrag", v);
-                        else update(i, "korting_percentage", v);
-                      }}
-                      placeholder="0"
-                    />
-                  )}
-                </TableCell>
-                <TableCell className="text-right font-medium">{formatCurrency(regelSubtotaal(r))}</TableCell>
+                {!hidePricing && (
+                  <>
+                    <TableCell>
+                      {readOnly ? formatCurrency(r.prijs_per_stuk) : (
+                        <Input type="number" step="0.01" value={r.prijs_per_stuk} onChange={(e) => update(i, "prijs_per_stuk", Number(e.target.value))} />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {readOnly ? `${r.btw_percentage}%` : (
+                        <Select value={String(r.btw_percentage)} onValueChange={(v) => update(i, "btw_percentage", Number(v))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="21">21%</SelectItem>
+                            <SelectItem value="9">9%</SelectItem>
+                            <SelectItem value="0">0%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {readOnly ? (
+                        r.korting_type === "bedrag" ? formatCurrency(r.korting_bedrag || 0) : `${r.korting_percentage || 0}%`
+                      ) : (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={r.korting_type === "bedrag" ? r.korting_bedrag : r.korting_percentage}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (r.korting_type === "bedrag") update(i, "korting_bedrag", v);
+                            else update(i, "korting_percentage", v);
+                          }}
+                          placeholder="0"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(regelSubtotaal(r))}</TableCell>
+                  </>
+                )}
                 {!readOnly && (
                   <TableCell>
                     <Button size="icon" variant="ghost" onClick={() => removeRegel(i)}>
@@ -109,28 +118,30 @@ export function DocumentRegelEditor({ regels, onChange, readOnly }: Props) {
         </Button>
       )}
 
-      <div className="flex justify-end">
-        <div className="w-64 space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotaal (bruto)</span>
-            <span>{formatCurrency(brutoTotaal)}</span>
-          </div>
-          {kortingTotaal > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>Korting</span>
-              <span>-{formatCurrency(kortingTotaal)}</span>
+      {!hidePricing && (
+        <div className="flex justify-end">
+          <div className="w-64 space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotaal (bruto)</span>
+              <span>{formatCurrency(brutoTotaal)}</span>
             </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">BTW</span>
-            <span>{formatCurrency(btwBedrag)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-base border-t pt-1">
-            <span>Totaal</span>
-            <span>{formatCurrency(totaal)}</span>
+            {kortingTotaal > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Korting</span>
+                <span>-{formatCurrency(kortingTotaal)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">BTW</span>
+              <span>{formatCurrency(btwBedrag)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-base border-t pt-1">
+              <span>Totaal</span>
+              <span>{formatCurrency(totaal)}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
