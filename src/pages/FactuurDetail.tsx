@@ -59,6 +59,18 @@ export default function FactuurDetail() {
       });
   }, [id]);
 
+  const { data: partnerData } = useQuery({
+    queryKey: ["partner-branding", profile?.partner_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("partners")
+        .select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, logo_url, primaire_kleur")
+        .eq("id", profile!.partner_id)
+        .single();
+      return data;
+    },
+    enabled: !!profile?.partner_id,
+  });
+
   const updateStatus = async (newStatus: string) => {
     const updates: any = { status: newStatus };
     if (newStatus === "betaald") updates.betaald_op = new Date().toISOString();
