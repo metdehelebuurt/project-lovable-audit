@@ -58,9 +58,13 @@ export function useTickets(filters: TicketFilters = {}) {
       if (filters.toegewezen_aan) q = q.eq("toegewezen_aan", filters.toegewezen_aan);
       if (filters.klant_id) q = q.eq("klant_id", filters.klant_id);
       if (filters.zoekterm) {
-        q = q.or(
-          `titel.ilike.%${filters.zoekterm}%,ticketnummer.ilike.%${filters.zoekterm}%,omschrijving.ilike.%${filters.zoekterm}%`,
-        );
+        // Escape PostgREST .or() special chars: , ( ) % *
+        const safe = filters.zoekterm.replace(/[,()%*]/g, " ").trim();
+        if (safe) {
+          q = q.or(
+            `titel.ilike.%${safe}%,ticketnummer.ilike.%${safe}%,omschrijving.ilike.%${safe}%`,
+          );
+        }
       }
 
       const { data, error } = await q;
