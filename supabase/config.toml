@@ -56,3 +56,12 @@ verify_jwt = false
 
 [functions.helpdesk-notify]
 verify_jwt = false
+
+[functions.helpdesk-ai-foutcode]
+verify_jwt = true
+
+[functions.helpdesk-ai-troubleshooter]
+verify_jwt = true
+
+[functions.helpdesk-ai-genereer-kbartikel]
+verify_jwt = true

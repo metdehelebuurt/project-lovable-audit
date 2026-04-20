@@ -12,6 +12,8 @@ import BijlagenTab from "./BijlagenTab";
 import TakenTab from "./TakenTab";
 import OplossingTab from "./OplossingTab";
 import HistorieTab from "./HistorieTab";
+import AnalyzerTab from "./AnalyzerTab";
+import PlanningTab from "./PlanningTab";
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
@@ -45,15 +47,19 @@ export default function TicketDetail() {
       <Tabs defaultValue="overzicht" className="w-full">
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="overzicht">Overzicht</TabsTrigger>
+          <TabsTrigger value="analyzer">AI Analyzer</TabsTrigger>
           <TabsTrigger value="communicatie">Communicatie</TabsTrigger>
           <TabsTrigger value="bijlagen">Bijlagen</TabsTrigger>
+          <TabsTrigger value="planning">Planning</TabsTrigger>
           <TabsTrigger value="taken">Taken</TabsTrigger>
           <TabsTrigger value="oplossing">Oplossing</TabsTrigger>
           <TabsTrigger value="historie">Historie</TabsTrigger>
         </TabsList>
         <TabsContent value="overzicht"><OverzichtTab ticket={ticket} /></TabsContent>
+        <TabsContent value="analyzer"><AnalyzerTab ticket={ticket} /></TabsContent>
         <TabsContent value="communicatie"><CommunicatieTab ticket={ticket} /></TabsContent>
         <TabsContent value="bijlagen"><BijlagenTab ticket={ticket} /></TabsContent>
+        <TabsContent value="planning"><PlanningTab ticket={ticket} /></TabsContent>
         <TabsContent value="taken"><TakenTab ticket={ticket} /></TabsContent>
         <TabsContent value="oplossing"><OplossingTab ticket={ticket} /></TabsContent>
         <TabsContent value="historie"><HistorieTab ticket={ticket} /></TabsContent>
