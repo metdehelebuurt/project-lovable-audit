@@ -125,8 +125,6 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
       return;
     }
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
     const state = btoa(JSON.stringify({
       partner_id: partnerId,
       user_id: user.id,
@@ -143,7 +141,21 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
       authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send offline_access")}&state=${state}`;
     }
 
-    window.open(authUrl, "email-oauth", "width=600,height=700");
+    const popup = window.open(authUrl, "email-oauth", "width=600,height=700");
+    const openedAt = Date.now();
+    const timer = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(timer);
+        const elapsed = Date.now() - openedAt;
+        if (elapsed < 3000 && !emailAccount) {
+          toast.error("Koppeling onderbroken", {
+            description: `Mogelijk staat de redirect-URI niet geregistreerd. Controleer in Google Cloud Console: ${redirectUri}`,
+            duration: 10000,
+          });
+        }
+      }
+    }, 500);
+    setTimeout(() => clearInterval(timer), 5 * 60 * 1000);
   };
 
   const disconnectOAuth = async () => {
