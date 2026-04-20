@@ -3,7 +3,7 @@ import {
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
   MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck,
-  ChevronRight
+  ChevronRight, LifeBuoy, BookOpen
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +71,22 @@ const getNavGroups = (rol: string): NavGroup[] => {
   if (["partner_admin", "partner_staff", "installateur"].includes(rol))
     werk.push({ title: rol === "installateur" ? "Mijn Opdrachten" : "Installaties", url: "/installaties", icon: Wrench });
   if (werk.length) groups.push({ label: "Werkproces", items: werk });
+
+  // Helpdesk
+  const helpdesk: NavItem[] = [];
+  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol)) {
+    helpdesk.push({
+      title: "Helpdesk",
+      url: "/helpdesk",
+      icon: LifeBuoy,
+      children: [
+        { title: "Dashboard", url: "/helpdesk", icon: LayoutDashboard },
+        { title: "Tickets", url: "/helpdesk/tickets", icon: LifeBuoy },
+        { title: "Kennisbank", url: "/helpdesk/kennisbank", icon: BookOpen },
+      ],
+    });
+  }
+  if (helpdesk.length) groups.push({ label: "Helpdesk & Service", items: helpdesk });
 
   // Financieel with sub-items
   const financieel: NavItem[] = [];
