@@ -161,3 +161,72 @@ export function useLogHistorie() {
     },
   });
 }
+
+export function useUpsertTaak() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      t: Partial<TicketTaak> & {
+        ticket_id: string;
+        partner_id: string;
+        titel: string;
+        gemaakt_door: string;
+      },
+    ) => {
+      if (t.id) {
+        const { id, ...patch } = t;
+        const { data, error } = await supabase
+          .from("helpdesk_ticket_taken")
+          .update(patch as never)
+          .eq("id", id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data as TicketTaak;
+      }
+      const { data, error } = await supabase
+        .from("helpdesk_ticket_taken")
+        .insert(t as never)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as TicketTaak;
+    },
+    onSuccess: (d) => {
+      qc.invalidateQueries({ queryKey: ["helpdesk_taken", d.ticket_id] });
+      toast.success("Taak opgeslagen");
+    },
+    onError: (e: Error) => toast.error(`Opslaan mislukt: ${e.message}`),
+  });
+}
+
+export function useDeleteTaak() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ticket_id: _ }: { id: string; ticket_id: string }) => {
+      const { error } = await supabase.from("helpdesk_ticket_taken").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["helpdesk_taken", vars.ticket_id] });
+      toast.success("Taak verwijderd");
+    },
+  });
+}
+
+export function useMarkEscalations() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (partnerId: string) => {
+      const { data, error } = await supabase.rpc("mark_helpdesk_escalations", {
+        _partner_id: partnerId,
+      });
+      if (error) throw error;
+      return (data as number | null) ?? 0;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ["helpdesk_tickets"] });
+      if (count > 0) toast.warning(`${count} ticket(s) geëscaleerd door SLA-overschrijding`);
+    },
+  });
+}
