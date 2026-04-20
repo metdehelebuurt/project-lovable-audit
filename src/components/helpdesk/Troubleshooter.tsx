@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, BookOpen, History, ListChecks, MessageCircleQuestion } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import type { HelpdeskTicket } from "@/hooks/helpdesk/useTickets";
+import { useTicketAiSessies, type AiSessie } from "@/hooks/helpdesk/useTicketAiSessies";
 
 interface Suggestie { actie: string; toelichting: string }
 interface Analyse {
@@ -19,15 +21,34 @@ interface Analyse {
   monteur_reden?: string;
 }
 interface Gerelateerd { id: string; ticketnummer: string; titel: string }
+interface AntwoordPaar { vraag: string; antwoord: string }
 
 export function Troubleshooter({ ticket, userId }: { ticket: HelpdeskTicket; userId: string }) {
+  const queryClient = useQueryClient();
+  const { data: sessies } = useTicketAiSessies(ticket.id, "troubleshooter");
   const [probleem, setProbleem] = useState(ticket.omschrijving ?? "");
   const [analyse, setAnalyse] = useState<Analyse | null>(null);
   const [gerelateerd, setGerelateerd] = useState<Gerelateerd[]>([]);
   const [bezig, setBezig] = useState(false);
+  const [antwoorden, setAntwoorden] = useState<Record<string, string>>({});
+  const [historie, setHistorie] = useState<AntwoordPaar[]>([]);
+  const [toonHistorie, setToonHistorie] = useState(false);
 
-  const start = async () => {
-    if (!probleem.trim()) { toast.error("Beschrijf het probleem"); return; }
+  // Laatst opgeslagen sessie automatisch tonen
+  useEffect(() => {
+    if (analyse || !sessies?.length) return;
+    const laatste = sessies[0];
+    const out = laatste.output as Analyse;
+    if (out) {
+      setAnalyse(out);
+      setGerelateerd((laatste.gerelateerde_tickets ?? []) as Gerelateerd[]);
+      const input = laatste.input as { probleem?: string; eerdere_antwoorden?: AntwoordPaar[] };
+      if (input?.probleem) setProbleem(input.probleem);
+      if (input?.eerdere_antwoorden) setHistorie(input.eerdere_antwoorden);
+    }
+  }, [sessies, analyse]);
+
+  const runAi = async (eerdere_antwoorden: AntwoordPaar[]) => {
     setBezig(true);
     try {
       const { data, error } = await supabase.functions.invoke("helpdesk-ai-troubleshooter", {
@@ -40,18 +61,40 @@ export function Troubleshooter({ ticket, userId }: { ticket: HelpdeskTicket; use
           product_merk: ticket.product_merk,
           product_type: ticket.product_type,
           foutcode: ticket.foutcode,
+          eerdere_antwoorden,
         },
       });
       if (error) throw error;
       const out = data as { analyse: Analyse; gerelateerde_tickets: Gerelateerd[] };
       setAnalyse(out.analyse);
       setGerelateerd(out.gerelateerde_tickets ?? []);
+      setAntwoorden({});
+      queryClient.invalidateQueries({ queryKey: ["helpdesk_ticket_ai_sessies", ticket.id] });
+      toast.success("Analyse opgeslagen bij ticket");
     } catch (e) {
       toast.error(`Troubleshooter mislukt: ${(e as Error).message}`);
     } finally {
       setBezig(false);
     }
   };
+
+  const start = async () => {
+    if (!probleem.trim()) { toast.error("Beschrijf het probleem"); return; }
+    setHistorie([]);
+    await runAi([]);
+  };
+
+  const verstuurAntwoorden = async () => {
+    const nieuw = (analyse?.vervolgvragen ?? [])
+      .map((vraag) => ({ vraag, antwoord: (antwoorden[vraag] ?? "").trim() }))
+      .filter((p) => p.antwoord.length > 0);
+    if (!nieuw.length) { toast.error("Beantwoord minstens één vraag"); return; }
+    const samengevoegd = [...historie, ...nieuw];
+    setHistorie(samengevoegd);
+    await runAi(samengevoegd);
+  };
+
+  const heeftVragen = useMemo(() => (analyse?.vervolgvragen?.length ?? 0) > 0, [analyse]);
 
   return (
     <Card className="p-6 space-y-4">
