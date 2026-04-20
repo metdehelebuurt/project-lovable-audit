@@ -65,3 +65,6 @@ verify_jwt = true
 
 [functions.helpdesk-ai-genereer-kbartikel]
 verify_jwt = true
+
+[functions.helpdesk-ai-analyze-bijlage]
+verify_jwt = true
