@@ -1388,6 +1388,616 @@ export type Database = {
           },
         ]
       }
+      helpdesk_drafts: {
+        Row: {
+          context_key: string
+          created_at: string
+          id: string
+          inhoud: Json
+          partner_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context_key: string
+          created_at?: string
+          id?: string
+          inhoud?: Json
+          partner_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context_key?: string
+          created_at?: string
+          id?: string
+          inhoud?: Json
+          partner_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      helpdesk_kennis_artikelen: {
+        Row: {
+          ai_gegenereerd: boolean
+          bron_ticket_id: string | null
+          created_at: string
+          foutcode: string | null
+          gemaakt_door: string | null
+          goedgekeurd_door: string | null
+          goedgekeurd_op: string | null
+          id: string
+          oplossing: string | null
+          partner_id: string
+          probleem: string | null
+          product_categorie: string | null
+          product_merk: string | null
+          product_type: string | null
+          samenvatting: string | null
+          status: Database["public"]["Enums"]["helpdesk_artikel_status"]
+          tags: Json | null
+          titel: string
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          ai_gegenereerd?: boolean
+          bron_ticket_id?: string | null
+          created_at?: string
+          foutcode?: string | null
+          gemaakt_door?: string | null
+          goedgekeurd_door?: string | null
+          goedgekeurd_op?: string | null
+          id?: string
+          oplossing?: string | null
+          partner_id: string
+          probleem?: string | null
+          product_categorie?: string | null
+          product_merk?: string | null
+          product_type?: string | null
+          samenvatting?: string | null
+          status?: Database["public"]["Enums"]["helpdesk_artikel_status"]
+          tags?: Json | null
+          titel: string
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          ai_gegenereerd?: boolean
+          bron_ticket_id?: string | null
+          created_at?: string
+          foutcode?: string | null
+          gemaakt_door?: string | null
+          goedgekeurd_door?: string | null
+          goedgekeurd_op?: string | null
+          id?: string
+          oplossing?: string | null
+          partner_id?: string
+          probleem?: string | null
+          product_categorie?: string | null
+          product_merk?: string | null
+          product_type?: string | null
+          samenvatting?: string | null
+          status?: Database["public"]["Enums"]["helpdesk_artikel_status"]
+          tags?: Json | null
+          titel?: string
+          updated_at?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_kennis_artikelen_bron_ticket_id_fkey"
+            columns: ["bron_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_kennis_media: {
+        Row: {
+          artikel_id: string
+          beschrijving: string | null
+          bestand_url: string
+          bestandsnaam: string
+          created_at: string
+          id: string
+          mime_type: string | null
+          partner_id: string
+        }
+        Insert: {
+          artikel_id: string
+          beschrijving?: string | null
+          bestand_url: string
+          bestandsnaam: string
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          partner_id: string
+        }
+        Update: {
+          artikel_id?: string
+          beschrijving?: string | null
+          bestand_url?: string
+          bestandsnaam?: string
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_kennis_media_artikel_id_fkey"
+            columns: ["artikel_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_kennis_artikelen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_notificatie_config: {
+        Row: {
+          created_at: string
+          email_bij_escalatie: boolean
+          email_bij_klant_reactie: boolean
+          email_bij_nieuw_ticket: boolean
+          email_bij_oplossing: boolean
+          email_bij_storing: boolean
+          email_bij_toewijzing: boolean
+          id: string
+          ontvangers: Json | null
+          partner_id: string
+          sla_uren_hoog: number
+          sla_uren_laag: number
+          sla_uren_normaal: number
+          sla_uren_urgent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_bij_escalatie?: boolean
+          email_bij_klant_reactie?: boolean
+          email_bij_nieuw_ticket?: boolean
+          email_bij_oplossing?: boolean
+          email_bij_storing?: boolean
+          email_bij_toewijzing?: boolean
+          id?: string
+          ontvangers?: Json | null
+          partner_id: string
+          sla_uren_hoog?: number
+          sla_uren_laag?: number
+          sla_uren_normaal?: number
+          sla_uren_urgent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_bij_escalatie?: boolean
+          email_bij_klant_reactie?: boolean
+          email_bij_nieuw_ticket?: boolean
+          email_bij_oplossing?: boolean
+          email_bij_storing?: boolean
+          email_bij_toewijzing?: boolean
+          id?: string
+          ontvangers?: Json | null
+          partner_id?: string
+          sla_uren_hoog?: number
+          sla_uren_laag?: number
+          sla_uren_normaal?: number
+          sla_uren_urgent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      helpdesk_service_bezoeken: {
+        Row: {
+          aankomst_tijd: string | null
+          afspraak_id: string | null
+          created_at: string
+          geplande_datum: string | null
+          geplande_tijd: string | null
+          handtekening_url: string | null
+          id: string
+          klant_naam_handtekening: string | null
+          monteur_id: string | null
+          notities: string | null
+          oplossing: string | null
+          partner_id: string
+          status: string
+          ticket_id: string
+          type: string
+          updated_at: string
+          vertrek_tijd: string | null
+          werkzaamheden: string | null
+        }
+        Insert: {
+          aankomst_tijd?: string | null
+          afspraak_id?: string | null
+          created_at?: string
+          geplande_datum?: string | null
+          geplande_tijd?: string | null
+          handtekening_url?: string | null
+          id?: string
+          klant_naam_handtekening?: string | null
+          monteur_id?: string | null
+          notities?: string | null
+          oplossing?: string | null
+          partner_id: string
+          status?: string
+          ticket_id: string
+          type?: string
+          updated_at?: string
+          vertrek_tijd?: string | null
+          werkzaamheden?: string | null
+        }
+        Update: {
+          aankomst_tijd?: string | null
+          afspraak_id?: string | null
+          created_at?: string
+          geplande_datum?: string | null
+          geplande_tijd?: string | null
+          handtekening_url?: string | null
+          id?: string
+          klant_naam_handtekening?: string | null
+          monteur_id?: string | null
+          notities?: string | null
+          oplossing?: string | null
+          partner_id?: string
+          status?: string
+          ticket_id?: string
+          type?: string
+          updated_at?: string
+          vertrek_tijd?: string | null
+          werkzaamheden?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_service_bezoeken_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_ticket_ai_sessies: {
+        Row: {
+          created_at: string
+          gerelateerde_tickets: Json | null
+          id: string
+          input: Json
+          model: string | null
+          output: Json
+          partner_id: string
+          ticket_id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gerelateerde_tickets?: Json | null
+          id?: string
+          input?: Json
+          model?: string | null
+          output?: Json
+          partner_id: string
+          ticket_id: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gerelateerde_tickets?: Json | null
+          id?: string
+          input?: Json
+          model?: string | null
+          output?: Json
+          partner_id?: string
+          ticket_id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_ticket_ai_sessies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_ticket_berichten: {
+        Row: {
+          auteur_id: string
+          bijlagen: Json | null
+          created_at: string
+          id: string
+          inhoud: string
+          partner_id: string
+          richting: string
+          ticket_id: string
+        }
+        Insert: {
+          auteur_id: string
+          bijlagen?: Json | null
+          created_at?: string
+          id?: string
+          inhoud: string
+          partner_id: string
+          richting?: string
+          ticket_id: string
+        }
+        Update: {
+          auteur_id?: string
+          bijlagen?: Json | null
+          created_at?: string
+          id?: string
+          inhoud?: string
+          partner_id?: string
+          richting?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_ticket_berichten_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_ticket_bijlagen: {
+        Row: {
+          beschrijving: string | null
+          bestand_grootte: number | null
+          bestand_url: string
+          bestandsnaam: string
+          created_at: string
+          geupload_door_id: string
+          id: string
+          mime_type: string | null
+          partner_id: string
+          ticket_id: string
+        }
+        Insert: {
+          beschrijving?: string | null
+          bestand_grootte?: number | null
+          bestand_url: string
+          bestandsnaam: string
+          created_at?: string
+          geupload_door_id: string
+          id?: string
+          mime_type?: string | null
+          partner_id: string
+          ticket_id: string
+        }
+        Update: {
+          beschrijving?: string | null
+          bestand_grootte?: number | null
+          bestand_url?: string
+          bestandsnaam?: string
+          created_at?: string
+          geupload_door_id?: string
+          id?: string
+          mime_type?: string | null
+          partner_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_ticket_bijlagen_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_ticket_historie: {
+        Row: {
+          actie: string
+          created_at: string
+          details: Json | null
+          id: string
+          nieuwe_waarde: string | null
+          oude_waarde: string | null
+          partner_id: string
+          ticket_id: string
+          user_id: string | null
+          veld: string | null
+        }
+        Insert: {
+          actie: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          nieuwe_waarde?: string | null
+          oude_waarde?: string | null
+          partner_id: string
+          ticket_id: string
+          user_id?: string | null
+          veld?: string | null
+        }
+        Update: {
+          actie?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          nieuwe_waarde?: string | null
+          oude_waarde?: string | null
+          partner_id?: string
+          ticket_id?: string
+          user_id?: string | null
+          veld?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_ticket_historie_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_ticket_taken: {
+        Row: {
+          created_at: string
+          deadline: string | null
+          gemaakt_door: string
+          id: string
+          omschrijving: string | null
+          partner_id: string
+          prioriteit: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
+          status: Database["public"]["Enums"]["helpdesk_taak_status"]
+          ticket_id: string
+          titel: string
+          toegewezen_aan: string | null
+          updated_at: string
+          voltooid_op: string | null
+        }
+        Insert: {
+          created_at?: string
+          deadline?: string | null
+          gemaakt_door: string
+          id?: string
+          omschrijving?: string | null
+          partner_id: string
+          prioriteit?: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
+          status?: Database["public"]["Enums"]["helpdesk_taak_status"]
+          ticket_id: string
+          titel: string
+          toegewezen_aan?: string | null
+          updated_at?: string
+          voltooid_op?: string | null
+        }
+        Update: {
+          created_at?: string
+          deadline?: string | null
+          gemaakt_door?: string
+          id?: string
+          omschrijving?: string | null
+          partner_id?: string
+          prioriteit?: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
+          status?: Database["public"]["Enums"]["helpdesk_taak_status"]
+          ticket_id?: string
+          titel?: string
+          toegewezen_aan?: string | null
+          updated_at?: string
+          voltooid_op?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpdesk_ticket_taken_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "helpdesk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helpdesk_tickets: {
+        Row: {
+          bron_locatie: Database["public"]["Enums"]["helpdesk_bron_locatie"]
+          created_at: string
+          escalatie_reden: string | null
+          factuur_id: string | null
+          foutcode: string | null
+          gemaakt_door: string
+          gesloten_op: string | null
+          id: string
+          installatie_id: string | null
+          is_geescaleerd: boolean
+          kanaal: Database["public"]["Enums"]["helpdesk_ticket_kanaal"]
+          klant_id: string | null
+          lead_id: string | null
+          omschrijving: string | null
+          opdracht_id: string | null
+          opgelost_op: string | null
+          oplossing: string | null
+          partner_id: string
+          prioriteit: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
+          product_categorie: string | null
+          product_installatiejaar: number | null
+          product_merk: string | null
+          product_type: string | null
+          sla_deadline: string | null
+          status: Database["public"]["Enums"]["helpdesk_ticket_status"]
+          ticketnummer: string
+          titel: string
+          toegewezen_aan: string | null
+          type: Database["public"]["Enums"]["helpdesk_ticket_type"]
+          updated_at: string
+        }
+        Insert: {
+          bron_locatie?: Database["public"]["Enums"]["helpdesk_bron_locatie"]
+          created_at?: string
+          escalatie_reden?: string | null
+          factuur_id?: string | null
+          foutcode?: string | null
+          gemaakt_door: string
+          gesloten_op?: string | null
+          id?: string
+          installatie_id?: string | null
+          is_geescaleerd?: boolean
+          kanaal?: Database["public"]["Enums"]["helpdesk_ticket_kanaal"]
+          klant_id?: string | null
+          lead_id?: string | null
+          omschrijving?: string | null
+          opdracht_id?: string | null
+          opgelost_op?: string | null
+          oplossing?: string | null
+          partner_id: string
+          prioriteit?: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
+          product_categorie?: string | null
+          product_installatiejaar?: number | null
+          product_merk?: string | null
+          product_type?: string | null
+          sla_deadline?: string | null
+          status?: Database["public"]["Enums"]["helpdesk_ticket_status"]
+          ticketnummer: string
+          titel: string
+          toegewezen_aan?: string | null
+          type?: Database["public"]["Enums"]["helpdesk_ticket_type"]
+          updated_at?: string
+        }
+        Update: {
+          bron_locatie?: Database["public"]["Enums"]["helpdesk_bron_locatie"]
+          created_at?: string
+          escalatie_reden?: string | null
+          factuur_id?: string | null
+          foutcode?: string | null
+          gemaakt_door?: string
+          gesloten_op?: string | null
+          id?: string
+          installatie_id?: string | null
+          is_geescaleerd?: boolean
+          kanaal?: Database["public"]["Enums"]["helpdesk_ticket_kanaal"]
+          klant_id?: string | null
+          lead_id?: string | null
+          omschrijving?: string | null
+          opdracht_id?: string | null
+          opgelost_op?: string | null
+          oplossing?: string | null
+          partner_id?: string
+          prioriteit?: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
+          product_categorie?: string | null
+          product_installatiejaar?: number | null
+          product_merk?: string | null
+          product_type?: string | null
+          sla_deadline?: string | null
+          status?: Database["public"]["Enums"]["helpdesk_ticket_status"]
+          ticketnummer?: string
+          titel?: string
+          toegewezen_aan?: string | null
+          type?: Database["public"]["Enums"]["helpdesk_ticket_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       installaties: {
         Row: {
           consument_id: string | null
@@ -3159,6 +3769,10 @@ export type Database = {
         }
         Returns: string
       }
+      generate_helpdesk_ticketnummer: {
+        Args: { _partner_id: string }
+        Returns: string
+      }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -3195,6 +3809,37 @@ export type Database = {
         | "inkoopfactuur"
         | "inkooporder"
         | "pakbon"
+      helpdesk_artikel_status: "concept" | "gepubliceerd" | "gearchiveerd"
+      helpdesk_bron_locatie:
+        | "direct"
+        | "order"
+        | "installatie"
+        | "factuur"
+        | "klant"
+      helpdesk_taak_status: "open" | "in_behandeling" | "klaar" | "geannuleerd"
+      helpdesk_ticket_kanaal:
+        | "telefoon"
+        | "email"
+        | "webformulier"
+        | "intern"
+        | "monteur"
+        | "overig"
+      helpdesk_ticket_prioriteit: "laag" | "normaal" | "hoog" | "urgent"
+      helpdesk_ticket_status:
+        | "nieuw"
+        | "open"
+        | "wacht_op_klant"
+        | "wacht_op_intern"
+        | "in_behandeling"
+        | "opgelost"
+        | "gesloten"
+        | "geescaleerd"
+      helpdesk_ticket_type:
+        | "vraag"
+        | "klacht"
+        | "storing"
+        | "service_bezoek"
+        | "overig"
       installatie_status:
         | "gepland"
         | "in_uitvoering"
@@ -3418,6 +4063,41 @@ export const Constants = {
         "inkoopfactuur",
         "inkooporder",
         "pakbon",
+      ],
+      helpdesk_artikel_status: ["concept", "gepubliceerd", "gearchiveerd"],
+      helpdesk_bron_locatie: [
+        "direct",
+        "order",
+        "installatie",
+        "factuur",
+        "klant",
+      ],
+      helpdesk_taak_status: ["open", "in_behandeling", "klaar", "geannuleerd"],
+      helpdesk_ticket_kanaal: [
+        "telefoon",
+        "email",
+        "webformulier",
+        "intern",
+        "monteur",
+        "overig",
+      ],
+      helpdesk_ticket_prioriteit: ["laag", "normaal", "hoog", "urgent"],
+      helpdesk_ticket_status: [
+        "nieuw",
+        "open",
+        "wacht_op_klant",
+        "wacht_op_intern",
+        "in_behandeling",
+        "opgelost",
+        "gesloten",
+        "geescaleerd",
+      ],
+      helpdesk_ticket_type: [
+        "vraag",
+        "klacht",
+        "storing",
+        "service_bezoek",
+        "overig",
       ],
       installatie_status: [
         "gepland",
