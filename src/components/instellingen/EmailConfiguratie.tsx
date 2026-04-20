@@ -316,6 +316,27 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
                 <p className="text-xs text-muted-foreground">
                   Na het koppelen worden e-mails automatisch gesynchroniseerd en gekoppeld aan leads en klanten.
                 </p>
+
+                <div className="border rounded-xl p-4 bg-muted/30 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">Krijg je "redirect_uri_mismatch"?</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Voeg deze URI <strong>exact</strong> toe in Google Cloud Console → APIs &amp; Services → Credentials → jouw OAuth Client ID → <em>Authorized redirect URIs</em>:
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <code className="flex-1 text-xs bg-background border rounded px-2 py-1.5 break-all font-mono">
+                          {redirectUri}
+                        </code>
+                        <Button type="button" size="sm" variant="outline" onClick={copyRedirectUri} className="gap-1.5 shrink-0">
+                          <Copy className="h-3 w-3" />
+                          Kopiëren
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
