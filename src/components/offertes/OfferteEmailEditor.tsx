@@ -10,6 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Send, Sparkles, Loader2, Bold, Italic, Link, Paperclip, Star } from "lucide-react";
 import { toast } from "sonner";
+import { renderElementToPdfBlob, uploadPdfToStorage } from "@/lib/pdfFromElement";
+import OffertePDFPreview from "@/components/OffertePDFPreview";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { createRoot } from "react-dom/client";
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -97,6 +101,7 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
   const handleSend = async () => {
     if (!to.trim()) { toast.error("Vul een ontvanger e-mailadres in"); return; }
     setSending(true);
+    let attachmentPath: string | undefined;
     try {
       const htmlBody = editorRef.current?.innerHTML || "";
 
@@ -115,12 +120,24 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
 
       const fullHtml = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">${htmlBody}${linksHtml}</div>`;
 
+      // Genereer PDF in een verborgen container
+      if (offerte.partner_id) {
+        try {
+          attachmentPath = await generateAndUploadPdf(offerte.id, offerte.partner_id);
+        } catch (pdfErr) {
+          console.error("PDF genereren mislukt:", pdfErr);
+          toast.warning("PDF kon niet worden gegenereerd, e-mail wordt zonder bijlage verstuurd");
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("send-offerte-email", {
         body: {
           offerte_id: offerte.id,
           ontvanger_email: to.trim(),
           html_body: fullHtml,
           subject,
+          attachment_path: attachmentPath || null,
+          attachment_filename: `Offerte-${offerte.offertenummer}.pdf`,
         },
       });
       if (error || data?.error) {
