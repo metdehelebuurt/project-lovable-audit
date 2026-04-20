@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.solar-building-insights]
 verify_jwt = false
+
+[functions.ai-offerte-feedback-analyse]
+verify_jwt = false
