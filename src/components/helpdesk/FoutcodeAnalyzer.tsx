@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import type { HelpdeskTicket } from "@/hooks/helpdesk/useTickets";
+import { useTicketAiSessies, type AiSessie } from "@/hooks/helpdesk/useTicketAiSessies";
 
 interface Stap { stap: number; actie: string; verwacht_resultaat: string }
 interface Analyse {
@@ -18,11 +20,24 @@ interface Analyse {
 }
 
 export function FoutcodeAnalyzer({ ticket, userId }: { ticket: HelpdeskTicket; userId: string }) {
+  const queryClient = useQueryClient();
+  const { data: sessies } = useTicketAiSessies(ticket.id, "foutcode");
   const [merk, setMerk] = useState(ticket.product_merk ?? "");
   const [foutcode, setFoutcode] = useState(ticket.foutcode ?? "");
   const [context, setContext] = useState("");
   const [analyse, setAnalyse] = useState<Analyse | null>(null);
   const [bezig, setBezig] = useState(false);
+  const [toonHistorie, setToonHistorie] = useState(false);
+
+  useEffect(() => {
+    if (analyse || !sessies?.length) return;
+    const laatste = sessies[0];
+    setAnalyse(laatste.output as Analyse);
+    const input = laatste.input as { merk?: string; foutcode?: string; context?: string };
+    if (input?.merk) setMerk(input.merk);
+    if (input?.foutcode) setFoutcode(input.foutcode);
+    if (input?.context) setContext(input.context);
+  }, [sessies, analyse]);
 
   const start = async () => {
     if (!merk.trim() || !foutcode.trim()) {
@@ -45,6 +60,8 @@ export function FoutcodeAnalyzer({ ticket, userId }: { ticket: HelpdeskTicket; u
       });
       if (error) throw error;
       setAnalyse((data as { analyse: Analyse }).analyse);
+      queryClient.invalidateQueries({ queryKey: ["helpdesk_ticket_ai_sessies", ticket.id] });
+      toast.success("Analyse opgeslagen bij ticket");
     } catch (e) {
       toast.error(`Analyse mislukt: ${(e as Error).message}`);
     } finally {
