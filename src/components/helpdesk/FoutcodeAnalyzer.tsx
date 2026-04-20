@@ -83,10 +83,18 @@ export function FoutcodeAnalyzer({ ticket, userId }: { ticket: HelpdeskTicket; u
         <Label htmlFor="fc-ctx">Extra context (optioneel)</Label>
         <Input id="fc-ctx" value={context} onChange={(e) => setContext(e.target.value)} placeholder="Wanneer trad het op, wat heeft klant al geprobeerd" />
       </div>
-      <Button onClick={start} disabled={bezig}>
-        {bezig ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-        Analyseer foutcode
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={start} disabled={bezig}>
+          {bezig ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          {analyse ? "Opnieuw analyseren" : "Analyseer foutcode"}
+        </Button>
+        {sessies && sessies.length > 1 ? (
+          <Button variant="outline" type="button" onClick={() => setToonHistorie((v) => !v)}>
+            <History className="h-4 w-4 mr-2" />
+            {toonHistorie ? "Verberg" : "Toon"} eerdere analyses ({sessies.length})
+          </Button>
+        ) : null}
+      </div>
 
       {analyse ? (
         <div className="space-y-3 border-t pt-4">
@@ -116,6 +124,27 @@ export function FoutcodeAnalyzer({ ticket, userId }: { ticket: HelpdeskTicket; u
             </div>
           ) : null}
           {analyse.wanneer_monteur ? <p className="text-xs text-muted-foreground italic">Monteur nodig: {analyse.wanneer_monteur}</p> : null}
+        </div>
+      ) : null}
+
+      {toonHistorie && sessies && sessies.length > 1 ? (
+        <div className="border-t pt-4 space-y-2">
+          <p className="text-sm font-medium">Eerdere analyses</p>
+          {sessies.slice(1).map((s) => {
+            const o = s.output as Analyse;
+            const i = s.input as { merk?: string; foutcode?: string };
+            return (
+              <div key={s.id} className="rounded-md border p-3 text-sm space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  {new Date(s.created_at).toLocaleString("nl-NL")} — {i?.merk} / {i?.foutcode}
+                </p>
+                {o?.betekenis ? <p>{o.betekenis}</p> : null}
+                {o?.oplossingsstappen?.length ? (
+                  <p className="text-xs text-muted-foreground">{o.oplossingsstappen.length} stappen voorgesteld</p>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </Card>
