@@ -213,19 +213,21 @@ function BedrijfsgegevensTab({ partnerId }: { partnerId: string }) {
   const [form, setForm] = useState({
     naam: "", email: "", telefoonnummer: "", website: "",
     adres: "", postcode: "", plaats: "", kvk: "", btw: "",
+    iban: "", iban_tnv: "", bic: "",
     contactpersoon_voornaam: "", contactpersoon_achternaam: "",
     contactpersoon_functie: "", contactpersoon_email: "", contactpersoon_telefoon: "",
   });
 
   useEffect(() => {
     supabase.from("partners")
-      .select("naam, email, telefoonnummer, website, adres, postcode, plaats, kvk, btw, contactpersoon_voornaam, contactpersoon_achternaam, contactpersoon_functie, contactpersoon_email, contactpersoon_telefoon")
+      .select("naam, email, telefoonnummer, website, adres, postcode, plaats, kvk, btw, iban, iban_tnv, bic, contactpersoon_voornaam, contactpersoon_achternaam, contactpersoon_functie, contactpersoon_email, contactpersoon_telefoon")
       .eq("id", partnerId).single()
       .then(({ data }) => {
         if (data) setForm({
           naam: data.naam ?? "", email: data.email ?? "", telefoonnummer: data.telefoonnummer ?? "",
           website: data.website ?? "", adres: data.adres ?? "", postcode: data.postcode ?? "",
           plaats: data.plaats ?? "", kvk: data.kvk ?? "", btw: data.btw ?? "",
+          iban: (data as any).iban ?? "", iban_tnv: (data as any).iban_tnv ?? "", bic: (data as any).bic ?? "",
           contactpersoon_voornaam: data.contactpersoon_voornaam ?? "",
           contactpersoon_achternaam: data.contactpersoon_achternaam ?? "",
           contactpersoon_functie: data.contactpersoon_functie ?? "",
@@ -244,12 +246,13 @@ function BedrijfsgegevensTab({ partnerId }: { partnerId: string }) {
       naam: form.naam, email: form.email || null, telefoonnummer: form.telefoonnummer || null,
       website: form.website || null, adres: form.adres || null, postcode: form.postcode || null,
       plaats: form.plaats || null, kvk: form.kvk || null, btw: form.btw || null,
+      iban: form.iban || null, iban_tnv: form.iban_tnv || null, bic: form.bic || null,
       contactpersoon_voornaam: form.contactpersoon_voornaam || null,
       contactpersoon_achternaam: form.contactpersoon_achternaam || null,
       contactpersoon_functie: form.contactpersoon_functie || null,
       contactpersoon_email: form.contactpersoon_email || null,
       contactpersoon_telefoon: form.contactpersoon_telefoon || null,
-    }).eq("id", partnerId);
+    } as any).eq("id", partnerId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Bedrijfsgegevens opgeslagen");
@@ -276,6 +279,29 @@ function BedrijfsgegevensTab({ partnerId }: { partnerId: string }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><Label>KVK-nummer</Label><Input value={form.kvk} onChange={e => update("kvk", e.target.value)} /></div>
             <div><Label>BTW-nummer</Label><Input value={form.btw} onChange={e => update("btw", e.target.value)} /></div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Financiële gegevens</CardTitle>
+          <p className="text-sm text-muted-foreground">Worden automatisch op alle facturen, inkooporders en orderbevestigingen vermeld.</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label>IBAN</Label>
+              <Input value={form.iban} onChange={e => update("iban", e.target.value.toUpperCase().replace(/\s/g, ""))} placeholder="NL00 BANK 0123 4567 89" />
+            </div>
+            <div>
+              <Label>Tenaamstelling</Label>
+              <Input value={form.iban_tnv} onChange={e => update("iban_tnv", e.target.value)} placeholder={form.naam || "Naam op rekening"} />
+            </div>
+          </div>
+          <div>
+            <Label>BIC <span className="text-xs text-muted-foreground">(optioneel, voor internationale betalingen)</span></Label>
+            <Input value={form.bic} onChange={e => update("bic", e.target.value.toUpperCase().replace(/\s/g, ""))} placeholder="BANKNL2A" />
           </div>
         </CardContent>
       </Card>

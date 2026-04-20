@@ -49,6 +49,8 @@ interface Props {
     kvk?: string;
     btw?: string;
     iban?: string;
+    iban_tnv?: string;
+    bic?: string;
     logo_url?: string;
     primaire_kleur?: string;
   } | null;
@@ -114,6 +116,7 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
         fontSize: "9pt",
         lineHeight: "1.4",
         boxSizing: "border-box",
+        margin: "0 auto",
       }}
     >
       {/* === HEADER === */}
@@ -140,7 +143,7 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
         </div>
 
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "20pt", fontWeight: 700, color: primaryColor, letterSpacing: "-0.5px" }}>
+          <div style={{ fontSize: "20pt", fontWeight: 700, color: primaryColor, letterSpacing: "0" }}>
             {typeLabels[doc.type] || "DOCUMENT"}
           </div>
           <div style={{ fontSize: "11pt", fontFamily: "monospace", marginTop: "4px", color: "#374151" }}>
@@ -360,11 +363,16 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
           </div>
           <div style={{ display: "flex", gap: "15mm", flexWrap: "wrap" }}>
             <div>
-              <span style={{ color: "#6b7280" }}>T.n.v.:</span> {partner?.naam || "—"}
+              <span style={{ color: "#6b7280" }}>T.n.v.:</span> {partner?.iban_tnv || partner?.naam || "—"}
             </div>
             {partner?.iban && (
               <div>
                 <span style={{ color: "#6b7280" }}>IBAN:</span> <strong>{partner.iban}</strong>
+              </div>
+            )}
+            {partner?.bic && (
+              <div>
+                <span style={{ color: "#6b7280" }}>BIC:</span> <strong>{partner.bic}</strong>
               </div>
             )}
             <div>

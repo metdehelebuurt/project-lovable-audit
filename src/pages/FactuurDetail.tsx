@@ -74,7 +74,7 @@ export default function FactuurDetail() {
     queryKey: ["partner-branding", profile?.partner_id],
     queryFn: async () => {
       const { data } = await supabase.from("partners")
-        .select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, logo_url, primaire_kleur")
+        .select("naam, adres, postcode, plaats, email, telefoonnummer, kvk, btw, iban, iban_tnv, bic, logo_url, primaire_kleur")
         .eq("id", profile!.partner_id)
         .single();
       return data;
@@ -298,20 +298,31 @@ export default function FactuurDetail() {
 
       {/* PDF Preview Dialog */}
       <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
-        <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-[95vw] w-fit max-h-[95vh] overflow-auto p-0">
           <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
             <DialogHeader><DialogTitle>PDF Preview — {doc.documentnummer}</DialogTitle></DialogHeader>
-            <Button size="sm" onClick={() => window.print()}>
+            <Button size="sm" onClick={() => {
+              const klantNaam = pdfKlant?.bedrijfsnaam
+                || `${pdfKlant?.voornaam ?? ""} ${pdfKlant?.achternaam ?? ""}`.trim()
+                || doc.leveranciers?.naam
+                || "onbekend";
+              const orig = document.title;
+              document.title = `${doc.documentnummer} - ${klantNaam}`;
+              window.print();
+              setTimeout(() => { document.title = orig; }, 1000);
+            }}>
               <Download className="h-4 w-4 mr-2" /> PDF downloaden
             </Button>
           </div>
-          <FinancieelPDF
-            doc={{ ...doc, regels }}
-            klant={pdfKlant}
-            leverancier={doc.leveranciers}
-            partner={partnerData}
-            installatie={installatieData}
-          />
+          <div style={{ display: "flex", justifyContent: "center", padding: "8px", background: "#f3f4f6" }}>
+            <FinancieelPDF
+              doc={{ ...doc, regels }}
+              klant={pdfKlant}
+              leverancier={doc.leveranciers}
+              partner={partnerData}
+              installatie={installatieData}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

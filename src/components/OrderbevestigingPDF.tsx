@@ -15,6 +15,8 @@ interface PartnerBranding {
   secundaire_kleur: string;
   bedrijfsslogan: string | null;
   iban?: string | null;
+  iban_tnv?: string | null;
+  bic?: string | null;
 }
 
 interface OfferteRegel {
@@ -260,8 +262,9 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
         <div className="mx-12 mb-8 p-4 rounded-lg border border-gray-100 bg-gray-50/50">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Betalingsgegevens</p>
           <div className="flex gap-8 text-sm">
-            <div><span className="text-gray-500">T.n.v.:</span> {partner.naam}</div>
+            <div><span className="text-gray-500">T.n.v.:</span> {partner.iban_tnv || partner.naam}</div>
             <div><span className="text-gray-500">IBAN:</span> <strong>{partner.iban}</strong></div>
+            {partner.bic && <div><span className="text-gray-500">BIC:</span> <strong>{partner.bic}</strong></div>}
             <div><span className="text-gray-500">Kenmerk:</span> <strong>{ordernummer}</strong></div>
           </div>
         </div>
