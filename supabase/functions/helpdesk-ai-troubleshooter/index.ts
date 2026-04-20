@@ -31,17 +31,48 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Zoek gerelateerde tickets en KB-artikelen binnen DEZE partner
-    const kbRes = await fetch(
-      `${supabaseUrl}/rest/v1/helpdesk_kennis_artikelen?partner_id=eq.${body.partner_id}&status=eq.gepubliceerd&select=id,titel,samenvatting,probleem,oplossing,product_merk,product_categorie,foutcode&limit=20`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    // Bouw zoektermen uit probleem + merk + foutcode voor partner-gefilterde KB-search
+    const woorden = body.probleem
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 4)
+      .slice(0, 6);
+    const termen = [...woorden];
+    if (body.product_merk) termen.push(body.product_merk.toLowerCase());
+    if (body.foutcode) termen.push(body.foutcode.toLowerCase());
+    const orFilter = termen.length
+      ? termen
+          .map(
+            (t) =>
+              `titel.ilike.%${t}%,probleem.ilike.%${t}%,oplossing.ilike.%${t}%,foutcode.ilike.%${t}%`,
+          )
+          .join(",")
+      : "";
+
+    const kbUrl = new URL(`${supabaseUrl}/rest/v1/helpdesk_kennis_artikelen`);
+    kbUrl.searchParams.set("partner_id", `eq.${body.partner_id}`);
+    kbUrl.searchParams.set("status", "eq.gepubliceerd");
+    kbUrl.searchParams.set(
+      "select",
+      "id,titel,samenvatting,probleem,oplossing,product_merk,product_categorie,foutcode",
     );
+    kbUrl.searchParams.set("limit", "20");
+    if (orFilter) kbUrl.searchParams.set("or", `(${orFilter})`);
+    const kbRes = await fetch(kbUrl, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } });
     const kbArtikelen: Array<Record<string, unknown>> = kbRes.ok ? await kbRes.json() : [];
 
-    const ticketRes = await fetch(
-      `${supabaseUrl}/rest/v1/helpdesk_tickets?partner_id=eq.${body.partner_id}&status=eq.opgelost&select=id,ticketnummer,titel,product_merk,foutcode,oplossing&limit=10&order=opgelost_op.desc`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    const ticketUrl = new URL(`${supabaseUrl}/rest/v1/helpdesk_tickets`);
+    ticketUrl.searchParams.set("partner_id", `eq.${body.partner_id}`);
+    ticketUrl.searchParams.set("status", "eq.opgelost");
+    ticketUrl.searchParams.set(
+      "select",
+      "id,ticketnummer,titel,product_merk,foutcode,oplossing",
     );
+    ticketUrl.searchParams.set("limit", "10");
+    ticketUrl.searchParams.set("order", "opgelost_op.desc");
+    if (orFilter) ticketUrl.searchParams.set("or", `(${orFilter})`);
+    const ticketRes = await fetch(ticketUrl, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } });
     const opgelost: Array<Record<string, unknown>> = ticketRes.ok ? await ticketRes.json() : [];
 
     const kbContext = kbArtikelen.length
