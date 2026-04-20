@@ -136,6 +136,26 @@ export default function FactuurDetail() {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @media print {
+          @page { size: A4; margin: 0; }
+          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body * { visibility: hidden !important; }
+          .pdf-print-root, .pdf-print-root * { visibility: visible !important; }
+          .pdf-print-root {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            box-shadow: none !important;
+            width: 210mm !important;
+            display: block !important;
+          }
+          .no-print { display: none !important; }
+        }
+      `}</style>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/financieel")}>
