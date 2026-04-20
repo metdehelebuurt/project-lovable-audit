@@ -334,7 +334,7 @@ export default function FactuurDetail() {
               <Download className="h-4 w-4 mr-2" /> PDF downloaden
             </Button>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", padding: "8px", background: "#f3f4f6" }}>
+          <div className="pdf-print-root" style={{ display: "flex", justifyContent: "center", padding: "8px", background: "#f3f4f6" }}>
             <FinancieelPDF
               doc={{ ...doc, regels }}
               klant={pdfKlant}
