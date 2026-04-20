@@ -68,3 +68,6 @@ verify_jwt = true
 
 [functions.helpdesk-ai-analyze-bijlage]
 verify_jwt = true
+
+[functions.helpdesk-klant-duplicaat-check]
+verify_jwt = true

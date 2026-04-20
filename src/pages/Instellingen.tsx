@@ -5,6 +5,7 @@ import PartnerAbonnement from "@/components/abonnementen/PartnerAbonnement";
 import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
 import BetalingsvoorwaardenConfig from "@/components/instellingen/BetalingsvoorwaardenConfig";
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
+import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   User, Lock, Shield, Download, Trash2, Sparkles, Palette, FileText,
-  Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard
+  Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ const Instellingen = () => {
     { id: "offertes", label: "Offertes", icon: FileText, adminOnly: true },
     { id: "leads", label: "Leads", icon: Users, adminOnly: true },
     { id: "schouwen", label: "Schouwen", icon: ClipboardList, adminOnly: true },
+    { id: "helpdesk", label: "Helpdesk notificaties", icon: LifeBuoy, adminOnly: true },
     { id: "abonnement", label: "Abonnement", icon: CreditCard, adminOnly: true },
     { id: "privacy", label: "Privacy & Data", icon: Shield },
   ];
@@ -98,6 +100,7 @@ const Instellingen = () => {
           {activeTab === "producten" && isPartnerAdmin && profile?.partner_id && <ProductenInstellingen partnerId={profile.partner_id} />}
           {activeTab === "leads" && isPartnerAdmin && profile?.partner_id && <LeadBronnenConfig partnerId={profile.partner_id} />}
           {activeTab === "schouwen" && isPartnerAdmin && profile?.partner_id && <SchouwInstellingen partnerId={profile.partner_id} />}
+          {activeTab === "helpdesk" && isPartnerAdmin && profile?.partner_id && <HelpdeskNotificatieConfig partnerId={profile.partner_id} />}
           {activeTab === "abonnement" && isPartnerAdmin && profile?.partner_id && <PartnerAbonnement />}
           {activeTab === "privacy" && <PrivacyTab isSuperOrPartner={isSuperOrPartner} />}
         </div>
