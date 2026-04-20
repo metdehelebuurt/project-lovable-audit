@@ -73,7 +73,20 @@ const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "",
         <div className="space-y-4">
           <div>
             <Label>Aan</Label>
-            <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="email@voorbeeld.nl" className="mt-1" />
+            {availableTo && availableTo.length > 1 ? (
+              <Select value={to} onValueChange={setTo}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Kies e-mailadres" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTo.map(addr => (
+                    <SelectItem key={addr} value={addr}>{addr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="email@voorbeeld.nl" className="mt-1" />
+            )}
           </div>
           <div>
             <Label>Onderwerp</Label>
