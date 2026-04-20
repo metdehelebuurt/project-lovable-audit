@@ -3779,6 +3779,10 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      mark_helpdesk_escalations: {
+        Args: { _partner_id: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role:
