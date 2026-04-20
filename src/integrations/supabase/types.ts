@@ -3898,7 +3898,6 @@ export type Database = {
           naam: string | null
           partner_id: string | null
           type: Database["public"]["Enums"]["widget_type"] | null
-          updated_at: string | null
         }
         Insert: {
           actief?: boolean | null
@@ -3908,7 +3907,6 @@ export type Database = {
           naam?: string | null
           partner_id?: string | null
           type?: Database["public"]["Enums"]["widget_type"] | null
-          updated_at?: string | null
         }
         Update: {
           actief?: boolean | null
@@ -3918,7 +3916,6 @@ export type Database = {
           naam?: string | null
           partner_id?: string | null
           type?: Database["public"]["Enums"]["widget_type"] | null
-          updated_at?: string | null
         }
         Relationships: [
           {
