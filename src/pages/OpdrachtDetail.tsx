@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package } from "lucide-react";
+import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package, LifeBuoy } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 
@@ -244,6 +244,13 @@ const OpdrachtDetail = () => {
             </Button>
             <Button variant="outline" onClick={() => handleCreateFinancieel("pakbon")} className="gap-2">
               <Package className="h-4 w-4" /> Pakbon aanmaken
+            </Button>
+            <Button variant="outline" onClick={() => {
+              const params = new URLSearchParams({ bron: "order", opdracht_id: opdracht.id });
+              if (opdracht.lead_id) params.set("lead_id", opdracht.lead_id);
+              navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+            }} className="gap-2">
+              <LifeBuoy className="h-4 w-4" /> Ticket aanmaken
             </Button>
             <Button variant="destructive" onClick={() => setCancelDialog(true)} className="gap-2 ml-auto"><XCircle className="h-4 w-4" /> Annuleren</Button>
           </CardContent>

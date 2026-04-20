@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Pencil,
   FileText, ClipboardCheck, Wrench, Loader2, Save,
-  User, TrendingUp, CalendarIcon, StickyNote, Send, Trash2,
+  User, TrendingUp, CalendarIcon, StickyNote, Send, Trash2, LifeBuoy,
 } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 import {
@@ -216,6 +216,13 @@ const KlantDetail = () => {
           )}
           <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => setAfspraakOpen(true)}>
             <CalendarIcon className="h-4 w-4" /> Afspraak
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => {
+            const params = new URLSearchParams({ bron: "klant", klant_id: klant.id });
+            if (klant.lead_id) params.set("lead_id", klant.lead_id);
+            navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+          }}>
+            <LifeBuoy className="h-4 w-4" /> Ticket
           </Button>
           <Button size="sm" className="rounded-xl gap-1.5" onClick={handleNewOfferte}>
             <FileText className="h-4 w-4" /> Offerte
