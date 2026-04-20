@@ -11,9 +11,41 @@ import { Separator } from "@/components/ui/separator";
 import { Send, Sparkles, Loader2, Bold, Italic, Link, Paperclip, Star } from "lucide-react";
 import { toast } from "sonner";
 import { renderElementToPdfBlob, uploadPdfToStorage } from "@/lib/pdfFromElement";
-import OffertePDFPreview from "@/components/OffertePDFPreview";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { createRoot } from "react-dom/client";
+
+async function generateAndUploadPdf(offerteId: string, partnerId: string): Promise<string | undefined> {
+  // Open verborgen iframe met print-route, wacht tot deze geladen is, render dan naar PDF
+  return new Promise((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:850px;height:1200px;border:0;";
+    iframe.src = `/offertes/${offerteId}/pdf`;
+    document.body.appendChild(iframe);
+
+    const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+    const timeout = setTimeout(() => { cleanup(); resolve(undefined); }, 15000);
+
+    iframe.onload = () => {
+      // Wacht extra moment tot React heeft gerendered
+      setTimeout(async () => {
+        try {
+          const doc = iframe.contentDocument;
+          const target = doc?.querySelector(".pdf-print-root") as HTMLElement | null
+            || (doc?.body as HTMLElement | null);
+          if (!target) { clearTimeout(timeout); cleanup(); resolve(undefined); return; }
+          const blob = await renderElementToPdfBlob(target);
+          const path = await uploadPdfToStorage(supabase, partnerId, "offerte", offerteId, blob);
+          clearTimeout(timeout);
+          cleanup();
+          resolve(path);
+        } catch (err) {
+          console.error("PDF render error:", err);
+          clearTimeout(timeout);
+          cleanup();
+          resolve(undefined);
+        }
+      }, 1500);
+    };
+  });
+}
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -295,7 +327,7 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
             )}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Paperclip className="h-3.5 w-3.5" />
-              <span>PDF offerte wordt als bijlage bijgevoegd</span>
+              <span>PDF van de offerte wordt automatisch als bijlage bijgevoegd</span>
             </div>
           </div>
 
