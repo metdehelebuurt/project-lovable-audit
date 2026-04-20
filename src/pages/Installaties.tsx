@@ -16,8 +16,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Wrench, Trash2 } from "lucide-react";
+import { Plus, Search, Wrench, Trash2, LifeBuoy } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 
 type InstallatieStatus = Database["public"]["Enums"]["installatie_status"];
@@ -64,6 +65,7 @@ const emptyForm = {
 
 const Installaties = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [installaties, setInstallaties] = useState<Installatie[]>([]);
   const [installateurs, setInstallateurs] = useState<{ id: string; voornaam: string; achternaam: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,6 +269,15 @@ const Installaties = () => {
                   <TableCell>{inst.geplande_startdatum ?? "—"}</TableCell>
                   <TableCell>{inst.geplande_einddatum ?? "—"}</TableCell>
                   <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={(e) => {
+                      e.stopPropagation();
+                      const params = new URLSearchParams({ bron: "installatie", installatie_id: inst.id });
+                      if (inst.lead_id) params.set("lead_id", inst.lead_id);
+                      if (inst.consument_id) params.set("klant_id", inst.consument_id);
+                      navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+                    }} title="Ticket aanmaken">
+                      <LifeBuoy className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDelete(inst.id); }}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

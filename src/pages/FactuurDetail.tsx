@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { formatCurrency, type OfferteRegel } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download, Pencil } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download, Pencil, LifeBuoy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
@@ -309,6 +309,14 @@ export default function FactuurDetail() {
           )}
           <Button variant="outline" onClick={() => setPdfOpen(true)}>
             <FileText className="h-4 w-4 mr-2" /> PDF Preview
+          </Button>
+          <Button variant="outline" onClick={() => {
+            const params = new URLSearchParams({ bron: "factuur", factuur_id: doc.id });
+            if (doc.klant_id) params.set("klant_id", doc.klant_id);
+            if (doc.opdracht_id) params.set("opdracht_id", doc.opdracht_id);
+            navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+          }}>
+            <LifeBuoy className="h-4 w-4 mr-2" /> Ticket aanmaken
           </Button>
         </div>
       </div>
