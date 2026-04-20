@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,44 +8,21 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Send, Sparkles, Loader2, Bold, Italic, Link, Paperclip, Star } from "lucide-react";
+import {
+  Send,
+  Sparkles,
+  Loader2,
+  Bold,
+  Italic,
+  Link as LinkIcon,
+  Paperclip,
+  Star,
+  FileText,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
-import { renderElementToPdfBlob, uploadPdfToStorage } from "@/lib/pdfFromElement";
-
-async function generateAndUploadPdf(offerteId: string, partnerId: string): Promise<string | undefined> {
-  // Open verborgen iframe met print-route, wacht tot deze geladen is, render dan naar PDF
-  return new Promise((resolve) => {
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:850px;height:1200px;border:0;";
-    iframe.src = `/offertes/${offerteId}/pdf`;
-    document.body.appendChild(iframe);
-
-    const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
-    const timeout = setTimeout(() => { cleanup(); resolve(undefined); }, 15000);
-
-    iframe.onload = () => {
-      // Wacht extra moment tot React heeft gerendered
-      setTimeout(async () => {
-        try {
-          const doc = iframe.contentDocument;
-          const target = doc?.querySelector(".pdf-print-root") as HTMLElement | null
-            || (doc?.body as HTMLElement | null);
-          if (!target) { clearTimeout(timeout); cleanup(); resolve(undefined); return; }
-          const blob = await renderElementToPdfBlob(target);
-          const path = await uploadPdfToStorage(supabase, partnerId, "offerte", offerteId, blob);
-          clearTimeout(timeout);
-          cleanup();
-          resolve(path);
-        } catch (err) {
-          console.error("PDF render error:", err);
-          clearTimeout(timeout);
-          cleanup();
-          resolve(undefined);
-        }
-      }, 1500);
-    };
-  });
-}
+import { generateOffertePdfViaIframe } from "@/lib/pdfFromPages";
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -63,12 +40,28 @@ interface OfferteEmailEditorProps {
   onSent?: () => void;
 }
 
-export default function OfferteEmailEditor({ open, onOpenChange, offerte, partnerNaam, onSent }: OfferteEmailEditorProps) {
+interface PdfState {
+  status: "idle" | "generating" | "ready" | "error";
+  path?: string;
+  signedUrl?: string;
+  sizeBytes?: number;
+  error?: string;
+}
+
+export default function OfferteEmailEditor({
+  open,
+  onOpenChange,
+  offerte,
+  partnerNaam,
+  onSent,
+}: OfferteEmailEditorProps) {
   const { profile } = useAuth();
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [to, setTo] = useState(offerte.klant_email);
-  const [subject, setSubject] = useState(`Offerte ${offerte.offertenummer} — ${partnerNaam || "Uw adviseur"}`);
+  const [subject, setSubject] = useState(
+    `Offerte ${offerte.offertenummer} — ${partnerNaam || "Uw adviseur"}`,
+  );
   const [includeAcceptLink, setIncludeAcceptLink] = useState(true);
   const [includePortalLink, setIncludePortalLink] = useState(true);
   const [includeVoorwaarden, setIncludeVoorwaarden] = useState(false);
@@ -77,29 +70,80 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
   const [aiLoading, setAiLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
+  const [pdf, setPdf] = useState<PdfState>({ status: "idle" });
+
+  const formatCurrency = (n: number) =>
+    new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
+
+  const formatBytes = (b: number) => {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
+    return `${(b / 1024 / 1024).toFixed(1)} MB`;
+  };
+
+  const generatePdf = useCallback(async () => {
+    if (!offerte.partner_id) {
+      setPdf({ status: "error", error: "Geen partner gekoppeld" });
+      return;
+    }
+    setPdf({ status: "generating" });
+    try {
+      const { path, sizeBytes } = await generateOffertePdfViaIframe(
+        supabase,
+        offerte.id,
+        offerte.partner_id,
+      );
+      const { data: signed } = await supabase.storage
+        .from("email-bijlagen")
+        .createSignedUrl(path, 3600);
+      setPdf({
+        status: "ready",
+        path,
+        signedUrl: signed?.signedUrl,
+        sizeBytes,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "PDF-generatie mislukt";
+      console.error("PDF-generatie:", err);
+      setPdf({ status: "error", error: msg });
+      toast.error("PDF-generatie mislukt", { description: msg });
+    }
+  }, [offerte.id, offerte.partner_id]);
+
+  // Genereer PDF bij openen + reset bij sluiten
+  useEffect(() => {
+    if (open) {
+      setSent(false);
+      setFeedbackScore(null);
+      void generatePdf();
+    } else {
+      setPdf({ status: "idle" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Load partner voorwaarden settings
   useEffect(() => {
     if (!offerte.partner_id) return;
-    supabase.from("partners").select("voorwaarden_pdf_url, feature_flags_json").eq("id", offerte.partner_id).single()
+    supabase
+      .from("partners")
+      .select("voorwaarden_pdf_url, feature_flags_json")
+      .eq("id", offerte.partner_id)
+      .single()
       .then(({ data }) => {
         if (data) {
-          const url = (data as any).voorwaarden_pdf_url || null;
+          const url = (data as { voorwaarden_pdf_url?: string | null }).voorwaarden_pdf_url || null;
           setVoorwaardenUrl(url);
           if (url && data.feature_flags_json && typeof data.feature_flags_json === "object") {
-            const flags = data.feature_flags_json as Record<string, any>;
-            if (flags.offerte_template?.voorwaarden_standaard_bijvoegen) {
-              setIncludeVoorwaarden(true);
-            }
+            const flags = data.feature_flags_json as Record<string, unknown>;
+            const tpl = flags.offerte_template as Record<string, unknown> | undefined;
+            if (tpl?.voorwaarden_standaard_bijvoegen) setIncludeVoorwaarden(true);
           }
         }
       });
   }, [offerte.partner_id]);
 
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
-
-  const defaultBody = `<p>Beste ${offerte.klant_naam},</p><p>Hierbij ontvangt u onze offerte met nummer <strong>${offerte.offertenummer}</strong> voor een totaalbedrag van <strong>${formatCurrency(offerte.totaal_bedrag)}</strong> (incl. BTW).</p><p>Neem gerust contact met ons op als u vragen heeft.</p><p>Met vriendelijke groet,<br/>${profile?.voornaam} ${profile?.achternaam}</p>`;
+  const defaultBody = `<p>Beste ${offerte.klant_naam},</p><p>Hierbij ontvangt u onze offerte met nummer <strong>${offerte.offertenummer}</strong> voor een totaalbedrag van <strong>${formatCurrency(offerte.totaal_bedrag)}</strong> (incl. BTW).</p><p>Neem gerust contact met ons op als u vragen heeft.</p><p>Met vriendelijke groet,<br/>${profile?.voornaam ?? ""} ${profile?.achternaam ?? ""}</p>`;
 
   const execCmd = (cmd: string, val?: string) => {
     document.execCommand(cmd, false, val);
@@ -115,7 +159,7 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
           offertenummer: offerte.offertenummer,
           totaal_bedrag: offerte.totaal_bedrag,
           partner_naam: partnerNaam,
-          adviseur_naam: `${profile?.voornaam} ${profile?.achternaam}`,
+          adviseur_naam: `${profile?.voornaam ?? ""} ${profile?.achternaam ?? ""}`,
           type: "email",
         },
       });
@@ -131,15 +175,22 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
   };
 
   const handleSend = async () => {
-    if (!to.trim()) { toast.error("Vul een ontvanger e-mailadres in"); return; }
+    if (!to.trim()) {
+      toast.error("Vul een ontvanger e-mailadres in");
+      return;
+    }
+    if (pdf.status !== "ready" || !pdf.path) {
+      toast.error("PDF is nog niet klaar");
+      return;
+    }
     setSending(true);
-    let attachmentPath: string | undefined;
     try {
       const htmlBody = editorRef.current?.innerHTML || "";
 
-      // Build links
       let linksHtml = "";
-      const portalUrl = offerte.share_token ? `${window.location.origin}/offerte/${offerte.share_token}` : "";
+      const portalUrl = offerte.share_token
+        ? `${window.location.origin}/offerte/${offerte.share_token}`
+        : "";
       if (includeAcceptLink && portalUrl) {
         linksHtml += `<p><a href="${portalUrl}" style="display:inline-block;padding:12px 32px;background-color:#5B58E1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Offerte bekijken & accepteren</a></p>`;
       }
@@ -152,23 +203,13 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
 
       const fullHtml = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">${htmlBody}${linksHtml}</div>`;
 
-      // Genereer PDF in een verborgen container
-      if (offerte.partner_id) {
-        try {
-          attachmentPath = await generateAndUploadPdf(offerte.id, offerte.partner_id);
-        } catch (pdfErr) {
-          console.error("PDF genereren mislukt:", pdfErr);
-          toast.warning("PDF kon niet worden gegenereerd, e-mail wordt zonder bijlage verstuurd");
-        }
-      }
-
       const { data, error } = await supabase.functions.invoke("send-offerte-email", {
         body: {
           offerte_id: offerte.id,
           ontvanger_email: to.trim(),
           html_body: fullHtml,
           subject,
-          attachment_path: attachmentPath || null,
+          attachment_path: pdf.path,
           attachment_filename: `Offerte-${offerte.offertenummer}.pdf`,
         },
       });
@@ -187,20 +228,26 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
 
   const handleFeedback = async (score: number) => {
     setFeedbackScore(score);
-    // Store feedback on the offerte for AI improvement
     try {
-      const { data: existing } = await supabase.from("offertes").select("feedback_berichten").eq("id", offerte.id).single();
+      const { data: existing } = await supabase
+        .from("offertes")
+        .select("feedback_berichten")
+        .eq("id", offerte.id)
+        .single();
       const msgs = Array.isArray(existing?.feedback_berichten) ? existing.feedback_berichten : [];
       const newMsg = {
         type: "email_feedback",
         score,
-        auteur: `${profile?.voornaam} ${profile?.achternaam}`,
+        auteur: `${profile?.voornaam ?? ""} ${profile?.achternaam ?? ""}`,
         datum: new Date().toISOString(),
       };
-      await supabase.from("offertes").update({
-        feedback_berichten: [...msgs, newMsg] as any,
-      }).eq("id", offerte.id);
-    } catch { /* silent */ }
+      await supabase
+        .from("offertes")
+        .update({ feedback_berichten: [...msgs, newMsg] as never })
+        .eq("id", offerte.id);
+    } catch {
+      /* silent */
+    }
     toast.success("Bedankt voor uw feedback!");
     setTimeout(() => onOpenChange(false), 800);
   };
@@ -211,28 +258,38 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-sm">
           <div className="text-center space-y-4 py-4">
-            <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
-              <Send className="h-5 w-5 text-green-600" />
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Send className="h-5 w-5 text-primary" />
             </div>
             <h3 className="text-lg font-semibold">E-mail verstuurd!</h3>
-            <p className="text-sm text-muted-foreground">Hoe tevreden bent u met de gegenereerde e-mail?</p>
+            <p className="text-sm text-muted-foreground">
+              Hoe tevreden bent u met de gegenereerde e-mail?
+            </p>
             <div className="flex justify-center gap-1">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button
                   key={s}
                   onClick={() => handleFeedback(s)}
                   className={`p-1.5 rounded-lg transition-colors ${feedbackScore === s ? "text-amber-500" : "text-muted-foreground/40 hover:text-amber-400"}`}
+                  aria-label={`${s} sterren`}
                 >
-                  <Star className="h-6 w-6" fill={feedbackScore && s <= feedbackScore ? "currentColor" : "none"} />
+                  <Star
+                    className="h-6 w-6"
+                    fill={feedbackScore && s <= feedbackScore ? "currentColor" : "none"}
+                  />
                 </button>
               ))}
             </div>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Overslaan</Button>
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              Overslaan
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
     );
   }
+
+  const canSend = pdf.status === "ready" && !!to.trim() && !sending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -247,7 +304,11 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
           {/* To */}
           <div className="grid grid-cols-[80px_1fr] items-center gap-2">
             <Label className="text-right text-sm text-muted-foreground">Aan</Label>
-            <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="klant@email.nl" />
+            <Input
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="klant@email.nl"
+            />
           </div>
 
           {/* Subject */}
@@ -266,15 +327,31 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
             <Button type="button" variant="ghost" size="sm" onClick={() => execCmd("italic")}>
               <Italic className="h-3.5 w-3.5" />
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => {
-              const url = prompt("Link URL:");
-              if (url) execCmd("createLink", url);
-            }}>
-              <Link className="h-3.5 w-3.5" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const url = prompt("Link URL:");
+                if (url) execCmd("createLink", url);
+              }}
+            >
+              <LinkIcon className="h-3.5 w-3.5" />
             </Button>
             <div className="flex-1" />
-            <Button type="button" variant="outline" size="sm" onClick={handleAiWrite} disabled={aiLoading} className="gap-1.5">
-              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAiWrite}
+              disabled={aiLoading}
+              className="gap-1.5"
+            >
+              {aiLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
               AI schrijven
             </Button>
           </div>
@@ -300,7 +377,9 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
                 Acceptatielink bijvoegen
               </Label>
               {!offerte.share_token && (
-                <Badge variant="outline" className="text-xs text-muted-foreground">Genereer eerst een deellink</Badge>
+                <Badge variant="outline" className="text-xs text-muted-foreground">
+                  Genereer eerst een deellink
+                </Badge>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -325,18 +404,88 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
                 </Label>
               </div>
             )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Paperclip className="h-3.5 w-3.5" />
-              <span>PDF van de offerte wordt automatisch als bijlage bijgevoegd</span>
+          </div>
+
+          {/* PDF preview block */}
+          <div className="rounded-xl border border-border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                <span>Bijlage (PDF)</span>
+              </div>
+              {pdf.status === "ready" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={generatePdf}
+                  className="gap-1.5 text-xs h-7"
+                >
+                  <RefreshCw className="h-3 w-3" /> Opnieuw genereren
+                </Button>
+              )}
             </div>
+
+            {pdf.status === "generating" && (
+              <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>PDF voorbereiden…</span>
+              </div>
+            )}
+
+            {pdf.status === "error" && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-sm">
+                <p className="text-destructive font-medium mb-1">PDF-generatie mislukt</p>
+                <p className="text-xs text-muted-foreground mb-2">{pdf.error}</p>
+                <Button type="button" variant="outline" size="sm" onClick={generatePdf}>
+                  Opnieuw proberen
+                </Button>
+              </div>
+            )}
+
+            {pdf.status === "ready" && (
+              <div className="flex items-center gap-3 rounded-lg bg-primary/5 border border-primary/20 p-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    Offerte-{offerte.offertenummer}.pdf
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {pdf.sizeBytes ? formatBytes(pdf.sizeBytes) : ""} · klaar voor verzending
+                  </p>
+                </div>
+                {pdf.signedUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="gap-1.5 flex-shrink-0"
+                  >
+                    <a href={pdf.signedUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Openen
+                    </a>
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Send */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
-            <Button onClick={handleSend} disabled={sending || !to.trim()} className="gap-2">
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Versturen
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Annuleren
+            </Button>
+            <Button onClick={handleSend} disabled={!canSend} className="gap-2">
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {pdf.status === "generating" ? "Wacht op PDF…" : "Versturen"}
             </Button>
           </div>
         </div>
