@@ -26,7 +26,9 @@ serve(async (req) => {
     // Fetch offerte by share_token
     const { data: offerte, error: offerteErr } = await supabase
       .from("offertes")
-      .select("*")
+      .select(
+        "id, offertenummer, status, klant_naam, klant_email, klant_adres, klant_postcode, klant_plaats, klant_telefoon, regels, subtotaal, btw_bedrag, totaal_bedrag, geldig_tot, share_expires_at, share_token, partner_id, schouw_id, lead_id, introductie_tekst, garantie_voorwaarden, installatie_termijn, betalingsvoorwaarden, template_config, include_schouw, include_energieadvies, accepted_at, feedback_berichten, created_at, updated_at"
+      )
       .eq("share_token", share_token)
       .single();
 
