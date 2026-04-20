@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Mail, Send, HelpCircle, Server, CheckCircle2, XCircle, RefreshCw, Unlink } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Copy, Info } from "lucide-react";
 
 interface Props {
   partnerId: string;
@@ -29,6 +30,18 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
     google: { clientId: string; configured: boolean };
     microsoft: { clientId: string; configured: boolean };
   } | null>(null);
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
+
+  const copyRedirectUri = async () => {
+    try {
+      await navigator.clipboard.writeText(redirectUri);
+      toast.success("Redirect-URI gekopieerd");
+    } catch {
+      toast.error("Kopiëren mislukt");
+    }
+  };
 
   // SMTP
   const [afzenderNaam, setAfzenderNaam] = useState("");
@@ -112,8 +125,6 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
       return;
     }
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
     const state = btoa(JSON.stringify({
       partner_id: partnerId,
       user_id: user.id,
@@ -130,7 +141,21 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
       authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send offline_access")}&state=${state}`;
     }
 
-    window.open(authUrl, "email-oauth", "width=600,height=700");
+    const popup = window.open(authUrl, "email-oauth", "width=600,height=700");
+    const openedAt = Date.now();
+    const timer = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(timer);
+        const elapsed = Date.now() - openedAt;
+        if (elapsed < 3000 && !emailAccount) {
+          toast.error("Koppeling onderbroken", {
+            description: `Mogelijk staat de redirect-URI niet geregistreerd. Controleer in Google Cloud Console: ${redirectUri}`,
+            duration: 10000,
+          });
+        }
+      }
+    }, 500);
+    setTimeout(() => clearInterval(timer), 5 * 60 * 1000);
   };
 
   const disconnectOAuth = async () => {
@@ -291,6 +316,27 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
                 <p className="text-xs text-muted-foreground">
                   Na het koppelen worden e-mails automatisch gesynchroniseerd en gekoppeld aan leads en klanten.
                 </p>
+
+                <div className="border rounded-xl p-4 bg-muted/30 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">Krijg je "redirect_uri_mismatch"?</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Voeg deze URI <strong>exact</strong> toe in Google Cloud Console → APIs &amp; Services → Credentials → jouw OAuth Client ID → <em>Authorized redirect URIs</em>:
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <code className="flex-1 text-xs bg-background border rounded px-2 py-1.5 break-all font-mono">
+                          {redirectUri}
+                        </code>
+                        <Button type="button" size="sm" variant="outline" onClick={copyRedirectUri} className="gap-1.5 shrink-0">
+                          <Copy className="h-3 w-3" />
+                          Kopiëren
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
