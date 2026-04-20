@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ interface Props {
 }
 
 const EmailConfiguratie = ({ partnerId }: Props) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -23,6 +25,10 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
   // OAuth
   const [emailAccount, setEmailAccount] = useState<any>(null);
   const [syncing, setSyncing] = useState(false);
+  const [oauthConfig, setOauthConfig] = useState<{
+    google: { clientId: string; configured: boolean };
+    microsoft: { clientId: string; configured: boolean };
+  } | null>(null);
 
   // SMTP
   const [afzenderNaam, setAfzenderNaam] = useState("");
@@ -41,6 +47,7 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
 
   useEffect(() => {
     loadData();
+    loadOAuthConfig();
     const handleMessage = (e: MessageEvent) => {
       if (e.data?.type === "email-oauth-result") {
         if (e.data.error) toast.error(e.data.message);
@@ -50,6 +57,19 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [partnerId]);
+
+  const loadOAuthConfig = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("email-oauth-config");
+      if (error) {
+        console.error("OAuth config laden mislukt:", error);
+        return;
+      }
+      setOauthConfig(data);
+    } catch (err) {
+      console.error("OAuth config laden mislukt:", err);
+    }
+  };
 
   const loadData = async () => {
     const [partnerRes, accountRes] = await Promise.all([
