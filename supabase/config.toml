@@ -71,3 +71,6 @@ verify_jwt = true
 
 [functions.helpdesk-klant-duplicaat-check]
 verify_jwt = true
+
+[functions.email-oauth-config]
+verify_jwt = true
