@@ -2096,6 +2096,7 @@ export type Database = {
           bedrijfsnaam: string | null
           created_at: string
           email: string | null
+          extra_emails: string[]
           id: string
           lead_id: string | null
           notities: string | null
@@ -2113,6 +2114,7 @@ export type Database = {
           bedrijfsnaam?: string | null
           created_at?: string
           email?: string | null
+          extra_emails?: string[]
           id?: string
           lead_id?: string | null
           notities?: string | null
@@ -2130,6 +2132,7 @@ export type Database = {
           bedrijfsnaam?: string | null
           created_at?: string
           email?: string | null
+          extra_emails?: string[]
           id?: string
           lead_id?: string | null
           notities?: string | null
