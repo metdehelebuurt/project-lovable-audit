@@ -235,13 +235,13 @@ export default function FactuurDetail() {
             </Button>
           )}
 
-          {/* Verkoopfactuur flow: concept → verzonden → betaald */}
-          {doc.status === "concept" && doc.type === "verkoopfactuur" && (
+          {/* E-mail versturen: voor alle types behalve inkooporder/inkoopfactuur (die ontvang je) */}
+          {doc.status === "concept" && ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
             <Button onClick={() => { setPdfOpen(true); setTimeout(() => setEmailOpen(true), 300); }}>
               <Send className="h-4 w-4 mr-2" /> E-mail versturen
             </Button>
           )}
-          {doc.status === "concept" && doc.type !== "verkoopfactuur" && (
+          {doc.status === "concept" && !["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
             <Button onClick={() => updateStatus("verzonden")}>
               <Send className="h-4 w-4 mr-2" /> Verzenden
             </Button>
@@ -406,11 +406,11 @@ export default function FactuurDetail() {
         </DialogContent>
       </Dialog>
 
-      {doc.type === "verkoopfactuur" && (
+      {["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
         <FactuurEmailDialog
           open={emailOpen}
           onOpenChange={setEmailOpen}
-          doc={{ id: doc.id, documentnummer: doc.documentnummer, partner_id: doc.partner_id }}
+          doc={{ id: doc.id, documentnummer: doc.documentnummer, partner_id: doc.partner_id, type: doc.type }}
           defaultTo={pdfKlant?.email || ""}
           onSent={() => { setDoc({ ...doc, status: "verzonden", verzonden_op: new Date().toISOString() }); setPdfOpen(false); }}
         />
