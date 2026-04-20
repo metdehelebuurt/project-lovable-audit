@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Mail, Send, HelpCircle, Server, CheckCircle2, XCircle, RefreshCw, Unlink } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Copy, Info } from "lucide-react";
 
 interface Props {
   partnerId: string;
@@ -29,6 +30,18 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
     google: { clientId: string; configured: boolean };
     microsoft: { clientId: string; configured: boolean };
   } | null>(null);
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
+
+  const copyRedirectUri = async () => {
+    try {
+      await navigator.clipboard.writeText(redirectUri);
+      toast.success("Redirect-URI gekopieerd");
+    } catch {
+      toast.error("Kopiëren mislukt");
+    }
+  };
 
   // SMTP
   const [afzenderNaam, setAfzenderNaam] = useState("");
