@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package, LifeBuoy } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
+import OrderbevestigingEmailDialog from "@/components/opdrachten/OrderbevestigingEmailDialog";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -50,6 +51,7 @@ const OpdrachtDetail = () => {
   const [installDialog, setInstallDialog] = useState(false);
   const [installForm, setInstallForm] = useState({ monteur_id: "", start: "", eind: "" });
   const [orderPdfOpen, setOrderPdfOpen] = useState(false);
+  const [orderEmailOpen, setOrderEmailOpen] = useState(false);
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
@@ -110,8 +112,8 @@ const OpdrachtDetail = () => {
   });
 
   const handleConfirm = () => {
-    updateStatus.mutate({ status: "bevestigd", bevestiging_verzonden_op: new Date().toISOString() });
-    toast.success("Opdrachtbevestiging verzonden");
+    setOrderPdfOpen(true);
+    setTimeout(() => setOrderEmailOpen(true), 300);
   };
 
   const handleCancel = () => {
@@ -228,7 +230,7 @@ const OpdrachtDetail = () => {
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardContent className="py-4 flex flex-wrap gap-3">
             {opdracht.status === "nieuw" && (
-              <Button onClick={handleConfirm} className="gap-2"><Send className="h-4 w-4" /> Opdrachtbevestiging versturen</Button>
+              <Button onClick={handleConfirm} className="gap-2"><Send className="h-4 w-4" /> Opdrachtbevestiging mailen</Button>
             )}
             {!opdracht.schouw_id && (
               <Button variant="outline" onClick={handlePlanSchouw} className="gap-2"><CalendarPlus className="h-4 w-4" /> Schouw inplannen</Button>
@@ -398,24 +400,39 @@ const OpdrachtDetail = () => {
         <DialogContent className="max-w-[240mm] max-h-[95vh] overflow-y-auto p-0">
           <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
             <DialogHeader><DialogTitle>Orderbevestiging</DialogTitle></DialogHeader>
-            <Button size="sm" className="rounded-lg gap-2" onClick={() => window.print()}>
-              <Download className="h-4 w-4" /> PDF downloaden
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="rounded-lg gap-2" onClick={() => window.print()}>
+                <Download className="h-4 w-4" /> PDF downloaden
+              </Button>
+              <Button size="sm" className="rounded-lg gap-2" onClick={() => setOrderEmailOpen(true)}>
+                <Send className="h-4 w-4" /> E-mail versturen
+              </Button>
+            </div>
           </div>
           {partnerData && (
-            <OrderbevestigingPDF
-              opdracht={{
-                ...opdracht,
-                regels: regels,
-              }}
-              partner={partnerData}
-            />
+            <div className="pdf-print-root">
+              <OrderbevestigingPDF
+                opdracht={{ ...opdracht, regels }}
+                partner={partnerData}
+              />
+            </div>
           )}
           {!partnerData && (
             <div className="p-8 text-center text-muted-foreground">Partner-gegevens laden...</div>
           )}
         </DialogContent>
       </Dialog>
+
+      <OrderbevestigingEmailDialog
+        open={orderEmailOpen}
+        onOpenChange={setOrderEmailOpen}
+        opdracht={{ id: opdracht.id, klant_naam: opdracht.klant_naam, partner_id: opdracht.partner_id }}
+        defaultTo={opdracht.klant_email || ""}
+        onSent={() => {
+          queryClient.invalidateQueries({ queryKey: ["opdracht", id] });
+          setOrderPdfOpen(false);
+        }}
+      />
     </div>
   );
 };
