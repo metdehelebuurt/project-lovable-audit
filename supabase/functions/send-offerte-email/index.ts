@@ -1,4 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  sendViaSMTP as sharedSendViaSMTP,
+  sendViaGmailApi as sharedSendViaGmailApi,
+  sendViaMsGraphApi as sharedSendViaMsGraphApi,
+  refreshOAuthToken as sharedRefreshOAuthToken,
+  fetchAttachment,
+} from "../_shared/email-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
