@@ -1,79 +1,59 @@
 
 
-# Plan: Juridische Compliance Check & Fix — Financiële PDF's
+# Plan: Bedrijfs-financiële gegevens, A4 uitlijning & PDF bestandsnaam
 
-## Bevindingen
+## Probleem
 
-Na analyse van `FinancieelPDF.tsx` en `OrderbevestigingPDF.tsx` tegen Nederlandse fiscale/handelsrecht vereisten (Belastingdienst factuurvereisten, Handelsregisterwet Art. 23-27):
+1. **Geen IBAN/bankgegevens veld** voor partners — IBAN wordt op facturen getoond uit `partner.iban` maar dat veld bestaat niet in de database. Daarom blijft "IBAN" leeg op alle PDF's.
+2. **A4 PDF wordt afgeknipt rechts** in de preview (zie screenshot — "FACTUU…" in plaats van "FACTUUR"). De dialog scrollt horizontaal i.p.v. de PDF schaalt netjes binnen de viewport.
+3. **PDF bestandsnaam** is generiek (browser default = pagina-titel). Gewenst: `<documentnummer> - <klantnaam>.pdf`.
 
-### FinancieelPDF.tsx — Ontbrekende vereisten
+## Oplossing
 
-| # | Vereiste | Status | Wettelijke basis |
-|---|----------|--------|------------------|
-| 1 | **BTW-specificatie per tarief** (uitsplitsing als meerdere tarieven) | ❌ Ontbreekt | Art. 35a Wet OB |
-| 2 | **Leveringsdatum** (als afwijkend van factuurdatum) | ❌ Ontbreekt | Art. 35a lid 1f Wet OB |
-| 3 | **BTW-nummer klant** (B2B, verplicht bij intracommunautaire levering) | ❌ Ontbreekt | Art. 35a Wet OB |
-| 4 | **KvK-nummer klant** (indien bekend) | ❌ Ontbreekt | Handelsregisterwet |
-| 5 | **"BTW verlegd"** vermelding bij 0% regels | ❌ Ontbreekt | Art. 37d Wet OB |
-| 6 | **Eenheidsprijzen excl. BTW** label verduidelijking | ⚠️ Impliciet | Best practice |
-| 7 | **Subtotaal per BTW-tarief** | ❌ Ontbreekt | Art. 35a Wet OB |
-| 8 | **Creditnota: verwijzing naar originele factuur** | ❌ Ontbreekt | Art. 35b Wet OB |
-| 9 | **Inkooporder: bestelnummer/referentie** prominent | ⚠️ Zwak | Best practice |
+### 1. Database: IBAN + extra bank-gegevens toevoegen aan `partners`
 
-### OrderbevestigingPDF.tsx — Ontbrekende vereisten
+Migratie toevoegt:
+- `iban` (text)
+- `iban_tnv` (text — tenaamstelling, valt terug op `naam`)
+- `bic` (text, optioneel — voor internationale betalingen)
 
-| # | Vereiste | Status |
-|---|----------|--------|
-| 1 | **Documentnummer/referentie** | ❌ Ontbreekt |
-| 2 | **IBAN/betalingsgegevens** | ❌ Ontbreekt |
-| 3 | **KvK-nummer** in header | ❌ Alleen in footer |
-| 4 | **Betalingsvoorwaarden/termijn** | ❌ Ontbreekt |
-| 5 | **Leveringsdatum/geschatte levertijd** | ❌ Ontbreekt |
-| 6 | **BTW-specificatie per tarief** | ❌ Ontbreekt — toont alleen totaal |
-| 7 | **IBAN** in footer | ❌ Ontbreekt |
+### 2. Instellingen → Bedrijfsgegevens uitbreiden
 
-## Implementatie
+In `BedrijfsgegevensTab` (`src/pages/Instellingen.tsx`) een nieuwe sectie **"Financiële gegevens"** toevoegen met velden voor IBAN, tenaamstelling en BIC. Deze worden opgeslagen op `partners` en automatisch gebruikt op alle facturen, inkooporders en orderbevestigingen.
 
-### 1. FinancieelPDF.tsx — Uitbreiden
+### 3. PDF A4 uitlijning fixen
 
-**BTW-uitsplitsing per tarief**: Groepeer regels op `btw_percentage`, toon subtotaal + BTW per groep:
-```text
-Subtotaal 21%:   € 1.200,00    BTW 21%:  € 252,00
-Subtotaal  9%:   €   300,00    BTW  9%:  €  27,00
+Twee issues:
+- **`FactuurDetail.tsx`**: dialog `max-w-[240mm]` met `overflow-y-auto` — geen horizontale ruimte. Wijzigen naar `max-w-[95vw] w-fit` met `overflow-auto`, en een **wrapper met `display: flex; justify-content: center`** rond `<FinancieelPDF />` zodat de A4 (210mm) altijd gecentreerd binnen de dialog past.
+- **`FinancieelPDF.tsx`**: `box-sizing: border-box` is al gezet, maar de container heeft geen expliciete `margin: 0 auto`. Toevoegen + zorgen dat alle absolute footers binnen de 210mm blijven (header rechts "FACTUUR" letterspacing terugbrengen zodat het niet over de marge schiet).
+
+### 4. PDF bestandsnaam = `<documentnummer> - <klantnaam>.pdf`
+
+Browser print → PDF gebruikt `document.title`. Aanpassen vóór `window.print()`:
+
+```ts
+const handleDownload = () => {
+  const klantNaam = pdfKlant?.bedrijfsnaam 
+    || `${pdfKlant?.voornaam ?? ""} ${pdfKlant?.achternaam ?? ""}`.trim()
+    || doc.leveranciers?.naam
+    || "onbekend";
+  const origTitle = document.title;
+  document.title = `${doc.documentnummer} - ${klantNaam}`;
+  window.print();
+  setTimeout(() => { document.title = origTitle; }, 1000);
+};
 ```
 
-**Leveringsdatum**: Nieuw veld in de meta-tabel (optioneel). Prop `leveringsdatum?: string` toevoegen.
-
-**Klant BTW/KvK**: Tonen in het relatie-blok als beschikbaar uit de klant-data.
-
-**"BTW verlegd"**: Bij regels met 0% btw de tekst "BTW verlegd" tonen.
-
-**Creditnota referentie**: Nieuw optioneel prop `referentie_documentnummer` tonen onder documentnummer.
-
-**Inkooporder**: Bestelnummer prominenter weergeven, leverancier KvK/BTW tonen.
-
-### 2. OrderbevestigingPDF.tsx — Uitbreiden
-
-- **Ordernummer**: Tonen (uit `opdracht.id` of nieuw genummerd veld)
-- **IBAN + betalingsgegevens**: Sectie toevoegen vóór footer
-- **KvK/BTW in header**: Verplaatsen naar zichtbare positie
-- **Betalingstermijn**: Tonen in ordergegevens-blok
-- **BTW per tarief**: Zelfde uitsplitsing als FinancieelPDF
-- **IBAN in footer**: Toevoegen
-
-### 3. FactuurDetail.tsx — Props doorvoeren
-
-Extra data (klant BTW/KvK, leveringsdatum, referentienummer) ophalen en doorgeven aan `FinancieelPDF`.
-
-### Bestanden
+## Bestanden
 
 | Bestand | Wijziging |
 |---|---|
-| `src/components/financieel/FinancieelPDF.tsx` | BTW-uitsplitsing, leveringsdatum, klant BTW/KvK, verlegd-label, creditnota referentie |
-| `src/components/OrderbevestigingPDF.tsx` | Ordernummer, IBAN, betalingstermijn, BTW-uitsplitsing, KvK in header |
-| `src/pages/FactuurDetail.tsx` | Extra props doorgeven |
-| `src/pages/FactuurNieuw.tsx` | Leveringsdatum veld toevoegen aan formulier |
+| `supabase/migrations/...` | `ALTER TABLE partners ADD COLUMN iban text, iban_tnv text, bic text` |
+| `src/pages/Instellingen.tsx` | Sectie "Financiële gegevens" in `BedrijfsgegevensTab` |
+| `src/pages/FactuurDetail.tsx` | Dialog sizing fix + `handleDownload` met dynamische titel; partner-query uitbreiden met `iban, iban_tnv, bic` |
+| `src/components/financieel/FinancieelPDF.tsx` | Container centreren, header uitlijning controleren, `iban_tnv` gebruiken in betalingsblok |
+| `src/components/OrderbevestigingPDF.tsx` | Idem partner IBAN-velden gebruiken |
 
-### Geen database wijzigingen nodig
-De benodigde velden (KvK, BTW-nummer klant, IBAN) zitten al in de bestaande tabellen.
+### Geen wijziging in PDF print-stylesheet nodig
+Het bestaande `@media print` gedrag blijft werken; alleen de preview-dialog wordt netter.
 
