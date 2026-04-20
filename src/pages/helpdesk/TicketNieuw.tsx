@@ -8,8 +8,9 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateTicket } from "@/hooks/helpdesk/useTickets";
-import { KlantZoekDuplicaat, type KlantMatch } from "@/components/helpdesk/KlantZoekDuplicaat";
-import { supabase } from "@/integrations/supabase/client";
+import { KlantZoekDuplicaat } from "@/components/helpdesk/KlantZoekDuplicaat";
+import { TicketContextCard, type TicketBron } from "@/components/helpdesk/ticket-nieuw/TicketContextCard";
+import { useTicketContextLoader } from "@/components/helpdesk/ticket-nieuw/useTicketContextLoader";
 import { toast } from "sonner";
 
 export default function TicketNieuw() {
@@ -28,47 +29,26 @@ export default function TicketNieuw() {
   const [productType, setProductType] = useState("");
   const [installatiejaar, setInstallatiejaar] = useState<string>("");
   const [foutcode, setFoutcode] = useState("");
-  const [klant, setKlant] = useState<KlantMatch | null>(null);
-  const [autoLoading, setAutoLoading] = useState(false);
 
-  const bron = (params.get("bron") as "order" | "installatie" | "factuur" | "klant" | null) ?? "direct";
+  const bron = (params.get("bron") as TicketBron | null) ?? "direct";
   const klantIdParam = params.get("klant_id");
   const leadIdParam = params.get("lead_id");
   const opdrachtId = params.get("opdracht_id");
   const installatieId = params.get("installatie_id");
   const factuurId = params.get("factuur_id");
 
-  // Auto-load klant uit klant_id param
-  useEffect(() => {
-    if (!klantIdParam || klant) return;
-    supabase.from("klanten")
-      .select("id, voornaam, achternaam, email, telefoon, adres, postcode, plaats")
-      .eq("id", klantIdParam).maybeSingle()
-      .then(({ data }) => { if (data) setKlant(data as KlantMatch); });
-  }, [klantIdParam, klant]);
+  const { klant, setKlant, autoFill, context } = useTicketContextLoader({
+    bron, klantIdParam, opdrachtId, installatieId, factuurId,
+  });
 
-  // Auto-fill productcontext + klant uit opdracht
+  // Pas auto-fill alleen toe voor velden die de gebruiker nog niet heeft aangepast
   useEffect(() => {
-    if (!opdrachtId) return;
-    setAutoLoading(true);
-    supabase.from("opdrachten").select("klant_naam, klant_email, klant_telefoon, klant_adres, klant_postcode, klant_plaats, lead_id, regels").eq("id", opdrachtId).maybeSingle()
-      .then(async ({ data }) => {
-        if (!data) { setAutoLoading(false); return; }
-        // Eerste regel als product-hint
-        const regels = (data.regels ?? []) as Array<{ omschrijving?: string }>;
-        if (regels[0]?.omschrijving && !productCategorie) {
-          setProductCategorie(regels[0].omschrijving.split(" ")[0] ?? "");
-        }
-        if (!klant && data.lead_id && !klantIdParam) {
-          // probeer klant via lead_id te vinden
-          const { data: k } = await supabase.from("klanten")
-            .select("id, voornaam, achternaam, email, telefoon, adres, postcode, plaats")
-            .eq("lead_id", data.lead_id).maybeSingle();
-          if (k) setKlant(k as KlantMatch);
-        }
-        setAutoLoading(false);
-      });
-  }, [opdrachtId, klant, klantIdParam, productCategorie]);
+    if (!autoFill) return;
+    setProductCategorie((cur) => cur || autoFill.productCategorie);
+    setProductMerk((cur) => cur || autoFill.productMerk);
+    setProductType((cur) => cur || autoFill.productType);
+    setInstallatiejaar((cur) => cur || autoFill.installatiejaar);
+  }, [autoFill]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,10 +84,12 @@ export default function TicketNieuw() {
         <p className="text-sm text-muted-foreground">Leg een vraag, klacht, storing of service-bezoek vast</p>
       </div>
 
+      <TicketContextCard context={context} />
+
       <Card className="p-6">
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Klant {autoLoading && <span className="text-xs text-muted-foreground">(laden…)</span>}</Label>
+            <Label>Klant {context.loading && <span className="text-xs text-muted-foreground">(laden…)</span>}</Label>
             <KlantZoekDuplicaat selected={klant} onSelect={setKlant} onClear={() => setKlant(null)} />
           </div>
 
