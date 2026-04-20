@@ -13,6 +13,7 @@ import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download, Pencil
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
+import FactuurEmailDialog from "@/components/financieel/FactuurEmailDialog";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -44,6 +45,7 @@ export default function FactuurDetail() {
   const [doc, setDoc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const [installatieData, setInstallatieData] = useState<any>(null);
 
@@ -234,7 +236,12 @@ export default function FactuurDetail() {
           )}
 
           {/* Verkoopfactuur flow: concept → verzonden → betaald */}
-          {doc.status === "concept" && (
+          {doc.status === "concept" && doc.type === "verkoopfactuur" && (
+            <Button onClick={() => { setPdfOpen(true); setTimeout(() => setEmailOpen(true), 300); }}>
+              <Send className="h-4 w-4 mr-2" /> E-mail versturen
+            </Button>
+          )}
+          {doc.status === "concept" && doc.type !== "verkoopfactuur" && (
             <Button onClick={() => updateStatus("verzonden")}>
               <Send className="h-4 w-4 mr-2" /> Verzenden
             </Button>
@@ -398,6 +405,16 @@ export default function FactuurDetail() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {doc.type === "verkoopfactuur" && (
+        <FactuurEmailDialog
+          open={emailOpen}
+          onOpenChange={setEmailOpen}
+          doc={{ id: doc.id, documentnummer: doc.documentnummer, partner_id: doc.partner_id }}
+          defaultTo={pdfKlant?.email || ""}
+          onSent={() => { setDoc({ ...doc, status: "verzonden", verzonden_op: new Date().toISOString() }); setPdfOpen(false); }}
+        />
+      )}
     </div>
   );
 }

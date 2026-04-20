@@ -1,4 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  sendViaSMTP as sharedSendViaSMTP,
+  sendViaGmailApi as sharedSendViaGmailApi,
+  sendViaMsGraphApi as sharedSendViaMsGraphApi,
+  refreshOAuthToken as sharedRefreshOAuthToken,
+  fetchAttachment,
+} from "../_shared/email-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -210,7 +217,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── Send offerte email ───
-    const { offerte_id, ontvanger_email, html_body, subject: customSubject } = body;
+    const { offerte_id, ontvanger_email, html_body, subject: customSubject, attachment_path, attachment_filename } = body;
     if (!offerte_id || !ontvanger_email) {
       return new Response(JSON.stringify({ error: "offerte_id en ontvanger_email zijn verplicht" }), { status: 400, headers: corsHeaders });
     }
@@ -261,17 +268,21 @@ Deno.serve(async (req) => {
 
     let imapSaved = false;
 
+    const attachment = attachment_path
+      ? await fetchAttachment(adminClient, attachment_path, attachment_filename || `Offerte-${offerte.offertenummer}.pdf`)
+      : null;
+
     if (useOAuth) {
       // Send via OAuth API (Gmail or Microsoft Graph)
       let accessToken = emailAccount.access_token;
       if (new Date(emailAccount.token_expiry) <= new Date()) {
-        accessToken = await refreshOAuthToken(adminClient, emailAccount);
+        accessToken = await sharedRefreshOAuthToken(adminClient, emailAccount);
       }
 
       if (emailAccount.provider === "google") {
-        await sendViaGmailApi(accessToken, emailAccount.email_adres, ontvanger_email, emailSubject, html);
+        await sharedSendViaGmailApi({ accessToken, from: emailAccount.email_adres, to: ontvanger_email, subject: emailSubject, html, attachment });
       } else {
-        await sendViaMsGraphApi(accessToken, ontvanger_email, emailSubject, html);
+        await sharedSendViaMsGraphApi({ accessToken, to: ontvanger_email, subject: emailSubject, html, attachment });
       }
       imapSaved = true; // OAuth APIs auto-save to sent
 
@@ -291,11 +302,12 @@ Deno.serve(async (req) => {
       });
     } else {
       // Send via SMTP
-      await sendViaSMTP(
-        partner.smtp_host, partner.smtp_port || 587, partner.smtp_user, partner.smtp_pass_encrypted,
-        partner.afzender_email, partner.afzender_naam || partner.naam,
-        ontvanger_email, emailSubject, html
-      );
+      await sharedSendViaSMTP({
+        host: partner.smtp_host, port: partner.smtp_port || 587,
+        user: partner.smtp_user, pass: partner.smtp_pass_encrypted,
+        from: partner.afzender_email, fromName: partner.afzender_naam || partner.naam,
+        to: ontvanger_email, subject: emailSubject, html, attachment,
+      });
 
       // Save to IMAP sent folder
       if (partner.imap_host && partner.imap_user && partner.imap_pass_encrypted) {
@@ -324,6 +336,11 @@ Deno.serve(async (req) => {
     // Update status
     if (offerte.status === "concept") {
       await adminClient.from("offertes").update({ status: "verzonden" }).eq("id", offerte_id);
+    }
+
+    // Clean up uploaded attachment
+    if (attachment_path) {
+      try { await adminClient.storage.from("email-bijlagen").remove([attachment_path]); } catch {}
     }
 
     return new Response(JSON.stringify({ success: true, imap_saved: imapSaved }), {

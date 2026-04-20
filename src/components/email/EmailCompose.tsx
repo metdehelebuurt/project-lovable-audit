@@ -7,19 +7,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultTo?: string;
   defaultSubject?: string;
+  availableTo?: string[];
   leadId?: string;
   klantId?: string;
   offerteId?: string;
   onSent?: () => void;
 }
 
-const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "", leadId, klantId, offerteId, onSent }: Props) => {
+const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "", availableTo, leadId, klantId, offerteId, onSent }: Props) => {
   const [to, setTo] = useState(defaultTo);
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState("");
@@ -71,7 +73,20 @@ const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "",
         <div className="space-y-4">
           <div>
             <Label>Aan</Label>
-            <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="email@voorbeeld.nl" className="mt-1" />
+            {availableTo && availableTo.length > 1 ? (
+              <Select value={to} onValueChange={setTo}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Kies e-mailadres" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTo.map(addr => (
+                    <SelectItem key={addr} value={addr}>{addr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="email@voorbeeld.nl" className="mt-1" />
+            )}
           </div>
           <div>
             <Label>Onderwerp</Label>

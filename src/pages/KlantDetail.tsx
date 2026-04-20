@@ -23,6 +23,7 @@ import {
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
+import EmailAddressList from "@/components/email/EmailAddressList";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +146,7 @@ const KlantDetail = () => {
     if (!klant) return;
     setEditForm({
       voornaam: klant.voornaam, achternaam: klant.achternaam, email: klant.email || "",
+      extra_emails: Array.isArray(klant.extra_emails) ? klant.extra_emails : [],
       telefoon: klant.telefoon || "", bedrijfsnaam: klant.bedrijfsnaam || "",
       adres: klant.adres || "", postcode: klant.postcode || "", plaats: klant.plaats || "",
     });
@@ -156,6 +158,7 @@ const KlantDetail = () => {
     for (const key of ["email", "telefoon", "bedrijfsnaam", "adres", "postcode", "plaats"]) {
       if (cleaned[key] === "") cleaned[key] = null;
     }
+    cleaned.extra_emails = (cleaned.extra_emails || []).filter((e: string) => e && e.trim());
     updateKlantMutation.mutate(cleaned);
   };
 
@@ -273,7 +276,14 @@ const KlantDetail = () => {
                         <div><Label className="text-xs">Achternaam *</Label><Input value={editForm.achternaam || ""} onChange={e => setEditForm((p: any) => ({ ...p, achternaam: e.target.value }))} className="rounded-xl" /></div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div><Label className="text-xs">E-mail</Label><Input type="email" value={editForm.email || ""} onChange={e => setEditForm((p: any) => ({ ...p, email: e.target.value }))} className="rounded-xl" /></div>
+                        <div className="sm:col-span-2">
+                          <EmailAddressList
+                            primary={editForm.email || ""}
+                            onPrimaryChange={(v) => setEditForm((p: any) => ({ ...p, email: v }))}
+                            extras={editForm.extra_emails || []}
+                            onExtrasChange={(v) => setEditForm((p: any) => ({ ...p, extra_emails: v }))}
+                          />
+                        </div>
                         <div><Label className="text-xs">Telefoon</Label><Input value={editForm.telefoon || ""} onChange={e => setEditForm((p: any) => ({ ...p, telefoon: e.target.value }))} className="rounded-xl" /></div>
                       </div>
                       <div><Label className="text-xs">Bedrijfsnaam</Label><Input value={editForm.bedrijfsnaam || ""} onChange={e => setEditForm((p: any) => ({ ...p, bedrijfsnaam: e.target.value }))} className="rounded-xl" /></div>
@@ -343,7 +353,13 @@ const KlantDetail = () => {
           {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />}
 
           {/* E-MAIL */}
-          {activeTab === "email" && <EmailTab klantId={id} email={klant.email} />}
+          {activeTab === "email" && (
+            <EmailTab
+              klantId={id}
+              email={klant.email}
+              emails={[klant.email, ...(klant.extra_emails || [])].filter(Boolean)}
+            />
+          )}
 
           {/* ACTIVITEIT */}
           {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}

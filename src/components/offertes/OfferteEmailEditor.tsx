@@ -10,6 +10,42 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Send, Sparkles, Loader2, Bold, Italic, Link, Paperclip, Star } from "lucide-react";
 import { toast } from "sonner";
+import { renderElementToPdfBlob, uploadPdfToStorage } from "@/lib/pdfFromElement";
+
+async function generateAndUploadPdf(offerteId: string, partnerId: string): Promise<string | undefined> {
+  // Open verborgen iframe met print-route, wacht tot deze geladen is, render dan naar PDF
+  return new Promise((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:850px;height:1200px;border:0;";
+    iframe.src = `/offertes/${offerteId}/pdf`;
+    document.body.appendChild(iframe);
+
+    const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+    const timeout = setTimeout(() => { cleanup(); resolve(undefined); }, 15000);
+
+    iframe.onload = () => {
+      // Wacht extra moment tot React heeft gerendered
+      setTimeout(async () => {
+        try {
+          const doc = iframe.contentDocument;
+          const target = doc?.querySelector(".pdf-print-root") as HTMLElement | null
+            || (doc?.body as HTMLElement | null);
+          if (!target) { clearTimeout(timeout); cleanup(); resolve(undefined); return; }
+          const blob = await renderElementToPdfBlob(target);
+          const path = await uploadPdfToStorage(supabase, partnerId, "offerte", offerteId, blob);
+          clearTimeout(timeout);
+          cleanup();
+          resolve(path);
+        } catch (err) {
+          console.error("PDF render error:", err);
+          clearTimeout(timeout);
+          cleanup();
+          resolve(undefined);
+        }
+      }, 1500);
+    };
+  });
+}
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -97,6 +133,7 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
   const handleSend = async () => {
     if (!to.trim()) { toast.error("Vul een ontvanger e-mailadres in"); return; }
     setSending(true);
+    let attachmentPath: string | undefined;
     try {
       const htmlBody = editorRef.current?.innerHTML || "";
 
@@ -115,12 +152,24 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
 
       const fullHtml = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">${htmlBody}${linksHtml}</div>`;
 
+      // Genereer PDF in een verborgen container
+      if (offerte.partner_id) {
+        try {
+          attachmentPath = await generateAndUploadPdf(offerte.id, offerte.partner_id);
+        } catch (pdfErr) {
+          console.error("PDF genereren mislukt:", pdfErr);
+          toast.warning("PDF kon niet worden gegenereerd, e-mail wordt zonder bijlage verstuurd");
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("send-offerte-email", {
         body: {
           offerte_id: offerte.id,
           ontvanger_email: to.trim(),
           html_body: fullHtml,
           subject,
+          attachment_path: attachmentPath || null,
+          attachment_filename: `Offerte-${offerte.offertenummer}.pdf`,
         },
       });
       if (error || data?.error) {
@@ -278,7 +327,7 @@ export default function OfferteEmailEditor({ open, onOpenChange, offerte, partne
             )}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Paperclip className="h-3.5 w-3.5" />
-              <span>PDF offerte wordt als bijlage bijgevoegd</span>
+              <span>PDF van de offerte wordt automatisch als bijlage bijgevoegd</span>
             </div>
           </div>
 
