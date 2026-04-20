@@ -1,9 +1,14 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, UserPlus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { useTicket } from "@/hooks/helpdesk/useTicketDetail";
+import { useUpdateTicket } from "@/hooks/helpdesk/useTickets";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { PrioriteitBadge } from "@/components/helpdesk/PrioriteitBadge";
 import { StatusBadge } from "@/components/helpdesk/StatusBadge";
 import OverzichtTab from "./OverzichtTab";
@@ -18,6 +23,21 @@ import PlanningTab from "./PlanningTab";
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: ticket, isLoading } = useTicket(id);
+  const update = useUpdateTicket();
+  const { profile } = useAuth();
+
+  const { data: collegas = [] } = useQuery({
+    queryKey: ["partner-collegas", profile?.partner_id],
+    enabled: !!profile?.partner_id,
+    queryFn: async () => {
+      const { data } = await supabase.from("users")
+        .select("id, voornaam, achternaam, rol")
+        .eq("partner_id", profile!.partner_id)
+        .in("rol", ["partner_admin", "partner_staff", "adviseur", "installateur"])
+        .order("voornaam");
+      return (data ?? []) as Array<{ id: string; voornaam: string; achternaam: string; rol: string }>;
+    },
+  });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Laden…</p>;
   if (!ticket) return <p className="text-sm text-muted-foreground">Ticket niet gevonden.</p>;
@@ -37,7 +57,22 @@ export default function TicketDetail() {
               Aangemaakt {new Date(ticket.created_at).toLocaleString("nl-NL")} · Bron: {ticket.bron_locatie}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={ticket.toegewezen_aan ?? "none"}
+                onValueChange={(v) => update.mutate({ id: ticket.id, toegewezen_aan: v === "none" ? null : v })}
+              >
+                <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Toewijzen aan…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Niet toegewezen</SelectItem>
+                  {collegas.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.voornaam} {c.achternaam} <span className="text-muted-foreground">· {c.rol.replace("_", " ")}</span></SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <PrioriteitBadge prio={ticket.prioriteit} />
             <StatusBadge status={ticket.status} />
           </div>
