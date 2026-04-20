@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { HelpdeskTicket } from "@/hooks/helpdesk/useTickets";
 import { useTicketAiSessies, type AiSessie } from "@/hooks/helpdesk/useTicketAiSessies";
 
-interface Suggestie { actie: string; toelichting: string }
+interface Suggestie { actie: string; toelichting: string; confidence?: number; bronnen?: string[] }
 interface Analyse {
   herkend_uit_kb?: boolean;
   match_artikel_id?: string | null;
@@ -131,8 +131,24 @@ export function Troubleshooter({ ticket, userId }: { ticket: HelpdeskTicket; use
               <ol className="text-sm space-y-2 mt-2 list-decimal pl-5">
                 {analyse.suggesties.map((s, i) => (
                   <li key={i} className="pl-1">
-                    <span className="font-medium">{s.actie}</span>
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <span className="font-medium">{s.actie}</span>
+                      {typeof s.confidence === "number" ? (
+                        <span className={`text-xs px-2 py-0.5 rounded border ${
+                          s.confidence >= 0.7
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                            : s.confidence >= 0.4
+                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                              : "bg-muted text-muted-foreground border-border"
+                        }`}>
+                          {Math.round(s.confidence * 100)}% zeker{s.confidence < 0.4 ? " · verifieer" : ""}
+                        </span>
+                      ) : null}
+                    </div>
                     {s.toelichting ? <div className="text-muted-foreground mt-0.5">{s.toelichting}</div> : null}
+                    {s.bronnen?.length ? (
+                      <div className="text-xs text-muted-foreground mt-1">Bronnen: {s.bronnen.join(" · ")}</div>
+                    ) : null}
                   </li>
                 ))}
               </ol>
