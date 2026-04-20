@@ -93,7 +93,7 @@ export function Troubleshooter({ ticket, userId }: { ticket: HelpdeskTicket; use
             </div>
           ) : null}
           {analyse.monteur_aanbevolen ? (
-            <p className="text-sm rounded-md border border-orange-500/30 bg-orange-500/5 p-3">Monteur aanbevolen: {analyse.monteur_reden}</p>
+            <p className="text-sm rounded-md border border-warning/30 bg-warning/5 p-3">Monteur aanbevolen: {analyse.monteur_reden}</p>
           ) : null}
           {gerelateerd.length ? (
             <div>
