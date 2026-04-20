@@ -1388,6 +1388,36 @@ export type Database = {
           },
         ]
       }
+      helpdesk_csat: {
+        Row: {
+          created_at: string
+          id: string
+          ingevuld_door: string | null
+          opmerking: string | null
+          partner_id: string
+          score: number
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingevuld_door?: string | null
+          opmerking?: string | null
+          partner_id: string
+          score: number
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingevuld_door?: string | null
+          opmerking?: string | null
+          partner_id?: string
+          score?: number
+          ticket_id?: string
+        }
+        Relationships: []
+      }
       helpdesk_drafts: {
         Row: {
           context_key: string
@@ -1415,6 +1445,39 @@ export type Database = {
           partner_id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      helpdesk_email_sjablonen: {
+        Row: {
+          created_at: string
+          id: string
+          inhoud: string
+          naam: string
+          onderwerp: string
+          partner_id: string
+          updated_at: string
+          variabelen: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inhoud: string
+          naam: string
+          onderwerp: string
+          partner_id: string
+          updated_at?: string
+          variabelen?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inhoud?: string
+          naam?: string
+          onderwerp?: string
+          partner_id?: string
+          updated_at?: string
+          variabelen?: Json | null
         }
         Relationships: []
       }
@@ -3781,6 +3844,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      increment_kb_views: { Args: { _artikel_id: string }; Returns: undefined }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       mark_helpdesk_escalations: {
         Args: { _partner_id: string }
@@ -3823,6 +3887,8 @@ export type Database = {
         | "installatie"
         | "factuur"
         | "klant"
+        | "portal"
+        | "whatsapp"
       helpdesk_taak_status: "open" | "in_behandeling" | "klaar" | "geannuleerd"
       helpdesk_ticket_kanaal:
         | "telefoon"
@@ -3841,6 +3907,9 @@ export type Database = {
         | "opgelost"
         | "gesloten"
         | "geescaleerd"
+        | "wacht_op_onderdeel"
+        | "ingepland"
+        | "onderweg"
       helpdesk_ticket_type:
         | "vraag"
         | "klacht"
@@ -4078,6 +4147,8 @@ export const Constants = {
         "installatie",
         "factuur",
         "klant",
+        "portal",
+        "whatsapp",
       ],
       helpdesk_taak_status: ["open", "in_behandeling", "klaar", "geannuleerd"],
       helpdesk_ticket_kanaal: [
@@ -4098,6 +4169,9 @@ export const Constants = {
         "opgelost",
         "gesloten",
         "geescaleerd",
+        "wacht_op_onderdeel",
+        "ingepland",
+        "onderweg",
       ],
       helpdesk_ticket_type: [
         "vraag",
