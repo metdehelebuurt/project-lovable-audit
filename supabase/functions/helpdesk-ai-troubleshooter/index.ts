@@ -110,7 +110,7 @@ Geef terug als JSON:
   "match_artikel_id": "uuid of null",
   "diagnose": "korte analyse",
   "vervolgvragen": ["...", "..."],
-  "suggesties": [{"actie": "...", "toelichting": "..."}],
+  "suggesties": [{"actie": "...", "toelichting": "...", "confidence": 0.0-1.0, "bronnen": ["KB:titel of artikelnummer", "..."]}],
   "monteur_aanbevolen": true|false,
   "monteur_reden": "uitleg of leeg"
 }`;
@@ -137,9 +137,11 @@ Geef terug als JSON:
     const data = await aiRes.json();
     const raw = data.choices?.[0]?.message?.content ?? "{}";
     let analyse: Record<string, unknown>;
+    let parseOk = true;
     try {
       analyse = JSON.parse(raw);
     } catch {
+      parseOk = false;
       analyse = { diagnose: raw };
     }
 
@@ -149,7 +151,9 @@ Geef terug als JSON:
       titel: t.titel,
     }));
 
-    await fetch(`${supabaseUrl}/rest/v1/helpdesk_ticket_ai_sessies`, {
+    // Bewaar alleen bij succesvolle parse — voorkomt vervuiling met lege sessies
+    if (parseOk) {
+      await fetch(`${supabaseUrl}/rest/v1/helpdesk_ticket_ai_sessies`, {
       method: "POST",
       headers: {
         apikey: serviceKey,
@@ -172,7 +176,8 @@ Geef terug als JSON:
         gerelateerde_tickets: gerelateerdeTickets,
         model: "google/gemini-2.5-pro",
       }),
-    });
+      });
+    }
 
     return json({ analyse, gerelateerde_tickets: gerelateerdeTickets });
   } catch (e) {

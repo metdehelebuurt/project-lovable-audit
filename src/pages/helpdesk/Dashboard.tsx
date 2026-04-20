@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,12 @@ export default function HelpdeskDashboard() {
     return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
   });
 
+  // Eenmalig bij mount: SLA-controle als er overschrijdingen zijn (geen herhaalde renders)
+  const didCheckRef = useRef(false);
   useEffect(() => {
+    if (didCheckRef.current) return;
     if (profile?.partner_id && slaOverschreden.length > 0 && !escaleer.isPending) {
+      didCheckRef.current = true;
       escaleer.mutate(profile.partner_id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

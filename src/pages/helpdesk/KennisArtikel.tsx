@@ -1,4 +1,6 @@
 import { useParams, Link } from "react-router-dom";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +10,12 @@ import { useKennisArtikel } from "@/hooks/helpdesk/useKennisbank";
 export default function KennisArtikel() {
   const { id } = useParams<{ id: string }>();
   const { data: a, isLoading } = useKennisArtikel(id);
+
+  useEffect(() => {
+    if (!id) return;
+    // Verhoog views-teller bij openen
+    supabase.rpc("increment_kb_views", { _artikel_id: id }).then(() => {});
+  }, [id]);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Laden…</p>;
   if (!a) return <p className="text-sm text-muted-foreground">Artikel niet gevonden.</p>;
