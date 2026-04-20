@@ -2496,6 +2496,7 @@ export type Database = {
           afzender_naam: string | null
           bedrijfsslogan: string | null
           betalingsvoorwaarden_config: Json | null
+          bic: string | null
           btw: string | null
           commissie_percentage: number | null
           contactpersoon_achternaam: string | null
@@ -2509,6 +2510,8 @@ export type Database = {
           email: string | null
           email_provider: string | null
           feature_flags_json: Json | null
+          iban: string | null
+          iban_tnv: string | null
           id: string
           imap_host: string | null
           imap_pass_encrypted: string | null
@@ -2546,6 +2549,7 @@ export type Database = {
           afzender_naam?: string | null
           bedrijfsslogan?: string | null
           betalingsvoorwaarden_config?: Json | null
+          bic?: string | null
           btw?: string | null
           commissie_percentage?: number | null
           contactpersoon_achternaam?: string | null
@@ -2559,6 +2563,8 @@ export type Database = {
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
+          iban?: string | null
+          iban_tnv?: string | null
           id?: string
           imap_host?: string | null
           imap_pass_encrypted?: string | null
@@ -2596,6 +2602,7 @@ export type Database = {
           afzender_naam?: string | null
           bedrijfsslogan?: string | null
           betalingsvoorwaarden_config?: Json | null
+          bic?: string | null
           btw?: string | null
           commissie_percentage?: number | null
           contactpersoon_achternaam?: string | null
@@ -2609,6 +2616,8 @@ export type Database = {
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
+          iban?: string | null
+          iban_tnv?: string | null
           id?: string
           imap_host?: string | null
           imap_pass_encrypted?: string | null
