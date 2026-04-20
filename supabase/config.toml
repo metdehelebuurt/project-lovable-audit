@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.ai-offerte-feedback-analyse]
 verify_jwt = false
+
+[functions.helpdesk-notify]
+verify_jwt = false
