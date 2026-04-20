@@ -49,10 +49,10 @@ export default function CommunicatieTab({ ticket }: { ticket: HelpdeskTicket }) 
     if (!s) return;
     const subst = (txt: string) =>
       txt
-        .replaceAll("{klant.voornaam}", klantInfo?.voornaam ?? "")
-        .replaceAll("{klant.achternaam}", klantInfo?.achternaam ?? "")
-        .replaceAll("{ticket.nummer}", ticket.ticketnummer)
-        .replaceAll("{ticket.titel}", ticket.titel);
+        .split("{klant.voornaam}").join(klantInfo?.voornaam ?? "")
+        .split("{klant.achternaam}").join(klantInfo?.achternaam ?? "")
+        .split("{ticket.nummer}").join(ticket.ticketnummer)
+        .split("{ticket.titel}").join(ticket.titel);
     setOnderwerp(subst(s.onderwerp));
     setInhoud(subst(s.inhoud));
   };
