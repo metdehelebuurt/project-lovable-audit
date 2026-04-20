@@ -99,21 +99,34 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
   };
 
   const startOAuth = (provider: "google" | "microsoft") => {
+    if (!user) {
+      toast.error("Je moet ingelogd zijn om een e-mailaccount te koppelen");
+      return;
+    }
+    const providerConfig = oauthConfig?.[provider];
+    if (!providerConfig?.configured || !providerConfig.clientId) {
+      toast.error(
+        provider === "google" ? "Gmail-koppeling is nog niet geactiveerd" : "Outlook-koppeling is nog niet geactiveerd",
+        { description: "Configureer eerst de OAuth-credentials in de backend." }
+      );
+      return;
+    }
+
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
     const state = btoa(JSON.stringify({
       partner_id: partnerId,
-      user_id: "", // Will be set from auth context
+      user_id: user.id,
       provider,
       redirect_url: window.location.href,
     }));
 
     let authUrl: string;
     if (provider === "google") {
-      const clientId = ""; // Will be set via secrets
-      authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify")}&access_type=offline&prompt=consent&state=${state}`;
+      const clientId = providerConfig.clientId;
+      authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/userinfo.email")}&access_type=offline&prompt=consent&state=${state}`;
     } else {
-      const clientId = ""; // Will be set via secrets
+      const clientId = providerConfig.clientId;
       authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send offline_access")}&state=${state}`;
     }
 
