@@ -1,188 +1,118 @@
 
 
-# Plan: Helpdesk module met AI troubleshooter, knowledge base & service planning
+# Audit Helpdesk Module — Bevindingen & Fix Plan
 
-## Doel
+## ✅ Wat goed werkt
 
-Een volledige helpdesk omgeving voor backoffice, monteurs en installateurs met tickets, AI-troubleshooting, knowledge base, service-bezoek planning en strikte multi-tenant isolatie.
+**Database (compleet en correct):**
+- 11 tabellen aanwezig met partner-strikte RLS-policies (35 policies actief)
+- Multi-tenant isolatie correct: partner A ziet nooit data van partner B
+- Installateurs hebben aparte SELECT-policy ("ziet eigen tickets")
+- SLA-trigger `set_helpdesk_sla_deadline` actief, escalatie-RPC `mark_helpdesk_escalations` werkt
+- Ticketnummering `TKT-YYYY-0001` per partner via RPC
+- Storage bucket `helpdesk-media` private aangemaakt
 
-## Architectuur in één blik
+**Edge Functions (deployed en bereikbaar):**
+- `helpdesk-notify` antwoordt 200 (getest, geeft "geen config" terug — verwacht voor lege test)
+- `helpdesk-ai-foutcode`, `-troubleshooter`, `-genereer-kbartikel`, `-analyze-bijlage` zijn deployed met `verify_jwt = true` — auth-flow correct ingesteld
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│  /helpdesk                                              │
-│  ├─ Dashboard (KPI's, hoge prio, escalaties, planning)  │
-│  ├─ Tickets (lijst + filters + Kanban)                  │
-│  ├─ Ticket Detail                                       │
-│  │   ├─ Klant + Order + Product context                 │
-│  │   ├─ Probleem Analyzer (AI, productspecifiek)        │
-│  │   ├─ Foutcode Analyzer (AI, merk-aware)              │
-│  │   ├─ Troubleshooter (AI, KB-aware)                   │
-│  │   ├─ Communicatie (intern + klant)                   │
-│  │   ├─ Bijlagen (foto/video/logs)                      │
-│  │   ├─ Service-afspraak (monteur inplannen)            │
-│  │   ├─ Taken                                           │
-│  │   ├─ Oplossing (verplicht bij sluiten)               │
-│  │   └─ Historie / audit log                            │
-│  └─ Knowledge Base (per partner, AI-gegenereerd)        │
-└─────────────────────────────────────────────────────────┘
-```
+**UI (alle 8 tabs aanwezig):**
+- Dashboard met 5 KPI's + escalatie-lijst + auto-escalatie effect
+- Tickets-overzicht met zoek + status/prioriteit/type-badges
+- TicketDetail tabs: Overzicht / Analyzer / Communicatie / Bijlagen / Planning / Taken / Oplossing / Historie
+- Sidebar groep "Helpdesk & Service" voor 5 rollen
+- AI-functies UI: Foutcode-Analyzer, Troubleshooter, Bijlage-analyse, KB-generator
+- Service-bezoek dialog + monteur-keuze + UrenVerantwoording met handtekening (verplicht oplossing-veld)
+- Auto-save drafts hook + KPI-cards
 
-## Database schema
+## ⚠️ Bevindingen & gaps t.o.v. eisen
 
-Nieuwe tabellen, allemaal met `partner_id` + RLS voor strikte isolatie tussen partners.
+### 1. KRITIEK — Ontbrekende "Ticket aanmaken" knoppen (eis expliciet)
+De briefing eist: "Tickets moeten kunnen worden aangemaakt in **orders, installaties en in een factuur**". Een grep-scan van `OpdrachtDetail.tsx`, `Installaties.tsx`, `FactuurDetail.tsx`, `KlantDetail.tsx` vindt **geen enkele referentie** naar `/helpdesk/tickets/nieuw`. De `bron_locatie` query-param wordt wel gelezen door `TicketNieuw`, maar niemand stuurt erheen.
 
-| Tabel | Doel |
+### 2. KRITIEK — Geen klant-zoek + duplicaatcheck in nieuw ticket
+TicketNieuw heeft alleen losse tekstvelden voor merk/categorie/foutcode. Er is **geen klant-zoek**, geen "nieuwe klant aanmaken vanuit ticket", geen duplicaatcheck op email/telefoon/adres (eis expliciet genoemd in usercase 1). De `helpdesk-klant-duplicaat-check` edge function uit het oorspronkelijke plan is nooit gebouwd.
+
+### 3. KRITIEK — Productcontext laadt niet automatisch vanuit order
+Eis: "als er een order aan gekoppeld kan worden laden gelijk de productgegevens met type, merk, installatiejaar". Nu moet de gebruiker dit handmatig invullen. `OverzichtTab` toont alleen UUIDs (rauwe `klant_id`, `opdracht_id`) i.p.v. bruikbare namen/links.
+
+### 4. BELANGRIJK — Tickets-overzicht mist filters & Kanban
+Eis: "in het ticketoverzicht moeten handige functies zitten die hoge prio tickets laten zien, ticket escalatie, planning, opvolging". Nu is er alleen een tekst-zoekveld. Geen filters op status/prio/type/toegewezene, geen Kanban-view, geen "alleen escalaties / open / mijn tickets" tabs.
+
+### 5. BELANGRIJK — Notificatie-config UI bestaat niet
+Eis: "meldingen per mail moeten in de backend geconfigureerd kunnen worden". Tabel `helpdesk_notificatie_config` bestaat, maar er is **geen UI** in `/instellingen` om het te beheren. Daarom geeft `helpdesk-notify` nu altijd "skipped: geen config".
+
+### 6. BELANGRIJK — `helpdesk-notify` wordt nergens aangeroepen
+Geen trigger of hook roept de notify-functie aan bij nieuwe tickets, escalatie, oplossing, of toewijzing. SendGrid-verzending is bovendien nog niet ingebouwd (nu alleen `console.log`).
+
+### 7. BELANGRIJK — Historie wordt nergens automatisch gelogd
+`useLogHistorie` hook bestaat maar wordt **nergens aangeroepen**. Geen DB-trigger logt status/prioriteit/toewijzing-wijzigingen. HistorieTab blijft leeg.
+
+### 8. BELANGRIJK — Service-bezoek koppelt NIET aan bestaande `afspraken`-tabel
+Plan beloofde: "beide maken een record in bestaande `afspraken` tabel zodat planning-kalender ze automatisch toont". `useCreateServiceBezoek` schrijft alleen naar `helpdesk_service_bezoeken`. Monteurs zien de service-bezoeken NIET in de bestaande planning-kalender.
+
+### 9. MEDIUM — Auto-save drafts hook bestaat, maar wordt nergens gebruikt
+`useDraftAutosave.ts` is geschreven maar in geen enkel formulier (TicketNieuw, CommunicatieTab, OplossingTab) actief. Eis: "alle gegevens in tickets moeten automatisch worden opgeslagen".
+
+### 10. MEDIUM — AI-functies niet end-to-end gevalideerd met echte data
+Tabel `helpdesk_tickets` is leeg (geen testdata), waardoor we de troubleshooter-KB-zoek niet konden testen met echte input. Edge function code is correct (geanalyseerd), maar live test ontbreekt.
+
+### 11. KLEIN — `OverzichtTab` toont rauwe UUIDs
+Klant_id, lead_id, opdracht_id, etc. tonen alleen UUID — geen naam, geen klikbare link. Backoffice ziet niets bruikbaars.
+
+### 12. KLEIN — TicketNieuw heeft geen "doorzetten naar collega" / technisch advies vragen
+Eis: "Backoffice moet in een ticket technisch advies kunnen vragen aan een installateur en de tickets ook kunnen doorzetten naar andere collegas". Veld `toegewezen_aan` bestaat maar er is geen UI om te wijzigen na aanmaken.
+
+## Plan om alle gaps te fixen (4 onderdelen)
+
+### A. Cross-module integratie (gaps 1, 3, 11)
+- Knop "Ticket aanmaken" toevoegen aan `OpdrachtDetail`, `Installaties`-detail, `FactuurDetail`, `KlantDetail` met query-params voor `bron`, `klant_id`, `opdracht_id` etc.
+- TicketNieuw uitbreiden: bij aanwezig `opdracht_id` → fetch order + product → vul `product_categorie/merk/type/installatiejaar` automatisch
+- `OverzichtTab` rewrite: fetch klant/order/installatie/factuur op basis van IDs en toon naam + link
+
+### B. Klant-zoek + duplicaatcheck (gap 2)
+- Nieuwe component `KlantZoekDuplicaat.tsx` (hergebruik patroon van `LeadSearchInput`)
+- Edge function `helpdesk-klant-duplicaat-check`: zoekt op email/telefoon/adres en geeft top-3 matches terug
+- "Nieuwe klant aanmaken" inline form als geen match
+
+### C. Tickets-overzicht uitbreiden (gap 4)
+- Filter-bar: status (multi), prioriteit, type, "mijn tickets", "alleen escalaties"
+- Tabs of toggle: Lijst-view ↔ Kanban-view (per status-kolom)
+- Snel-filter chips: "Hoge prio", "Storingen", "SLA overschreden", "Wacht op klant"
+
+### D. Notificaties + historie + planning-koppeling (gaps 5, 6, 7, 8, 9, 12)
+- Nieuwe pagina/tab `/instellingen` → "Helpdesk notificaties": ontvangers + 6 toggles + SLA-uren per prio
+- DB-trigger `log_helpdesk_ticket_changes()` op `helpdesk_tickets` UPDATE → schrijft naar `helpdesk_ticket_historie`
+- DB-trigger `notify_helpdesk_events()` op INSERT/UPDATE → invoke `helpdesk-notify` via `pg_net` (of via client-side hook)
+- `helpdesk-notify` uitbreiden: SendGrid-integratie consistent met bestaande `email-api-send` patroon
+- `useCreateServiceBezoek` parallel insert in `afspraken`-tabel (type='service_bezoek' of 'storing') zodat planning-kalender ze toont
+- TicketDetail-header: "Toewijzen aan…" select + "Doorzetten naar collega" actie
+- Auto-save in OplossingTab + CommunicatieTab via `useDraftAutosave` activeren
+
+### Bestanden (wijziging/nieuw)
+
+| Bestand | Actie |
 |---|---|
-| `helpdesk_tickets` | Hoofd-record: nummer (TKT-YYYY-0001), titel, omschrijving, status, prioriteit, type (`vraag`/`klacht`/`storing`/`service_bezoek`), kanaal, klant_id, opdracht_id, installatie_id, factuur_id, product (merk/type/installatiejaar/categorie), foutcode, toegewezen_aan, gemaakt_door, bron_locatie (`order`/`installatie`/`factuur`/`direct`), SLA-deadline, escalatie-flag |
-| `helpdesk_ticket_berichten` | Communicatie-thread (intern of klant-zichtbaar), richting, auteur, body, bijlagen |
-| `helpdesk_ticket_bijlagen` | Foto's, video's, logbestanden (storage bucket `helpdesk-media`) |
-| `helpdesk_ticket_taken` | Taken met deelbaarheid (toegewezen_aan, status, deadline) |
-| `helpdesk_ticket_historie` | Append-only audit log van alle wijzigingen |
-| `helpdesk_ticket_ai_sessies` | Opgeslagen AI-conversaties (foutcode/troubleshooter), inclusief vragen, antwoorden, gerelateerde tickets |
-| `helpdesk_service_bezoeken` | Koppeling ticket → afspraak in bestaande `afspraken`-tabel met type `service_bezoek` of `storing`, monteur, aankomst/vertrek, urenverantwoording, klant-handtekening |
-| `helpdesk_kennis_artikelen` | KB-artikelen per partner: titel, samenvatting, probleem, oplossing, productcategorie, merk, tags, bron_ticket_id, AI-gegenereerd, embeddings |
-| `helpdesk_kennis_media` | Foto's/video's gekoppeld aan artikelen (overgenomen uit tickets) |
-| `helpdesk_notificatie_config` | Per partner: welke events triggeren mail (nieuw ticket, escalatie, toewijzing, klant-reactie, etc.) |
-| `helpdesk_drafts` | Auto-save concepten per gebruiker zodat niets verloren gaat bij verbindingsverlies |
+| `src/pages/OpdrachtDetail.tsx` | + "Ticket aanmaken" knop |
+| `src/pages/FactuurDetail.tsx` | + "Ticket aanmaken" knop |
+| `src/pages/KlantDetail.tsx` | + "Ticket aanmaken" knop |
+| `src/pages/Installaties.tsx` (of detail) | + "Ticket aanmaken" knop |
+| `src/pages/helpdesk/TicketNieuw.tsx` | + klant-zoek, + auto-fill productcontext, + duplicaatcheck-flow |
+| `src/components/helpdesk/KlantZoekDuplicaat.tsx` | NIEUW |
+| `src/pages/helpdesk/TicketsOverzicht.tsx` | + filter-bar, + Kanban toggle, + snelfilter-chips |
+| `src/pages/helpdesk/TicketDetail/OverzichtTab.tsx` | rewrite — toon namen + klikbare links i.p.v. UUIDs |
+| `src/pages/helpdesk/TicketDetail/index.tsx` | + "Toewijzen aan" select in header |
+| `src/components/instellingen/HelpdeskNotificatieConfig.tsx` | NIEUW |
+| `src/pages/Instellingen.tsx` | + tab "Helpdesk notificaties" |
+| `src/hooks/helpdesk/useServiceBezoeken.ts` | parallel insert in `afspraken` |
+| `supabase/functions/helpdesk-klant-duplicaat-check/index.ts` | NIEUW |
+| `supabase/functions/helpdesk-notify/index.ts` | + SendGrid-verzending |
+| `supabase/migrations/...` | nieuwe migratie: `log_helpdesk_ticket_changes` trigger + `notify_helpdesk_events` trigger op INSERT/UPDATE helpdesk_tickets |
 
-Bestaande tabellen die we uitbreiden:
-- `afspraken`: `type` enum krijgt `service_bezoek` en `storing` waarden
-- `notificaties`: nieuwe `entity_type` waarden voor helpdesk
+## Bevestiging
 
-## RLS & multi-tenant isolatie (kritiek)
-
-Elke nieuwe tabel: `partner_id` verplicht + policy `partner_id = get_user_partner_id(auth.uid())`. Dit garandeert dat partner A nooit tickets, KB-artikelen of AI-antwoorden van partner B ziet — ook niet via de AI-troubleshooter (KB-zoekopdrachten gefilterd op `partner_id` voordat ze naar de LLM gaan).
-
-Installateurs zien alleen tickets waar zij toegewezen zijn of die zij zelf aanmaakten (consistent met bestaande `installateur`-rol patroon).
-
-## Edge Functions
-
-| Functie | Taak |
-|---|---|
-| `helpdesk-ai-foutcode` | Zoekt info over foutcode + merk via Gemini + web search, geeft oplossingsstappen |
-| `helpdesk-ai-troubleshooter` | Stelt vervolgvragen, doorzoekt KB van **alleen deze partner**, retourneert suggesties + gerelateerde tickets |
-| `helpdesk-ai-analyze-bijlage` | Analyseert geüploade logs/foto's (Gemini multimodal) |
-| `helpdesk-ai-genereer-kbartikel` | Maakt na ticket-sluiting een KB-artikel van probleem + oplossing + media |
-| `helpdesk-notify` | Verstuurt mail-notificaties op basis van `helpdesk_notificatie_config` (SendGrid, bestaand patroon) |
-| `helpdesk-klant-duplicaat-check` | Check op email/telefoon/adres voordat nieuwe klant wordt aangemaakt vanuit ticket |
-
-Alle functies gebruiken Lovable AI (`google/gemini-2.5-pro` voor zware analyse, `gemini-2.5-flash` voor snelle vragen) — geen externe API-key nodig.
-
-## UI / pagina's & componenten
-
-Nieuwe routes onder `ProtectedRoute`:
-- `/helpdesk` — dashboard (KPI cards, hoge-prio lijst, escalaties, vandaag geplande service-bezoeken)
-- `/helpdesk/tickets` — overzicht met filters (status, prio, type, toegewezen, klant)
-- `/helpdesk/tickets/nieuw` — wizard met klant-zoek + duplicaatcheck
-- `/helpdesk/tickets/:id` — detail met tabs: Overzicht / Analyzer / Communicatie / Bijlagen / Taken / Planning / Oplossing / Historie
-- `/helpdesk/kennisbank` — KB browser met search + categorie-filter
-- `/helpdesk/kennisbank/:id` — artikel-weergave
-
-Sidebar krijgt nieuwe groep "Helpdesk" met zichtbaarheid per rol (superadmin, partner_admin, partner_staff, adviseur, installateur).
-
-Vanuit bestaande pagina's komt knop "Ticket aanmaken":
-- `OpdrachtDetail` → ticket met `bron_locatie='order'` + voorgevulde klant/product
-- `Installaties` detail → `bron_locatie='installatie'`
-- `FactuurDetail` → `bron_locatie='factuur'`
-
-## Belangrijkste functionele details
-
-**Probleem Analyzer per productcategorie**: dynamische velden (zonnepanelen, warmtepomp, batterij, laadpaal, isolatie) — AI-prompt past zich aan op basis van categorie + merk en stelt categorie-specifieke checklist-vragen.
-
-**Foutcode Analyzer**: invoer = merk + foutcode → AI-call → oplossingsstappen + bron-links. Resultaat opgeslagen in `helpdesk_ticket_ai_sessies` zodat troubleshooter er later op kan voortbouwen.
-
-**Troubleshooter met KB-herkenning**: voordat naar LLM wordt gestuurd, doen we een vector-search (pgvector) over `helpdesk_kennis_artikelen` van **alleen deze partner**. Treffers worden als context meegegeven en in UI getoond als "Eerder voorgekomen tickets".
-
-**Auto-save**: alle invoer in ticket-formulieren wordt elke 5s naar `helpdesk_drafts` weggeschreven met `user_id + ticket_id` key. Bij heropenen → herstel.
-
-**Service-bezoek vs storing**: beide maken een record in bestaande `afspraken` tabel zodat de planning-kalender ze automatisch toont (storing = rood, service_bezoek = oranje, consistent met bestaande blauw=schouw / geel=installatie).
-
-**Urenverantwoording monteur**: aankomsttijd + vertrektijd + werkzaamheden + verplicht oplossing-veld vóór klant-handtekening (hergebruik bestaand `SignaturePad` component).
-
-**Knowledge Base bouwen**: na status `opgelost` triggert `helpdesk-ai-genereer-kbartikel` automatisch — schrijft artikel concept, partner_admin keurt goed of past aan voordat het zichtbaar wordt voor de rest van het bedrijf. Foto's/video's uit ticket worden meegekopieerd naar `helpdesk_kennis_media`.
-
-**Notificaties**: per partner instelbaar in `/instellingen` (nieuwe tab "Helpdesk notificaties"): welke events → email naar wie. Integreert met bestaand real-time `notificaties`-systeem voor in-app meldingen.
-
-**Escalatie & SLA**: tickets met prio `urgent`/`storing` krijgen automatisch SLA-deadline; cron-achtige check (via `helpdesk-notify` op interval) markeert overschrijdingen als `geescaleerd`.
-
-## Bestanden (indicatief, alles binnen 800-regel limiet)
-
-```text
-src/pages/helpdesk/
-  Dashboard.tsx
-  TicketsOverzicht.tsx
-  TicketNieuw.tsx
-  TicketDetail/
-    index.tsx
-    OverzichtTab.tsx
-    AnalyzerTab.tsx
-    CommunicatieTab.tsx
-    BijlagenTab.tsx
-    TakenTab.tsx
-    PlanningTab.tsx
-    OplossingTab.tsx
-    HistorieTab.tsx
-  Kennisbank.tsx
-  KennisArtikel.tsx
-src/components/helpdesk/
-  TicketCard.tsx
-  PrioriteitBadge.tsx
-  StatusBadge.tsx
-  KlantZoekDuplicaat.tsx
-  ProductContextPanel.tsx
-  FoutcodeAnalyzer.tsx
-  Troubleshooter.tsx
-  AIQuestionFlow.tsx
-  GerelateerdeTickets.tsx
-  ServiceBezoekDialog.tsx
-  StoringDialog.tsx
-  UrenVerantwoording.tsx
-  TaakDialog.tsx
-  AutoSaveIndicator.tsx
-  NotificatieConfig.tsx
-src/hooks/helpdesk/
-  useTickets.ts
-  useTicketDetail.ts
-  useDraftAutosave.ts
-  useKennisbank.ts
-supabase/functions/
-  helpdesk-ai-foutcode/
-  helpdesk-ai-troubleshooter/
-  helpdesk-ai-analyze-bijlage/
-  helpdesk-ai-genereer-kbartikel/
-  helpdesk-notify/
-  helpdesk-klant-duplicaat-check/
-supabase/migrations/  (één migratie voor alle nieuwe tabellen + RLS + storage bucket)
-```
-
-## Implementatie-volgorde (3 fases)
-
-**Fase 1 – Fundament (deze loop)**
-1. Database migratie: alle tabellen, enums, RLS, storage bucket `helpdesk-media`, pgvector extension
-2. Sidebar menu + routes + lege pagina's
-3. Ticket CRUD + overzicht + detail (tabs zonder AI)
-4. Klant-koppeling met duplicaatcheck + product context vanuit order/installatie/factuur
-5. Communicatie-thread + bijlagen
-6. Auto-save drafts
-7. Notificatie-config UI + `helpdesk-notify` edge function
-
-**Fase 2 – AI & Service**
-8. Foutcode Analyzer + Troubleshooter edge functions + UI
-9. Service-bezoek/storing → koppeling met `afspraken` + planning-kalender
-10. Urenverantwoording + handtekening + verplichte oplossing
-11. Auto-genereer KB artikel na sluiting + KB browser
-
-**Fase 3 – Verfijning**
-12. Dashboard met KPI's + escalatie-detectie
-13. Taken-systeem + deelbaarheid
-14. Vector-search op KB voor troubleshooter
-15. Bijlage-AI-analyse (logs, foto's)
-
-## Open punten ter bevestiging
-
-- **Live foutcode-bronnen**: AI gebruikt training-kennis + optioneel web search via bestaande Firecrawl-connector. Akkoord?
-- **KB-zichtbaarheid**: artikelen na AI-generatie eerst concept → partner_admin moet goedkeuren voor publicatie. Akkoord?
-- **Storing-notificaties**: bij aanmaken `type=storing` automatisch SMS/push naar dichtstbijzijnde monteur? Of voorlopig alleen email + in-app notificatie?
-- **SLA-tijden**: standaard waarden per prioriteit (bijv. urgent=4u, hoog=1d, normaal=3d, laag=7d) of per partner instelbaar in fase 1?
+- **Email verzending**: hergebruik bestaand SendGrid patroon uit `email-api-send`. Akkoord?
+- **Kanban view in tickets-overzicht**: standaard "Lijst", toggle naar Kanban per status-kolom (consistent met `Leads.tsx`). Akkoord?
+- **Service-bezoek in `afspraken`**: dubbel-write (helpdesk_service_bezoeken + afspraken) zodat de bestaande planning-kalender de bezoeken automatisch toont. Akkoord?
+- **AI live-test**: na fix van bovenstaande zal ik in de preview een testticket aanmaken en de Foutcode-Analyzer + Troubleshooter end-to-end laten lopen. Akkoord?
 
