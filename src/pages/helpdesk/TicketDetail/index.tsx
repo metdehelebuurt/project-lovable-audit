@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PrioriteitBadge } from "@/components/helpdesk/PrioriteitBadge";
 import { StatusBadge } from "@/components/helpdesk/StatusBadge";
+import { CsatDialog } from "@/components/helpdesk/CsatDialog";
+import { useEffect, useState } from "react";
 import OverzichtTab from "./OverzichtTab";
 import CommunicatieTab from "./CommunicatieTab";
 import BijlagenTab from "./BijlagenTab";
@@ -25,6 +27,19 @@ export default function TicketDetail() {
   const { data: ticket, isLoading } = useTicket(id);
   const update = useUpdateTicket();
   const { profile } = useAuth();
+  const [csatOpen, setCsatOpen] = useState(false);
+
+  // Open CSAT-dialog na sluiten als er nog geen CSAT-record bestaat voor dit ticket
+  useEffect(() => {
+    if (!ticket || !["opgelost", "gesloten"].includes(ticket.status)) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("helpdesk_csat" as never).select("id").eq("ticket_id", ticket.id).limit(1);
+      const arr = (data ?? []) as Array<{ id: string }>;
+      if (!cancelled && arr.length === 0) setCsatOpen(true);
+    })();
+    return () => { cancelled = true; };
+  }, [ticket?.id, ticket?.status]);
 
   const { data: collegas = [] } = useQuery({
     queryKey: ["partner-collegas", profile?.partner_id],
@@ -73,6 +88,29 @@ export default function TicketDetail() {
                 </SelectContent>
               </Select>
             </div>
+            <Select value={ticket.prioriteit} onValueChange={(v) => update.mutate({ id: ticket.id, prioriteit: v })}>
+              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="laag">Laag</SelectItem>
+                <SelectItem value="normaal">Normaal</SelectItem>
+                <SelectItem value="hoog">Hoog</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={ticket.status} onValueChange={(v) => update.mutate({ id: ticket.id, status: v })}>
+              <SelectTrigger className="w-[170px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nieuw">Nieuw</SelectItem>
+                <SelectItem value="in_behandeling">In behandeling</SelectItem>
+                <SelectItem value="wacht_op_klant">Wacht op klant</SelectItem>
+                <SelectItem value="wacht_op_intern">Wacht intern</SelectItem>
+                <SelectItem value="wacht_op_onderdeel">Wacht op onderdeel</SelectItem>
+                <SelectItem value="ingepland">Ingepland</SelectItem>
+                <SelectItem value="onderweg">Onderweg</SelectItem>
+                <SelectItem value="opgelost">Opgelost</SelectItem>
+                <SelectItem value="gesloten">Gesloten</SelectItem>
+              </SelectContent>
+            </Select>
             <PrioriteitBadge prio={ticket.prioriteit} />
             <StatusBadge status={ticket.status} />
           </div>
@@ -99,6 +137,14 @@ export default function TicketDetail() {
         <TabsContent value="oplossing"><OplossingTab ticket={ticket} /></TabsContent>
         <TabsContent value="historie"><HistorieTab ticket={ticket} /></TabsContent>
       </Tabs>
+
+      <CsatDialog
+        open={csatOpen}
+        onOpenChange={setCsatOpen}
+        ticketId={ticket.id}
+        partnerId={ticket.partner_id}
+        ticketnummer={ticket.ticketnummer}
+      />
     </div>
   );
 }

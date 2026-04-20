@@ -24,6 +24,7 @@ import {
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
 import EmailAddressList from "@/components/email/EmailAddressList";
+import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -337,6 +338,9 @@ const KlantDetail = () => {
                   />
                 </CardContent>
               </Card>
+
+              {/* Helpdesk-tickets */}
+              <KlantTicketsList klantId={klant.id} leadId={klant.lead_id} />
             </div>
           )}
 
