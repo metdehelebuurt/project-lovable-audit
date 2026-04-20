@@ -23,6 +23,7 @@ import {
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
+import EmailAddressList from "@/components/email/EmailAddressList";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +146,7 @@ const KlantDetail = () => {
     if (!klant) return;
     setEditForm({
       voornaam: klant.voornaam, achternaam: klant.achternaam, email: klant.email || "",
+      extra_emails: Array.isArray(klant.extra_emails) ? klant.extra_emails : [],
       telefoon: klant.telefoon || "", bedrijfsnaam: klant.bedrijfsnaam || "",
       adres: klant.adres || "", postcode: klant.postcode || "", plaats: klant.plaats || "",
     });
@@ -156,6 +158,7 @@ const KlantDetail = () => {
     for (const key of ["email", "telefoon", "bedrijfsnaam", "adres", "postcode", "plaats"]) {
       if (cleaned[key] === "") cleaned[key] = null;
     }
+    cleaned.extra_emails = (cleaned.extra_emails || []).filter((e: string) => e && e.trim());
     updateKlantMutation.mutate(cleaned);
   };
 
