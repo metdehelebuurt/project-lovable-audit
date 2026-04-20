@@ -101,6 +101,24 @@ export default function FactuurDetail() {
     navigate(`/financieel/nieuw/creditnota?bron=${doc.id}`);
   };
 
+  const handleDownloadPdf = () => {
+    const klantNaam = pdfKlant?.bedrijfsnaam
+      || `${pdfKlant?.voornaam ?? ""} ${pdfKlant?.achternaam ?? ""}`.trim()
+      || doc.leveranciers?.naam
+      || "onbekend";
+    const origineleTitel = document.title;
+
+    const restoreTitle = () => {
+      document.title = origineleTitel;
+      window.removeEventListener("afterprint", restoreTitle);
+    };
+
+    document.title = `${doc.documentnummer} - ${klantNaam}`;
+    window.addEventListener("afterprint", restoreTitle, { once: true });
+    window.print();
+    window.setTimeout(restoreTitle, 2000);
+  };
+
   if (loading) {
     return <div className="space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-96" /></div>;
   }
@@ -139,19 +157,55 @@ export default function FactuurDetail() {
       <style>{`
         @media print {
           @page { size: A4; margin: 0; }
-          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          body * { visibility: hidden !important; }
-          .pdf-print-root, .pdf-print-root * { visibility: visible !important; }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            overflow: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body > * { display: none !important; }
+          [data-radix-portal] {
+            display: block !important;
+            position: static !important;
+          }
+          [data-radix-portal] > * {
+            display: none !important;
+          }
+          .factuur-pdf-dialog {
+            display: block !important;
+            position: static !important;
+            inset: auto !important;
+            transform: none !important;
+            width: 210mm !important;
+            max-width: 210mm !important;
+            min-height: 297mm !important;
+            max-height: none !important;
+            overflow: visible !important;
+            border: none !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .factuur-pdf-print-shell {
+            display: block !important;
+            padding: 0 !important;
+            background: transparent !important;
+          }
           .pdf-print-root {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+            position: static !important;
             margin: 0 !important;
             padding: 0 !important;
             background: #fff !important;
             box-shadow: none !important;
             width: 210mm !important;
             display: block !important;
+            overflow: visible !important;
+          }
+          .pdf-print-root, .pdf-print-root * {
+            visibility: visible !important;
           }
           .no-print { display: none !important; }
         }
@@ -318,23 +372,14 @@ export default function FactuurDetail() {
 
       {/* PDF Preview Dialog */}
       <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
-        <DialogContent className="max-w-[95vw] w-fit max-h-[95vh] overflow-auto p-0">
+        <DialogContent className="factuur-pdf-dialog max-w-[95vw] w-fit max-h-[95vh] overflow-auto p-0">
           <div className="no-print sticky top-0 z-10 bg-background border-b p-4 flex items-center justify-between">
             <DialogHeader><DialogTitle>PDF Preview — {doc.documentnummer}</DialogTitle></DialogHeader>
-            <Button size="sm" onClick={() => {
-              const klantNaam = pdfKlant?.bedrijfsnaam
-                || `${pdfKlant?.voornaam ?? ""} ${pdfKlant?.achternaam ?? ""}`.trim()
-                || doc.leveranciers?.naam
-                || "onbekend";
-              const orig = document.title;
-              document.title = `${doc.documentnummer} - ${klantNaam}`;
-              window.print();
-              setTimeout(() => { document.title = orig; }, 1000);
-            }}>
+            <Button size="sm" onClick={handleDownloadPdf}>
               <Download className="h-4 w-4 mr-2" /> PDF downloaden
             </Button>
           </div>
-          <div className="pdf-print-root" style={{ display: "flex", justifyContent: "center", padding: "8px", background: "#f3f4f6" }}>
+          <div className="factuur-pdf-print-shell pdf-print-root" style={{ display: "flex", justifyContent: "center", padding: "8px", background: "#f3f4f6" }}>
             <FinancieelPDF
               doc={{ ...doc, regels }}
               klant={pdfKlant}
