@@ -15,14 +15,20 @@ interface Props {
   leadId?: string;
   klantId?: string;
   email?: string;
+  emails?: string[];
 }
 
-const EmailTab = ({ leadId, klantId, email }: Props) => {
+const EmailTab = ({ leadId, klantId, email, emails }: Props) => {
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
 
+  // Verzamel alle e-mailadressen voor lookup
+  const allEmails = (emails && emails.length > 0 ? emails : (email ? [email] : []))
+    .map(e => (e || "").trim().toLowerCase())
+    .filter(Boolean);
+
   const { data: berichten = [], refetch } = useQuery({
-    queryKey: ["email-berichten", leadId, klantId],
+    queryKey: ["email-berichten", leadId, klantId, allEmails.join(",")],
     queryFn: async () => {
       let query = supabase
         .from("email_berichten" as any)
@@ -30,8 +36,14 @@ const EmailTab = ({ leadId, klantId, email }: Props) => {
         .order("datum", { ascending: false })
         .limit(50);
 
-      if (leadId) query = query.eq("lead_id", leadId);
-      else if (klantId) query = query.eq("klant_id", klantId);
+      if (leadId) {
+        query = query.eq("lead_id", leadId);
+      } else if (klantId && allEmails.length > 0) {
+        const quoted = allEmails.map(e => `"${e}"`).join(",");
+        query = query.or(`klant_id.eq.${klantId},van.in.(${quoted}),aan.in.(${quoted})`);
+      } else if (klantId) {
+        query = query.eq("klant_id", klantId);
+      }
 
       const { data } = await query;
       return (data || []) as any[];
@@ -59,6 +71,7 @@ const EmailTab = ({ leadId, klantId, email }: Props) => {
             open={composeOpen}
             onOpenChange={setComposeOpen}
             defaultTo={email || ""}
+            availableTo={allEmails}
             leadId={leadId}
             klantId={klantId}
             onSent={() => refetch()}
@@ -146,6 +159,7 @@ const EmailTab = ({ leadId, klantId, email }: Props) => {
         open={composeOpen}
         onOpenChange={setComposeOpen}
         defaultTo={email || ""}
+        availableTo={allEmails}
         leadId={leadId}
         klantId={klantId}
         onSent={() => refetch()}
