@@ -1,66 +1,106 @@
 
 
-# Fix: "Fout 400: redirect_uri_mismatch" bij Gmail-koppeling
+# Plan: PDF-bijlage bij e-mail + e-mailhistorie & meerdere e-mailadressen per klant
 
-## Diagnose
+## Deel 1 — Oorzaak: PDF mist als bijlage
 
-Google's foutmelding `redirect_uri_mismatch` betekent: de `redirect_uri` die wij naar Google sturen staat **niet** in de lijst met "Geautoriseerde omleidings-URI's" van jouw OAuth Client ID in Google Cloud Console.
+In `supabase/functions/send-offerte-email/index.ts` belooft de UI tekst _"PDF offerte wordt als bijlage bijgevoegd"_, maar de Edge Function bouwt nooit een attachment. SMTP, Gmail-API en MS Graph krijgen alleen HTML mee. Voor `send-offerte-email`, factuurmail (bestaat nog niet) en alle toekomstige varianten geldt dat er geen server-side PDF-generator is — alle PDF's worden in de browser via `window.print()` of `html2canvas + jsPDF` gemaakt.
 
-**Wat de app op dit moment naar Google stuurt** (regel 115-116 in `EmailConfiguratie.tsx`):
-```
-https://xmguipmetciwvzeyxugu.supabase.co/functions/v1/email-oauth-callback
-```
+### Aanpak: PDF in de browser genereren → uploaden → edge function bijvoegen
 
-Dit is de URL waar Google de gebruiker naar terug moet sturen na consent. Google vergelijkt deze URI **letterlijk teken-voor-teken** met wat in jouw OAuth-client geregistreerd staat. Een puntje, een trailing slash of http-vs-https verschil = mismatch.
+**Stap A — Storage bucket aanmaken (migration)**
+- Nieuwe bucket `email-bijlagen` (private), RLS per partner_id pad-prefix.
+- Pad-conventie: `{partner_id}/{type}/{id}-{timestamp}.pdf`.
+- Auto-cleanup policy: delete na 30 dagen (lifecycle of cron).
 
-## Oorzaak
+**Stap B — Frontend PDF-generator helper**
+- Nieuw bestand `src/lib/pdfFromElement.ts` (max 50 regels) met functie `renderElementToPdfBlob(el: HTMLElement): Promise<Blob>` — gebruikt `html2canvas` + `jsPDF` (al in project, zie `ProductDetail.tsx`).
+- Splitsing in helpers `captureCanvas`, `canvasToPdf`, `multiPageSplit` om regel/parameter-limieten te respecteren.
 
-De OAuth Client ID die je in Google Cloud Console hebt aangemaakt, heeft deze redirect-URI nog **niet** (of niet exact gelijk) in de lijst staan. Dit is een **configuratie-issue in Google Cloud Console**, niet in de code.
+**Stap C — `OfferteEmailEditor.tsx` — PDF genereren vóór verzenden**
+1. Open de offerte-PDF via een hidden iframe (`/offertes/:id/pdf?print=true`) of render een verborgen `OffertePDFPreview` instance.
+2. Roep `renderElementToPdfBlob()` aan → upload naar `email-bijlagen` → krijg signed URL + storage path.
+3. Stuur `attachment_path` mee in de invoke-body naar `send-offerte-email`.
+4. Voeg een visuele indicator toe: "PDF wordt voorbereid..." → "PDF (245 KB) wordt bijgevoegd ✓".
 
-## Oplossing — 1 actie van jouw kant
+**Stap D — `send-offerte-email/index.ts` — bijlage bijvoegen**
+- Nieuwe parameter `attachment_path` (storage key).
+- Helper `fetchAttachment(adminClient, path)` → download bytes → base64.
+- **SMTP (denomailer)**: gebruik `attachments: [{ filename, content: bytes, encoding: 'binary', contentType: 'application/pdf' }]`.
+- **Gmail API**: bouw multipart/mixed RFC822 met base64-encoded PDF part.
+- **MS Graph**: voeg `attachments` array toe aan het `message` object met `@odata.type: "#microsoft.graph.fileAttachment"` en `contentBytes`.
+- Logica gesplitst in helpers `buildGmailMime(html, pdf)`, `buildGraphMessage(html, pdf)`.
 
-### Voeg de redirect-URI toe in Google Cloud Console
+**Stap E — Factuur & andere documenten gelijk meeleveren**
+Inventarisatie van templates die een PDF zouden moeten meesturen:
 
-1. Ga naar **Google Cloud Console** → **APIs & Services** → **Credentials**
-2. Open jouw OAuth 2.0 Client ID (waar je `GOOGLE_EMAIL_CLIENT_ID` vandaan komt)
-3. Bij **Authorized redirect URIs** → klik **+ ADD URI**
-4. Plak **exact** deze waarde (kopieer precies, geen trailing slash, geen extra spaties):
+| Template / locatie | Status nu | Actie |
+|---|---|---|
+| `send-offerte-email` (offerte) | HTML zonder bijlage | PDF bijvoegen via Stap D |
+| **Factuur** (`FactuurDetail.tsx`) | Geen e-mailknop, alleen statuswissel naar "verzonden" | Nieuwe knop **"E-mail versturen"** + nieuwe edge function `send-factuur-email` (zelfde patroon, type='factuur') |
+| **Orderbevestiging** (`OpdrachtDetail.tsx`) | Alleen `window.print()` | Knop **"E-mail versturen"** toegevoegd, hergebruikt `send-offerte-email` met `type=orderbevestiging` |
+| **Productdatasheet** | `window.print()` | Geen e-mailflow gevraagd — laten zoals het is |
+| **Energieadvies-PDF** | Download | Geen e-mailflow gevraagd — laten zoals het is |
 
-```
-https://xmguipmetciwvzeyxugu.supabase.co/functions/v1/email-oauth-callback
-```
+`send-factuur-email` deelt 90% van de logica met `send-offerte-email`. Om binnen de 800-regelslimiet te blijven extraheren we gedeelde helpers naar `supabase/functions/_shared/email-send.ts`:
+- `sendViaSMTP(...)`, `sendViaGmailApi(...)`, `sendViaMsGraphApi(...)`, `refreshOAuthToken(...)`, `fetchAttachment(...)`, `logEmailSend(...)`.
 
-5. Klik **SAVE**
-6. Wacht ~1 minuut (Google's cache moet verversen) en probeer opnieuw te koppelen
+## Deel 2 — Klantkaart: e-mailgeschiedenis op basis van e-mailadres + meerdere e-mailadressen
 
-### Controleer ook deze randvoorwaarden in Google Cloud Console
+### Database wijzigingen (migration)
 
-| Check | Verwacht |
+1. **`klanten.extra_emails text[] DEFAULT '{}'`** — naast het primaire `email`-veld voor extra adressen.
+2. **`email_berichten` koppeling op e-mailadres** — extra index voor lookup:
+   ```sql
+   CREATE INDEX idx_email_berichten_van ON public.email_berichten(lower(van));
+   CREATE INDEX idx_email_berichten_aan ON public.email_berichten(lower(aan));
+   ```
+3. **Backfill-trigger**: bij `INSERT` op `email_berichten` waar `klant_id IS NULL`, automatisch matchen tegen `klanten.email` ∪ `klanten.extra_emails` (lowercase) van dezelfde `partner_id` en `klant_id` invullen.
+4. Eenmalige backfill-query voor bestaande berichten.
+
+### Frontend
+
+**`src/pages/KlantDetail.tsx`**
+- **Edit-formulier**: nieuwe sectie "E-mailadressen" met primair adres + lijst van extra adressen (toevoegen/verwijderen). Component `EmailAddressList.tsx` (max 80 regels).
+- **`EmailTab` aanroep**: huidig roept met `email={klant.email}` — uitbreiden naar `emails={[klant.email, ...klant.extra_emails]}`.
+
+**`src/components/email/EmailTab.tsx`**
+- Prop wijzigen van `email?: string` naar `emails?: string[]`.
+- Query uitbreiden:
+  ```ts
+  // Naast klant_id-match ook expliciet matchen op alle bekende e-mailadressen
+  let query = supabase.from("email_berichten").select("*")
+    .or(`klant_id.eq.${klantId},van.in.(${quotedEmails}),aan.in.(${quotedEmails})`)
+    .order("datum", { ascending: false }).limit(50);
+  ```
+- Compose-knop: dropdown om uit beschikbare adressen te kiezen.
+
+**`src/components/email/EmailCompose.tsx`**: dropdown-veld voor "Aan" met de bekende klant-adressen.
+
+## Bestanden — overzicht
+
+| Bestand | Actie |
 |---|---|
-| **OAuth consent screen** → Publishing status | "In production" óf jouw eigen Google-account staat als **Test user** als hij op "Testing" staat |
-| **OAuth consent screen** → User type | "External" (tenzij Google Workspace-only) |
-| **Enabled APIs** | **Gmail API** moet geactiveerd zijn voor het project |
-| **Scopes** | `gmail.send`, `gmail.readonly`, `gmail.modify`, `userinfo.email` |
-| **Application type** van de OAuth-client | "Web application" (NIET "Desktop") |
+| `supabase/migrations/...email_bijlagen_bucket.sql` | Nieuwe bucket + RLS |
+| `supabase/migrations/...klanten_extra_emails.sql` | Kolom + indices + match-trigger + backfill |
+| `supabase/functions/_shared/email-send.ts` | **Nieuw** — gedeelde send-helpers (SMTP/Gmail/Graph + attachment) |
+| `supabase/functions/send-offerte-email/index.ts` | Refactor naar shared helpers + `attachment_path` |
+| `supabase/functions/send-factuur-email/index.ts` | **Nieuw** — analoog aan offerte |
+| `src/lib/pdfFromElement.ts` | **Nieuw** — html2canvas+jsPDF helper |
+| `src/components/offertes/OfferteEmailEditor.tsx` | PDF genereren + uploaden vóór verzenden |
+| `src/pages/FactuurDetail.tsx` | Knop "E-mail versturen" + dialog |
+| `src/components/financieel/FactuurEmailDialog.tsx` | **Nieuw** — analoog aan OfferteEmailEditor |
+| `src/pages/OpdrachtDetail.tsx` | Knop "E-mail versturen" |
+| `src/components/email/EmailAddressList.tsx` | **Nieuw** — meerdere adressen beheren |
+| `src/pages/KlantDetail.tsx` | Edit-formulier uitbreiden, `EmailTab` met `emails[]` |
+| `src/components/email/EmailTab.tsx` | Prop `emails: string[]`, query aangepast |
+| `src/components/email/EmailCompose.tsx` | Dropdown adres-selectie |
 
-## Wat ik aan code-kant ga verbeteren
+Alle bestanden blijven onder de 800-regelslimiet door splitsing in sub-componenten/helpers.
 
-Geen functionele wijziging — de redirect-URI is correct. Wel een kleine UX-verbetering:
+## Bevestiging nodig
 
-**Bestand**: `src/components/instellingen/EmailConfiguratie.tsx`
-
-- Bij de Gmail- en Outlook-knoppen een kleine info-tooltip / helptekst tonen met de **exact te registreren redirect-URI**, zodat dit soort fouten in de toekomst direct zelf op te lossen is.
-- Als de OAuth-popup binnen 2 sec sluit zonder bericht, een toast tonen: *"Koppeling onderbroken — controleer of de redirect-URI correct geregistreerd staat in Google Cloud Console: `<URI>`"*
-
-## Niets wijzigen aan
-
-- `email-oauth-callback` Edge Function — die is correct
-- `email-oauth-config` Edge Function — die levert de juiste client_id
-- De redirect-URI zelf — die mag niet veranderen
-
-## Stappen na bevestiging
-
-1. **Jij**: voegt de redirect-URI toe in Google Cloud Console (1 minuut werk)
-2. **Ik**: voeg helpteksten + betere foutdetectie toe in `EmailConfiguratie.tsx`
-3. **Samen testen**: opnieuw "Gmail koppelen" klikken — consent screen → groen "E-mail gekoppeld!" blok met `info@smartaccu.nl`
+1. **PDF-rendermethode**: akkoord met `html2canvas + jsPDF` in de browser (bestaand patroon)? Alternatief = Puppeteer in een edge function (zwaarder + nieuwe dependency).
+2. **Factuur e-mailflow nu meteen meebouwen** of alleen offerte + orderbevestiging?
+3. **Auto-match per e-mailadres**: alleen koppelen aan klant binnen dezelfde partner_id, en _alleen_ als `klant_id` nog leeg is — bestaande koppelingen blijven respecteren. Akkoord?
 
