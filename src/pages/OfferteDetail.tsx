@@ -100,6 +100,21 @@ const OfferteDetail = () => {
     enabled: !!id,
   });
 
+  const { data: gekoppeldeFacturen = [] } = useQuery({
+    queryKey: ["offerte-facturen", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("financiele_documenten")
+        .select("id, documentnummer, totaal_bedrag, status, factuurdatum")
+        .eq("offerte_id", id!)
+        .eq("type", "verkoopfactuur")
+        .order("factuurdatum", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
   const statusMutation = useMutation({
     mutationFn: async ({ status, afwijzing_reden, afwijzing_categorie }: { status: OfferteStatus; afwijzing_reden?: string; afwijzing_categorie?: string }) => {
       const update: any = { status };
