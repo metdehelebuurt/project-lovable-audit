@@ -11,8 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Send } from "lucide-react";
+import { ArrowLeft, Save, Send, UserPlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import FactuurContextCard from "@/components/financieel/FactuurContextCard";
+import TermijnFactuurSelector, { type TermijnModus } from "@/components/financieel/TermijnFactuurDialog";
+import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
+import { buildFactuurFromOfferte, buildTermijnRegels, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
