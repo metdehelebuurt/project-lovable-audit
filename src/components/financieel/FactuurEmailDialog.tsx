@@ -12,7 +12,7 @@ import { renderElementToPdfBlob, uploadPdfToStorage } from "@/lib/pdfFromElement
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  doc: { id: string; documentnummer: string; partner_id: string; type?: string };
+  doc: { id: string; documentnummer: string; partner_id: string; type?: string; factuur_subtype?: string };
   defaultTo: string;
   pdfElementSelector?: string;
   onSent?: () => void;
@@ -26,8 +26,16 @@ const TYPE_LABELS: Record<string, string> = {
   pakbon: "Pakbon",
 };
 
+function getLabel(type?: string, subtype?: string): string {
+  if (type === "verkoopfactuur") {
+    if (subtype === "voorschot") return "Voorschotfactuur";
+    if (subtype === "eindafrekening") return "Eindafrekening";
+  }
+  return TYPE_LABELS[type || "verkoopfactuur"] || "Document";
+}
+
 export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo, pdfElementSelector = ".pdf-print-root", onSent }: Props) {
-  const label = TYPE_LABELS[doc.type || "verkoopfactuur"] || "Document";
+  const label = getLabel(doc.type, doc.factuur_subtype);
   const [to, setTo] = useState(defaultTo);
   const [subject, setSubject] = useState(`${label} ${doc.documentnummer}`);
   const [body, setBody] = useState(`Beste relatie,\n\nHierbij ontvangt u ${label.toLowerCase()} ${doc.documentnummer}.\n\nMet vriendelijke groet`);
