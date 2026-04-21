@@ -102,6 +102,13 @@ function buildBtwOverzicht(regels: OfferteRegel[]) {
     .sort((a, b) => b.percentage - a.percentage);
 }
 
+/** Splits regels in 'positief' (originele werk) en 'negatief' (verrekende voorschotten). */
+function splitVerrekening(regels: OfferteRegel[]) {
+  const positief = regels.filter((r) => regelSubtotaal(r) >= 0);
+  const negatief = regels.filter((r) => regelSubtotaal(r) < 0);
+  return { positief, negatief };
+}
+
 export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }: Props) {
   const regels = doc.regels || [];
   const isKlant = !!klant;
