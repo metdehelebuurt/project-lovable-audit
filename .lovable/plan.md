@@ -1,156 +1,194 @@
 
 
-# Plan — Volwassen gebruikersbeheer + persoonlijke Gmail/Outlook per gebruiker
+# Plan — Rolherstructurering + nieuwe rol "Backoffice" + lekdichte toegang
 
-## A. Probleemanalyse (huidige staat)
+## A. Analyse van de huidige situatie
 
-| # | Probleem |
-|---|---|
-| 1 | "Nieuwe gebruiker" zit verstopt in 1 generieke `Gebruikers`-pagina; niet duidelijk dat partners adviseurs/installateurs kunnen aanmaken |
-| 2 | Form vraagt om handmatig wachtwoord; geen uitnodig-via-mail flow → onveilig en onhandig |
-| 3 | Geen klikbaar gebruikersprofiel met statistieken, audit, sessies |
-| 4 | `email_accounts` is gekoppeld op **`partner_id` + `provider`** (uniek). 1 inbox per organisatie → niemand kan via eigen Gmail/Outlook mailen |
-| 5 | `users`-tabel mist: functie, avatar, last_login_at, mfa_enabled, taal, timezone, is_uitgenodigd, uitnodiging_token, opmerking |
-| 6 | Geen audit-trail (wie wijzigde wat, wanneer); geen sessie-overzicht; geen vakantie/afwezigheid |
+Database-rollen (`app_role` enum):
+`superadmin`, `partner_admin`, `partner_staff`, `adviseur`, `installateur`, `consument`, `affiliate`
 
-## B. Nieuwe architectuur — Persoonlijke e-mailkoppeling
+### Wat er momenteel mis gaat (te ruime toegang)
 
-**Database-aanpassing (1 migratie):**
-- `email_accounts.partner_id` blijft, maar **uniek-constraint wijzigt** van `(partner_id, provider)` → `(user_id, provider)` zodat elke gebruiker eigen account heeft
-- Nieuwe kolom `email_accounts.is_default_voor_partner boolean default false` — partner_admin kan 1 account markeren als fallback voor systeemmails
-- `email_berichten`: nieuwe kolom `email_account_id` is al aanwezig — query's filteren straks op `account.user_id = current user`
-
-**OAuth-flow leekproof maken:**
-- Knop **"Koppel mijn Gmail/Outlook"** komt op nieuwe pagina `/profiel` (eigen profiel) én op gebruikersdetail (alleen voor jezelf)
-- 3-stappen wizard met preview: (1) "Selecteer provider" → (2) Google/MS popup → (3) "✓ Gekoppeld als naam@…"
-- Als koppeling mislukt: duidelijke uitleg + auto-detectie redirect-URI mismatch (al aanwezig, uitbreiden met "Probleem oplossen"-knop die config opnieuw ophaalt)
-- Bij offerte/factuur versturen: edge-functions kiezen automatisch het `email_account` van de huidige `verzonden_door_id`, met fallback naar partner-default of SMTP
-
-## C. Verbeterde gebruikersbeheer-UX
-
-### 1. `Gebruikers.tsx` herstructureren
-- **Top-tabs**: "Alle / Adviseurs / Installateurs / Beheerders / Uitgenodigd / Inactief"
-- Per kaart in plaats van rij optioneel via toggle (mobiel-vriendelijk)
-- **"Nieuwe medewerker"-knop met dropdown**: kies type direct ("→ Nieuwe adviseur", "→ Nieuwe installateur", "→ Nieuwe beheerder", "→ Bestaand persoon uitnodigen via e-mail")
-- Bulk-acties: meerdere selecteren → activeren/deactiveren/wijzig rol
-- Avatar-kolom (eerste letter + kleur als fallback)
-- Snelfilters: laatst actief (week/maand/nooit), MFA aan/uit, e-mail gekoppeld ja/nee
-
-### 2. Klikbare gebruikersdetailpagina `/gebruikers/:id`
-2+1 grid (zelfde patroon als `KlantDetail`):
-
-**Linker 2 kolommen — tabs:**
-- **Profiel**: avatar, naam, e-mail, telefoon, functie, taal, timezone, opmerking → bewerkbaar
-- **Rol & rechten**: huidige rol + dropdown om aan te passen (audit-trail loggen), partner-koppeling, status (actief/inactief/geschorst)
-- **Statistieken**: leads/schouwen/offertes/omzet/conversie (hergebruik logica uit `Adviseurs.tsx`) met periode-selector
-- **Activiteit**: laatste 50 acties uit nieuwe `audit_log`-tabel (login, offerte aangemaakt, klant gewijzigd…)
-- **Sessies**: actieve sessies via `auth.sessions` (via edge function); knop "Forceer uitloggen"
-- **E-mailkoppeling**: status van persoonlijke OAuth-koppeling + sync-stats
-
-**Rechter kolom — quick-info:**
-- Status-badges, laatste login, MFA-status, aantal openstaande tickets/taken
-- Knoppen: "Wachtwoord resetten", "Magic-link sturen", "Verstuur welkomstmail opnieuw", "Deactiveren", "Verwijderen"
-
-## D. 8 nieuwe SAAS-functies
-
-| # | Functie | Wat het doet |
+| Module | Huidige toegang | Probleem |
 |---|---|---|
-| **1** | **Uitnodig-via-e-mail flow** | Beheerder vult enkel naam+email+rol in → systeem stuurt magic-link uitnodiging (24u geldig). Ontvanger klikt → kiest eigen wachtwoord → MFA-setup-prompt → klaar. Geen handmatig wachtwoord delen meer. |
-| **2** | **Audit-log per gebruiker** | Nieuwe tabel `audit_log` (user_id, actor_id, partner_id, actie, entity_type, entity_id, oude_waarde, nieuwe_waarde, ip, user_agent, ts). Trigger op `users`, `offertes`, `klanten`, `leads`. Tijdlijn op detailpagina. |
-| **3** | **Verlof- & afwezigheidsbeheer** | Tabel `gebruiker_afwezigheid` (van/tot, reden, vervanger). Bij toewijzing van leads/offertes/tickets → waarschuwing "X is afwezig tot Y, kies vervanger Z". Auto-doorzetten naar vervanger optioneel. |
-| **4** | **MFA verplicht per rol** | Partner-admin kan per rol verplichten (bv. "alle beheerders moeten 2FA aan hebben"). Niet-compliant gebruikers zien blokpagina bij login. Status zichtbaar in lijst (groen/rood badge). |
-| **5** | **Per-gebruiker e-mailhandtekening + tone-of-voice** | Eigen HTML-handtekening (rich-text) per gebruiker, automatisch onderaan elke offerte/factuur/ticket-mail. Standaard tonen ook profielfoto/functie/telefoon. |
-| **6** | **Activiteit-heatmap & inactiviteits-alert** | Profiel toont GitHub-style 90-dagen heatmap (login + acties). Auto-alert naar admin als gebruiker >30 dgn inactief is met optie "deactiveren of opnieuw uitnodigen". |
-| **7** | **Permission-overrides per gebruiker** | Tabel `gebruiker_permissies` met fijnmazige toggles bovenop rol (bv. "deze adviseur mag wel kortingen >10% goedkeuren"). Standaard alle uit; rol bepaalt baseline. UI: schakelaar-lijst per gebruiker. |
-| **8** | **Onboarding-checklist + welkomstwizard** | Nieuwe gebruiker krijgt bij eerste login een 5-staps wizard (profielfoto, telefoon, e-mail koppelen, MFA, eerste actie). Beheerder ziet voortgang per gebruiker (badge "Onboarding 60%"). |
+| **Adviseurs-overzicht** (`/adviseurs`) | superadmin, partner_admin, partner_staff | Alleen managers/HR mogen prestaties van collega's zien — staff is te breed |
+| **Klanten** (`/klanten`) | + adviseur | Adviseur ziet ALLE klanten van de partner i.p.v. alleen eigen klanten |
+| **Leads** (`/leads`) | + adviseur | Idem — adviseur kan andermans leads zien (alleen filter "mijn leads" in UI, geen DB-scope) |
+| **Financieel** (`/financieel/*`) | superadmin, partner_admin, partner_staff, **adviseur** | ⚠️ KRITIEK: adviseur ziet alle facturen, BTW, openstaande posten, omzet van de hele partner |
+| **Documenten** (`/documenten`) | superadmin, partner_admin, partner_staff | Geen uitvoerend personeel, OK — maar adviseur/installateur hebben soms documenten nodig (datasheets, garanties) |
+| **Leveranciers** (`/leveranciers`) | superadmin, partner_admin, partner_staff | OK — maar onduidelijk wie inkoopfacturen doet |
+| **Producten** (`/producten`) | + installateur | Installateur ziet ALLE prijzen + marges. Mag specs en voorraad zien, niet inkoopprijs |
+| **Opdrachten** (`/opdrachten`) | + installateur | Installateur ziet financiële regels + kortingen op opdrachten van anderen |
+| **Schouwen** (`/schouwen`) | iedereen incl. installateur, consument | Installateur hoort alleen schouwen te zien die aan zijn opdracht gekoppeld zijn |
+| **Berichten** (`/berichten`) | partner_admin, partner_staff, adviseur, consument | Installateur uitgesloten — terwijl die wel met de klant communiceert |
+| **Instellingen** | partner_admin tabs gated op UI | OK — maar `partner_staff` ziet geen admin-tabs dus niets |
+| **Helpdesk** | superadmin, partner_admin, partner_staff, adviseur, installateur | Iedereen ziet alle tickets — installateur hoort alleen eigen toegewezen tickets te zien |
 
-## E. Database-migraties
+### Conclusies
 
+1. **Adviseur** heeft toegang tot omzet/BTW/inkoop van de hele partner — moet weg.
+2. **Installateur** ziet productprijzen, opdrachten van collega's en alle schouwen — te breed.
+3. Er ontbreekt een **backoffice**-rol voor mensen die wel de hele administratie (facturatie, leveranciers, documenten, klanten) doen, maar geen technisch werk uitvoeren en niet de hele organisatie mogen beheren (dat is `partner_admin`).
+4. `partner_staff` is een vage allesomvattende rol — wordt nu gebruikt als "kantoormedewerker" maar overlapt met admin-rechten.
+
+---
+
+## B. Voorgestelde nieuwe rolverdeling
+
+### Nieuwe rol: **`backoffice`**
+> Administratief medewerker: doet facturatie, leveranciers, documenten, klantbeheer, planning. Geen rolbeheer, geen abonnement, geen huisstijl, geen prijsstrategie.
+
+### Hernieuwde rol-omschrijvingen
+
+| Rol | Scope | Hoofd­bevoegdheden |
+|---|---|---|
+| **superadmin** | Platform | Alles |
+| **partner_admin** | Volledige organisatie | Beheer + alle operationele modules + abonnement + huisstijl + gebruikers |
+| **backoffice** *(nieuw)* | Financieel + administratie | Klanten, leads (alle), offertes (alle), opdrachten, facturen, leveranciers, documenten, planning, helpdesk-tickets toewijzen. **GEEN** gebruikersbeheer, geen abonnement, geen huisstijl, geen rolwijziging |
+| **partner_staff** | Operationeel breed (binnenstem) | Leads (alle), klanten (alle), offertes, schouwen, opdrachten, planning, helpdesk. **GEEN** financieel, geen leveranciers, geen documenten-beheer |
+| **adviseur** | Eigen werk (commercieel) | **Eigen** leads + **eigen** klanten + **eigen** offertes + schouwen, planning (eigen agenda), producten (zonder inkoopprijs), helpdesk (eigen tickets), berichten met klanten. **GEEN** financieel, geen analytics, geen documenten, geen leveranciers, geen adviseurs-overzicht |
+| **installateur** | Eigen opdrachten | Eigen opdrachten + bijbehorende schouwen + planning (eigen) + producten (specs only, geen prijzen) + helpdesk (eigen tickets) + berichten met klant. **GEEN** leads, geen klanten-overzicht, geen offertes, geen financieel, geen tools |
+| **affiliate** | Eigen referrals | Affiliate-dashboard, eigen offertes (read-only), instellingen (eigen profiel) |
+| **consument** | Eigen dossier | Eigen offertes, eigen schouwen, eigen planning, eigen berichten |
+
+---
+
+## C. Nieuwe toegangsmatrix (samenvatting)
+
+| Module | super | partner_admin | **backoffice** | partner_staff | adviseur | installateur | affiliate | consument |
+|---|---|---|---|---|---|---|---|---|
+| Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Partners | ✅ | — | — | — | — | — | — | — |
+| Adviseurs-overzicht | ✅ | ✅ | — | — | — | — | — | — |
+| Gebruikers | ✅ | ✅ | — | — | — | — | — | — |
+| Leads | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | — | — | — |
+| Klanten | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | — | — | — |
+| Producten | ✅ | ✅ | ✅ (incl. inkoop) | ✅ | 👁 zonder inkoopprijs | 👁 specs only | — | — |
+| Schouwen | ✅ | ✅ | ✅ | ✅ | ✅ | 🔒 gekoppeld | — | 🔒 eigen |
+| Offertes | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | — | 👁 referrals | 🔒 eigen |
+| Opdrachten | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | 🔒 toegewezen | — | — |
+| Installaties | ✅ | ✅ | ✅ | ✅ | — | 🔒 eigen | — | — |
+| Planning | ✅ | ✅ | ✅ | ✅ | 🔒 eigen agenda | 🔒 eigen agenda | — | 🔒 eigen |
+| **Financieel** | ✅ | ✅ | **✅** | — | — | — | — | — |
+| Leveranciers | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Documenten | ✅ | ✅ | ✅ | ✅ | 👁 lezen | 👁 lezen | — | — |
+| Analytics | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Berichten | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
+| Energieadvies/Tools | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
+| Helpdesk-tickets | ✅ alle | ✅ alle | ✅ alle | ✅ alle | 🔒 eigen | 🔒 eigen | — | — |
+| Helpdesk-kennisbank | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — |
+| Instellingen (admin tabs) | ✅ | ✅ | — | — | — | — | — | — |
+| Affiliate-dashboard | — | — | — | — | — | — | ✅ | — |
+
+🔒 = data-scope-restrictie (alleen eigen records via DB/RLS-filter)
+👁 = read-only of beperkt zicht
+
+---
+
+## D. Implementatieplan
+
+### Stap 1 — Database
+
+Migratie:
 ```sql
--- Profielvelden
-ALTER TABLE users ADD COLUMN functie text;
-ALTER TABLE users ADD COLUMN avatar_url text;
-ALTER TABLE users ADD COLUMN taal text DEFAULT 'nl';
-ALTER TABLE users ADD COLUMN timezone text DEFAULT 'Europe/Amsterdam';
-ALTER TABLE users ADD COLUMN last_login_at timestamptz;
-ALTER TABLE users ADD COLUMN mfa_enabled boolean DEFAULT false;
-ALTER TABLE users ADD COLUMN onboarding_voltooid boolean DEFAULT false;
-ALTER TABLE users ADD COLUMN onboarding_stappen jsonb DEFAULT '{}'::jsonb;
-ALTER TABLE users ADD COLUMN handtekening_html text;
-ALTER TABLE users ADD COLUMN opmerking text;
-ALTER TABLE users ADD COLUMN uitgenodigd_op timestamptz;
-ALTER TABLE users ADD COLUMN uitgenodigd_door uuid REFERENCES users(id);
-
--- E-mail per gebruiker
-ALTER TABLE email_accounts DROP CONSTRAINT IF EXISTS email_accounts_partner_id_provider_key;
-ALTER TABLE email_accounts ADD CONSTRAINT email_accounts_user_provider_key UNIQUE (user_id, provider);
-ALTER TABLE email_accounts ADD COLUMN is_default_voor_partner boolean DEFAULT false;
-
--- Audit log
-CREATE TABLE audit_log (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  partner_id uuid, actor_id uuid, target_user_id uuid,
-  actie text NOT NULL, entity_type text, entity_id uuid,
-  oude_waarde jsonb, nieuwe_waarde jsonb,
-  ip inet, user_agent text,
-  created_at timestamptz DEFAULT now()
-);
-CREATE INDEX ON audit_log (partner_id, created_at DESC);
-CREATE INDEX ON audit_log (target_user_id, created_at DESC);
-
--- Afwezigheid
-CREATE TABLE gebruiker_afwezigheid (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  partner_id uuid NOT NULL,
-  van date NOT NULL, tot date NOT NULL,
-  reden text, vervanger_id uuid REFERENCES users(id),
-  created_at timestamptz DEFAULT now()
-);
-
--- Permissie-overrides
-CREATE TABLE gebruiker_permissies (
-  user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  permissies jsonb DEFAULT '{}'::jsonb,
-  updated_at timestamptz DEFAULT now()
-);
-
--- Auth-trigger om last_login_at te zetten
-CREATE OR REPLACE FUNCTION sync_last_login() ...
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'backoffice' BEFORE 'partner_staff';
 ```
 
-Plus RLS-policies (alleen partner_admin/superadmin lezen audit van eigen partner; gebruiker leest eigen profiel + audit).
+RLS-aanpassingen (nieuwe migratie):
+- `financiele_documenten`, `inkoopfactuur_*`, `pakbonnen`, `btw_aangiften`: SELECT/UPDATE alleen voor `superadmin`, `partner_admin`, `backoffice`
+- `leveranciers`: idem
+- `producten`: kolom `inkoopprijs` gemaskeerd via een view `producten_publiek` voor adviseur/installateur (RLS staat al op `partner_id` — view hide gevoelige kolommen)
+- `leads`/`klanten`/`offertes`: nieuwe RLS-clausule "adviseur ziet alleen waar `owner_user_id` of `adviseur_id = auth.uid()`" (toevoegen naast bestaande partner-scope, niet vervangen)
+- `opdrachten`: installateur ziet alleen waar `installateur_id = auth.uid()`
+- `schouwen`: installateur alleen waar gekoppeld via `opdrachten.schouw_id`
+- `helpdesk_tickets`: adviseur/installateur alleen waar `toegewezen_aan = auth.uid()` of `gemaakt_door = auth.uid()`
 
-## F. Bestanden
+### Stap 2 — `src/App.tsx` route-rechten
+
+Volledige herziening volgens matrix. Belangrijke wijzigingen:
+- Verwijder `adviseur` uit `/financieel/*`, `/documenten`
+- Verwijder `installateur` uit `/producten` overzicht (alleen detail) en uit `/opdrachten` lijst (krijgt eigen "Mijn opdrachten" via filter)
+- Voeg `backoffice` toe aan: leads, klanten, offertes, opdrachten, installaties, planning, financieel, leveranciers, documenten, analytics, berichten, helpdesk
+- Voeg `partner_staff` toe aan analytics; verwijder uit financieel/leveranciers/documenten-beheer
+- Splits `/installaties` toegang: installateur leest, alleen `partner_admin`/`backoffice` mag aanmaken/wijzigen
+
+### Stap 3 — `src/components/AppSidebar.tsx`
+
+Herstructurering met nieuwe rol-aware logica + extra label "Backoffice" voor financiële groep. Verberg menu-items volgens de matrix. Adviseur/installateur krijgen een minimale, taakgerichte sidebar.
+
+### Stap 4 — Helper voor centrale rol-checks
+
+Nieuw bestand `src/lib/permissions.ts` met functies:
+```ts
+canAccessFinance(rol), canSeeAllLeads(rol), canManageUsers(rol),
+canSeeProductCost(rol), canCreateSchouw(rol), isOperational(rol),
+isAdminTier(rol)  // superadmin | partner_admin | backoffice
+```
+Vervang verspreide `profile.rol === "..."`-checks door deze helpers (in 19 bestanden gevonden).
+
+### Stap 5 — Edge function `user-management`
+
+- Voeg `backoffice` toe aan `allowedRolesForPartnerAdmin` en `allowedRolesForSuperadmin`
+- Bij `invite_user`: zelfde uitbreiding
+- Voeg uitleg toe in `UitnodigDialog` rolkeuze
+
+### Stap 6 — UI-componenten
+
+- `UitnodigDialog`: rol-dropdown krijgt "Backoffice (financieel & administratie)"
+- `GebruikerDetail` rol-dropdown: idem
+- `Gebruikers.tsx` tabs: nieuwe tab "Backoffice" naast Adviseurs/Installateurs/Beheerders
+- `PartnerAbonnement.tsx`: licentie-telling neemt backoffice mee als "administratief gebruiker"
+- `AuthContext` types: `AppRole` regenereert automatisch via Supabase types — geen handmatige aanpassing nodig
+- `ROL_LABELS` in `GebruikerDetail.tsx`: voeg `backoffice: "Backoffice"`
+
+### Stap 7 — Data-scoping (cruciaal voor adviseur/installateur)
+
+Aanpassing in queries (niet alleen RLS):
+- `Leads.tsx`: voor adviseur → default filter `owner_user_id = me.id`, geen "alle leads"-toggle
+- `Klanten.tsx`: voor adviseur → join via leads/offertes waar adviseur eigenaar is
+- `Offertes.tsx`: voor adviseur → filter `adviseur_id = me.id` (al deels aanwezig, hard maken)
+- `Opdrachten.tsx`: voor installateur → filter `installateur_id = me.id`
+- `Schouwen.tsx`: voor installateur → enkel via `opdrachten.schouw_id`-join
+- `Helpdesk TicketsOverzicht`: filter op `toegewezen_aan = me.id` voor adviseur/installateur
+- `Producten.tsx`: voor adviseur/installateur → query gebruikt nieuwe view `producten_publiek` (zonder inkoopprijs)
+
+### Stap 8 — Tests / verificatie
+
+Manuele testmatrix per rol — checklist van 12 routes per rol om te verifiëren dat:
+- Sidebar toont alleen toegestane items
+- Directe URL-toegang tot verboden pagina geeft redirect
+- Data-queries retourneren alleen scope-eigen records
+
+---
+
+## E. Bestanden
 
 | Bestand | Actie |
 |---|---|
-| `supabase/migrations/…_user_management_v2.sql` | **Nieuw** — alle DB-wijzigingen |
-| `supabase/functions/user-management/index.ts` | Uitbreiden: `invite_user`, `resend_invite`, `force_logout`, `set_permissies`, `set_afwezigheid`, audit-logging in alle acties |
-| `supabase/functions/user-invite-accept/index.ts` | **Nieuw** — magic-link landingsflow |
-| `src/pages/Gebruikers.tsx` | Herschrijven met tabs, dropdown-knop, bulk-acties, snelfilters |
-| `src/pages/GebruikerDetail.tsx` | **Nieuw** — 2+1 detailpagina met 6 tabs |
-| `src/pages/Profiel.tsx` | **Nieuw** — eigen profiel + e-mailkoppeling-wizard |
-| `src/components/gebruikers/GebruikerStats.tsx` | **Nieuw** — herbruikbare statsblok |
-| `src/components/gebruikers/AuditTijdlijn.tsx` | **Nieuw** |
-| `src/components/gebruikers/AfwezigheidEditor.tsx` | **Nieuw** |
-| `src/components/gebruikers/PermissieToggles.tsx` | **Nieuw** |
-| `src/components/gebruikers/EmailKoppelingWizard.tsx` | **Nieuw** — 3-staps OAuth |
-| `src/components/gebruikers/HandtekeningEditor.tsx` | **Nieuw** — RichTextEditor |
-| `src/components/gebruikers/OnboardingChecklist.tsx` | **Nieuw** |
-| `src/components/gebruikers/UitnodigDialog.tsx` | **Nieuw** |
-| `src/components/instellingen/EmailConfiguratie.tsx` | Aanpassen: scope wordt "partner-fallback SMTP", persoonlijke OAuth verhuist naar `/profiel` |
-| `supabase/functions/send-offerte-email/index.ts` & `send-factuur-email`, `send-orderbevestiging-email` | Lookup `email_account` van `verzonden_door_id` → fallback partner default → fallback SMTP. Voeg user-handtekening toe. |
-| `src/App.tsx` | Routes toevoegen: `/gebruikers/:id`, `/profiel`, `/uitnodiging/:token` |
+| `supabase/migrations/…_role_backoffice_en_scoping.sql` | Nieuw — enum-uitbreiding + RLS-aanpassingen + product-view |
+| `src/App.tsx` | Routes herzien volgens matrix |
+| `src/components/AppSidebar.tsx` | Sidebar-logica herschrijven met nieuwe matrix |
+| `src/lib/permissions.ts` | **Nieuw** — centrale rol-helpers |
+| `src/pages/Leads.tsx`, `Klanten.tsx`, `Offertes.tsx`, `Opdrachten.tsx`, `Schouwen.tsx`, `Producten.tsx` | Data-scope filters voor adviseur/installateur |
+| `src/pages/helpdesk/TicketsOverzicht.tsx` | Eigen tickets filter voor adviseur/installateur |
+| `src/pages/Financieel.tsx` + sub-componenten | Verwijder adviseur uit access checks |
+| `src/components/gebruikers/UitnodigDialog.tsx` | Rol "Backoffice" toevoegen |
+| `src/pages/GebruikerDetail.tsx` | Rol-labels + dropdown uitbreiden |
+| `src/pages/Gebruikers.tsx` | Tab "Backoffice" toevoegen |
+| `supabase/functions/user-management/index.ts` | `backoffice` in allowed roles |
+| `src/components/abonnementen/PartnerAbonnement.tsx` | Backoffice-telling in licenties |
+| `mem://auth/roles` | Memory bijwerken naar 8 rollen |
 
-## G. Niet wijzigen
-- `Adviseurs.tsx` (blijft eigen overzichtspagina, krijgt link "→ Profiel")
-- Bestaande RBAC-logica in `ProtectedRoute`
+## F. Niet wijzigen
+- `superadmin`, `affiliate`, `consument` toegangsregels (al correct)
+- Bestaande RLS-helper-functies (`is_superadmin`, `get_user_role`, `get_user_partner_id`)
+- AuthContext / ProtectedRoute (mechanisme blijft, alleen lijsten veranderen)
 
-## Resultaat
+## G. Resultaat
 
-- Partner klikt "Nieuwe installateur" → vult naam+email in → installateur krijgt mail → kiest wachtwoord → klaar
-- Elke gebruiker koppelt eigen Gmail/Outlook in 1 klik via `/profiel` → mails komen vanuit eigen account
-- Klik op gebruiker in lijst → volwaardige profielpagina met stats, audit, sessies, permissies, afwezigheid, MFA, handtekening
-- 8 nieuwe SAAS-niveau functies maken het beheer professioneel en schaalbaar
+- Adviseur en installateur zien **alleen eigen werk** — geen omzet, BTW, andermans deals
+- Nieuwe **backoffice**-rol vult het gat tussen "uitvoerend" en "volledig admin" — perfect voor financiële medewerkers
+- Centrale `permissions.ts` voorkomt dat rol-checks over 19 bestanden uit elkaar lopen
+- RLS afgedwongen op DB-niveau — geen data-lek meer ook al staat de UI per ongeluk open
+- Sidebar per rol minimaal en taakgericht in plaats van een dump van alle modules
 
