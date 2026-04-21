@@ -38,26 +38,26 @@ const getNavGroups = (rol: string): NavGroup[] => {
   groups.push({ label: "Overzicht", items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }] });
 
   const relatie: NavItem[] = [];
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"].includes(rol))
     relatie.push({ title: rol === "adviseur" ? "Mijn Leads" : "Leads", url: "/leads", icon: Users });
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"].includes(rol))
     relatie.push({ title: "Klanten", url: "/klanten", icon: UserCheck2 });
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
     relatie.push({ title: "Berichten", url: "/berichten", icon: MessageSquare });
   if (relatie.length) groups.push({ label: "Relatiebeheer", items: relatie });
 
   const werk: NavItem[] = [];
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
     werk.push({ title: rol === "consument" ? "Mijn Schouwen" : "Schouwen", url: "/schouwen", icon: ClipboardList });
   
   // Offertes with sub-items
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"].includes(rol)) {
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "consument", "affiliate"].includes(rol)) {
     const offerteItem: NavItem = {
       title: rol === "consument" ? "Mijn Offertes" : "Offertes",
       url: "/offertes",
       icon: FileText,
     };
-    if (["superadmin", "partner_admin", "partner_staff"].includes(rol)) {
+    if (["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol)) {
       offerteItem.children = [
         { title: "Alle Offertes", url: "/offertes", icon: FileText },
         { title: "Offerte Feedback", url: "/offertes/feedback", icon: MessageCircleWarning },
@@ -66,15 +66,15 @@ const getNavGroups = (rol: string): NavGroup[] => {
     werk.push(offerteItem);
   }
 
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
     werk.push({ title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck });
-  if (["partner_admin", "partner_staff", "installateur"].includes(rol))
+  if (["partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
     werk.push({ title: rol === "installateur" ? "Mijn Opdrachten" : "Installaties", url: "/installaties", icon: Wrench });
   if (werk.length) groups.push({ label: "Werkproces", items: werk });
 
   // Helpdesk
   const helpdesk: NavItem[] = [];
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol)) {
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol)) {
     helpdesk.push({
       title: "Helpdesk",
       url: "/helpdesk",
@@ -90,7 +90,7 @@ const getNavGroups = (rol: string): NavGroup[] => {
 
   // Financieel with sub-items
   const financieel: NavItem[] = [];
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur"].includes(rol)) {
+  if (["superadmin", "partner_admin", "backoffice"].includes(rol)) {
     financieel.push({
       title: "Financieel",
       url: "/financieel",
@@ -105,29 +105,29 @@ const getNavGroups = (rol: string): NavGroup[] => {
       ],
     });
   }
-  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice"].includes(rol))
     financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Truck });
   if (financieel.length) groups.push({ label: "Financieel", items: financieel });
 
   const planning: NavItem[] = [];
-  if (["partner_admin", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
+  if (["partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
     planning.push({ title: rol === "adviseur" ? "Agenda" : rol === "consument" ? "Afspraken" : "Planning", url: "/planning", icon: Calendar });
-  if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
     planning.push({ title: "Producten", url: "/producten", icon: Package });
   if (["superadmin", "partner_admin", "adviseur"].includes(rol))
     planning.push({ title: "Tools", url: "/tools", icon: PenTool });
-  if (["partner_admin", "partner_staff"].includes(rol))
+  if (["partner_admin", "backoffice"].includes(rol))
     planning.push({ title: "Analytics", url: "/analytics", icon: BarChart3 });
   if (planning.length) groups.push({ label: "Planning & Tools", items: planning });
 
   const beheer: NavItem[] = [];
   if (rol === "superadmin")
     beheer.push({ title: "Partners", url: "/partners", icon: Building2 });
-  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
+  if (["superadmin", "partner_admin"].includes(rol))
     beheer.push({ title: "Adviseurs", url: "/adviseurs", icon: UserCheck });
   if (["superadmin", "partner_admin"].includes(rol))
     beheer.push({ title: "Gebruikers", url: "/gebruikers", icon: Users });
-  if (["superadmin", "partner_admin", "partner_staff"].includes(rol))
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
     beheer.push({ title: "Documenten", url: "/documenten", icon: FolderOpen });
   if (rol === "superadmin")
     beheer.push({ title: "Affiliate Beheer", url: "/affiliate-beheer", icon: Handshake });
