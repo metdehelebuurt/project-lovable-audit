@@ -2895,6 +2895,120 @@ export type Database = {
         }
         Relationships: []
       }
+      module_rol_toegang: {
+        Row: {
+          id: string
+          module_key: string
+          partner_id: string
+          rol: Database["public"]["Enums"]["app_role"]
+          toegestaan: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          module_key: string
+          partner_id: string
+          rol: Database["public"]["Enums"]["app_role"]
+          toegestaan?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          module_key?: string
+          partner_id?: string
+          rol?: Database["public"]["Enums"]["app_role"]
+          toegestaan?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_rol_toegang_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_rol_toegang_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_rol_toegang_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_user_override: {
+        Row: {
+          id: string
+          module_key: string
+          partner_id: string
+          reden: string | null
+          toegestaan: boolean
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          module_key: string
+          partner_id: string
+          reden?: string | null
+          toegestaan: boolean
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          module_key?: string
+          partner_id?: string
+          reden?: string | null
+          toegestaan?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_user_override_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_user_override_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_user_override_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_user_override_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificaties: {
         Row: {
           bericht: string
@@ -4429,6 +4543,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      user_kan_module: {
+        Args: { _module_key: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
