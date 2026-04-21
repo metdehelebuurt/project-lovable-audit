@@ -29,8 +29,8 @@ const subtypeLabels: Record<string, string> = {
 };
 
 const subtypeBadgeColors: Record<string, string> = {
-  voorschot: "bg-amber-100 text-amber-800 border-amber-200",
-  eindafrekening: "bg-purple-100 text-purple-800 border-purple-200",
+  voorschot: "bg-warning/10 text-warning-foreground border-warning/30",
+  eindafrekening: "bg-primary/10 text-primary border-primary/30",
 };
 
 const statusColors: Record<string, string> = {
@@ -63,7 +63,7 @@ export default function FactuurDetail() {
     if (!id) return;
     supabase
       .from("financiele_documenten")
-      .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer)")
+      .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), offertes(offertenummer)")
       .eq("id", id)
       .single()
       .then(({ data, error }) => {
@@ -414,7 +414,7 @@ export default function FactuurDetail() {
           </div>
           <div className="factuur-pdf-print-shell pdf-print-root" style={{ display: "flex", justifyContent: "center", padding: "8px", background: "#f3f4f6" }}>
             <FinancieelPDF
-              doc={{ ...doc, regels }}
+              doc={{ ...doc, regels, offerte_nummer: doc.offertes?.offertenummer }}
               klant={pdfKlant}
               leverancier={doc.leveranciers}
               partner={partnerData}
