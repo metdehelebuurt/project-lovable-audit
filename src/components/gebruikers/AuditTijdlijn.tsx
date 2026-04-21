@@ -1,8 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Shield, UserCog, FileText, Mail } from "lucide-react";
+import { Activity, Shield, UserCog, FileText, Mail, ChevronDown, ChevronRight, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMemo, useState } from "react";
+import { MODULES } from "@/lib/modules";
 
 interface AuditTijdlijnProps {
   targetUserId: string;
@@ -14,6 +18,9 @@ const ICONS: Record<string, any> = {
   uitnodiging_verstuurd: Mail,
   permissies_gewijzigd: Shield,
   rol_gewijzigd: Shield,
+  module_override_toegevoegd: Shield,
+  module_override_gewijzigd: Shield,
+  module_override_verwijderd: Shield,
   default: Activity,
 };
 
@@ -28,7 +35,28 @@ const LABELS: Record<string, string> = {
   wachtwoord_gereset: "Wachtwoord gereset",
   sessie_uitgelogd: "Sessie geforceerd uitgelogd",
   afwezigheid_toegevoegd: "Afwezigheid toegevoegd",
+  module_override_toegevoegd: "Module-override toegevoegd",
+  module_override_gewijzigd: "Module-override gewijzigd",
+  module_override_verwijderd: "Module-override verwijderd",
+  module_rol_gewijzigd: "Module-rolmatrix gewijzigd",
 };
+
+const ENTITY_LABELS: Record<string, string> = {
+  module_user_override: "Per gebruiker",
+  module_rol_toegang: "Rolmatrix",
+  users: "Gebruiker",
+  gebruiker_permissies: "Permissies",
+};
+
+function extractModuleKey(item: any): string | null {
+  return (
+    item?.nieuwe_waarde?.module ??
+    item?.nieuwe_waarde?.module_key ??
+    item?.oude_waarde?.module ??
+    item?.oude_waarde?.module_key ??
+    null
+  );
+}
 
 export const AuditTijdlijn = ({ targetUserId }: AuditTijdlijnProps) => {
   const { data: items = [], isLoading } = useQuery({
