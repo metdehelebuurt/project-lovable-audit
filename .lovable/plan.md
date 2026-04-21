@@ -1,151 +1,105 @@
 
-# Plan — Gebruikersbeheer: detailpagina, module-rolmatrix per organisatie en per-gebruiker module-overrides
+# Plan — Onboarding & installatie wizard
 
-## Wat je krijgt
+## Doel
+Eén centrale wizard `/welkom` waar gebruikers stap-voor-stap hun account compleet maken: persoonlijke gegevens, e-mailaccount koppelen + testen, handtekening, voorkeuren en (voor partner-admins) organisatie-instellingen. Bestaande velden worden vóór-ingevuld, en koppelingen kunnen live getest worden.
 
-1. **Klikbare gebruikers** in `/gebruikers` → opent uitgebreide detailpagina (`/gebruikers/:id`)
-2. **Module-rolmatrix per organisatie**: organisatiebeheerder bepaalt zelf welke rollen toegang hebben tot welke modules (bv. "energieadviseur mag standaard wel/niet bij Inkoopfacturen")
-3. **Per-gebruiker module-overrides**: op de detailpagina vink je per module aan dat een specifieke gebruiker extra of juist géén toegang krijgt — bovenop wat zijn rol normaal mag
-4. **Effectieve rechten** worden centraal afgedwongen: zowel in sidebar/route-bescherming (UI) als waar nodig in RLS (data)
+## Wanneer wordt de wizard getoond?
+- **Automatisch na eerste login** als `users.onboarding_voltooid_op IS NULL`. Dashboard redirect dan eenmalig naar `/welkom`.
+- **Altijd handmatig** opnieuw te starten via knop "Onboarding opnieuw starten" op `/profiel` en in `OnboardingChecklist`.
+- Wizard mag overgeslagen worden ("Later afmaken"), maar `OnboardingChecklist` blijft tonen wat ontbreekt.
 
-## Concept
+## Stappen (rol-bewust)
 
-```text
-Effectieve toegang(user, module) =
-   override van die user op die module (allow / deny)
-   ELSE  partner-rolmatrix(rol_van_user, module)
-   ELSE  systeem-default (huidige hardcoded ProtectedRoute-lijsten)
-```
+| # | Stap | Voor wie | Inhoud |
+|---|---|---|---|
+| 1 | **Welkom** | iedereen | Korte intro, voortgangsbalk, "Aan de slag" |
+| 2 | **Persoonlijke gegevens** | iedereen | voornaam, achternaam, telefoon, functie, avatar-upload — vóór-ingevuld uit `users` |
+| 3 | **E-mailaccount koppelen** | iedereen | Hergebruik `EmailKoppelingWizard` + nieuwe **"Koppeling testen"** knop die een test-mail naar eigen adres stuurt via `email-api-send` en bevestiging toont |
+| 4 | **E-mailhandtekening** | iedereen | Hergebruik `HandtekeningEditor` met live preview |
+| 5 | **Voorkeuren** | iedereen | Notificatie-voorkeuren (e-mail/in-app), taal (NL default), tijdzone, dark/light theme |
+| 6 | **Organisatie-instellingen** | alleen `partner_admin` / `superadmin` | Bedrijfsnaam, KvK, BTW, adres, logo-upload, hoofdkleur — vóór-ingevuld uit `partners`. Met **"Logo & branding testen"** preview |
+| 7 | **Beveiliging** | iedereen | Wachtwoord wijzigen (optioneel), tweestapsverificatie aanzetten (link naar bestaande MFA-flow indien aanwezig — anders alleen toggle) |
+| 8 | **Klaar** | iedereen | Samenvatting met groene vinkjes, knop "Naar dashboard". Markeert `onboarding_voltooid_op = now()` |
 
-3-niveau-cascade: gebruikersoverride > partner-rolmatrix > systeemdefault.
+Stap 6 wordt overgeslagen voor niet-admin rollen.
 
-## Modules die instelbaar worden
+## Test-functies (live verificatie)
 
-Alleen de operationele modules — superadmin/eigenaarsfuncties blijven hard:
-`leads`, `klanten`, `schouwen`, `offertes`, `opdrachten`, `installaties`, `planning`, `producten`, `tools`, `energieadvies`, `helpdesk`, `documenten`, `berichten`, `analytics`, `financieel_verkoop`, `financieel_inkoop`, `financieel_pakbonnen`, `financieel_btw`, `leveranciers`.
-
-Niet instelbaar (altijd alleen voor `superadmin` of `partner_admin`): `partners`, `gebruikers`, `adviseurs`, `instellingen`, `affiliate-beheer`, `admin/abonnementen`.
+| Connectie | Hoe getest |
+|---|---|
+| E-mailaccount (Gmail/Outlook) | Edge function `email-api-send` stuurt test naar eigen `email_adres` met onderwerp "Testbericht onboarding". Toont ✅ als `200`, anders foutmelding |
+| E-mailhandtekening | Live HTML-preview onder editor (geen send nodig) |
+| Logo/branding (stap 6) | Toont mini-PDF-header preview met huidige `logo_url` + kleur |
+| Avatar | Upload → direct preview als ronde thumbnail |
 
 ## Database
 
-### Nieuwe tabellen
+Nieuwe migratie:
 ```sql
--- Per partner: welke rollen mogen welke module
-CREATE TABLE public.module_rol_toegang (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  partner_id uuid NOT NULL REFERENCES public.partners(id) ON DELETE CASCADE,
-  module_key text NOT NULL,        -- 'leads', 'financieel_inkoop', ...
-  rol app_role NOT NULL,
-  toegestaan boolean NOT NULL DEFAULT true,
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE (partner_id, module_key, rol)
-);
-
--- Per individuele gebruiker: override op module-niveau
-CREATE TABLE public.module_user_override (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  partner_id uuid NOT NULL REFERENCES public.partners(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  module_key text NOT NULL,
-  toegestaan boolean NOT NULL,     -- true = extra toestaan, false = expliciet ontzeggen
-  reden text,
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE (user_id, module_key)
-);
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS onboarding_voltooid_op timestamptz,
+  ADD COLUMN IF NOT EXISTS onboarding_overgeslagen_op timestamptz,
+  ADD COLUMN IF NOT EXISTS voorkeuren jsonb DEFAULT '{}'::jsonb;
 ```
 
-RLS: leesbaar/schrijfbaar voor `is_partner_admin_or_higher()` binnen eigen partner; lezen van eigen rij ook door de gebruiker zelf (voor sidebar-render).
+`voorkeuren` JSONB houdt: `{ taal, tijdzone, thema, notif_email, notif_inapp }`. Bestaande velden (`avatar_url`, `telefoon`, `functie`, `handtekening_html`, `mfa_enabled`) worden hergebruikt.
 
-### Helper-functie (security definer)
-```sql
-CREATE FUNCTION public.user_kan_module(_user_id uuid, _module_key text)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
-  SELECT COALESCE(
-    (SELECT toegestaan FROM module_user_override
-       WHERE user_id = _user_id AND module_key = _module_key),
-    (SELECT toegestaan FROM module_rol_toegang m
-       JOIN users u ON u.partner_id = m.partner_id AND u.rol = m.rol
-       WHERE u.id = _user_id AND m.module_key = _module_key),
-    true   -- geen config = volg systeemdefault (UI handelt strenger af)
-  );
-$$;
-```
+Geen RLS-wijziging nodig — `users`-tabel heeft al policies voor self-update.
 
 ## Frontend
 
-### `src/lib/modules.ts` — **nieuw**
-- Centrale lijst van module-definities: `{ key, label, defaultRoles, route }`
-- `useEffectieveModules()` hook → leest matrix + overrides van ingelogde user, returnt `Set<modulekey>`
-- Helper `kanModule(modulekey)` voor gebruik in components
+### Nieuwe bestanden
 
-### `src/components/ProtectedRoute.tsx`
-- Nieuwe optionele prop `moduleKey?: string`
-- Cascade: eerst `allowedRoles` (systeemdefault), daarna `kanModule(moduleKey)` als gezet
-- Een `deny` override blokkeert ook al stond rol in `allowedRoles`
+| Bestand | Doel | Limiet |
+|---|---|---|
+| `src/pages/Onboarding.tsx` | Wizard-shell met routing tussen stappen, voortgangsbalk, "Later afmaken"-knop | ≤ 200 regels |
+| `src/components/onboarding/StepWelkom.tsx` | Welkomstscherm | ≤ 60 |
+| `src/components/onboarding/StepProfiel.tsx` | Persoonlijke gegevens + avatar upload | ≤ 180 |
+| `src/components/onboarding/StepEmail.tsx` | Wrapper rond `EmailKoppelingWizard` + test-knop | ≤ 140 |
+| `src/components/onboarding/StepHandtekening.tsx` | Wrapper rond `HandtekeningEditor` | ≤ 80 |
+| `src/components/onboarding/StepVoorkeuren.tsx` | Notificaties, taal, thema, tijdzone | ≤ 160 |
+| `src/components/onboarding/StepOrganisatie.tsx` | Bedrijfsgegevens + logo + kleur (alleen admins) | ≤ 220 |
+| `src/components/onboarding/StepBeveiliging.tsx` | Wachtwoord + MFA toggle | ≤ 140 |
+| `src/components/onboarding/StepKlaar.tsx` | Samenvatting + voltooien | ≤ 100 |
+| `src/components/onboarding/useOnboardingState.ts` | Centrale form-state hook (laden bestaande data, opslaan per stap) | ≤ 200 |
+| `src/components/onboarding/EmailTestKnop.tsx` | Verstuurt test-mail via `email-api-send` en toont resultaat | ≤ 80 |
 
-### `src/components/AppSidebar.tsx`
-- Filter sub-items en items op basis van `useEffectieveModules()`
-- Financieel-submenu (verkoop/inkoop/pakbonnen/btw) krijgen elk eigen `module_key` zodat een adviseur wél "Verkoopfacturen" kan zien zonder "Inkoopfacturen"
+### Wijzigingen in bestaande bestanden
 
-### `src/pages/Gebruikers.tsx`
-- Hele tabelrij wordt klikbaar → `navigate('/gebruikers/' + id)`
-- Bestaande inline-acties (bewerk/wachtwoord/delete) blijven werken via `e.stopPropagation()`
-
-### `src/pages/GebruikerDetail.tsx`
-- Bestaat al; **nieuwe tab "Module-toegang"** toevoegen met `<UserModuleOverrides userId partnerId rol canEdit />`
-- Tab "Statistieken" uitbreiden met: aantal openstaande tickets, aantal facturen aangemaakt, laatste 30 dagen activiteit
-- Snelinfo-zijbalk: extra "Effectieve modules" mini-overzicht (badges)
-
-### `src/components/gebruikers/UserModuleOverrides.tsx` — **nieuw** (≤180 regels)
-- Per module een rij met:
-  - Module-naam + huidige rol-default (✅/❌ badge)
-  - Drie-stand selector: "Volg rol-default" / "Expliciet toestaan" / "Expliciet ontzeggen"
-  - Optioneel veld "Reden" (audit)
-- Mutaties via TanStack Query → `module_user_override` upsert/delete
-
-### `src/components/instellingen/ModuleRolMatrix.tsx` — **nieuw** (≤220 regels)
-- Tab in `/instellingen` (alleen zichtbaar voor `partner_admin`/`superadmin`)
-- Tabel: rijen = modules, kolommen = rollen (`backoffice`, `partner_staff`, `adviseur`, `installateur`)
-- Cell = checkbox `toegestaan`. Tooltip toont systeemdefault als baseline
-- Mutaties bulk-upsert in `module_rol_toegang`
-- "Reset naar standaard" knop (delete alle rijen voor die partner)
-
-### Audit
-- Wijzigingen op beide tabellen → `log_audit_event` trigger zodat AuditTijdlijn deze toont onder de gebruiker
-
-## Bestanden
-
-| Bestand | Actie |
+| Bestand | Wijziging |
 |---|---|
-| `supabase/migrations/…_module_toegang.sql` | **Nieuw** — 2 tabellen + RLS + `user_kan_module` + audit-trigger |
-| `src/lib/modules.ts` | **Nieuw** — module-registry + hook |
-| `src/components/ProtectedRoute.tsx` | `moduleKey` prop + cascade |
-| `src/components/AppSidebar.tsx` | Filtert items via `useEffectieveModules` |
-| `src/App.tsx` | Route `/gebruikers/:id` toevoegen + `moduleKey` op operationele routes |
-| `src/pages/Gebruikers.tsx` | Klikbare rij → detailpagina |
-| `src/pages/GebruikerDetail.tsx` | Nieuwe tab "Module-toegang" + uitbreiding stats/snelinfo |
-| `src/components/gebruikers/UserModuleOverrides.tsx` | **Nieuw** |
-| `src/components/instellingen/ModuleRolMatrix.tsx` | **Nieuw** |
-| `src/pages/Instellingen.tsx` | Tab "Modules & rollen" toevoegen (alleen `is_partner_admin_or_higher`) |
-| `src/components/gebruikers/GebruikerStats.tsx` | Tickets + facturen + recente activiteit |
+| `src/App.tsx` | Route `/welkom` toevoegen binnen `ProtectedRoute` (zonder `AppLayout` voor schone wizard-look — eigen header) |
+| `src/pages/Dashboard.tsx` | `useEffect` redirect naar `/welkom` als `profile.onboarding_voltooid_op === null && profile.onboarding_overgeslagen_op === null` |
+| `src/contexts/AuthContext.tsx` | `UserProfile` interface uitbreiden met `onboarding_voltooid_op`, `onboarding_overgeslagen_op`, `voorkeuren` |
+| `src/components/gebruikers/OnboardingChecklist.tsx` | Knop "Doorloop wizard" → `/welkom` |
+| `src/pages/Profiel.tsx` | Knop "Onboarding opnieuw starten" |
+
+### Vóór-invullen logica
+`useOnboardingState` haalt bij mount één keer:
+- `users` rij van ingelogde gebruiker → vult stap 2, 4, 5, 7
+- `email_accounts` waar `user_id` + `actief=true` → bepaalt of stap 3 al ✓ is
+- `partners` rij van `partner_id` (alleen voor admins) → vult stap 6
+
+Per stap wordt op "Volgende" alleen het gewijzigde deel opgeslagen; de gebruiker kan nooit data verliezen.
 
 ## Niet wijzigen
-- Bestaande RLS-policies op data-tabellen (leads/offertes/etc.): de matrix beïnvloedt **toegang tot de module/UI**, niet de data-RLS zelf. Een gebruiker zonder module-toegang ziet de pagina niet en kan dus geen calls doen
-- `permissions.ts` helpers blijven voor harde rolchecks (admin-tier, partner-admin)
-- Mollie blijft uitgesteld
+- `EmailKoppelingWizard` zelf (alleen wrappen)
+- `HandtekeningEditor` zelf (alleen wrappen)
+- Bestaande RLS-policies
+- Mollie / rolherstructurering / module-overrides
 
 ## Volgorde van uitvoering
-1. Database-migratie (tabellen + RLS + helper-functie + audit)
-2. `src/lib/modules.ts` registry + hook
-3. `ProtectedRoute` cascade + `App.tsx` `moduleKey` op routes
-4. `AppSidebar` filtert op effectieve modules
-5. `Gebruikers.tsx` rij klikbaar + route detail
-6. `GebruikerDetail` tab + `UserModuleOverrides`
-7. `Instellingen` tab + `ModuleRolMatrix`
-8. Stats-uitbreiding
+1. Database-migratie (3 kolommen op `users`)
+2. `useOnboardingState` hook + types update in `AuthContext`
+3. Wizard-shell `Onboarding.tsx` + route in `App.tsx`
+4. Stappen 1, 2, 3 (incl. `EmailTestKnop`) — basisflow werkt
+5. Stappen 4, 5, 6, 7, 8
+6. Auto-redirect in `Dashboard.tsx` + opnieuw-starten-knoppen
 
 ## Resultaat
-- Klikken op een gebruiker → uitgebreide detailpagina met profiel, rol & rechten, **module-toegang per gebruiker**, statistieken, audit, verlof
-- Organisatiebeheerder beheert in **Instellingen → Modules & rollen** centraal de matrix per rol
-- Per-gebruiker uitzonderingen mogelijk: bv. één adviseur die wél bij Verkoopfacturen mag, een andere die alleen Schouwen ziet
-- Sidebar en routes respecteren de matrix automatisch — geen verspreide rolchecks meer in pagina's
+- Nieuwe gebruikers worden bij eerste login direct door een professionele 8-staps wizard geleid
+- Bestaande velden worden vóór-ingevuld → niemand vult ooit dubbel in
+- E-mailkoppeling kan live getest worden met een echte testmail naar eigen adres
+- Partner-admins krijgen extra organisatie-stap met logo/branding-preview
+- Wizard kan altijd opnieuw of overgeslagen worden — geen lock-in
