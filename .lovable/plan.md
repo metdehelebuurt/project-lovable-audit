@@ -1,194 +1,174 @@
 
 
-# Plan — Rolherstructurering + nieuwe rol "Backoffice" + lekdichte toegang
+# Plan — Professionele voorschot-/deelfacturen (boekhoudkundig kloppend)
 
-## A. Analyse van de huidige situatie
+## A. Wat ontbreekt nu (analyse)
 
-Database-rollen (`app_role` enum):
-`superadmin`, `partner_admin`, `partner_staff`, `adviseur`, `installateur`, `consument`, `affiliate`
-
-### Wat er momenteel mis gaat (te ruime toegang)
-
-| Module | Huidige toegang | Probleem |
+| # | Probleem | Boekhoudkundig gevolg |
 |---|---|---|
-| **Adviseurs-overzicht** (`/adviseurs`) | superadmin, partner_admin, partner_staff | Alleen managers/HR mogen prestaties van collega's zien — staff is te breed |
-| **Klanten** (`/klanten`) | + adviseur | Adviseur ziet ALLE klanten van de partner i.p.v. alleen eigen klanten |
-| **Leads** (`/leads`) | + adviseur | Idem — adviseur kan andermans leads zien (alleen filter "mijn leads" in UI, geen DB-scope) |
-| **Financieel** (`/financieel/*`) | superadmin, partner_admin, partner_staff, **adviseur** | ⚠️ KRITIEK: adviseur ziet alle facturen, BTW, openstaande posten, omzet van de hele partner |
-| **Documenten** (`/documenten`) | superadmin, partner_admin, partner_staff | Geen uitvoerend personeel, OK — maar adviseur/installateur hebben soms documenten nodig (datasheets, garanties) |
-| **Leveranciers** (`/leveranciers`) | superadmin, partner_admin, partner_staff | OK — maar onduidelijk wie inkoopfacturen doet |
-| **Producten** (`/producten`) | + installateur | Installateur ziet ALLE prijzen + marges. Mag specs en voorraad zien, niet inkoopprijs |
-| **Opdrachten** (`/opdrachten`) | + installateur | Installateur ziet financiële regels + kortingen op opdrachten van anderen |
-| **Schouwen** (`/schouwen`) | iedereen incl. installateur, consument | Installateur hoort alleen schouwen te zien die aan zijn opdracht gekoppeld zijn |
-| **Berichten** (`/berichten`) | partner_admin, partner_staff, adviseur, consument | Installateur uitgesloten — terwijl die wel met de klant communiceert |
-| **Instellingen** | partner_admin tabs gated op UI | OK — maar `partner_staff` ziet geen admin-tabs dus niets |
-| **Helpdesk** | superadmin, partner_admin, partner_staff, adviseur, installateur | Iedereen ziet alle tickets — installateur hoort alleen eigen toegewezen tickets te zien |
+| 1 | "Aanbetaling" en "Restant" zijn alleen UI-labels — er is geen apart documenttype | Niet zichtbaar in administratie dat het een voorschotfactuur is |
+| 2 | PDF toont "FACTUUR" voor alle voorschotten — geen vermelding "VOORSCHOTFACTUUR" of termijnnummer (1 van 3) | Voldoet niet aan transparantie-eis Art. 35 Wet OB |
+| 3 | Restantfactuur verrekent eerdere voorschotten **niet** zichtbaar — het neemt alleen het openstaand bedrag, zonder de ontvangen voorschotten als negatieve regel te tonen | Klant en accountant zien niet hoe het totaal is opgebouwd; BTW-correctie ontbreekt |
+| 4 | BTW wordt op heel het voorschot berekend, maar het gewogen gemiddelde-tarief is een aanname — bij gemengde tarieven (21% + 0% verlegd) klopt dit niet | Onjuiste BTW-aangifte |
+| 5 | Geen koppeling tussen voorschotten onderling: termijnschema (bijv. 30/40/30) bestaat niet als eenheid | Geen overzicht "termijn 2 van 3" |
+| 6 | Bij conversie naar restant worden voorschotten niet automatisch teruggehaald als "reeds betaalde aanbetaling" regels | Dubbele facturatie of foute eindfactuur |
+| 7 | E-mail/PDF-bestandsnaam onderscheidt voorschot niet van eindfactuur | Verwarring bij klant en boekhouding |
+| 8 | Geen waarschuwing als som van voorschotten > offertetotaal | Risico op overfacturatie |
 
-### Conclusies
+## B. Wat een voorschotfactuur boekhoudkundig MOET hebben (NL/EU)
 
-1. **Adviseur** heeft toegang tot omzet/BTW/inkoop van de hele partner — moet weg.
-2. **Installateur** ziet productprijzen, opdrachten van collega's en alle schouwen — te breed.
-3. Er ontbreekt een **backoffice**-rol voor mensen die wel de hele administratie (facturatie, leveranciers, documenten, klanten) doen, maar geen technisch werk uitvoeren en niet de hele organisatie mogen beheren (dat is `partner_admin`).
-4. `partner_staff` is een vage allesomvattende rol — wordt nu gebruikt als "kantoormedewerker" maar overlapt met admin-rechten.
+1. **Duidelijk type**: vermelding "Voorschotfactuur" of "Termijnfactuur N van M" in de PDF-header (geen wettelijke verplichting maar gangbaar/professioneel)
+2. **Verwijzing naar onderliggende offerte/opdracht**: offertenummer + omschrijving (verplicht voor BTW-aftrek bij ontvanger)
+3. **BTW correct toegerekend**: voorschotbedrag wordt behandeld als belastbaar feit op factuurmoment (Art. 13 lid 2 Wet OB) — BTW per tarief gegroepeerd
+4. **Eindafrekening verrekent voorschotten**: alle eerder ontvangen voorschotten worden als negatieve regel "Reeds gefactureerde voorschotten (factuur VF-2024-001)" met bijbehorende negatieve BTW opgenomen, zodat het netto te betalen bedrag = totaal − reeds gefactureerd
+5. **Termijnschema zichtbaar**: PDF toont "Termijn 1 van 3 (30%) — bedrag €X" + status van overige termijnen
+6. **Documentnummer-prefix herkenbaar**: bv. `VS-2024-0001` voor voorschot, `VF-2024-0001` voor reguliere/eindfactuur
+7. **Cumulatief overzicht**: laatste eindfactuur toont "Reeds betaald via voorschotten: €X" en "Nog te betalen: €Y"
 
----
+## C. Oplossing — implementatie
 
-## B. Voorgestelde nieuwe rolverdeling
+### 1. Database
 
-### Nieuwe rol: **`backoffice`**
-> Administratief medewerker: doet facturatie, leveranciers, documenten, klantbeheer, planning. Geen rolbeheer, geen abonnement, geen huisstijl, geen prijsstrategie.
-
-### Hernieuwde rol-omschrijvingen
-
-| Rol | Scope | Hoofd­bevoegdheden |
-|---|---|---|
-| **superadmin** | Platform | Alles |
-| **partner_admin** | Volledige organisatie | Beheer + alle operationele modules + abonnement + huisstijl + gebruikers |
-| **backoffice** *(nieuw)* | Financieel + administratie | Klanten, leads (alle), offertes (alle), opdrachten, facturen, leveranciers, documenten, planning, helpdesk-tickets toewijzen. **GEEN** gebruikersbeheer, geen abonnement, geen huisstijl, geen rolwijziging |
-| **partner_staff** | Operationeel breed (binnenstem) | Leads (alle), klanten (alle), offertes, schouwen, opdrachten, planning, helpdesk. **GEEN** financieel, geen leveranciers, geen documenten-beheer |
-| **adviseur** | Eigen werk (commercieel) | **Eigen** leads + **eigen** klanten + **eigen** offertes + schouwen, planning (eigen agenda), producten (zonder inkoopprijs), helpdesk (eigen tickets), berichten met klanten. **GEEN** financieel, geen analytics, geen documenten, geen leveranciers, geen adviseurs-overzicht |
-| **installateur** | Eigen opdrachten | Eigen opdrachten + bijbehorende schouwen + planning (eigen) + producten (specs only, geen prijzen) + helpdesk (eigen tickets) + berichten met klant. **GEEN** leads, geen klanten-overzicht, geen offertes, geen financieel, geen tools |
-| **affiliate** | Eigen referrals | Affiliate-dashboard, eigen offertes (read-only), instellingen (eigen profiel) |
-| **consument** | Eigen dossier | Eigen offertes, eigen schouwen, eigen planning, eigen berichten |
-
----
-
-## C. Nieuwe toegangsmatrix (samenvatting)
-
-| Module | super | partner_admin | **backoffice** | partner_staff | adviseur | installateur | affiliate | consument |
-|---|---|---|---|---|---|---|---|---|
-| Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Partners | ✅ | — | — | — | — | — | — | — |
-| Adviseurs-overzicht | ✅ | ✅ | — | — | — | — | — | — |
-| Gebruikers | ✅ | ✅ | — | — | — | — | — | — |
-| Leads | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | — | — | — |
-| Klanten | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | — | — | — |
-| Producten | ✅ | ✅ | ✅ (incl. inkoop) | ✅ | 👁 zonder inkoopprijs | 👁 specs only | — | — |
-| Schouwen | ✅ | ✅ | ✅ | ✅ | ✅ | 🔒 gekoppeld | — | 🔒 eigen |
-| Offertes | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | — | 👁 referrals | 🔒 eigen |
-| Opdrachten | ✅ | ✅ | ✅ | ✅ | 🔒 eigen | 🔒 toegewezen | — | — |
-| Installaties | ✅ | ✅ | ✅ | ✅ | — | 🔒 eigen | — | — |
-| Planning | ✅ | ✅ | ✅ | ✅ | 🔒 eigen agenda | 🔒 eigen agenda | — | 🔒 eigen |
-| **Financieel** | ✅ | ✅ | **✅** | — | — | — | — | — |
-| Leveranciers | ✅ | ✅ | ✅ | — | — | — | — | — |
-| Documenten | ✅ | ✅ | ✅ | ✅ | 👁 lezen | 👁 lezen | — | — |
-| Analytics | ✅ | ✅ | ✅ | — | — | — | — | — |
-| Berichten | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Energieadvies/Tools | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| Helpdesk-tickets | ✅ alle | ✅ alle | ✅ alle | ✅ alle | 🔒 eigen | 🔒 eigen | — | — |
-| Helpdesk-kennisbank | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — |
-| Instellingen (admin tabs) | ✅ | ✅ | — | — | — | — | — | — |
-| Affiliate-dashboard | — | — | — | — | — | — | ✅ | — |
-
-🔒 = data-scope-restrictie (alleen eigen records via DB/RLS-filter)
-👁 = read-only of beperkt zicht
-
----
-
-## D. Implementatieplan
-
-### Stap 1 — Database
-
-Migratie:
 ```sql
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'backoffice' BEFORE 'partner_staff';
+-- Nieuwe document-subtype-veld (geen breaking change)
+ALTER TABLE financiele_documenten
+  ADD COLUMN factuur_subtype text
+    CHECK (factuur_subtype IN ('regulier','voorschot','eindafrekening')) DEFAULT 'regulier';
+
+ALTER TABLE financiele_documenten
+  ADD COLUMN termijn_volgnummer integer,         -- 1, 2, 3 ...
+  ADD COLUMN termijn_totaal integer,             -- 3 (van 3)
+  ADD COLUMN termijn_percentage numeric,         -- 30.00
+  ADD COLUMN voorschot_van_facturen uuid[];      -- bij eindafrekening: id's van verrekende voorschotten
+
+CREATE INDEX idx_fd_subtype_offerte ON financiele_documenten(offerte_id, factuur_subtype);
+
+-- Termijnschema per offerte (optioneel — voor "wizard 30/40/30")
+CREATE TABLE offerte_termijnschema (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  offerte_id uuid NOT NULL REFERENCES offertes(id) ON DELETE CASCADE,
+  partner_id uuid NOT NULL,
+  volgnummer integer NOT NULL,
+  omschrijving text NOT NULL,           -- "Bij opdracht", "Na schouw", "Na oplevering"
+  percentage numeric NOT NULL,
+  trigger_status text,                  -- 'opdracht_bevestigd' | 'installatie_gepland' | 'opgeleverd'
+  factuur_id uuid REFERENCES financiele_documenten(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE offerte_termijnschema ENABLE ROW LEVEL SECURITY;
+-- partner-scope policy gelijk aan andere offerte-tabellen
 ```
 
-RLS-aanpassingen (nieuwe migratie):
-- `financiele_documenten`, `inkoopfactuur_*`, `pakbonnen`, `btw_aangiften`: SELECT/UPDATE alleen voor `superadmin`, `partner_admin`, `backoffice`
-- `leveranciers`: idem
-- `producten`: kolom `inkoopprijs` gemaskeerd via een view `producten_publiek` voor adviseur/installateur (RLS staat al op `partner_id` — view hide gevoelige kolommen)
-- `leads`/`klanten`/`offertes`: nieuwe RLS-clausule "adviseur ziet alleen waar `owner_user_id` of `adviseur_id = auth.uid()`" (toevoegen naast bestaande partner-scope, niet vervangen)
-- `opdrachten`: installateur ziet alleen waar `installateur_id = auth.uid()`
-- `schouwen`: installateur alleen waar gekoppeld via `opdrachten.schouw_id`
-- `helpdesk_tickets`: adviseur/installateur alleen waar `toegewezen_aan = auth.uid()` of `gemaakt_door = auth.uid()`
-
-### Stap 2 — `src/App.tsx` route-rechten
-
-Volledige herziening volgens matrix. Belangrijke wijzigingen:
-- Verwijder `adviseur` uit `/financieel/*`, `/documenten`
-- Verwijder `installateur` uit `/producten` overzicht (alleen detail) en uit `/opdrachten` lijst (krijgt eigen "Mijn opdrachten" via filter)
-- Voeg `backoffice` toe aan: leads, klanten, offertes, opdrachten, installaties, planning, financieel, leveranciers, documenten, analytics, berichten, helpdesk
-- Voeg `partner_staff` toe aan analytics; verwijder uit financieel/leveranciers/documenten-beheer
-- Splits `/installaties` toegang: installateur leest, alleen `partner_admin`/`backoffice` mag aanmaken/wijzigen
-
-### Stap 3 — `src/components/AppSidebar.tsx`
-
-Herstructurering met nieuwe rol-aware logica + extra label "Backoffice" voor financiële groep. Verberg menu-items volgens de matrix. Adviseur/installateur krijgen een minimale, taakgerichte sidebar.
-
-### Stap 4 — Helper voor centrale rol-checks
-
-Nieuw bestand `src/lib/permissions.ts` met functies:
-```ts
-canAccessFinance(rol), canSeeAllLeads(rol), canManageUsers(rol),
-canSeeProductCost(rol), canCreateSchouw(rol), isOperational(rol),
-isAdminTier(rol)  // superadmin | partner_admin | backoffice
+Update nummering-functie zodat voorschotten een eigen reeks krijgen:
+```sql
+-- in generate_financieel_documentnummer: bij subtype='voorschot' prefix 'VS-'
 ```
-Vervang verspreide `profile.rol === "..."`-checks door deze helpers (in 19 bestanden gevonden).
 
-### Stap 5 — Edge function `user-management`
+### 2. Centrale logica — uitbreiden `factuurFromOfferte.ts`
 
-- Voeg `backoffice` toe aan `allowedRolesForPartnerAdmin` en `allowedRolesForSuperadmin`
-- Bij `invite_user`: zelfde uitbreiding
-- Voeg uitleg toe in `UitnodigDialog` rolkeuze
+- `buildTermijnRegels` krijgt nieuwe modus `eindafrekening` die:
+  - Alle reguliere offerte-regels meeneemt
+  - **Per BTW-tarief** een verrekenregel toevoegt: `Reeds gefactureerd voorschot 21% (VS-2025-0001, VS-2025-0002) — €−1.500,00`
+  - Resultaat: netto te betalen = totaal offerte − som voorschotten, BTW correct per tarief
+- Nieuwe helper `buildVoorschotRegel(percentage, btwGroep)` die per BTW-tarief een aparte regel maakt i.p.v. één gewogen gemiddelde
+- Nieuwe helper `getTermijnContext(offerteId)` retourneert volgnummer + totaal voor display
 
-### Stap 6 — UI-componenten
+### 3. UI-aanpassingen
 
-- `UitnodigDialog`: rol-dropdown krijgt "Backoffice (financieel & administratie)"
-- `GebruikerDetail` rol-dropdown: idem
-- `Gebruikers.tsx` tabs: nieuwe tab "Backoffice" naast Adviseurs/Installateurs/Beheerders
-- `PartnerAbonnement.tsx`: licentie-telling neemt backoffice mee als "administratief gebruiker"
-- `AuthContext` types: `AppRole` regenereert automatisch via Supabase types — geen handmatige aanpassing nodig
-- `ROL_LABELS` in `GebruikerDetail.tsx`: voeg `backoffice: "Backoffice"`
+**`TermijnFactuurDialog.tsx`** uitbreiden:
+- 4 modi: Volledig / Voorschot (vast %) / Voorschot (vast bedrag) / **Eindafrekening (verrekent voorschotten)**
+- Bij "Voorschot" optie: kies omschrijving ("Aanbetaling bij opdracht", "Bij start installatie", custom)
+- Termijn-teller: "Dit wordt termijn 2 van 3" auto-detectie
+- Live preview: per BTW-tarief de splitsing (21%: €X / 0%: €Y)
+- Waarschuwing als som > offertetotaal
 
-### Stap 7 — Data-scoping (cruciaal voor adviseur/installateur)
+**Nieuwe sectie "Termijnschema" op `OfferteDetail`**:
+- Wizard "Maak termijnschema": templates 30/70, 30/40/30, 50/50, custom
+- Per termijn: status (open/gefactureerd/betaald) + knop "Maak factuur voor deze termijn"
+- Voortgangsbalk
 
-Aanpassing in queries (niet alleen RLS):
-- `Leads.tsx`: voor adviseur → default filter `owner_user_id = me.id`, geen "alle leads"-toggle
-- `Klanten.tsx`: voor adviseur → join via leads/offertes waar adviseur eigenaar is
-- `Offertes.tsx`: voor adviseur → filter `adviseur_id = me.id` (al deels aanwezig, hard maken)
-- `Opdrachten.tsx`: voor installateur → filter `installateur_id = me.id`
-- `Schouwen.tsx`: voor installateur → enkel via `opdrachten.schouw_id`-join
-- `Helpdesk TicketsOverzicht`: filter op `toegewezen_aan = me.id` voor adviseur/installateur
-- `Producten.tsx`: voor adviseur/installateur → query gebruikt nieuwe view `producten_publiek` (zonder inkoopprijs)
+**`FactuurNieuw.tsx`**: bij offerte met termijnschema → automatisch volgende open termijn voorstellen.
 
-### Stap 8 — Tests / verificatie
+### 4. PDF-aanpassingen `FinancieelPDF.tsx`
 
-Manuele testmatrix per rol — checklist van 12 routes per rol om te verifiëren dat:
-- Sidebar toont alleen toegestane items
-- Directe URL-toegang tot verboden pagina geeft redirect
-- Data-queries retourneren alleen scope-eigen records
+- Header: bij `factuur_subtype='voorschot'` → label **"VOORSCHOTFACTUUR"** + onder documentnummer "Termijn N van M (X%)"
+- Bij `eindafrekening` → label **"EINDAFREKENING"** + verrekenblok onder regels-tabel:
+  ```
+  Totaal werkzaamheden:        € 10.000,00
+  − Voorschot 1 (VS-2025-0001): € − 3.000,00
+  − Voorschot 2 (VS-2025-0002): € − 4.000,00
+  ────────────────────────────────────────
+  Nog te betalen:              €  3.000,00
+  ```
+- Cumulatief BTW-overzicht: ook negatieve BTW van verrekende voorschotten apart tonen
+- Voettekst per voorschot: "Dit is een voorschotfactuur. De definitieve afrekening volgt na oplevering."
 
----
+### 5. E-mail aanpassingen
+
+- `FactuurEmailDialog.tsx`: type-label `"Voorschotfactuur"` / `"Eindafrekening"` in onderwerp en standaard body
+- Bestandsnaam: `Voorschotfactuur-VS-2025-0001-Klantnaam.pdf`
+- Edge function `send-factuur-email`: TYPE_LABELS uitbreiden + onderwerp afhankelijk van subtype
+
+### 6. Status- en koppelingenlogica
+
+- Bestaande trigger `sync_offerte_facturatie_status` blijft werken (telt alle verkoopfacturen op)
+- Aanvulling: bij eindafrekening met `voorschot_van_facturen` set → controleer dat alle gerefereerde voorschotten bestaan en **status ≠ concept** voor verzending mogelijk is
+- Bij `OfferteDetail` toon termijnvoortgang met badges per termijn
+
+## D. 3 nieuwe onderscheidende functies
+
+### 1. **Termijnschema-wizard met smart-templates per branche**
+Bij aanmaken offerte (en achteraf op offerte-detail) een wizard met vooraf-ingestelde schema's per producttype:
+- **Zonnepanelen**: 30% bij opdracht / 70% na oplevering
+- **Warmtepomp**: 30/40/30 (opdracht / start / oplevering)
+- **Thuisbatterij**: 50/50 (opdracht / installatie)
+- **Custom**: vrij configureerbaar
+Schema wordt opgeslagen in `offerte_termijnschema`, gekoppeld aan opdracht-statussen, en geeft op de opdracht-detailpagina een knop "Termijn X factureren" zodra de status-trigger bereikt is.
+
+### 2. **Auto-trigger voorschotfacturen op opdracht-status**
+Optionele instelling per termijn: `trigger_status = 'opdracht_bevestigd' | 'installatie_gepland' | 'opgeleverd'`. Wanneer de gekoppelde opdracht/installatie naar die status gaat, krijgt de backoffice een notificatie met "Termijn 2 van 3 is klaar om te factureren — €X" inclusief 1-klik-knop "Factuur aanmaken & verzenden". Voorkomt vergeten voorschotten en versnelt cashflow.
+
+### 3. **Voorschot-dashboard widget op `Financieel`**
+Nieuwe kaart "Openstaande termijnen" die toont:
+- Aantal opdrachten met openstaande voorschotten
+- Totaal te factureren € (uitgesplitst per termijntrigger)
+- Top 5 oudste openstaande termijnen met "Direct factureren"-knop
+- Cashflow-prognose: "De komende 30 dagen verwacht: €X aan voorschotten"
+
+Geeft directeuren/backoffice direct grip op de termijnpipeline en voorkomt cashflow-gaten.
 
 ## E. Bestanden
 
 | Bestand | Actie |
 |---|---|
-| `supabase/migrations/…_role_backoffice_en_scoping.sql` | Nieuw — enum-uitbreiding + RLS-aanpassingen + product-view |
-| `src/App.tsx` | Routes herzien volgens matrix |
-| `src/components/AppSidebar.tsx` | Sidebar-logica herschrijven met nieuwe matrix |
-| `src/lib/permissions.ts` | **Nieuw** — centrale rol-helpers |
-| `src/pages/Leads.tsx`, `Klanten.tsx`, `Offertes.tsx`, `Opdrachten.tsx`, `Schouwen.tsx`, `Producten.tsx` | Data-scope filters voor adviseur/installateur |
-| `src/pages/helpdesk/TicketsOverzicht.tsx` | Eigen tickets filter voor adviseur/installateur |
-| `src/pages/Financieel.tsx` + sub-componenten | Verwijder adviseur uit access checks |
-| `src/components/gebruikers/UitnodigDialog.tsx` | Rol "Backoffice" toevoegen |
-| `src/pages/GebruikerDetail.tsx` | Rol-labels + dropdown uitbreiden |
-| `src/pages/Gebruikers.tsx` | Tab "Backoffice" toevoegen |
-| `supabase/functions/user-management/index.ts` | `backoffice` in allowed roles |
-| `src/components/abonnementen/PartnerAbonnement.tsx` | Backoffice-telling in licenties |
-| `mem://auth/roles` | Memory bijwerken naar 8 rollen |
+| `supabase/migrations/…_voorschot_facturen.sql` | **Nieuw** — kolommen + termijnschema-tabel + RLS + nummering-update |
+| `src/lib/factuurFromOfferte.ts` | Uitbreiden: `buildTermijnRegels` met `eindafrekening`-modus + per-BTW splitsing |
+| `src/lib/termijnschema.ts` | **Nieuw** — templates, CRUD-helpers |
+| `src/components/financieel/TermijnFactuurDialog.tsx` | 4 modi + termijn-teller + waarschuwingen |
+| `src/components/financieel/FinancieelPDF.tsx` | Voorschotlabel, termijnregel, verrekenblok eindafrekening |
+| `src/components/financieel/FactuurContextCard.tsx` | Toon termijnschema-voortgang |
+| `src/components/financieel/TermijnschemaWizard.tsx` | **Nieuw** — wizard met branche-templates |
+| `src/components/financieel/TermijnschemaCard.tsx` | **Nieuw** — voortgang op offerte/opdracht-detail |
+| `src/components/financieel/VoorschotDashboardWidget.tsx` | **Nieuw** — widget op Financieel-overzicht |
+| `src/pages/FactuurNieuw.tsx` | Subtype + volgnummer-velden meesturen, eindafrekening-flow |
+| `src/pages/FactuurDetail.tsx` | Subtype-badge + voorschot-context tonen |
+| `src/pages/OfferteDetail.tsx` | Termijnschema-sectie + "Genereer factuur voor termijn N" |
+| `src/pages/OpdrachtDetail.tsx` | Auto-trigger meldingen voor openstaande termijnen |
+| `src/pages/Financieel.tsx` | Voorschot-dashboard widget |
+| `src/components/financieel/FactuurEmailDialog.tsx` | Onderwerp/bestandsnaam per subtype |
+| `supabase/functions/send-factuur-email/index.ts` | TYPE_LABELS uitbreiden met voorschot/eindafrekening |
 
 ## F. Niet wijzigen
-- `superadmin`, `affiliate`, `consument` toegangsregels (al correct)
-- Bestaande RLS-helper-functies (`is_superadmin`, `get_user_role`, `get_user_partner_id`)
-- AuthContext / ProtectedRoute (mechanisme blijft, alleen lijsten veranderen)
+
+- Bestaande nummering voor `verkoopfactuur` / `creditnota` blijft werken (nieuwe prefix alleen voor voorschot)
+- `sync_offerte_facturatie_status` trigger (werkt al correct, telt totaal op)
+- `DocumentRegelEditor` (gebruikt zelfde regels-structuur)
 
 ## G. Resultaat
 
-- Adviseur en installateur zien **alleen eigen werk** — geen omzet, BTW, andermans deals
-- Nieuwe **backoffice**-rol vult het gat tussen "uitvoerend" en "volledig admin" — perfect voor financiële medewerkers
-- Centrale `permissions.ts` voorkomt dat rol-checks over 19 bestanden uit elkaar lopen
-- RLS afgedwongen op DB-niveau — geen data-lek meer ook al staat de UI per ongeluk open
-- Sidebar per rol minimaal en taakgericht in plaats van een dump van alle modules
+- Volledig boekhoudkundig kloppende voorschot- en eindafrekeningfacturen met juiste BTW per tarief
+- PDF en e-mail tonen direct dat het een voorschot is + welk termijn van welk totaal
+- Eindafrekening verrekent automatisch alle voorgaande voorschotten met negatieve regels
+- Termijnschema-wizard maakt aanmaken in 30 seconden mogelijk
+- Auto-triggers + dashboard zorgen dat geen termijn meer vergeten wordt → directe cashflow-impact
 
