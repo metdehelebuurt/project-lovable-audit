@@ -65,6 +65,54 @@ export default function FactuurNieuw() {
   // Existing documentnummer for editing
   const [existingDocNummer, setExistingDocNummer] = useState("");
 
+  // Offerte-context (voor context-card, dubbel-check, termijn)
+  const [offerteContext, setOfferteContext] = useState<OfferteConversieResult | null>(null);
+  const [resyncing, setResyncing] = useState(false);
+  const [termijnModus, setTermijnModus] = useState<TermijnModus>("volledig");
+  const [termijnPercentage, setTermijnPercentage] = useState(30);
+  const [betalingsvoorwaardenTekst, setBetalingsvoorwaardenTekst] = useState("");
+  const [bvCustom, setBvCustom] = useState("");
+
+  const isVerkoopfactuur = docType === "verkoopfactuur";
+
+  const applyOfferteContext = (ctx: OfferteConversieResult) => {
+    setOfferteContext(ctx);
+    setBronOfferteId(ctx.offerte.id);
+    const regelsToUse = buildTermijnRegels(ctx, termijnModus, termijnPercentage);
+    setRegels(regelsToUse.length > 0 ? regelsToUse : [{ ...emptyOfferteRegel }]);
+    setBetalingstermijn(ctx.betalingstermijn);
+    if (ctx.betalingsvoorwaardenTekst) setBetalingsvoorwaardenTekst(ctx.betalingsvoorwaardenTekst);
+    setNotities(ctx.notities);
+    if (ctx.installatieId) setInstallatieId(ctx.installatieId);
+    if (ctx.klantId) {
+      setKlantId(ctx.klantId);
+      setUseEenmalig(false);
+    } else if (ctx.eenmalig) {
+      setUseEenmalig(true);
+      setKlantId("");
+      setEenmaligNaam(ctx.eenmalig.naam);
+      setEenmaligEmail(ctx.eenmalig.email || "");
+      setEenmaligAdres(ctx.eenmalig.adres || "");
+      setEenmaligPostcode(ctx.eenmalig.postcode || "");
+      setEenmaligPlaats(ctx.eenmalig.plaats || "");
+      setEenmaligTelefoon(ctx.eenmalig.telefoon || "");
+    }
+  };
+
+  const handleResync = async () => {
+    if (!offerteContext || !profile?.partner_id) return;
+    setResyncing(true);
+    try {
+      const ctx = await buildFactuurFromOfferte(offerteContext.offerte.id, profile.partner_id);
+      applyOfferteContext(ctx);
+      toast({ title: "Gesynchroniseerd", description: "Gegevens opnieuw opgehaald uit de offerte" });
+    } catch (e: any) {
+      toast({ title: "Sync mislukt", description: e.message, variant: "destructive" });
+    } finally {
+      setResyncing(false);
+    }
+  };
+
   // Load klanten/leveranciers/installaties
   useEffect(() => {
     if (!profile?.partner_id) return;
