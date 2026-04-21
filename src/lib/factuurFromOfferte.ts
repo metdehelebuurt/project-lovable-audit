@@ -215,7 +215,7 @@ export async function buildFactuurFromOfferte(
   // ---- Bestaande facturen check ----
   const { data: bestaande } = await supabase
     .from("financiele_documenten")
-    .select("id, documentnummer, totaal_bedrag, status, factuurdatum")
+    .select("id, documentnummer, totaal_bedrag, status, factuurdatum, factuur_subtype, termijn_volgnummer, termijn_percentage, subtotaal, btw_bedrag")
     .eq("offerte_id", offerteId)
     .eq("type", "verkoopfactuur")
     .order("factuurdatum", { ascending: true });
@@ -226,6 +226,11 @@ export async function buildFactuurFromOfferte(
     totaal_bedrag: Number(b.totaal_bedrag) || 0,
     status: b.status,
     factuurdatum: b.factuurdatum,
+    factuur_subtype: b.factuur_subtype || "regulier",
+    termijn_volgnummer: b.termijn_volgnummer,
+    termijn_percentage: b.termijn_percentage,
+    subtotaal: Number(b.subtotaal) || 0,
+    btw_bedrag: Number(b.btw_bedrag) || 0,
   }));
 
   const reedsGefactureerd = Number((offerte as any).gefactureerd_bedrag) || bestaandeFacturen
@@ -234,6 +239,10 @@ export async function buildFactuurFromOfferte(
 
   const totaalOfferte = Number(offerte.totaal_bedrag) || 0;
   const openstaand = Math.max(0, totaalOfferte - reedsGefactureerd);
+
+  const voorschotten = bestaandeFacturen.filter(
+    (f) => f.factuur_subtype === "voorschot" && f.status !== "concept"
+  );
 
   return {
     offerte,
@@ -250,6 +259,7 @@ export async function buildFactuurFromOfferte(
     bestaandeFacturen,
     reedsGefactureerd,
     openstaand,
+    voorschotten,
   };
 }
 
