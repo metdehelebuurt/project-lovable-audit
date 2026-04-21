@@ -45,8 +45,10 @@ const statusKleuren: Record<string, string> = {
 export default function AbonnementOverzicht() {
   const [abonnementen, setAbonnementen] = useState<Abonnement[]>([]);
   const [plans, setPlans] = useState<{ id: string; naam: string; slug: string; maand_prijs: number }[]>([]);
+  const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("alle");
+  const [planFilter, setPlanFilter] = useState("alle");
   const [search, setSearch] = useState("");
   const [editDialog, setEditDialog] = useState(false);
   const [selected, setSelected] = useState<Abonnement | null>(null);
@@ -54,12 +56,18 @@ export default function AbonnementOverzicht() {
   const [saving, setSaving] = useState(false);
 
   const fetchAll = async () => {
-    const [{ data: aboData }, { data: planData }] = await Promise.all([
+    const [{ data: aboData }, { data: planData }, { data: addonData }] = await Promise.all([
       supabase.from("abonnementen").select("*, partners(naam), abonnement_plannen(naam, slug)").order("created_at", { ascending: false }),
       supabase.from("abonnement_plannen").select("id, naam, slug, maand_prijs").eq("actief", true).order("volgorde"),
+      supabase.from("abonnement_addon_aankopen").select("partner_id, aantal").eq("status", "actief"),
     ]);
     if (aboData) setAbonnementen(aboData as any);
     if (planData) setPlans(planData);
+    const counts: Record<string, number> = {};
+    (addonData ?? []).forEach((a: { partner_id: string; aantal: number }) => {
+      counts[a.partner_id] = (counts[a.partner_id] ?? 0) + (a.aantal || 0);
+    });
+    setAddonCounts(counts);
     setLoading(false);
   };
 
@@ -67,6 +75,7 @@ export default function AbonnementOverzicht() {
 
   const filtered = abonnementen.filter(a => {
     if (filter !== "alle" && a.status !== filter) return false;
+    if (planFilter !== "alle" && a.plan_id !== planFilter) return false;
     if (search && !(a.partners as any)?.naam?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
