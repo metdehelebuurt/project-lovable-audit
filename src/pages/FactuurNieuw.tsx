@@ -15,6 +15,7 @@ import { ArrowLeft, Save, Send, UserPlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import FactuurContextCard from "@/components/financieel/FactuurContextCard";
 import TermijnFactuurSelector, { type TermijnModus } from "@/components/financieel/TermijnFactuurDialog";
+import HandmatigeVoorschotVelden, { type HandmatigSubtype } from "@/components/financieel/HandmatigeVoorschotVelden";
 import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
 
