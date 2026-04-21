@@ -333,7 +333,7 @@ export default function FactuurNieuw() {
         leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
         offerte_id: bronOfferteId || null,
         opdracht_id: bronOpdrachtId || null,
-        installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
+        installatie_id: installatieId || null,
         regels: regels as any,
         subtotaal,
         btw_bedrag: btwBedrag,
