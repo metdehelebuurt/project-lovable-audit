@@ -296,7 +296,7 @@ export default function FactuurNieuw() {
       const updates: any = {
         klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
         leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
-        installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
+        installatie_id: installatieId || null,
         regels: regels as any,
         subtotaal,
         btw_bedrag: btwBedrag,
