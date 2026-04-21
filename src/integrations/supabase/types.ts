@@ -2878,6 +2878,8 @@ export type Database = {
           created_at: string
           feedback_berichten: Json | null
           garantie_voorwaarden: string | null
+          gefactureerd_bedrag: number
+          gefactureerd_op: string | null
           geldig_tot: string
           id: string
           include_energieadvies: boolean | null
@@ -2918,6 +2920,8 @@ export type Database = {
           created_at?: string
           feedback_berichten?: Json | null
           garantie_voorwaarden?: string | null
+          gefactureerd_bedrag?: number
+          gefactureerd_op?: string | null
           geldig_tot?: string
           id?: string
           include_energieadvies?: boolean | null
@@ -2958,6 +2962,8 @@ export type Database = {
           created_at?: string
           feedback_berichten?: Json | null
           garantie_voorwaarden?: string | null
+          gefactureerd_bedrag?: number
+          gefactureerd_op?: string | null
           geldig_tot?: string
           id?: string
           include_energieadvies?: boolean | null
