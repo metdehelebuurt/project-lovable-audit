@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     if (!userRow?.partner_id) return jsonResponse({ error: "Geen partner gekoppeld" }, 400);
 
     const { data: doc } = await adminClient.from("financiele_documenten")
-      .select("id, documentnummer, type, klant_id, totaal_bedrag, status, partner_id")
+      .select("id, documentnummer, type, klant_id, totaal_bedrag, status, partner_id, factuur_subtype, termijn_volgnummer, termijn_totaal")
       .eq("id", financieel_document_id).eq("partner_id", userRow.partner_id).single();
     if (!doc) return jsonResponse({ error: "Document niet gevonden" }, 404);
 
@@ -66,8 +66,16 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "E-mailconfiguratie is niet ingesteld." }, 400);
     }
 
-    const subject = customSubject || `Factuur ${doc.documentnummer} — ${partner.afzender_naam || partner.naam}`;
-    const html = html_body || `<div style="font-family:sans-serif;padding:20px;"><p>Beste klant,</p><p>Hierbij ontvangt u onze factuur <strong>${doc.documentnummer}</strong>.</p><p>Met vriendelijke groet,<br/>${partner.afzender_naam || partner.naam}</p></div>`;
+    const docLabel = doc.factuur_subtype === "voorschot"
+      ? "Voorschotfactuur"
+      : doc.factuur_subtype === "eindafrekening"
+        ? "Eindafrekening"
+        : "Factuur";
+    const termijnSuffix = doc.factuur_subtype === "voorschot" && doc.termijn_volgnummer && doc.termijn_totaal
+      ? ` (termijn ${doc.termijn_volgnummer} van ${doc.termijn_totaal})`
+      : "";
+    const subject = customSubject || `${docLabel} ${doc.documentnummer}${termijnSuffix} — ${partner.afzender_naam || partner.naam}`;
+    const html = html_body || `<div style="font-family:sans-serif;padding:20px;"><p>Beste klant,</p><p>Hierbij ontvangt u onze ${docLabel.toLowerCase()} <strong>${doc.documentnummer}</strong>${termijnSuffix}.</p><p>Met vriendelijke groet,<br/>${partner.afzender_naam || partner.naam}</p></div>`;
 
     const attachment = attachment_path
       ? await fetchAttachment(adminClient, attachment_path, attachment_filename || `${doc.documentnummer}.pdf`)
@@ -101,7 +109,9 @@ Deno.serve(async (req) => {
     await adminClient.from("email_log").insert({
       partner_id: userRow.partner_id,
       ontvanger_email, onderwerp: subject, html_body: html,
-      status: "verzonden", type: "factuur", verzonden_door_id: userId,
+      status: "verzonden",
+      type: doc.factuur_subtype === "voorschot" ? "voorschotfactuur" : doc.factuur_subtype === "eindafrekening" ? "eindafrekening" : "factuur",
+      verzonden_door_id: userId,
     });
 
     if (doc.status === "concept") {
