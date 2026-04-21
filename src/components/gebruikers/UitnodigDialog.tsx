@@ -21,7 +21,7 @@ interface UitnodigDialogProps {
 
 const rolLabels: Record<string, string> = {
   partner_admin: "Beheerder",
-  backoffice: "Backoffice (financieel & administratie)",
+  backoffice: "Backoffice (financieel & administratie, geen gebruikersbeheer)",
   partner_staff: "Medewerker",
   adviseur: "Energieadviseur",
   installateur: "Installateur",

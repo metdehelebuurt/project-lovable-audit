@@ -19,6 +19,8 @@ import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { isAdminTier, isPartnerAdminOrHigher } from "@/lib/permissions";
+import type { AppRole } from "@/lib/permissions";
 
 interface NavItem {
   title: string;

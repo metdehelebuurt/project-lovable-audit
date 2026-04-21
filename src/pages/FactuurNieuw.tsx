@@ -453,6 +453,21 @@ export default function FactuurNieuw() {
           </div>
         )}
 
+        {!offerteContext && isVerkoopfactuur && !isEdit && (
+          <div className="lg:col-span-3">
+            <HandmatigeVoorschotVelden
+              subtype={handmatigSubtype}
+              onSubtypeChange={setHandmatigSubtype}
+              termijnVolgnummer={handmatigTermijnVolg}
+              onTermijnVolgnummerChange={setHandmatigTermijnVolg}
+              termijnTotaal={handmatigTermijnTotaal}
+              onTermijnTotaalChange={setHandmatigTermijnTotaal}
+              totaalProjectbedrag={handmatigProjectbedrag}
+              onTotaalProjectbedragChange={setHandmatigProjectbedrag}
+            />
+          </div>
+        )}
+
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg">Gegevens</CardTitle>
