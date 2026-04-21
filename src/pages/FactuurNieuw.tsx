@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import FactuurContextCard from "@/components/financieel/FactuurContextCard";
 import TermijnFactuurSelector, { type TermijnModus } from "@/components/financieel/TermijnFactuurDialog";
 import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
-import { buildFactuurFromOfferte, buildTermijnRegels, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
+import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -71,6 +71,8 @@ export default function FactuurNieuw() {
   const [resyncing, setResyncing] = useState(false);
   const [termijnModus, setTermijnModus] = useState<TermijnModus>("volledig");
   const [termijnPercentage, setTermijnPercentage] = useState(30);
+  const [termijnVastBedrag, setTermijnVastBedrag] = useState(1000);
+  const [termijnOmschrijving, setTermijnOmschrijving] = useState("Aanbetaling bij opdracht");
   const [betalingsvoorwaardenTekst, setBetalingsvoorwaardenTekst] = useState("");
   const [bvCustom, setBvCustom] = useState("");
 
@@ -79,7 +81,7 @@ export default function FactuurNieuw() {
   const applyOfferteContext = (ctx: OfferteConversieResult) => {
     setOfferteContext(ctx);
     setBronOfferteId(ctx.offerte.id);
-    const regelsToUse = buildTermijnRegels(ctx, termijnModus, termijnPercentage);
+    const regelsToUse = buildTermijnRegels(ctx, termijnModus, termijnPercentage, termijnVastBedrag, termijnOmschrijving);
     setRegels(regelsToUse.length > 0 ? regelsToUse : [{ ...emptyOfferteRegel }]);
     setBetalingstermijn(ctx.betalingstermijn);
     if (ctx.betalingsvoorwaardenTekst) setBetalingsvoorwaardenTekst(ctx.betalingsvoorwaardenTekst);
@@ -117,9 +119,9 @@ export default function FactuurNieuw() {
   // Termijnmodus wijzigt → regels herbouwen vanuit context
   useEffect(() => {
     if (!offerteContext) return;
-    const newRegels = buildTermijnRegels(offerteContext, termijnModus, termijnPercentage);
+    const newRegels = buildTermijnRegels(offerteContext, termijnModus, termijnPercentage, termijnVastBedrag, termijnOmschrijving);
     setRegels(newRegels.length > 0 ? newRegels : [{ ...emptyOfferteRegel }]);
-  }, [termijnModus, termijnPercentage, offerteContext]);
+  }, [termijnModus, termijnPercentage, termijnVastBedrag, termijnOmschrijving, offerteContext]);
 
   const createKlantFromEenmalig = async () => {
     if (!profile?.partner_id || !eenmaligNaam.trim()) return;
@@ -319,10 +321,22 @@ export default function FactuurNieuw() {
       }
     } else {
       // INSERT nieuw document
+      const subtype = isVerkoopfactuur && offerteContext
+        ? (termijnModus === "voorschot_percentage" || termijnModus === "voorschot_bedrag"
+            ? "voorschot"
+            : termijnModus === "eindafrekening" ? "eindafrekening" : "regulier")
+        : "regulier";
+
       const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
         _partner_id: profile.partner_id,
         _type: docType,
+        _subtype: subtype,
       });
+
+      const tCtx = offerteContext ? getTermijnContext(offerteContext) : null;
+      const voorschotIds = subtype === "eindafrekening" && offerteContext
+        ? offerteContext.voorschotten.map((v) => v.id)
+        : null;
 
       const doc: any = {
         partner_id: profile.partner_id,
@@ -345,6 +359,11 @@ export default function FactuurNieuw() {
         notities,
         created_by: user.id,
         eenmalige_relatie: eenmaligData,
+        factuur_subtype: subtype,
+        termijn_volgnummer: subtype === "voorschot" && tCtx ? tCtx.volgnummer : null,
+        termijn_totaal: subtype === "voorschot" && tCtx ? tCtx.totaal : null,
+        termijn_percentage: subtype === "voorschot" && termijnModus === "voorschot_percentage" ? termijnPercentage : null,
+        voorschot_van_facturen: voorschotIds,
       };
 
       const { data, error } = await supabase.from("financiele_documenten").insert(doc).select().single();
@@ -406,6 +425,10 @@ export default function FactuurNieuw() {
               onModusChange={setTermijnModus}
               percentage={termijnPercentage}
               onPercentageChange={setTermijnPercentage}
+              vastBedrag={termijnVastBedrag}
+              onVastBedragChange={setTermijnVastBedrag}
+              omschrijving={termijnOmschrijving}
+              onOmschrijvingChange={setTermijnOmschrijving}
             />
           </div>
         )}

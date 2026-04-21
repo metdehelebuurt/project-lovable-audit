@@ -16,6 +16,11 @@ interface Props {
     betalingstermijn_dagen: number;
     leveringsdatum?: string;
     referentie_documentnummer?: string;
+    factuur_subtype?: "regulier" | "voorschot" | "eindafrekening";
+    termijn_volgnummer?: number | null;
+    termijn_totaal?: number | null;
+    termijn_percentage?: number | null;
+    offerte_nummer?: string;
   };
   klant?: {
     voornaam?: string;
@@ -69,6 +74,14 @@ const typeLabels: Record<string, string> = {
   inkooporder: "INKOOPORDER",
   pakbon: "PAKBON",
 };
+
+function getDocLabel(doc: Props["doc"]): string {
+  if (doc.type === "verkoopfactuur") {
+    if (doc.factuur_subtype === "voorschot") return "VOORSCHOTFACTUUR";
+    if (doc.factuur_subtype === "eindafrekening") return "EINDAFREKENING";
+  }
+  return typeLabels[doc.type] || "DOCUMENT";
+}
 
 const isPakbon = (t: string) => t === "pakbon";
 const isInkoopOrder = (t: string) => t === "inkooporder";
@@ -144,11 +157,22 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
 
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: "20pt", fontWeight: 700, color: primaryColor, letterSpacing: "0" }}>
-            {typeLabels[doc.type] || "DOCUMENT"}
+            {getDocLabel(doc)}
           </div>
           <div style={{ fontSize: "11pt", fontFamily: "monospace", marginTop: "4px", color: "#374151" }}>
             {doc.documentnummer}
           </div>
+          {doc.factuur_subtype === "voorschot" && doc.termijn_volgnummer && doc.termijn_totaal && (
+            <div style={{ fontSize: "8pt", color: "#6b7280", marginTop: "2px" }}>
+              Termijn {doc.termijn_volgnummer} van {doc.termijn_totaal}
+              {doc.termijn_percentage ? ` (${doc.termijn_percentage}%)` : ""}
+            </div>
+          )}
+          {doc.offerte_nummer && (doc.factuur_subtype === "voorschot" || doc.factuur_subtype === "eindafrekening") && (
+            <div style={{ fontSize: "8pt", color: "#6b7280", marginTop: "2px" }}>
+              Bij offerte: {doc.offerte_nummer}
+            </div>
+          )}
           {/* Creditnota: referentie naar origineel (Art. 35b Wet OB) */}
           {doc.type === "creditnota" && doc.referentie_documentnummer && (
             <div style={{ fontSize: "8pt", color: "#6b7280", marginTop: "2px" }}>
@@ -393,6 +417,18 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
       {doc.notities && (
         <div style={{ fontSize: "8pt", color: "#6b7280", marginBottom: "8mm" }}>
           <span style={{ fontWeight: 600 }}>Opmerking: </span>{doc.notities}
+        </div>
+      )}
+
+      {/* === Voorschot wettelijke vermelding === */}
+      {doc.factuur_subtype === "voorschot" && (
+        <div style={{ fontSize: "7.5pt", color: "#6b7280", fontStyle: "italic", marginBottom: "6mm" }}>
+          Dit is een voorschotfactuur. De definitieve afrekening volgt na oplevering en verrekent dit voorschot.
+        </div>
+      )}
+      {doc.factuur_subtype === "eindafrekening" && (
+        <div style={{ fontSize: "7.5pt", color: "#6b7280", fontStyle: "italic", marginBottom: "6mm" }}>
+          Dit is de eindafrekening. Reeds betaalde voorschotten zijn verrekend in bovenstaande regels (negatieve bedragen).
         </div>
       )}
 
