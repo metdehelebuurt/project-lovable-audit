@@ -4487,6 +4487,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      generate_abonnement_factuurnummer: { Args: never; Returns: string }
       generate_financieel_documentnummer:
         | {
             Args: {
