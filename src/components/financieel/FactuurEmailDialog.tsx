@@ -66,7 +66,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
           subject,
           html_body: html,
           attachment_path: path || null,
-          attachment_filename: `${doc.documentnummer}.pdf`,
+          attachment_filename: `${label.replace(/\s+/g, "")}-${doc.documentnummer}.pdf`,
         },
       });
       if (error || data?.error) {

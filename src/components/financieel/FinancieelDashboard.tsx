@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Clock, AlertTriangle, BarChart3, Wallet } fro
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
+import VoorschotDashboardWidget from "./VoorschotDashboardWidget";
 
 interface Props {
   docs: any[];
@@ -77,6 +78,8 @@ export function FinancieelDashboard({ docs, loading }: Props) {
 
   return (
     <div className="space-y-6">
+      <VoorschotDashboardWidget />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
           <Card key={c.title}>

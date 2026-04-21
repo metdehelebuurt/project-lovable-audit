@@ -25,6 +25,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
+import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
@@ -668,6 +669,15 @@ const OfferteDetail = () => {
                 <OfferteHerinneringen offerteId={offerte.id} partnerId={offerte.partner_id} />
               </CardContent>
             </Card>
+          )}
+
+          {/* Termijnschema */}
+          {offerte.partner_id && (
+            <TermijnschemaCard
+              offerteId={offerte.id}
+              offerteTotaal={Number(offerte.totaal_bedrag) || 0}
+              partnerId={offerte.partner_id}
+            />
           )}
 
           {/* Notities */}

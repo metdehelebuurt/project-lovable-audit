@@ -102,6 +102,13 @@ function buildBtwOverzicht(regels: OfferteRegel[]) {
     .sort((a, b) => b.percentage - a.percentage);
 }
 
+/** Splits regels in 'positief' (originele werk) en 'negatief' (verrekende voorschotten). */
+function splitVerrekening(regels: OfferteRegel[]) {
+  const positief = regels.filter((r) => regelSubtotaal(r) >= 0);
+  const negatief = regels.filter((r) => regelSubtotaal(r) < 0);
+  return { positief, negatief };
+}
+
 export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }: Props) {
   const regels = doc.regels || [];
   const isKlant = !!klant;
@@ -118,6 +125,20 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
   const btwOverzicht = buildBtwOverzicht(regels);
   const hasMultipleBtwRates = btwOverzicht.length > 1;
   const hasZeroBtw = btwOverzicht.some((b) => b.percentage === 0);
+
+  // Eindafrekening: splits werk vs verrekende voorschotten voor het verreken-overzicht.
+  const isEindafrekening = doc.factuur_subtype === "eindafrekening";
+  const { positief: werkRegels, negatief: verrekenRegels } = isEindafrekening
+    ? splitVerrekening(regels)
+    : { positief: regels, negatief: [] as OfferteRegel[] };
+  const totaalWerkExclBtw = werkRegels.reduce((s, r) => s + regelSubtotaal(r), 0);
+  const verrekendExclBtw = Math.abs(verrekenRegels.reduce((s, r) => s + regelSubtotaal(r), 0));
+  const verrekendInclBtw = Math.abs(
+    verrekenRegels.reduce((s, r) => {
+      const sub = regelSubtotaal(r);
+      return s + sub * (1 + (r.btw_percentage ?? 21) / 100);
+    }, 0),
+  );
 
   return (
     <div
@@ -352,6 +373,43 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
               <span>Totaal incl. BTW</span>
               <span>{formatCurrency(doc.totaal_bedrag)}</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* === EINDAFREKENING — VERREKEN-OVERZICHT === */}
+      {isEindafrekening && verrekenRegels.length > 0 && showPricing(doc.type) && (
+        <div style={{
+          marginBottom: "10mm",
+          padding: "10px 16px",
+          backgroundColor: "#fefce8",
+          borderRadius: "6px",
+          border: "1px solid #fde68a",
+          fontSize: "8.5pt",
+        }}>
+          <div style={{ fontSize: "7pt", color: "#92400e", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px", fontWeight: 600 }}>
+            Verrekening voorschotten
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+            <span>Totaal werkzaamheden (excl. BTW)</span>
+            <span>{formatCurrency(totaalWerkExclBtw + verrekendExclBtw)}</span>
+          </div>
+          {verrekenRegels.map((r, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", color: "#6b7280" }}>
+              <span>− {r.omschrijving}</span>
+              <span>{formatCurrency(regelSubtotaal(r))}</span>
+            </div>
+          ))}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "6px 0 0",
+            marginTop: "4px",
+            borderTop: "1px solid #fde68a",
+            fontWeight: 700,
+          }}>
+            <span>Nog te betalen (incl. BTW)</span>
+            <span>{formatCurrency(doc.totaal_bedrag)}</span>
           </div>
         </div>
       )}
