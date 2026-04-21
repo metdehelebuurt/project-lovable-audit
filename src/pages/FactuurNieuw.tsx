@@ -189,39 +189,26 @@ export default function FactuurNieuw() {
           setNotities(`Creditnota bij ${data.documentnummer}`);
           setPrefilled(true);
         });
-    } else if (offerteId) {
-      setBronOfferteId(offerteId);
-      supabase
-        .from("offertes")
-        .select("*")
-        .eq("id", offerteId)
-        .single()
-        .then(({ data: offerte }) => {
-          if (!offerte) return;
-          const offerteRegels = (offerte.regels || []) as any[];
-          const mapped: OfferteRegel[] = offerteRegels.map((r: any) => ({
-            omschrijving: r.omschrijving || "",
-            offerte_tekst: r.offerte_tekst || "",
-            aantal: r.aantal || 1,
-            prijs_per_stuk: r.prijs_per_stuk || 0,
-            btw_percentage: r.btw_percentage ?? 21,
-            korting_percentage: r.korting_percentage || 0,
-            korting_bedrag: r.korting_bedrag || 0,
-            korting_type: r.korting_type || "percentage",
-          }));
-          setRegels(mapped.length > 0 ? mapped : [{ ...emptyOfferteRegel }]);
-          setNotities(`Factuur bij offerte ${offerte.offertenummer}`);
-          if (profile?.partner_id && offerte.klant_email) {
-            supabase
-              .from("klanten")
-              .select("id")
-              .eq("partner_id", profile.partner_id)
-              .eq("email", offerte.klant_email)
-              .limit(1)
-              .then(({ data: klantData }) => {
-                if (klantData && klantData.length > 0) setKlantId(klantData[0].id);
-              });
+    } else if (offerteId && profile?.partner_id) {
+      buildFactuurFromOfferte(offerteId, profile.partner_id)
+        .then((ctx) => {
+          applyOfferteContext(ctx);
+          setPrefilled(true);
+          if (ctx.bestaandeFacturen.filter(f => f.status !== "concept").length > 0) {
+            toast({
+              title: "Let op: bestaande facturen",
+              description: `Er zijn al ${ctx.bestaandeFacturen.length} factuur(en) voor deze offerte. Kies hieronder een termijnfactuur of bekijk de bestaande.`,
+            });
           }
+          if (ctx.resolutionMethod === "eenmalig") {
+            toast({
+              title: "Klant niet gevonden",
+              description: "De klantgegevens zijn automatisch ingevuld als eenmalige relatie.",
+            });
+          }
+        })
+        .catch((e) => {
+          toast({ title: "Kon offerte niet laden", description: e.message, variant: "destructive" });
           setPrefilled(true);
         });
     }
