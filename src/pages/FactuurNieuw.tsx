@@ -471,6 +471,24 @@ export default function FactuurNieuw() {
                   </div>
                 ) : (
                   <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
+                    {offerteContext?.resolutionMethod === "eenmalig" && (
+                      <div className="rounded-lg bg-primary/5 p-2 text-xs space-y-2">
+                        <p className="text-muted-foreground">
+                          Klantgegevens automatisch overgenomen uit de offerte. Je kunt deze direct gebruiken of de klant
+                          permanent toevoegen aan je CRM.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-pill gap-1 h-7 text-xs"
+                          onClick={createKlantFromEenmalig}
+                          disabled={!eenmaligNaam.trim()}
+                        >
+                          <UserPlus className="h-3 w-3" /> Maak klant aan in CRM
+                        </Button>
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <Label className="text-xs">Naam *</Label>
                       <Input value={eenmaligNaam} onChange={(e) => setEenmaligNaam(e.target.value)} placeholder="Naam of bedrijfsnaam" />
