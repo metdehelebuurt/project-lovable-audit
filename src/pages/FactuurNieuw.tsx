@@ -543,16 +543,43 @@ export default function FactuurNieuw() {
             )}
 
             {docType !== "pakbon" && (
-              <div className="space-y-2">
-                <Label>Betalingstermijn (dagen)</Label>
-                <Select value={String(betalingstermijn)} onValueChange={(v) => setBetalingstermijn(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="14">14 dagen</SelectItem>
-                    <SelectItem value="30">30 dagen</SelectItem>
-                    <SelectItem value="60">60 dagen</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Betalingsvoorwaarden</Label>
+                  <BetalingsvoorwaardenSelect
+                    partnerId={profile?.partner_id}
+                    value={betalingsvoorwaardenTekst}
+                    onChange={(v) => {
+                      setBetalingsvoorwaardenTekst(v);
+                      if (v && v !== "__custom__") {
+                        const m = v.match(/(\d{1,3})/);
+                        if (m) setBetalingstermijn(parseInt(m[1], 10));
+                      }
+                    }}
+                    customValue={bvCustom}
+                    onCustomChange={(v) => {
+                      setBvCustom(v);
+                      const m = v.match(/(\d{1,3})/);
+                      if (m) setBetalingstermijn(parseInt(m[1], 10));
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Betalingstermijn (dagen)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={365}
+                      value={betalingstermijn}
+                      onChange={(e) => setBetalingstermijn(Math.max(0, Number(e.target.value) || 0))}
+                      className="w-24"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Vervaldatum: <strong>{new Date(Date.now() + betalingstermijn * 86400000).toLocaleDateString("nl-NL")}</strong>
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
 
