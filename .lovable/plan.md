@@ -1,169 +1,82 @@
-# Plan — Mollie integratie voor automatische incasso van abonnementsgelden
 
-> Status: **opgeslagen, nog niet uitvoeren**. Wachten op groen licht van de gebruiker.
+# Plan — A: voorschot bij handmatige factuur + B: rolherstructurering met Backoffice
 
-## A. Huidige situatie
+## Deel A — Voorschot/termijn bij handmatig aangemaakte factuur
 
-| Onderdeel | Status |
-|---|---|
-| Abonnementen-tabel (`abonnementen`) | ✅ Bestaat — plan, maand_bedrag, interval, status, verloop_datum |
-| Plannen (`abonnement_plannen`) | ✅ Bestaat — maand_prijs, jaar_prijs |
-| Add-ons (`abonnement_addon_aankopen`) | ✅ Bestaat — extra adviseurs/installateurs per maand |
-| Facturen (`facturen`) | ✅ Bestaat — handmatig `betaald_via` |
-| Mollie integratie | ❌ Volledig afwezig |
-| SEPA-mandaat opslag | ❌ Geen kolommen |
-| Webhook endpoint | ❌ Geen edge function |
-| PSD2/SCA-flow | ❌ Geen first-payment flow |
-| Juridisch (SEPA-machtiging partners) | ⚠️ Ontbreekt |
+### Probleem
+In `FactuurNieuw.tsx` wordt `TermijnFactuurSelector` alleen getoond als er een `offerteContext` is. Bij een handmatig aangemaakte verkoopfactuur (zonder offerte) ontbreekt de mogelijkheid om subtype "voorschot" of "eindafrekening" te kiezen.
 
-## B. Mollie-eisen
+### Aanpak
+1. In `FactuurNieuw.tsx` een **subtype-keuzeblok** tonen ook zonder offertecontext, met:
+   - Radio: Reguliere factuur / Voorschotfactuur / Eindafrekening
+   - Bij voorschot: optionele velden "Termijn X van Y" + "Totaal projectbedrag" (voor PDF-context)
+   - Bij eindafrekening zonder offerte: tekstuele toelichting + handmatige verrekenregels (negatieve bedragen via `DocumentRegelEditor`)
+2. `factuur_subtype` correct meegeven aan de insert in `financiele_documenten`
+3. `generate_financieel_documentnummer` met subtype `'voorschot'` aanroepen → krijgt `VS-YYYY-XXXX` nummer
+4. Subtype-badge consistent tonen op `FactuurDetail` (al aanwezig — alleen verifiëren dat handmatige variant ook klopt)
 
-### Technisch
-1. `MOLLIE_API_KEY` als secret (nooit in frontend)
-2. Webhook endpoint publiek (`verify_jwt = false`), idempotent
-3. First payment + mandaat-flow → daarna recurring zonder SCA
-4. Subscription resource bij Mollie voor cyclus
-5. Customer resource per partner
-6. Geen signed webhooks → altijd payment via API verifiëren
-7. Idempotentie via UNIQUE `mollie_payment_id`
-8. Restitutie/chargeback bijhouden
-9. Audit-log alle webhook events
-
-### Juridisch (NL/EU)
-1. SEPA B2B-mandaat-tekst in checkout
-2. Pre-notificatie 1 dag vooraf (Mollie regelt, vermelden in voorwaarden)
-3. Herroepingsrecht 56 dagen SEPA Core
-4. B2B = 0 dagen herroeping
-5. Mollie als verwerker in privacyverklaring
-6. Privacyverklaring uitbreiden met IBAN/betaalverwerking
-7. Algemene voorwaarden artikel "Betaling & Incasso"
-8. NL-conforme factuur per succesvolle betaling
-9. Bewaarplicht 7 jaar
-
-## C. Architectuur
-
-```
-Partner → mollie-create-customer-payment → Mollie checkout
-   → klant betaalt + machtigt SEPA
-   → mollie-webhook → mollie-create-subscription
-   → factuur + bevestigingsmail
-   → maandelijks: Mollie incasseert → webhook → factuur + mail
-```
-
-## D. Implementatie
-
-### 1. Database (nieuwe migratie)
-```sql
-ALTER TABLE public.partners
-  ADD COLUMN mollie_customer_id text,
-  ADD COLUMN mollie_mandate_id text,
-  ADD COLUMN mollie_mandate_status text,
-  ADD COLUMN mollie_mandate_method text,
-  ADD COLUMN mollie_iban_last4 text,
-  ADD COLUMN incasso_actief boolean DEFAULT false;
-
-ALTER TABLE public.abonnementen
-  ADD COLUMN mollie_subscription_id text,
-  ADD COLUMN mollie_subscription_status text,
-  ADD COLUMN volgende_incasso_op date,
-  ADD COLUMN laatste_incasso_op timestamptz,
-  ADD COLUMN gefaalde_incassos integer DEFAULT 0;
-
-ALTER TABLE public.facturen
-  ADD COLUMN mollie_payment_id text UNIQUE,
-  ADD COLUMN mollie_payment_status text,
-  ADD COLUMN mollie_chargeback_id text,
-  ADD COLUMN mollie_checkout_url text;
-
-CREATE TABLE public.mollie_webhook_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  partner_id uuid REFERENCES public.partners(id) ON DELETE SET NULL,
-  mollie_resource_id text NOT NULL,
-  resource_type text NOT NULL,
-  event_status text,
-  raw_payload jsonb NOT NULL,
-  verwerkt boolean DEFAULT false,
-  fout_melding text,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.mollie_webhook_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Superadmin ziet webhook events" ON public.mollie_webhook_events
-  FOR SELECT TO authenticated USING (is_superadmin(auth.uid()));
-```
-
-### 2. Secret
-- `MOLLIE_API_KEY` (test_xxx → live_xxx)
-
-### 3. Edge functions
-| Function | verify_jwt | Doel |
-|---|---|---|
-| `mollie-create-customer-payment` | true | First payment + checkout URL |
-| `mollie-create-subscription` | true | Recurring subscription aanmaken (intern) |
-| `mollie-webhook` | **false** | Publieke webhook handler, idempotent |
-| `mollie-cancel-subscription` | true | Opzegging |
-
-### 4. UI
-- `PartnerAbonnement.tsx`: sectie "Betaalmethode" + status-badge + IBAN ****1234 + activatie-knop
-- `MollieCheckoutDialog.tsx` (nieuw): pre-checkout met SEPA-tekst
-- `SepaMachtigingTekst.tsx` (nieuw): juridische tekst
-- `IncassoBevestiging.tsx` (nieuw): return-pagina `/abonnement/incasso-bevestiging`
-- `FactuurBeheer.tsx`: Mollie status-kolom + retry-knop
-- `AdminAbonnementen.tsx`: tab "Mollie monitoring"
-- `MollieMonitoring.tsx` (nieuw): superadmin events + slaagpercentage
-
-### 5. Juridisch
-- `Privacy.tsx`: sectie "Betaalverwerking via Mollie"
-- `Voorwaarden.tsx`: artikel "Betaling & Incasso" (storno €7,50, opschorting 14d, beëindiging 30d)
-
-### 6. Status-flow
-- `payment.paid` → factuur `betaald`, abonnement `actief`, `verloop_datum` verlengen
-- `payment.failed` → `gefaalde_incassos += 1`, mail
-- `>= 2` faal → `betalingsachterstand`
-- `>= 4` faal → `geblokkeerd`
-- `subscription.canceled` → `opgezegd`
-
-### 7. Backwards compatible
-- Handmatige bankoverschrijving blijft optie via `betaling_methode = 'handmatig'`
-
-## E. Bestanden
+### Bestanden
 | Bestand | Actie |
 |---|---|
-| `supabase/migrations/…_mollie_integratie.sql` | Nieuw |
-| `supabase/functions/mollie-create-customer-payment/index.ts` | Nieuw |
-| `supabase/functions/mollie-create-subscription/index.ts` | Nieuw |
-| `supabase/functions/mollie-webhook/index.ts` | Nieuw |
-| `supabase/functions/mollie-cancel-subscription/index.ts` | Nieuw |
-| `supabase/config.toml` | `mollie-webhook` → `verify_jwt = false` |
-| `src/components/abonnementen/PartnerAbonnement.tsx` | Uitbreiden |
-| `src/components/abonnementen/MollieCheckoutDialog.tsx` | Nieuw |
-| `src/components/abonnementen/SepaMachtigingTekst.tsx` | Nieuw |
-| `src/components/abonnementen/MollieMonitoring.tsx` | Nieuw |
-| `src/components/abonnementen/FactuurBeheer.tsx` | Status-kolom + retry |
-| `src/pages/AdminAbonnementen.tsx` | Tab toevoegen |
-| `src/pages/IncassoBevestiging.tsx` | Nieuw |
-| `src/App.tsx` | Route toevoegen |
-| `src/pages/website/Privacy.tsx` | Mollie-sectie |
-| `src/pages/website/Voorwaarden.tsx` | Artikel Betaling & Incasso |
+| `src/pages/FactuurNieuw.tsx` | Subtype-blok altijd tonen; conditie `offerteContext` verwijderen rond selector |
+| `src/components/financieel/HandmatigeVoorschotVelden.tsx` | **Nieuw** — termijn-nummer + totaal-projectbedrag inputs (max 80 regels) |
 
-## F. Niet wijzigen
-- Bestaande klantfactuur-flow (offerte → factuur)
-- `generate_financieel_documentnummer`
-- RLS-helpers
+## Deel B — Rolherstructurering + nieuwe rol "Backoffice"
 
-## G. Volgorde van uitvoering
-1. `MOLLIE_API_KEY` als secret
-2. Database-migratie
-3. 4 edge functions
-4. UI (`PartnerAbonnement` + dialog + return-pagina)
-5. Juridische teksten
-6. Superadmin monitoring
-7. Webhook-URL configureren in Mollie dashboard
-8. Test-flow met Mollie test-IBAN
+### Doel
+- Nieuwe rol `backoffice`: financieel + administratief beheer, géén organisatie-instellingen of gebruikersbeheer
+- `adviseur` en `installateur` zien alleen eigen werk
+- Centrale permissie-helpers consequent toegepast (vervangt verspreide rol-checks)
+- Sidebar per rol minimaliseren
 
-## H. Resultaat
-- 1-klik SEPA-incasso activatie
-- Automatische maand/jaar incasso
-- Retry + escalatie bij faal
-- Volledig juridisch sluitend
-- Audit-trail superadmin
-- Backwards compatible
+### Database-migratie
+```sql
+-- Enum-waarde toevoegen (al aanwezig in is_admin_tier, dus enum bestaat mogelijk al — controleren in migratie)
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'backoffice';
+```
+Daarna RLS-policies aanscherpen op modules waar adviseur/installateur nu te veel zien:
+- `leads`: adviseur ziet alleen `owner_user_id = auth.uid()`
+- `offertes`: adviseur ziet alleen eigen offertes
+- `schouwen`: adviseur ziet alleen eigen schouwen
+- `installaties`: installateur ziet alleen toegewezen installaties
+- `financiele_documenten`: alleen `is_admin_tier()` (incl. backoffice) — adviseur/installateur géén toegang
+- `partners` (instellingen) + `users` (gebruikersbeheer): alleen `is_partner_admin_or_higher()` — backoffice géén toegang
+
+### Frontend
+- `src/lib/permissions.ts` is al aanwezig en correct → in alle pagina's/componenten consequent gebruiken i.p.v. losse `rol === 'xxx'` checks
+- `AppSidebar.tsx`: menu-items conditioneel op rol:
+  - `backoffice`: Dashboard, Leads, Offertes, Opdrachten, Financieel, Klanten, Leveranciers, Producten, Helpdesk
+  - `adviseur`: Dashboard, eigen Leads, eigen Offertes, eigen Schouwen, Planning, Klanten
+  - `installateur`: Dashboard, eigen Installaties, Planning
+- `ProtectedRoute` op routes: financieel/leveranciers/producten met `allowedRoles={ADMIN_TIER}`, instellingen/gebruikers met `PARTNER_ADMIN_TIER`
+- `ROL_LABEL` toevoegen aan rol-selectors in `UitnodigDialog` + `PermissieToggles` zodat backoffice uitnodigbaar is
+
+### Bestanden (deel B)
+| Bestand | Actie |
+|---|---|
+| `supabase/migrations/…_backoffice_rol_en_rls.sql` | **Nieuw** — enum-waarde + RLS-policies per module |
+| `src/components/AppSidebar.tsx` | Menu per rol via `permissions.ts` helpers |
+| `src/components/ProtectedRoute.tsx` | Verifiëren dat het met nieuwe helpers werkt |
+| `src/App.tsx` | Routes met `allowedRoles` op financieel/instellingen/gebruikers |
+| `src/components/gebruikers/UitnodigDialog.tsx` | `backoffice` als optie + label uit `ROL_LABEL` |
+| `src/components/gebruikers/PermissieToggles.tsx` | `backoffice` toevoegen |
+| `src/pages/Leads.tsx`, `src/pages/Offertes.tsx`, `src/pages/Schouwen.tsx`, `src/pages/Installaties.tsx` | Vervangen losse rol-checks door `canSeeAllLeads()` etc. |
+
+## Volgorde van uitvoering
+1. **Deel A** eerst (klein, 2 bestanden) — sluit voorschotfacturen volledig af
+2. **Deel B** daarna:
+   - Database-migratie (enum + RLS)
+   - `AppSidebar` + `ProtectedRoute` + routes
+   - Rol-checks in pages vervangen door `permissions.ts` helpers
+   - `UitnodigDialog` + `PermissieToggles` uitbreiden
+
+## Niet wijzigen
+- Bestaande factuur/PDF/email-flow voor voorschotten (al klaar)
+- `permissions.ts` zelf (al correct)
+- Mollie-integratie blijft uitgesteld
+
+## Resultaat
+- Voorschot- en eindafrekeningfacturen ook zonder offerte aanmaakbaar met juiste nummering (`VS-YYYY-XXXX`)
+- Rol `backoffice` operationeel met administratieve toegang zonder organisatie-rechten
+- Adviseur/installateur zien strikt eigen werk (RLS + UI)
+- Sidebar toont per rol alleen wat relevant is
