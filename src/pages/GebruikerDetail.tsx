@@ -22,8 +22,9 @@ import type { Database } from "@/integrations/supabase/types";
 type AppRole = Database["public"]["Enums"]["app_role"];
 
 const ROL_LABELS: Record<string, string> = {
-  superadmin: "Platformbeheerder", partner_admin: "Beheerder", partner_staff: "Medewerker",
-  adviseur: "Energieadviseur", installateur: "Installateur", consument: "Consument", affiliate: "Affiliate",
+  superadmin: "Platformbeheerder", partner_admin: "Beheerder", backoffice: "Backoffice",
+  partner_staff: "Medewerker", adviseur: "Energieadviseur", installateur: "Installateur",
+  consument: "Consument", affiliate: "Affiliate",
 };
 
 const GebruikerDetail = () => {

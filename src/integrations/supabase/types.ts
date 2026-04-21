@@ -3364,6 +3364,13 @@ export type Database = {
             referencedRelation: "producten"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "partner_product_datasheets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
         ]
       }
       partner_product_teksten: {
@@ -3411,6 +3418,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_product_teksten_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
             referencedColumns: ["id"]
           },
         ]
@@ -4103,6 +4117,126 @@ export type Database = {
         }
         Relationships: []
       }
+      producten_publiek: {
+        Row: {
+          afbeelding_url: string | null
+          afbeeldingen: Json | null
+          artikelnummer: string | null
+          btw_percentage: number | null
+          categorie: Database["public"]["Enums"]["product_categorie"] | null
+          certificeringen: string | null
+          created_at: string | null
+          datasheet_type: string | null
+          datasheet_url: string | null
+          ean_code: string | null
+          eenheid: string | null
+          garantie_jaren: number | null
+          id: string | null
+          installatie_instructies: string | null
+          kostprijs: number | null
+          leverancier: string | null
+          levertijd: string | null
+          max_korting_euro: number | null
+          max_korting_percentage: number | null
+          merk: string | null
+          model: string | null
+          naam: string | null
+          offerte_tekst: string | null
+          omschrijving: string | null
+          onderhoud: string | null
+          partner_id: string | null
+          prijs_excl_btw: number | null
+          product_code: string | null
+          specs: Json | null
+          status: Database["public"]["Enums"]["product_status"] | null
+          updated_at: string | null
+          voorraad: number | null
+        }
+        Insert: {
+          afbeelding_url?: string | null
+          afbeeldingen?: Json | null
+          artikelnummer?: string | null
+          btw_percentage?: number | null
+          categorie?: Database["public"]["Enums"]["product_categorie"] | null
+          certificeringen?: string | null
+          created_at?: string | null
+          datasheet_type?: string | null
+          datasheet_url?: string | null
+          ean_code?: string | null
+          eenheid?: string | null
+          garantie_jaren?: number | null
+          id?: string | null
+          installatie_instructies?: string | null
+          kostprijs?: number | null
+          leverancier?: string | null
+          levertijd?: string | null
+          max_korting_euro?: number | null
+          max_korting_percentage?: number | null
+          merk?: string | null
+          model?: string | null
+          naam?: string | null
+          offerte_tekst?: string | null
+          omschrijving?: string | null
+          onderhoud?: string | null
+          partner_id?: string | null
+          prijs_excl_btw?: number | null
+          product_code?: string | null
+          specs?: Json | null
+          status?: Database["public"]["Enums"]["product_status"] | null
+          updated_at?: string | null
+          voorraad?: number | null
+        }
+        Update: {
+          afbeelding_url?: string | null
+          afbeeldingen?: Json | null
+          artikelnummer?: string | null
+          btw_percentage?: number | null
+          categorie?: Database["public"]["Enums"]["product_categorie"] | null
+          certificeringen?: string | null
+          created_at?: string | null
+          datasheet_type?: string | null
+          datasheet_url?: string | null
+          ean_code?: string | null
+          eenheid?: string | null
+          garantie_jaren?: number | null
+          id?: string | null
+          installatie_instructies?: string | null
+          kostprijs?: number | null
+          leverancier?: string | null
+          levertijd?: string | null
+          max_korting_euro?: number | null
+          max_korting_percentage?: number | null
+          merk?: string | null
+          model?: string | null
+          naam?: string | null
+          offerte_tekst?: string | null
+          omschrijving?: string | null
+          onderhoud?: string | null
+          partner_id?: string | null
+          prijs_excl_btw?: number | null
+          product_code?: string | null
+          specs?: Json | null
+          status?: Database["public"]["Enums"]["product_status"] | null
+          updated_at?: string | null
+          voorraad?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "producten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       web_widgets_public: {
         Row: {
           actief: boolean | null
@@ -4175,6 +4309,11 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       increment_kb_views: { Args: { _artikel_id: string }; Returns: undefined }
+      is_admin_tier: { Args: { _user_id: string }; Returns: boolean }
+      is_partner_admin_or_higher: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       log_audit_event: {
         Args: {
@@ -4220,6 +4359,7 @@ export type Database = {
         | "installateur"
         | "consument"
         | "affiliate"
+        | "backoffice"
       document_entity_type: "lead" | "schouw" | "offerte" | "installatie"
       document_type: "contract" | "foto" | "certificaat" | "rapport" | "overig"
       financieel_document_status:
@@ -4477,6 +4617,7 @@ export const Constants = {
         "installateur",
         "consument",
         "affiliate",
+        "backoffice",
       ],
       document_entity_type: ["lead", "schouw", "offerte", "installatie"],
       document_type: ["contract", "foto", "certificaat", "rapport", "overig"],

@@ -21,6 +21,7 @@ type AppRole = Database["public"]["Enums"]["app_role"];
 const rolLabels: Record<AppRole, string> = {
   superadmin: "Platformbeheerder",
   partner_admin: "Organisatiebeheerder",
+  backoffice: "Backoffice",
   partner_staff: "Medewerker",
   adviseur: "Energieadviseur",
   installateur: "Installateur",
@@ -31,6 +32,7 @@ const rolLabels: Record<AppRole, string> = {
 const rolColors: Record<AppRole, string> = {
   superadmin: "bg-primary/10 text-primary",
   partner_admin: "bg-accent text-accent-foreground",
+  backoffice: "bg-chart-2/10 text-chart-2",
   partner_staff: "bg-secondary text-secondary-foreground",
   adviseur: "bg-success-light text-success",
   installateur: "bg-warning-light text-warning-foreground",
@@ -210,8 +212,8 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
   };
 
   const availableRoles: AppRole[] = isSuperadmin
-    ? ["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]
-    : ["partner_staff", "adviseur", "installateur"];
+    ? ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]
+    : ["backoffice", "partner_staff", "adviseur", "installateur"];
 
   const filtered = users.filter(u =>
     `${u.voornaam} ${u.achternaam} ${u.email}`.toLowerCase().includes(search.toLowerCase())

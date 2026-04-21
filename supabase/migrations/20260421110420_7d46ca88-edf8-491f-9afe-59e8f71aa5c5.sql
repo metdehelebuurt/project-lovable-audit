@@ -1,0 +1,1 @@
+ALTER VIEW IF EXISTS public.producten_publiek SET (security_invoker = true);

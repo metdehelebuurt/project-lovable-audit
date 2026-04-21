@@ -81,8 +81,8 @@ serve(async (req) => {
         }
 
         // Role cap: partner_admin can only assign limited roles
-        const allowedRolesForPartnerAdmin = ["partner_staff", "adviseur", "installateur"];
-        const allowedRolesForSuperadmin = ["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "affiliate"];
+        const allowedRolesForPartnerAdmin = ["backoffice", "partner_staff", "adviseur", "installateur"];
+        const allowedRolesForSuperadmin = ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "affiliate"];
 
         if (callerProfile.rol === "partner_admin" && !allowedRolesForPartnerAdmin.includes(rol)) {
           return new Response(JSON.stringify({ error: "Rol niet toegestaan" }), {
