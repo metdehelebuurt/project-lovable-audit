@@ -408,6 +408,10 @@ export default function FactuurNieuw() {
               onModusChange={setTermijnModus}
               percentage={termijnPercentage}
               onPercentageChange={setTermijnPercentage}
+              vastBedrag={termijnVastBedrag}
+              onVastBedragChange={setTermijnVastBedrag}
+              omschrijving={termijnOmschrijving}
+              onOmschrijvingChange={setTermijnOmschrijving}
             />
           </div>
         )}
