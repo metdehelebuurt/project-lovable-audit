@@ -1,0 +1,1 @@
+ALTER TABLE public.kortingscodes ALTER COLUMN affiliate_id DROP NOT NULL;
