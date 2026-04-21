@@ -377,6 +377,43 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
         </div>
       )}
 
+      {/* === EINDAFREKENING — VERREKEN-OVERZICHT === */}
+      {isEindafrekening && verrekenRegels.length > 0 && showPricing(doc.type) && (
+        <div style={{
+          marginBottom: "10mm",
+          padding: "10px 16px",
+          backgroundColor: "#fefce8",
+          borderRadius: "6px",
+          border: "1px solid #fde68a",
+          fontSize: "8.5pt",
+        }}>
+          <div style={{ fontSize: "7pt", color: "#92400e", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px", fontWeight: 600 }}>
+            Verrekening voorschotten
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+            <span>Totaal werkzaamheden (excl. BTW)</span>
+            <span>{formatCurrency(totaalWerkExclBtw + verrekendExclBtw)}</span>
+          </div>
+          {verrekenRegels.map((r, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", color: "#6b7280" }}>
+              <span>− {r.omschrijving}</span>
+              <span>{formatCurrency(regelSubtotaal(r))}</span>
+            </div>
+          ))}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "6px 0 0",
+            marginTop: "4px",
+            borderTop: "1px solid #fde68a",
+            fontWeight: 700,
+          }}>
+            <span>Nog te betalen (incl. BTW)</span>
+            <span>{formatCurrency(doc.totaal_bedrag)}</span>
+          </div>
+        </div>
+      )}
+
       {/* === PAKBON ONDERTEKENING === */}
       {isPakbon(doc.type) && (
         <div style={{ marginTop: "15mm", marginBottom: "12mm" }}>
