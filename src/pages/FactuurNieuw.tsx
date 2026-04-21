@@ -15,6 +15,7 @@ import { ArrowLeft, Save, Send, UserPlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import FactuurContextCard from "@/components/financieel/FactuurContextCard";
 import TermijnFactuurSelector, { type TermijnModus } from "@/components/financieel/TermijnFactuurDialog";
+import HandmatigeVoorschotVelden, { type HandmatigSubtype } from "@/components/financieel/HandmatigeVoorschotVelden";
 import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
 
@@ -77,6 +78,12 @@ export default function FactuurNieuw() {
   const [bvCustom, setBvCustom] = useState("");
 
   const isVerkoopfactuur = docType === "verkoopfactuur";
+
+  // Handmatig subtype (zonder offerte-context)
+  const [handmatigSubtype, setHandmatigSubtype] = useState<HandmatigSubtype>("regulier");
+  const [handmatigTermijnVolg, setHandmatigTermijnVolg] = useState(1);
+  const [handmatigTermijnTotaal, setHandmatigTermijnTotaal] = useState(2);
+  const [handmatigProjectbedrag, setHandmatigProjectbedrag] = useState(0);
 
   const applyOfferteContext = (ctx: OfferteConversieResult) => {
     setOfferteContext(ctx);
@@ -321,11 +328,15 @@ export default function FactuurNieuw() {
       }
     } else {
       // INSERT nieuw document
-      const subtype = isVerkoopfactuur && offerteContext
-        ? (termijnModus === "voorschot_percentage" || termijnModus === "voorschot_bedrag"
-            ? "voorschot"
-            : termijnModus === "eindafrekening" ? "eindafrekening" : "regulier")
-        : "regulier";
+      let subtype: "regulier" | "voorschot" | "eindafrekening" = "regulier";
+      if (isVerkoopfactuur) {
+        if (offerteContext) {
+          if (termijnModus === "voorschot_percentage" || termijnModus === "voorschot_bedrag") subtype = "voorschot";
+          else if (termijnModus === "eindafrekening") subtype = "eindafrekening";
+        } else {
+          subtype = handmatigSubtype;
+        }
+      }
 
       const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
         _partner_id: profile.partner_id,
@@ -360,9 +371,18 @@ export default function FactuurNieuw() {
         created_by: user.id,
         eenmalige_relatie: eenmaligData,
         factuur_subtype: subtype,
-        termijn_volgnummer: subtype === "voorschot" && tCtx ? tCtx.volgnummer : null,
-        termijn_totaal: subtype === "voorschot" && tCtx ? tCtx.totaal : null,
-        termijn_percentage: subtype === "voorschot" && termijnModus === "voorschot_percentage" ? termijnPercentage : null,
+        termijn_volgnummer:
+          subtype === "voorschot"
+            ? (tCtx ? tCtx.volgnummer : handmatigTermijnVolg)
+            : null,
+        termijn_totaal:
+          subtype === "voorschot"
+            ? (tCtx ? tCtx.totaal : handmatigTermijnTotaal)
+            : null,
+        termijn_percentage:
+          subtype === "voorschot" && termijnModus === "voorschot_percentage" && offerteContext
+            ? termijnPercentage
+            : null,
         voorschot_van_facturen: voorschotIds,
       };
 
@@ -429,6 +449,21 @@ export default function FactuurNieuw() {
               onVastBedragChange={setTermijnVastBedrag}
               omschrijving={termijnOmschrijving}
               onOmschrijvingChange={setTermijnOmschrijving}
+            />
+          </div>
+        )}
+
+        {!offerteContext && isVerkoopfactuur && !isEdit && (
+          <div className="lg:col-span-3">
+            <HandmatigeVoorschotVelden
+              subtype={handmatigSubtype}
+              onSubtypeChange={setHandmatigSubtype}
+              termijnVolgnummer={handmatigTermijnVolg}
+              onTermijnVolgnummerChange={setHandmatigTermijnVolg}
+              termijnTotaal={handmatigTermijnTotaal}
+              onTermijnTotaalChange={setHandmatigTermijnTotaal}
+              totaalProjectbedrag={handmatigProjectbedrag}
+              onTotaalProjectbedragChange={setHandmatigProjectbedrag}
             />
           </div>
         )}
