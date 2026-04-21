@@ -17,6 +17,7 @@ import AuditTijdlijn from "@/components/gebruikers/AuditTijdlijn";
 import AfwezigheidEditor from "@/components/gebruikers/AfwezigheidEditor";
 import PermissieToggles from "@/components/gebruikers/PermissieToggles";
 import HandtekeningEditor from "@/components/gebruikers/HandtekeningEditor";
+import UserModuleOverrides from "@/components/gebruikers/UserModuleOverrides";
 import type { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -129,6 +130,7 @@ const GebruikerDetail = () => {
             <TabsList>
               <TabsTrigger value="profiel">Profiel</TabsTrigger>
               <TabsTrigger value="rol">Rol & rechten</TabsTrigger>
+              <TabsTrigger value="modules">Module-toegang</TabsTrigger>
               <TabsTrigger value="stats">Statistieken</TabsTrigger>
               <TabsTrigger value="audit">Activiteit</TabsTrigger>
               <TabsTrigger value="afwezigheid">Verlof</TabsTrigger>
@@ -195,6 +197,15 @@ const GebruikerDetail = () => {
 
             <TabsContent value="stats" className="mt-4">
               <GebruikerStats userId={user.id} partnerId={user.partner_id || ""} />
+            </TabsContent>
+
+            <TabsContent value="modules" className="mt-4">
+              <UserModuleOverrides
+                userId={user.id}
+                partnerId={user.partner_id || ""}
+                rol={user.rol}
+                canEdit={!!canManage}
+              />
             </TabsContent>
 
             <TabsContent value="audit" className="mt-4">
