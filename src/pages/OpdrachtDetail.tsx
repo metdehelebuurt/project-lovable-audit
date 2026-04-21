@@ -241,7 +241,17 @@ const OpdrachtDetail = () => {
             <Button variant="outline" onClick={() => setOrderPdfOpen(true)} className="gap-2">
               <FileText className="h-4 w-4" /> Orderbevestiging
             </Button>
-            <Button variant="outline" onClick={() => handleCreateFinancieel("verkoopfactuur")} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (opdracht.offerte_id) {
+                  navigate(`/financieel/nieuw/verkoopfactuur?offerte=${opdracht.offerte_id}&opdracht=${opdracht.id}`);
+                } else {
+                  handleCreateFinancieel("verkoopfactuur");
+                }
+              }}
+              className="gap-2"
+            >
               <Receipt className="h-4 w-4" /> Factuur aanmaken
             </Button>
             <Button variant="outline" onClick={() => handleCreateFinancieel("pakbon")} className="gap-2">

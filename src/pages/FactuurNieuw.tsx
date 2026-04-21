@@ -11,8 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Send } from "lucide-react";
+import { ArrowLeft, Save, Send, UserPlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import FactuurContextCard from "@/components/financieel/FactuurContextCard";
+import TermijnFactuurSelector, { type TermijnModus } from "@/components/financieel/TermijnFactuurDialog";
+import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
+import { buildFactuurFromOfferte, buildTermijnRegels, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -47,6 +51,7 @@ export default function FactuurNieuw() {
   const [saving, setSaving] = useState(false);
   const [bronOfferteId, setBronOfferteId] = useState<string | null>(null);
   const [bronDocId, setBronDocId] = useState<string | null>(null);
+  const [bronOpdrachtId, setBronOpdrachtId] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
 
   // Eenmalige relatie state
@@ -60,6 +65,92 @@ export default function FactuurNieuw() {
 
   // Existing documentnummer for editing
   const [existingDocNummer, setExistingDocNummer] = useState("");
+
+  // Offerte-context (voor context-card, dubbel-check, termijn)
+  const [offerteContext, setOfferteContext] = useState<OfferteConversieResult | null>(null);
+  const [resyncing, setResyncing] = useState(false);
+  const [termijnModus, setTermijnModus] = useState<TermijnModus>("volledig");
+  const [termijnPercentage, setTermijnPercentage] = useState(30);
+  const [betalingsvoorwaardenTekst, setBetalingsvoorwaardenTekst] = useState("");
+  const [bvCustom, setBvCustom] = useState("");
+
+  const isVerkoopfactuur = docType === "verkoopfactuur";
+
+  const applyOfferteContext = (ctx: OfferteConversieResult) => {
+    setOfferteContext(ctx);
+    setBronOfferteId(ctx.offerte.id);
+    const regelsToUse = buildTermijnRegels(ctx, termijnModus, termijnPercentage);
+    setRegels(regelsToUse.length > 0 ? regelsToUse : [{ ...emptyOfferteRegel }]);
+    setBetalingstermijn(ctx.betalingstermijn);
+    if (ctx.betalingsvoorwaardenTekst) setBetalingsvoorwaardenTekst(ctx.betalingsvoorwaardenTekst);
+    setNotities(ctx.notities);
+    if (ctx.installatieId) setInstallatieId(ctx.installatieId);
+    if (ctx.klantId) {
+      setKlantId(ctx.klantId);
+      setUseEenmalig(false);
+    } else if (ctx.eenmalig) {
+      setUseEenmalig(true);
+      setKlantId("");
+      setEenmaligNaam(ctx.eenmalig.naam);
+      setEenmaligEmail(ctx.eenmalig.email || "");
+      setEenmaligAdres(ctx.eenmalig.adres || "");
+      setEenmaligPostcode(ctx.eenmalig.postcode || "");
+      setEenmaligPlaats(ctx.eenmalig.plaats || "");
+      setEenmaligTelefoon(ctx.eenmalig.telefoon || "");
+    }
+  };
+
+  const handleResync = async () => {
+    if (!offerteContext || !profile?.partner_id) return;
+    setResyncing(true);
+    try {
+      const ctx = await buildFactuurFromOfferte(offerteContext.offerte.id, profile.partner_id);
+      applyOfferteContext(ctx);
+      toast({ title: "Gesynchroniseerd", description: "Gegevens opnieuw opgehaald uit de offerte" });
+    } catch (e: any) {
+      toast({ title: "Sync mislukt", description: e.message, variant: "destructive" });
+    } finally {
+      setResyncing(false);
+    }
+  };
+
+  // Termijnmodus wijzigt → regels herbouwen vanuit context
+  useEffect(() => {
+    if (!offerteContext) return;
+    const newRegels = buildTermijnRegels(offerteContext, termijnModus, termijnPercentage);
+    setRegels(newRegels.length > 0 ? newRegels : [{ ...emptyOfferteRegel }]);
+  }, [termijnModus, termijnPercentage, offerteContext]);
+
+  const createKlantFromEenmalig = async () => {
+    if (!profile?.partner_id || !eenmaligNaam.trim()) return;
+    const parts = eenmaligNaam.trim().split(/\s+/);
+    const voornaam = parts[0] || "Onbekend";
+    const achternaam = parts.slice(1).join(" ") || "-";
+    const { data, error } = await supabase
+      .from("klanten")
+      .insert({
+        partner_id: profile.partner_id,
+        voornaam,
+        achternaam,
+        bedrijfsnaam: parts.length === 1 ? eenmaligNaam.trim() : null,
+        email: eenmaligEmail || null,
+        telefoon: eenmaligTelefoon || null,
+        adres: eenmaligAdres || null,
+        postcode: eenmaligPostcode || null,
+        plaats: eenmaligPlaats || null,
+        lead_id: offerteContext?.offerte?.lead_id || null,
+      } as any)
+      .select("id")
+      .single();
+    if (error) {
+      toast({ title: "Aanmaken mislukt", description: error.message, variant: "destructive" });
+      return;
+    }
+    setKlantId(data.id);
+    setUseEenmalig(false);
+    setKlanten(prev => [...prev, { id: data.id, voornaam, achternaam, bedrijfsnaam: parts.length === 1 ? eenmaligNaam.trim() : null }]);
+    toast({ title: "Klant aangemaakt", description: "De klant is nu gekoppeld aan deze factuur" });
+  };
 
   // Load klanten/leveranciers/installaties
   useEffect(() => {
@@ -137,39 +228,29 @@ export default function FactuurNieuw() {
           setNotities(`Creditnota bij ${data.documentnummer}`);
           setPrefilled(true);
         });
-    } else if (offerteId) {
-      setBronOfferteId(offerteId);
-      supabase
-        .from("offertes")
-        .select("*")
-        .eq("id", offerteId)
-        .single()
-        .then(({ data: offerte }) => {
-          if (!offerte) return;
-          const offerteRegels = (offerte.regels || []) as any[];
-          const mapped: OfferteRegel[] = offerteRegels.map((r: any) => ({
-            omschrijving: r.omschrijving || "",
-            offerte_tekst: r.offerte_tekst || "",
-            aantal: r.aantal || 1,
-            prijs_per_stuk: r.prijs_per_stuk || 0,
-            btw_percentage: r.btw_percentage ?? 21,
-            korting_percentage: r.korting_percentage || 0,
-            korting_bedrag: r.korting_bedrag || 0,
-            korting_type: r.korting_type || "percentage",
-          }));
-          setRegels(mapped.length > 0 ? mapped : [{ ...emptyOfferteRegel }]);
-          setNotities(`Factuur bij offerte ${offerte.offertenummer}`);
-          if (profile?.partner_id && offerte.klant_email) {
-            supabase
-              .from("klanten")
-              .select("id")
-              .eq("partner_id", profile.partner_id)
-              .eq("email", offerte.klant_email)
-              .limit(1)
-              .then(({ data: klantData }) => {
-                if (klantData && klantData.length > 0) setKlantId(klantData[0].id);
-              });
+    } else if (offerteId && profile?.partner_id) {
+      const opdrachtParam = searchParams.get("opdracht");
+      if (opdrachtParam) setBronOpdrachtId(opdrachtParam);
+      buildFactuurFromOfferte(offerteId, profile.partner_id)
+        .then((ctx) => {
+          applyOfferteContext(ctx);
+          if (!opdrachtParam && ctx.opdrachtId) setBronOpdrachtId(ctx.opdrachtId);
+          setPrefilled(true);
+          if (ctx.bestaandeFacturen.filter(f => f.status !== "concept").length > 0) {
+            toast({
+              title: "Let op: bestaande facturen",
+              description: `Er zijn al ${ctx.bestaandeFacturen.length} factuur(en) voor deze offerte. Kies hieronder een termijnfactuur of bekijk de bestaande.`,
+            });
           }
+          if (ctx.resolutionMethod === "eenmalig") {
+            toast({
+              title: "Klant niet gevonden",
+              description: "De klantgegevens zijn automatisch ingevuld als eenmalige relatie.",
+            });
+          }
+        })
+        .catch((e) => {
+          toast({ title: "Kon offerte niet laden", description: e.message, variant: "destructive" });
           setPrefilled(true);
         });
     }
@@ -215,7 +296,7 @@ export default function FactuurNieuw() {
       const updates: any = {
         klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
         leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
-        installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
+        installatie_id: installatieId || null,
         regels: regels as any,
         subtotaal,
         btw_bedrag: btwBedrag,
@@ -251,7 +332,8 @@ export default function FactuurNieuw() {
         klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
         leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
         offerte_id: bronOfferteId || null,
-        installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
+        opdracht_id: bronOpdrachtId || null,
+        installatie_id: installatieId || null,
         regels: regels as any,
         subtotaal,
         btw_bedrag: btwBedrag,
@@ -306,6 +388,28 @@ export default function FactuurNieuw() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {offerteContext && (
+          <div className="lg:col-span-3">
+            <FactuurContextCard
+              context={offerteContext}
+              onResync={handleResync}
+              syncing={resyncing}
+            />
+          </div>
+        )}
+
+        {offerteContext && isVerkoopfactuur && (
+          <div className="lg:col-span-3">
+            <TermijnFactuurSelector
+              context={offerteContext}
+              modus={termijnModus}
+              onModusChange={setTermijnModus}
+              percentage={termijnPercentage}
+              onPercentageChange={setTermijnPercentage}
+            />
+          </div>
+        )}
+
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg">Gegevens</CardTitle>
@@ -372,6 +476,24 @@ export default function FactuurNieuw() {
                   </div>
                 ) : (
                   <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
+                    {offerteContext?.resolutionMethod === "eenmalig" && (
+                      <div className="rounded-lg bg-primary/5 p-2 text-xs space-y-2">
+                        <p className="text-muted-foreground">
+                          Klantgegevens automatisch overgenomen uit de offerte. Je kunt deze direct gebruiken of de klant
+                          permanent toevoegen aan je CRM.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-pill gap-1 h-7 text-xs"
+                          onClick={createKlantFromEenmalig}
+                          disabled={!eenmaligNaam.trim()}
+                        >
+                          <UserPlus className="h-3 w-3" /> Maak klant aan in CRM
+                        </Button>
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <Label className="text-xs">Naam *</Label>
                       <Input value={eenmaligNaam} onChange={(e) => setEenmaligNaam(e.target.value)} placeholder="Naam of bedrijfsnaam" />
@@ -426,16 +548,43 @@ export default function FactuurNieuw() {
             )}
 
             {docType !== "pakbon" && (
-              <div className="space-y-2">
-                <Label>Betalingstermijn (dagen)</Label>
-                <Select value={String(betalingstermijn)} onValueChange={(v) => setBetalingstermijn(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="14">14 dagen</SelectItem>
-                    <SelectItem value="30">30 dagen</SelectItem>
-                    <SelectItem value="60">60 dagen</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Betalingsvoorwaarden</Label>
+                  <BetalingsvoorwaardenSelect
+                    partnerId={profile?.partner_id}
+                    value={betalingsvoorwaardenTekst}
+                    onChange={(v) => {
+                      setBetalingsvoorwaardenTekst(v);
+                      if (v && v !== "__custom__") {
+                        const m = v.match(/(\d{1,3})/);
+                        if (m) setBetalingstermijn(parseInt(m[1], 10));
+                      }
+                    }}
+                    customValue={bvCustom}
+                    onCustomChange={(v) => {
+                      setBvCustom(v);
+                      const m = v.match(/(\d{1,3})/);
+                      if (m) setBetalingstermijn(parseInt(m[1], 10));
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Betalingstermijn (dagen)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={365}
+                      value={betalingstermijn}
+                      onChange={(e) => setBetalingstermijn(Math.max(0, Number(e.target.value) || 0))}
+                      className="w-24"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Vervaldatum: <strong>{new Date(Date.now() + betalingstermijn * 86400000).toLocaleDateString("nl-NL")}</strong>
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
 
