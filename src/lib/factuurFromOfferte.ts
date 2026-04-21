@@ -263,53 +263,137 @@ export async function buildFactuurFromOfferte(
   };
 }
 
-/** Bouw een aanbetaling/restant regel-set vanuit een originele offerte-conversie. */
+export type TermijnModus =
+  | "volledig"
+  | "voorschot_percentage"
+  | "voorschot_bedrag"
+  | "eindafrekening";
+
+/** Groepeer offerte-regels per BTW-tarief en geef per tarief het netto subtotaal. */
+function groupBtw(regels: OfferteRegel[]): Array<{ pct: number; subtotaal: number }> {
+  const map = new Map<number, number>();
+  for (const r of regels) {
+    const pct = r.btw_percentage ?? 21;
+    const bruto = r.aantal * r.prijs_per_stuk;
+    const sub = r.korting_type === "bedrag"
+      ? bruto - (r.korting_bedrag || 0)
+      : bruto * (1 - (r.korting_percentage || 0) / 100);
+    map.set(pct, (map.get(pct) || 0) + sub);
+  }
+  return Array.from(map.entries())
+    .map(([pct, subtotaal]) => ({ pct, subtotaal }))
+    .sort((a, b) => b.pct - a.pct);
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * Bouw factuurregels voor een termijn:
+ *  - "volledig"            → originele offerteregels
+ *  - "voorschot_percentage"→ per BTW-tarief één voorschotregel met X% van die grondslag
+ *  - "voorschot_bedrag"    → één regel met vast bedrag (gebruikt dominant BTW-tarief)
+ *  - "eindafrekening"      → originele regels + per BTW-tarief een negatieve verrekenregel
+ *                            voor het reeds-gefactureerde voorschotbedrag
+ */
 export function buildTermijnRegels(
   origineel: OfferteConversieResult,
-  modus: "volledig" | "aanbetaling" | "restant",
-  percentage = 30
+  modus: TermijnModus,
+  percentage = 30,
+  vastBedrag = 0,
+  omschrijvingPrefix?: string,
 ): OfferteRegel[] {
   if (modus === "volledig") return origineel.regels;
 
   const offerteNr = origineel.offerte.offertenummer || "";
-  const totaalSubtotaal = origineel.regels.reduce((s, r) => {
-    const b = r.aantal * r.prijs_per_stuk;
-    return s + (r.korting_type === "bedrag" ? b - (r.korting_bedrag || 0) : b * (1 - (r.korting_percentage || 0) / 100));
-  }, 0);
+  const groepen = groupBtw(origineel.regels);
+  const prefix = omschrijvingPrefix?.trim() || "Voorschot";
 
-  // Use een gewogen gemiddeld BTW% (aanname: alle regels zelfde tarief — anders dominant)
-  const btwTeller = origineel.regels.reduce((s, r) => {
-    const b = r.aantal * r.prijs_per_stuk;
-    const sub = r.korting_type === "bedrag" ? b - (r.korting_bedrag || 0) : b * (1 - (r.korting_percentage || 0) / 100);
-    return s + sub * (r.btw_percentage || 21);
-  }, 0);
-  const btwGem = totaalSubtotaal > 0 ? Math.round(btwTeller / totaalSubtotaal) : 21;
+  if (modus === "voorschot_percentage") {
+    const factor = Math.max(0, Math.min(100, percentage)) / 100;
+    return groepen
+      .filter((g) => g.subtotaal > 0)
+      .map((g) => ({
+        omschrijving: `${prefix} ${percentage}% offerte ${offerteNr} (BTW ${g.pct}%)`,
+        offerte_tekst: "",
+        aantal: 1,
+        prijs_per_stuk: round2(g.subtotaal * factor),
+        btw_percentage: g.pct,
+        korting_percentage: 0,
+        korting_bedrag: 0,
+        korting_type: "percentage",
+      }));
+  }
 
-  if (modus === "aanbetaling") {
-    const bedrag = Math.round(totaalSubtotaal * (percentage / 100) * 100) / 100;
+  if (modus === "voorschot_bedrag") {
+    const dominantPct = groepen[0]?.pct ?? 21;
     return [{
-      omschrijving: `Aanbetaling ${percentage}% offerte ${offerteNr}`,
+      omschrijving: `${prefix} offerte ${offerteNr}`,
       offerte_tekst: "",
       aantal: 1,
-      prijs_per_stuk: bedrag,
-      btw_percentage: btwGem,
+      prijs_per_stuk: round2(vastBedrag),
+      btw_percentage: dominantPct,
       korting_percentage: 0,
       korting_bedrag: 0,
       korting_type: "percentage",
     }];
   }
 
-  // Restant: openstaand bedrag (excl. BTW): totaalSubtotaal - reeds gefactureerd excl btw (benadering)
-  const reedsExcl = origineel.reedsGefactureerd / (1 + btwGem / 100);
-  const restExcl = Math.max(0, totaalSubtotaal - reedsExcl);
-  return [{
-    omschrijving: `Restant offerte ${offerteNr}`,
-    offerte_tekst: "",
-    aantal: 1,
-    prijs_per_stuk: Math.round(restExcl * 100) / 100,
-    btw_percentage: btwGem,
-    korting_percentage: 0,
-    korting_bedrag: 0,
-    korting_type: "percentage",
-  }];
+  // Eindafrekening: originele regels + per-BTW negatieve verrekening
+  const verrekenRegels: OfferteRegel[] = [];
+  // Per BTW-tarief: som van voorschot-subtotalen (excl. BTW)
+  const voorschotPerTarief = new Map<number, { subtotaal: number; nummers: string[] }>();
+
+  for (const v of origineel.voorschotten) {
+    // Splits op basis van dezelfde verhoudingen als de offerte (eenvoudig:
+    // gebruik dominant tarief van de voorschotfactuur indien bekend, anders splitsen pro rata)
+    const totaalExcl = (v.subtotaal ?? 0) || (v.totaal_bedrag - (v.btw_bedrag ?? 0));
+    if (totaalExcl <= 0) continue;
+
+    // Verdeel pro rata over de offerte-BTW-verdeling
+    const totaalGroepen = groepen.reduce((s, g) => s + g.subtotaal, 0);
+    if (totaalGroepen <= 0) continue;
+
+    for (const g of groepen) {
+      const aandeel = (g.subtotaal / totaalGroepen) * totaalExcl;
+      if (aandeel <= 0) continue;
+      const cur = voorschotPerTarief.get(g.pct) || { subtotaal: 0, nummers: [] };
+      cur.subtotaal += aandeel;
+      if (!cur.nummers.includes(v.documentnummer)) cur.nummers.push(v.documentnummer);
+      voorschotPerTarief.set(g.pct, cur);
+    }
+  }
+
+  for (const [pct, info] of voorschotPerTarief.entries()) {
+    if (info.subtotaal <= 0) continue;
+    verrekenRegels.push({
+      omschrijving: `Reeds gefactureerd voorschot (${info.nummers.join(", ")}) — BTW ${pct}%`,
+      offerte_tekst: "",
+      aantal: 1,
+      prijs_per_stuk: -round2(info.subtotaal),
+      btw_percentage: pct,
+      korting_percentage: 0,
+      korting_bedrag: 0,
+      korting_type: "percentage",
+    });
+  }
+
+  return [...origineel.regels, ...verrekenRegels];
+}
+
+/** Lees alle bestaande termijnen + bepaal volgnummer en totaal voor een nieuwe termijn. */
+export function getTermijnContext(ctx: OfferteConversieResult): {
+  volgnummer: number;
+  totaal: number;
+  bestaandeVoorschotten: number;
+} {
+  const voorschotten = ctx.voorschotten.length;
+  // Heuristiek: minimaal 2 (huidige + restant). Meer als al voorschotten bestaan.
+  const totaal = Math.max(2, voorschotten + 2);
+  return {
+    volgnummer: voorschotten + 1,
+    totaal,
+    bestaandeVoorschotten: voorschotten,
+  };
 }
