@@ -137,28 +137,28 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin"]}><Partners /></ProtectedRoute>
               } />
               <Route path="/adviseurs" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Adviseurs /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><Adviseurs /></ProtectedRoute>
               } />
               <Route path="/gebruikers" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><Gebruikers /></ProtectedRoute>
               } />
               <Route path="/leads" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Leads /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><Leads /></ProtectedRoute>
               } />
               <Route path="/leads/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><LeadDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><LeadDetail /></ProtectedRoute>
               } />
               <Route path="/klanten" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Klanten /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><Klanten /></ProtectedRoute>
               } />
               <Route path="/klanten/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><KlantDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><KlantDetail /></ProtectedRoute>
               } />
               <Route path="/producten" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Producten /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Producten /></ProtectedRoute>
               } />
               <Route path="/producten/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><ProductDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><ProductDetail /></ProtectedRoute>
               } />
               <Route path="/schouwen" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><Schouwen /></ProtectedRoute>
