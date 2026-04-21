@@ -299,7 +299,8 @@ const OfferteDetail = () => {
           </Button>
           {offerte.status === "geaccepteerd" && canEdit && (
             <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => navigate(`/financieel/nieuw/verkoopfactuur?offerte=${offerte.id}`)}>
-              <Receipt className="h-4 w-4" /> Factuur aanmaken
+              <Receipt className="h-4 w-4" />
+              {gekoppeldeFacturen.filter((f: any) => f.status !== "concept").length > 0 ? "Termijnfactuur aanmaken" : "Factuur aanmaken"}
             </Button>
           )}
           {offerte.status === "concept" && canEdit && (
