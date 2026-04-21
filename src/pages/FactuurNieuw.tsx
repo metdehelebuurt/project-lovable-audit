@@ -113,6 +113,44 @@ export default function FactuurNieuw() {
     }
   };
 
+  // Termijnmodus wijzigt → regels herbouwen vanuit context
+  useEffect(() => {
+    if (!offerteContext) return;
+    const newRegels = buildTermijnRegels(offerteContext, termijnModus, termijnPercentage);
+    setRegels(newRegels.length > 0 ? newRegels : [{ ...emptyOfferteRegel }]);
+  }, [termijnModus, termijnPercentage, offerteContext]);
+
+  const createKlantFromEenmalig = async () => {
+    if (!profile?.partner_id || !eenmaligNaam.trim()) return;
+    const parts = eenmaligNaam.trim().split(/\s+/);
+    const voornaam = parts[0] || "Onbekend";
+    const achternaam = parts.slice(1).join(" ") || "-";
+    const { data, error } = await supabase
+      .from("klanten")
+      .insert({
+        partner_id: profile.partner_id,
+        voornaam,
+        achternaam,
+        bedrijfsnaam: parts.length === 1 ? eenmaligNaam.trim() : null,
+        email: eenmaligEmail || null,
+        telefoon: eenmaligTelefoon || null,
+        adres: eenmaligAdres || null,
+        postcode: eenmaligPostcode || null,
+        plaats: eenmaligPlaats || null,
+        lead_id: offerteContext?.offerte?.lead_id || null,
+      } as any)
+      .select("id")
+      .single();
+    if (error) {
+      toast({ title: "Aanmaken mislukt", description: error.message, variant: "destructive" });
+      return;
+    }
+    setKlantId(data.id);
+    setUseEenmalig(false);
+    setKlanten(prev => [...prev, { id: data.id, voornaam, achternaam, bedrijfsnaam: parts.length === 1 ? eenmaligNaam.trim() : null }]);
+    toast({ title: "Klant aangemaakt", description: "De klant is nu gekoppeld aan deze factuur" });
+  };
+
   // Load klanten/leveranciers/installaties
   useEffect(() => {
     if (!profile?.partner_id) return;
