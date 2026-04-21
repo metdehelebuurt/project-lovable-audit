@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/Logo";
+import Logo from "@/components/Logo";
 import { useOnboardingState } from "@/components/onboarding/useOnboardingState";
 import StepWelkom from "@/components/onboarding/StepWelkom";
 import StepProfiel from "@/components/onboarding/StepProfiel";
