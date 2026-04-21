@@ -85,15 +85,29 @@ export function useEffectieveModules(): EffectieveModulesResult {
     queryKey: ["effectieve-modules", userId, partnerId],
     enabled: !!userId,
     queryFn: async () => {
-      const [overridesRes, matrixRes] = await Promise.all([
+      const [overridesRes, matrixRes, planRes] = await Promise.all([
         supabase.from("module_user_override").select("module_key, toegestaan").eq("user_id", userId!),
         partnerId
           ? supabase.from("module_rol_toegang").select("module_key, rol, toegestaan").eq("partner_id", partnerId)
           : Promise.resolve({ data: [], error: null }),
+        partnerId
+          ? supabase
+              .from("abonnementen")
+              .select("status, abonnement_plannen(modules)")
+              .eq("partner_id", partnerId)
+              .in("status", ["actief", "trial"])
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
+      const planModules = Array.isArray((planRes.data as { abonnement_plannen?: { modules?: unknown } } | null)?.abonnement_plannen?.modules)
+        ? ((planRes.data as { abonnement_plannen: { modules: string[] } }).abonnement_plannen.modules)
+        : null;
       return {
         overrides: (overridesRes.data ?? []) as Array<{ module_key: string; toegestaan: boolean }>,
         matrix: (matrixRes.data ?? []) as Array<{ module_key: string; rol: AppRole; toegestaan: boolean }>,
+        planModules,
       };
     },
   });
@@ -108,10 +122,16 @@ export function useEffectieveModules(): EffectieveModulesResult {
   (data?.overrides ?? []).forEach(o => overrideMap.set(o.module_key, o.toegestaan));
   const matrixMap = new Map<string, boolean>();
   (data?.matrix ?? []).filter(m => m.rol === rol).forEach(m => matrixMap.set(m.module_key, m.toegestaan));
+  const planModuleSet = data?.planModules ? new Set(data.planModules) : null;
 
   for (const mod of MODULES) {
     if (overrideMap.has(mod.key)) {
       if (overrideMap.get(mod.key)) moduleSet.add(mod.key);
+      continue;
+    }
+    // Plan-restrictie: configurabele modules die niet in het plan zitten worden geblokkeerd.
+    // Niet-configurabele (Beheer) modules blijven beschikbaar voor de juiste rol.
+    if (mod.configurable && planModuleSet && !planModuleSet.has(mod.key)) {
       continue;
     }
     if (mod.configurable && matrixMap.has(mod.key)) {
