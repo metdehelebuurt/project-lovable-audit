@@ -328,11 +328,15 @@ export default function FactuurNieuw() {
       }
     } else {
       // INSERT nieuw document
-      const subtype = isVerkoopfactuur && offerteContext
-        ? (termijnModus === "voorschot_percentage" || termijnModus === "voorschot_bedrag"
-            ? "voorschot"
-            : termijnModus === "eindafrekening" ? "eindafrekening" : "regulier")
-        : "regulier";
+      let subtype: "regulier" | "voorschot" | "eindafrekening" = "regulier";
+      if (isVerkoopfactuur) {
+        if (offerteContext) {
+          if (termijnModus === "voorschot_percentage" || termijnModus === "voorschot_bedrag") subtype = "voorschot";
+          else if (termijnModus === "eindafrekening") subtype = "eindafrekening";
+        } else {
+          subtype = handmatigSubtype;
+        }
+      }
 
       const { data: numData } = await supabase.rpc("generate_financieel_documentnummer", {
         _partner_id: profile.partner_id,
@@ -367,9 +371,18 @@ export default function FactuurNieuw() {
         created_by: user.id,
         eenmalige_relatie: eenmaligData,
         factuur_subtype: subtype,
-        termijn_volgnummer: subtype === "voorschot" && tCtx ? tCtx.volgnummer : null,
-        termijn_totaal: subtype === "voorschot" && tCtx ? tCtx.totaal : null,
-        termijn_percentage: subtype === "voorschot" && termijnModus === "voorschot_percentage" ? termijnPercentage : null,
+        termijn_volgnummer:
+          subtype === "voorschot"
+            ? (tCtx ? tCtx.volgnummer : handmatigTermijnVolg)
+            : null,
+        termijn_totaal:
+          subtype === "voorschot"
+            ? (tCtx ? tCtx.totaal : handmatigTermijnTotaal)
+            : null,
+        termijn_percentage:
+          subtype === "voorschot" && termijnModus === "voorschot_percentage" && offerteContext
+            ? termijnPercentage
+            : null,
         voorschot_van_facturen: voorschotIds,
       };
 
