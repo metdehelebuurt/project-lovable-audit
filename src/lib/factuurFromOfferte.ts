@@ -16,6 +16,11 @@ export interface BestaandeFactuur {
   totaal_bedrag: number;
   status: string;
   factuurdatum: string;
+  factuur_subtype?: "regulier" | "voorschot" | "eindafrekening";
+  termijn_volgnummer?: number | null;
+  termijn_percentage?: number | null;
+  subtotaal?: number;
+  btw_bedrag?: number;
 }
 
 export interface OfferteConversieResult {
@@ -47,6 +52,8 @@ export interface OfferteConversieResult {
   reedsGefactureerd: number;
   /** Restbedrag dat nog open staat */
   openstaand: number;
+  /** Voorschotfacturen (subtype='voorschot') klaar voor verrekening */
+  voorschotten: BestaandeFactuur[];
 }
 
 /** Parse betalingsvoorwaarden tekst zoals "30 dagen netto" of "Binnen 14 dagen" naar dagen. */
