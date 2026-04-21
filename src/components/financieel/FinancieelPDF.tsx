@@ -126,6 +126,20 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
   const hasMultipleBtwRates = btwOverzicht.length > 1;
   const hasZeroBtw = btwOverzicht.some((b) => b.percentage === 0);
 
+  // Eindafrekening: splits werk vs verrekende voorschotten voor het verreken-overzicht.
+  const isEindafrekening = doc.factuur_subtype === "eindafrekening";
+  const { positief: werkRegels, negatief: verrekenRegels } = isEindafrekening
+    ? splitVerrekening(regels)
+    : { positief: regels, negatief: [] as OfferteRegel[] };
+  const totaalWerkExclBtw = werkRegels.reduce((s, r) => s + regelSubtotaal(r), 0);
+  const verrekendExclBtw = Math.abs(verrekenRegels.reduce((s, r) => s + regelSubtotaal(r), 0));
+  const verrekendInclBtw = Math.abs(
+    verrekenRegels.reduce((s, r) => {
+      const sub = regelSubtotaal(r);
+      return s + sub * (1 + (r.btw_percentage ?? 21) / 100);
+    }, 0),
+  );
+
   return (
     <div
       className="bg-white text-black font-sans print:p-0 relative"
