@@ -2479,7 +2479,7 @@ export type Database = {
         Row: {
           aantal_gebruikt: number
           actief: boolean
-          affiliate_id: string
+          affiliate_id: string | null
           code: string
           created_at: string
           geldig_tot: string | null
@@ -2491,7 +2491,7 @@ export type Database = {
         Insert: {
           aantal_gebruikt?: number
           actief?: boolean
-          affiliate_id: string
+          affiliate_id?: string | null
           code: string
           created_at?: string
           geldig_tot?: string | null
@@ -2503,7 +2503,7 @@ export type Database = {
         Update: {
           aantal_gebruikt?: number
           actief?: boolean
-          affiliate_id?: string
+          affiliate_id?: string | null
           code?: string
           created_at?: string
           geldig_tot?: string | null
