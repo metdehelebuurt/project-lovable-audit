@@ -383,6 +383,28 @@ export default function FactuurNieuw() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {offerteContext && (
+          <div className="lg:col-span-3">
+            <FactuurContextCard
+              context={offerteContext}
+              onResync={handleResync}
+              syncing={resyncing}
+            />
+          </div>
+        )}
+
+        {offerteContext && isVerkoopfactuur && (
+          <div className="lg:col-span-3">
+            <TermijnFactuurSelector
+              context={offerteContext}
+              modus={termijnModus}
+              onModusChange={setTermijnModus}
+              percentage={termijnPercentage}
+              onPercentageChange={setTermijnPercentage}
+            />
+          </div>
+        )}
+
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg">Gegevens</CardTitle>
