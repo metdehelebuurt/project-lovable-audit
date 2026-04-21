@@ -161,49 +161,49 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><ProductDetail /></ProtectedRoute>
               } />
               <Route path="/schouwen" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><Schouwen /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]}><Schouwen /></ProtectedRoute>
               } />
               <Route path="/schouwen/nieuw" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><SchouwNieuw /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><SchouwNieuw /></ProtectedRoute>
               } />
               <Route path="/schouwen/snelstart" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><SchouwSnelstart /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><SchouwSnelstart /></ProtectedRoute>
               } />
               <Route path="/schouwen/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><SchouwDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]}><SchouwDetail /></ProtectedRoute>
               } />
               <Route path="/schouwen/:id/uitvoeren" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><SchouwUitvoeren /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><SchouwUitvoeren /></ProtectedRoute>
               } />
               <Route path="/offertes" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"]}><Offertes /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "consument", "affiliate"]}><Offertes /></ProtectedRoute>
               } />
               <Route path="/offertes/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument", "affiliate"]}><OfferteDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "consument", "affiliate"]}><OfferteDetail /></ProtectedRoute>
               } />
               <Route path="/opdrachten" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Opdrachten /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Opdrachten /></ProtectedRoute>
               } />
               <Route path="/opdrachten/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><OpdrachtDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><OpdrachtDetail /></ProtectedRoute>
               } />
               <Route path="/installaties" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "installateur"]}><Installaties /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Installaties /></ProtectedRoute>
               } />
               <Route path="/planning" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur", "consument"]}><Planning /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]}><Planning /></ProtectedRoute>
               } />
               <Route path="/planning/nieuw" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><AfspraakNieuw /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><AfspraakNieuw /></ProtectedRoute>
               } />
               <Route path="/analytics" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Analytics /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice"]}><Analytics /></ProtectedRoute>
               } />
               <Route path="/berichten" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"]}><Berichten /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]}><Berichten /></ProtectedRoute>
               } />
               <Route path="/documenten" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Documenten /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Documenten /></ProtectedRoute>
               } />
               <Route path="/energieadvies" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Energieadvies /></ProtectedRoute>
@@ -243,37 +243,37 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin"]}><AdminAbonnementen /></ProtectedRoute>
               } />
               <Route path="/financieel" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><Financieel /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice"]}><Financieel /></ProtectedRoute>
               } />
               <Route path="/financieel/nieuw/:type" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><FactuurNieuw /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice"]}><FactuurNieuw /></ProtectedRoute>
               } />
               <Route path="/financieel/bewerken/:type/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><FactuurNieuw /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice"]}><FactuurNieuw /></ProtectedRoute>
               } />
               <Route path="/financieel/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><FactuurDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice"]}><FactuurDetail /></ProtectedRoute>
               } />
               <Route path="/leveranciers" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff"]}><Leveranciers /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice"]}><Leveranciers /></ProtectedRoute>
               } />
               <Route path="/helpdesk" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><HelpdeskDashboard /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><HelpdeskDashboard /></ProtectedRoute>
               } />
               <Route path="/helpdesk/tickets" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><TicketsOverzicht /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><TicketsOverzicht /></ProtectedRoute>
               } />
               <Route path="/helpdesk/tickets/nieuw" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><TicketNieuw /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><TicketNieuw /></ProtectedRoute>
               } />
               <Route path="/helpdesk/tickets/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><TicketDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><TicketDetail /></ProtectedRoute>
               } />
               <Route path="/helpdesk/kennisbank" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Kennisbank /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Kennisbank /></ProtectedRoute>
               } />
               <Route path="/helpdesk/kennisbank/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><KennisArtikel /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><KennisArtikel /></ProtectedRoute>
               } />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
