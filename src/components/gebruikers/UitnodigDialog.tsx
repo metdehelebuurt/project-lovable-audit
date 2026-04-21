@@ -21,6 +21,7 @@ interface UitnodigDialogProps {
 
 const rolLabels: Record<string, string> = {
   partner_admin: "Beheerder",
+  backoffice: "Backoffice (financieel & administratie)",
   partner_staff: "Medewerker",
   adviseur: "Energieadviseur",
   installateur: "Installateur",
@@ -122,6 +123,7 @@ export const UitnodigDialog = ({ open, onOpenChange, defaultRol = "adviseur" }: 
               <SelectContent>
                 <SelectItem value="adviseur">{rolLabels.adviseur}</SelectItem>
                 <SelectItem value="installateur">{rolLabels.installateur}</SelectItem>
+                <SelectItem value="backoffice">{rolLabels.backoffice}</SelectItem>
                 <SelectItem value="partner_staff">{rolLabels.partner_staff}</SelectItem>
                 <SelectItem value="partner_admin">{rolLabels.partner_admin}</SelectItem>
               </SelectContent>
