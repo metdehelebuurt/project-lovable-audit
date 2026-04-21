@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Users, KeyRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 
 type UserRow = Database["public"]["Tables"]["users"]["Row"];
@@ -63,6 +64,7 @@ interface GebruikersProps {
 
 const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer alle gebruikers" }: GebruikersProps) => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
@@ -261,7 +263,11 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                 </TableHeader>
                 <TableBody>
                   {filtered.map(user => (
-                    <TableRow key={user.id}>
+                    <TableRow
+                      key={user.id}
+                      className="cursor-pointer hover:bg-muted/40"
+                      onClick={() => navigate(`/gebruikers/${user.id}`)}
+                    >
                       <TableCell className="font-medium">{user.voornaam} {user.achternaam}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell><Badge className={rolColors[user.rol]}>{rolLabels[user.rol]}</Badge></TableCell>
@@ -271,7 +277,7 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                         </Badge>
                       </TableCell>
                       <TableCell>{user.telefoon || "—"}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Bewerken">
                             <Pencil className="h-4 w-4" />
