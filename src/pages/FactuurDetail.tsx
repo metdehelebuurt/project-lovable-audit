@@ -23,6 +23,16 @@ const typeLabels: Record<string, string> = {
   pakbon: "Pakbon",
 };
 
+const subtypeLabels: Record<string, string> = {
+  voorschot: "Voorschotfactuur",
+  eindafrekening: "Eindafrekening",
+};
+
+const subtypeBadgeColors: Record<string, string> = {
+  voorschot: "bg-amber-100 text-amber-800 border-amber-200",
+  eindafrekening: "bg-purple-100 text-purple-800 border-purple-200",
+};
+
 const statusColors: Record<string, string> = {
   concept: "bg-muted text-muted-foreground",
   verzonden: "bg-blue-100 text-blue-800",
@@ -223,6 +233,14 @@ export default function FactuurDetail() {
               <Badge className={statusColors[doc.status] || ""} variant="secondary">
                 {doc.status.replace("_", " ")}
               </Badge>
+              {doc.factuur_subtype && doc.factuur_subtype !== "regulier" && (
+                <Badge variant="outline" className={subtypeBadgeColors[doc.factuur_subtype] || ""}>
+                  {subtypeLabels[doc.factuur_subtype] || doc.factuur_subtype}
+                  {doc.termijn_volgnummer && doc.termijn_totaal && (
+                    <span className="ml-1">— Termijn {doc.termijn_volgnummer} van {doc.termijn_totaal}</span>
+                  )}
+                </Badge>
+              )}
             </div>
             <p className="text-muted-foreground">{typeLabels[doc.type]} — {relatie}</p>
           </div>
@@ -410,7 +428,13 @@ export default function FactuurDetail() {
         <FactuurEmailDialog
           open={emailOpen}
           onOpenChange={setEmailOpen}
-          doc={{ id: doc.id, documentnummer: doc.documentnummer, partner_id: doc.partner_id, type: doc.type }}
+          doc={{
+            id: doc.id,
+            documentnummer: doc.documentnummer,
+            partner_id: doc.partner_id,
+            type: doc.type,
+            factuur_subtype: doc.factuur_subtype,
+          }}
           defaultTo={pdfKlant?.email || ""}
           onSent={() => { setDoc({ ...doc, status: "verzonden", verzonden_op: new Date().toISOString() }); setPdfOpen(false); }}
         />
