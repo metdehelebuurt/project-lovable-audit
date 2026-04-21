@@ -59,6 +59,10 @@ function extractModuleKey(item: any): string | null {
 }
 
 export const AuditTijdlijn = ({ targetUserId }: AuditTijdlijnProps) => {
+  const [moduleFilter, setModuleFilter] = useState<string>("all");
+  const [entityFilter, setEntityFilter] = useState<string>("all");
+  const [openId, setOpenId] = useState<string | null>(null);
+
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["audit-log", targetUserId],
     queryFn: async () => {
@@ -73,48 +77,143 @@ export const AuditTijdlijn = ({ targetUserId }: AuditTijdlijnProps) => {
     },
   });
 
+  const filtered = useMemo(() => {
+    return items.filter((item: any) => {
+      if (moduleFilter !== "all" && extractModuleKey(item) !== moduleFilter) return false;
+      if (entityFilter !== "all" && item.entity_type !== entityFilter) return false;
+      return true;
+    });
+  }, [items, moduleFilter, entityFilter]);
+
+  const beschikbareModules = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((i: any) => {
+      const k = extractModuleKey(i);
+      if (k) set.add(k);
+    });
+    return Array.from(set);
+  }, [items]);
+
+  const beschikbareEntities = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((i: any) => i.entity_type && set.add(i.entity_type));
+    return Array.from(set);
+  }, [items]);
+
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Activity className="h-4 w-4 text-primary" /> Activiteit & audit
-        </CardTitle>
+        <div className="flex flex-col gap-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" /> Activiteit & audit
+          </CardTitle>
+          {items.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={entityFilter} onValueChange={setEntityFilter}>
+                <SelectTrigger className="h-8 w-[160px] text-xs">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle types</SelectItem>
+                  {beschikbareEntities.map((e) => (
+                    <SelectItem key={e} value={e}>{ENTITY_LABELS[e] ?? e}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={moduleFilter} onValueChange={setModuleFilter}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <SelectValue placeholder="Module" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle modules</SelectItem>
+                  {beschikbareModules.map((m) => {
+                    const def = MODULES.find((x) => x.key === m);
+                    return <SelectItem key={m} value={m}>{def?.label ?? m}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+              {(moduleFilter !== "all" || entityFilter !== "all") && (
+                <Button variant="ghost" size="sm" className="h-8 text-xs"
+                  onClick={() => { setModuleFilter("all"); setEntityFilter("all"); }}>
+                  Reset
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Laden...</p>
-        ) : items.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">
             <Activity className="h-8 w-8 mx-auto mb-2 opacity-40" />
-            Nog geen activiteit geregistreerd
+            {items.length === 0 ? "Nog geen activiteit geregistreerd" : "Geen items voor deze filter"}
           </div>
         ) : (
           <ol className="space-y-3 relative">
-            {items.map((item: any) => {
+            {filtered.map((item: any) => {
               const Icon = ICONS[item.actie] ?? ICONS.default;
               const label = LABELS[item.actie] ?? item.actie;
+              const isOpen = openId === item.id;
+              const moduleKey = extractModuleKey(item);
+              const moduleDef = moduleKey ? MODULES.find((m) => m.key === moduleKey) : null;
               return (
-                <li key={item.id} className="flex gap-3 items-start">
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-foreground">{label}</p>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(item.created_at).toLocaleString("nl-NL", { dateStyle: "short", timeStyle: "short" })}
-                      </span>
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenId(isOpen ? null : item.id)}
+                    className="w-full flex gap-3 items-start text-left rounded-lg hover:bg-muted/50 p-2 -m-2 transition-colors"
+                    aria-expanded={isOpen}
+                  >
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    {item.nieuwe_waarde && Object.keys(item.nieuwe_waarde).length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {Object.entries(item.nieuwe_waarde).slice(0, 3).map(([k, v]: any) => (
-                          <Badge key={k} variant="outline" className="text-xs font-normal">
-                            {k}: {typeof v === "object" ? JSON.stringify(v) : String(v)}
-                          </Badge>
-                        ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1">
+                          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                          {label}
+                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(item.created_at).toLocaleString("nl-NL", { dateStyle: "short", timeStyle: "short" })}
+                        </span>
                       </div>
-                    )}
-                  </div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {item.entity_type && (
+                          <Badge variant="secondary" className="text-xs font-normal">
+                            {ENTITY_LABELS[item.entity_type] ?? item.entity_type}
+                          </Badge>
+                        )}
+                        {moduleDef && (
+                          <Badge variant="outline" className="text-xs font-normal">
+                            {moduleDef.label}
+                          </Badge>
+                        )}
+                      </div>
+                      {isOpen && (
+                        <div className="mt-2 space-y-2 text-xs">
+                          {item.oude_waarde && (
+                            <div>
+                              <p className="font-medium text-muted-foreground mb-1">Oud</p>
+                              <pre className="bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
+                                {JSON.stringify(item.oude_waarde, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                          {item.nieuwe_waarde && (
+                            <div>
+                              <p className="font-medium text-muted-foreground mb-1">Nieuw</p>
+                              <pre className="bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
+                                {JSON.stringify(item.nieuwe_waarde, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </button>
                 </li>
               );
             })}
