@@ -1414,6 +1414,7 @@ export type Database = {
           created_by: string
           documentnummer: string
           eenmalige_relatie: Json | null
+          factuur_subtype: string
           factuurdatum: string
           id: string
           installatie_id: string | null
@@ -1428,11 +1429,15 @@ export type Database = {
           regels: Json
           status: Database["public"]["Enums"]["financieel_document_status"]
           subtotaal: number
+          termijn_percentage: number | null
+          termijn_totaal: number | null
+          termijn_volgnummer: number | null
           totaal_bedrag: number
           type: Database["public"]["Enums"]["financieel_document_type"]
           updated_at: string
           vervaldatum: string | null
           verzonden_op: string | null
+          voorschot_van_facturen: string[] | null
         }
         Insert: {
           betaald_op?: string | null
@@ -1443,6 +1448,7 @@ export type Database = {
           created_by: string
           documentnummer: string
           eenmalige_relatie?: Json | null
+          factuur_subtype?: string
           factuurdatum?: string
           id?: string
           installatie_id?: string | null
@@ -1457,11 +1463,15 @@ export type Database = {
           regels?: Json
           status?: Database["public"]["Enums"]["financieel_document_status"]
           subtotaal?: number
+          termijn_percentage?: number | null
+          termijn_totaal?: number | null
+          termijn_volgnummer?: number | null
           totaal_bedrag?: number
           type: Database["public"]["Enums"]["financieel_document_type"]
           updated_at?: string
           vervaldatum?: string | null
           verzonden_op?: string | null
+          voorschot_van_facturen?: string[] | null
         }
         Update: {
           betaald_op?: string | null
@@ -1472,6 +1482,7 @@ export type Database = {
           created_by?: string
           documentnummer?: string
           eenmalige_relatie?: Json | null
+          factuur_subtype?: string
           factuurdatum?: string
           id?: string
           installatie_id?: string | null
@@ -1486,11 +1497,15 @@ export type Database = {
           regels?: Json
           status?: Database["public"]["Enums"]["financieel_document_status"]
           subtotaal?: number
+          termijn_percentage?: number | null
+          termijn_totaal?: number | null
+          termijn_volgnummer?: number | null
           totaal_bedrag?: number
           type?: Database["public"]["Enums"]["financieel_document_type"]
           updated_at?: string
           vervaldatum?: string | null
           verzonden_op?: string | null
+          voorschot_van_facturen?: string[] | null
         }
         Relationships: [
           {
@@ -3024,6 +3039,63 @@ export type Database = {
           },
         ]
       }
+      offerte_termijnschema: {
+        Row: {
+          created_at: string
+          factuur_id: string | null
+          id: string
+          offerte_id: string
+          omschrijving: string
+          partner_id: string
+          percentage: number
+          status: string
+          trigger_status: string | null
+          updated_at: string
+          volgnummer: number
+        }
+        Insert: {
+          created_at?: string
+          factuur_id?: string | null
+          id?: string
+          offerte_id: string
+          omschrijving: string
+          partner_id: string
+          percentage: number
+          status?: string
+          trigger_status?: string | null
+          updated_at?: string
+          volgnummer: number
+        }
+        Update: {
+          created_at?: string
+          factuur_id?: string | null
+          id?: string
+          offerte_id?: string
+          omschrijving?: string
+          partner_id?: string
+          percentage?: number
+          status?: string
+          trigger_status?: string | null
+          updated_at?: string
+          volgnummer?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offerte_termijnschema_factuur_id_fkey"
+            columns: ["factuur_id"]
+            isOneToOne: false
+            referencedRelation: "financiele_documenten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offerte_termijnschema_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offertes: {
         Row: {
           accepted_at: string | null
@@ -4292,13 +4364,22 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
-      generate_financieel_documentnummer: {
-        Args: {
-          _partner_id: string
-          _type: Database["public"]["Enums"]["financieel_document_type"]
-        }
-        Returns: string
-      }
+      generate_financieel_documentnummer:
+        | {
+            Args: {
+              _partner_id: string
+              _type: Database["public"]["Enums"]["financieel_document_type"]
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _partner_id: string
+              _subtype?: string
+              _type: Database["public"]["Enums"]["financieel_document_type"]
+            }
+            Returns: string
+          }
       generate_helpdesk_ticketnummer: {
         Args: { _partner_id: string }
         Returns: string
