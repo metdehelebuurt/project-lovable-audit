@@ -702,6 +702,51 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          actie: string
+          actor_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip: unknown
+          nieuwe_waarde: Json | null
+          oude_waarde: Json | null
+          partner_id: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actie: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip?: unknown
+          nieuwe_waarde?: Json | null
+          oude_waarde?: Json | null
+          partner_id?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actie?: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip?: unknown
+          nieuwe_waarde?: Json | null
+          oude_waarde?: Json | null
+          partner_id?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       consumenten: {
         Row: {
           achternaam: string | null
@@ -859,6 +904,7 @@ export type Database = {
           created_at: string
           email_adres: string
           id: string
+          is_default_voor_partner: boolean | null
           last_sync_at: string | null
           partner_id: string
           provider: string
@@ -875,6 +921,7 @@ export type Database = {
           created_at?: string
           email_adres: string
           id?: string
+          is_default_voor_partner?: boolean | null
           last_sync_at?: string | null
           partner_id: string
           provider: string
@@ -891,6 +938,7 @@ export type Database = {
           created_at?: string
           email_adres?: string
           id?: string
+          is_default_voor_partner?: boolean | null
           last_sync_at?: string | null
           partner_id?: string
           provider?: string
@@ -1471,6 +1519,93 @@ export type Database = {
             columns: ["offerte_id"]
             isOneToOne: false
             referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gebruiker_afwezigheid: {
+        Row: {
+          created_at: string
+          id: string
+          partner_id: string
+          reden: string | null
+          tot: string
+          user_id: string
+          van: string
+          vervanger_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          partner_id: string
+          reden?: string | null
+          tot: string
+          user_id: string
+          van: string
+          vervanger_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          partner_id?: string
+          reden?: string | null
+          tot?: string
+          user_id?: string
+          van?: string
+          vervanger_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gebruiker_afwezigheid_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gebruiker_afwezigheid_vervanger_id_fkey"
+            columns: ["vervanger_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gebruiker_permissies: {
+        Row: {
+          partner_id: string | null
+          permissies: Json
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          partner_id?: string | null
+          permissies?: Json
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          partner_id?: string | null
+          permissies?: Json
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gebruiker_permissies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gebruiker_permissies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -2721,6 +2856,30 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_vereisten: {
+        Row: {
+          id: string
+          partner_id: string
+          rol: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          verplicht: boolean
+        }
+        Insert: {
+          id?: string
+          partner_id: string
+          rol: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          verplicht?: boolean
+        }
+        Update: {
+          id?: string
+          partner_id?: string
+          rol?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          verplicht?: boolean
+        }
+        Relationships: []
+      }
       notificaties: {
         Row: {
           bericht: string
@@ -3737,40 +3896,82 @@ export type Database = {
       users: {
         Row: {
           achternaam: string
+          avatar_url: string | null
           created_at: string
           email: string
+          functie: string | null
+          handtekening_html: string | null
           ical_token: string | null
           id: string
+          last_login_at: string | null
+          mfa_enabled: boolean | null
+          onboarding_stappen: Json | null
+          onboarding_voltooid: boolean | null
+          opmerking: string | null
           partner_id: string | null
           rol: Database["public"]["Enums"]["app_role"]
           status: Database["public"]["Enums"]["user_status"]
+          taal: string | null
           telefoon: string | null
+          timezone: string | null
+          uitgenodigd_door: string | null
+          uitgenodigd_op: string | null
+          uitnodiging_token: string | null
+          uitnodiging_verloopt: string | null
           updated_at: string
           voornaam: string
         }
         Insert: {
           achternaam: string
+          avatar_url?: string | null
           created_at?: string
           email: string
+          functie?: string | null
+          handtekening_html?: string | null
           ical_token?: string | null
           id: string
+          last_login_at?: string | null
+          mfa_enabled?: boolean | null
+          onboarding_stappen?: Json | null
+          onboarding_voltooid?: boolean | null
+          opmerking?: string | null
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_status"]
+          taal?: string | null
           telefoon?: string | null
+          timezone?: string | null
+          uitgenodigd_door?: string | null
+          uitgenodigd_op?: string | null
+          uitnodiging_token?: string | null
+          uitnodiging_verloopt?: string | null
           updated_at?: string
           voornaam: string
         }
         Update: {
           achternaam?: string
+          avatar_url?: string | null
           created_at?: string
           email?: string
+          functie?: string | null
+          handtekening_html?: string | null
           ical_token?: string | null
           id?: string
+          last_login_at?: string | null
+          mfa_enabled?: boolean | null
+          onboarding_stappen?: Json | null
+          onboarding_voltooid?: boolean | null
+          opmerking?: string | null
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_status"]
+          taal?: string | null
           telefoon?: string | null
+          timezone?: string | null
+          uitgenodigd_door?: string | null
+          uitgenodigd_op?: string | null
+          uitnodiging_token?: string | null
+          uitnodiging_verloopt?: string | null
           updated_at?: string
           voornaam?: string
         }
@@ -3787,6 +3988,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_uitgenodigd_door_fkey"
+            columns: ["uitgenodigd_door"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -3968,6 +4176,19 @@ export type Database = {
       }
       increment_kb_views: { Args: { _artikel_id: string }; Returns: undefined }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          _actie: string
+          _actor_id: string
+          _entity_id: string
+          _entity_type: string
+          _nieuwe: Json
+          _oude: Json
+          _partner_id: string
+          _target_user_id: string
+        }
+        Returns: string
+      }
       mark_helpdesk_escalations: {
         Args: { _partner_id: string }
         Returns: number
