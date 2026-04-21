@@ -79,6 +79,12 @@ export default function FactuurNieuw() {
 
   const isVerkoopfactuur = docType === "verkoopfactuur";
 
+  // Handmatig subtype (zonder offerte-context)
+  const [handmatigSubtype, setHandmatigSubtype] = useState<HandmatigSubtype>("regulier");
+  const [handmatigTermijnVolg, setHandmatigTermijnVolg] = useState(1);
+  const [handmatigTermijnTotaal, setHandmatigTermijnTotaal] = useState(2);
+  const [handmatigProjectbedrag, setHandmatigProjectbedrag] = useState(0);
+
   const applyOfferteContext = (ctx: OfferteConversieResult) => {
     setOfferteContext(ctx);
     setBronOfferteId(ctx.offerte.id);
