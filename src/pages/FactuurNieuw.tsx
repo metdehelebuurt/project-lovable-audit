@@ -51,6 +51,7 @@ export default function FactuurNieuw() {
   const [saving, setSaving] = useState(false);
   const [bronOfferteId, setBronOfferteId] = useState<string | null>(null);
   const [bronDocId, setBronDocId] = useState<string | null>(null);
+  const [bronOpdrachtId, setBronOpdrachtId] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
 
   // Eenmalige relatie state
@@ -228,9 +229,12 @@ export default function FactuurNieuw() {
           setPrefilled(true);
         });
     } else if (offerteId && profile?.partner_id) {
+      const opdrachtParam = searchParams.get("opdracht");
+      if (opdrachtParam) setBronOpdrachtId(opdrachtParam);
       buildFactuurFromOfferte(offerteId, profile.partner_id)
         .then((ctx) => {
           applyOfferteContext(ctx);
+          if (!opdrachtParam && ctx.opdrachtId) setBronOpdrachtId(ctx.opdrachtId);
           setPrefilled(true);
           if (ctx.bestaandeFacturen.filter(f => f.status !== "concept").length > 0) {
             toast({
@@ -328,6 +332,7 @@ export default function FactuurNieuw() {
         klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
         leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
         offerte_id: bronOfferteId || null,
+        opdracht_id: bronOpdrachtId || null,
         installatie_id: docType === "pakbon" && installatieId ? installatieId : null,
         regels: regels as any,
         subtotaal,
