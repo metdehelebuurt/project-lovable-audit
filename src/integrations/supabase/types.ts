@@ -4105,8 +4105,10 @@ export type Database = {
           id: string
           last_login_at: string | null
           mfa_enabled: boolean | null
+          onboarding_overgeslagen_op: string | null
           onboarding_stappen: Json | null
           onboarding_voltooid: boolean | null
+          onboarding_voltooid_op: string | null
           opmerking: string | null
           partner_id: string | null
           rol: Database["public"]["Enums"]["app_role"]
@@ -4119,6 +4121,7 @@ export type Database = {
           uitnodiging_token: string | null
           uitnodiging_verloopt: string | null
           updated_at: string
+          voorkeuren: Json
           voornaam: string
         }
         Insert: {
@@ -4132,8 +4135,10 @@ export type Database = {
           id: string
           last_login_at?: string | null
           mfa_enabled?: boolean | null
+          onboarding_overgeslagen_op?: string | null
           onboarding_stappen?: Json | null
           onboarding_voltooid?: boolean | null
+          onboarding_voltooid_op?: string | null
           opmerking?: string | null
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
@@ -4146,6 +4151,7 @@ export type Database = {
           uitnodiging_token?: string | null
           uitnodiging_verloopt?: string | null
           updated_at?: string
+          voorkeuren?: Json
           voornaam: string
         }
         Update: {
@@ -4159,8 +4165,10 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           mfa_enabled?: boolean | null
+          onboarding_overgeslagen_op?: string | null
           onboarding_stappen?: Json | null
           onboarding_voltooid?: boolean | null
+          onboarding_voltooid_op?: string | null
           opmerking?: string | null
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
@@ -4173,6 +4181,7 @@ export type Database = {
           uitnodiging_token?: string | null
           uitnodiging_verloopt?: string | null
           updated_at?: string
+          voorkeuren?: Json
           voornaam?: string
         }
         Relationships: [
