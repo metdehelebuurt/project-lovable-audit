@@ -3961,6 +3961,7 @@ export type Database = {
           created_at: string
           created_by: string
           documenten: Json
+          extra_velden: Json
           gefinaliseerd_op: string | null
           groepenverdeling: Json
           id: string
@@ -3993,6 +3994,7 @@ export type Database = {
           created_at?: string
           created_by: string
           documenten?: Json
+          extra_velden?: Json
           gefinaliseerd_op?: string | null
           groepenverdeling?: Json
           id?: string
@@ -4025,6 +4027,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           documenten?: Json
+          extra_velden?: Json
           gefinaliseerd_op?: string | null
           groepenverdeling?: Json
           id?: string
