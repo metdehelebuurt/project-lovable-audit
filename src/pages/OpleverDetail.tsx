@@ -225,6 +225,8 @@ export default function OpleverDetail() {
         disabled={merged.status === "ondertekend"}
       />
 
+      <OpleverPdfVersies rapportId={merged.id} />
+
       {gebruikerDocs.length > 0 ? (
         <UICard>
           <UICardHeader className="pb-3">
