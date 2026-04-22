@@ -88,7 +88,7 @@ const InstallatieNieuw = () => {
         installateur_id: form.installateur_id || null,
         geplande_startdatum: form.geplande_startdatum || null,
         start_tijd: form.start_tijd || null,
-        installatienummer: `INST-${jaar}-${Date.now().toString().slice(-5)}`,
+        producten: producten as unknown as never,
         status: form.installateur_id && form.geplande_startdatum ? "gepland" : "concept",
         created_by: user?.id ?? null,
       });
