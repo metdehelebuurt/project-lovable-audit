@@ -479,10 +479,7 @@ export default function OffertePublic() {
             </TabsContent>
           )}
 
-          {/* ─── Tab: Berichten ─── */}
-          <TabsContent value="berichten" className="space-y-4">
-          </TabsContent>
-          {/* placeholder closed above to keep diff clean */}
+          {/* ─── Tab: Handleidingen ─── */}
           <TabsContent value="handleidingen" className="space-y-4">
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardContent className="pt-6 space-y-3">
@@ -514,7 +511,9 @@ export default function OffertePublic() {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="berichten-original-removed" className="space-y-4">
+
+          {/* ─── Tab: Berichten ─── */}
+          <TabsContent value="berichten" className="space-y-4">
             <Card className="rounded-2xl border-0 shadow-sm flex flex-col" style={{ height: "60vh" }}>
               <div className="p-4 border-b border-border">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
