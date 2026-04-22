@@ -75,7 +75,7 @@ export default function Financieel() {
     const fetchDocs = async () => {
       const { data, error } = await supabase
         .from("financiele_documenten")
-        .select("*, klanten(voornaam, achternaam, bedrijfsnaam), leveranciers(naam)")
+        .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email), leveranciers(naam, email)")
         .eq("partner_id", profile.partner_id)
         .order("created_at", { ascending: false });
       if (error) {
