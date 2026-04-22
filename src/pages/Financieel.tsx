@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, FileText, Eye } from "lucide-react";
 import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
+import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
 import { formatCurrency } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
 import { FinancieelDashboard } from "@/components/financieel/FinancieelDashboard";
@@ -172,6 +173,15 @@ export default function Financieel() {
                     <Button size="sm" variant="ghost" onClick={() => navigate(`/financieel/${doc.id}`)}>
                       <Eye className="h-4 w-4" />
                     </Button>
+                    <DeleteFactuurButton
+                      doc={{
+                        id: doc.id,
+                        documentnummer: doc.documentnummer,
+                        type: doc.type,
+                        status: doc.status,
+                      }}
+                      onDeleted={() => setDocs((prev) => prev.filter((d) => d.id !== doc.id))}
+                    />
                   </div>
                 </TableCell>
               </TableRow>

@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
 import FactuurEmailDialog from "@/components/financieel/FactuurEmailDialog";
 import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
+import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -358,6 +359,12 @@ export default function FactuurDetail() {
           }}>
             <LifeBuoy className="h-4 w-4 mr-2" /> Ticket aanmaken
           </Button>
+          <DeleteFactuurButton
+            doc={{ id: doc.id, documentnummer: doc.documentnummer, type: doc.type, status: doc.status }}
+            variant="outline"
+            label="Verwijderen"
+            redirectToOverview
+          />
         </div>
       </div>
 
