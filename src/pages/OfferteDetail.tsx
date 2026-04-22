@@ -82,6 +82,12 @@ const OfferteDetail = () => {
   const [afwijzingCategorie, setAfwijzingCategorie] = useState("");
   const [afwijzingReden, setAfwijzingReden] = useState("");
 
+  // Ondertekenen dialog
+  const [signDialog, setSignDialog] = useState(false);
+  const [signOpenSendAfter, setSignOpenSendAfter] = useState(false);
+  const [signatureDraft, setSignatureDraft] = useState<string | null>(null);
+  const [signSaving, setSignSaving] = useState(false);
+
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
   const isConsument = profile?.rol === "consument";
