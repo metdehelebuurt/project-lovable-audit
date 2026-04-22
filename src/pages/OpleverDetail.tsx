@@ -140,8 +140,8 @@ export default function OpleverDetail() {
           onChange={update}
           klantNaam={klantNaam}
           partnerId={merged.partner_id}
-          klantId={((merged as unknown) as { klant_id: string | null }).klant_id ?? null}
-          onKlantChange={(id) => update({ klant_id: id } as Partial<Opleverrapport>)}
+          klantId={merged.klant_id ?? null}
+          onKlantChange={(klantId) => update({ klant_id: klantId })}
         />
       ),
     },
