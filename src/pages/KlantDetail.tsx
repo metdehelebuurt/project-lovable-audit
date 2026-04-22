@@ -351,6 +351,9 @@ const KlantDetail = () => {
           {/* OPDRACHTEN */}
           {activeTab === "opdrachten" && <OpdrachtenLijst opdrachten={opdrachten} onNavigate={(oid) => navigate(`/opdrachten/${oid}`)} />}
 
+          {/* INSTALLATIES */}
+          {activeTab === "installaties" && <InstallatiesLijst installaties={installaties} onNavigate={(iid) => navigate(`/installaties/${iid}`)} />}
+
           {/* SCHOUWEN */}
           {activeTab === "schouwen" && <SchouwenLijst schouwen={schouwen} onNew={() => navigate("/schouwen")} />}
 
