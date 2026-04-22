@@ -104,7 +104,7 @@ const KlantDetail = () => {
     queryFn: async () => {
       if (!klant?.lead_id) return [];
       const { data, error } = await supabase.from("installaties")
-        .select("id, consument_naam, status, geplande_startdatum, geplande_einddatum, created_at")
+        .select("id, installatienummer, consument_naam, werkadres, status, geplande_startdatum, geplande_einddatum, created_at")
         .eq("lead_id", klant.lead_id).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -174,6 +174,7 @@ const KlantDetail = () => {
     { key: "email", label: "E-mail" },
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "opdrachten", label: "Opdrachten", count: opdrachten.length },
+    { key: "installaties", label: "Installaties", count: installaties.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
     { key: "afspraken", label: "Afspraken", count: afspraken.length },
     { key: "activiteit", label: "Activiteit" },
