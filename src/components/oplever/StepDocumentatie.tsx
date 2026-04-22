@@ -87,9 +87,10 @@ export default function StepDocumentatie({ rapportId, partnerId, draft, onChange
         </div>
         <div className="space-y-2">
           {groepen.map((g, idx) => (
-            <div key={idx} className="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end rounded-lg border border-border p-2">
+            <div key={idx} className="grid grid-cols-2 sm:grid-cols-7 gap-2 items-end rounded-lg border border-border p-2">
               <div><Label className="text-xs">Nr.</Label><Input value={g.nummer} onChange={(e) => updateGroep(idx, { ...g, nummer: e.target.value })} /></div>
               <div className="col-span-2"><Label className="text-xs">Functie</Label><Input value={g.functie} onChange={(e) => updateGroep(idx, { ...g, functie: e.target.value })} /></div>
+              <div><Label className="text-xs">Kabeltype</Label><Input value={g.kabeltype ?? ""} onChange={(e) => updateGroep(idx, { ...g, kabeltype: e.target.value || undefined })} placeholder="YMvK" /></div>
               <div><Label className="text-xs">mm²</Label><Input type="number" value={g.diameter_mm2 ?? ""} onChange={(e) => updateGroep(idx, { ...g, diameter_mm2: e.target.value ? Number(e.target.value) : undefined })} /></div>
               <div><Label className="text-xs">A</Label><Input type="number" value={g.beveiliging_a ?? ""} onChange={(e) => updateGroep(idx, { ...g, beveiliging_a: e.target.value ? Number(e.target.value) : undefined })} /></div>
               <div className="flex items-end gap-1">

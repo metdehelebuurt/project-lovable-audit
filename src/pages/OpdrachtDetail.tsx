@@ -219,7 +219,7 @@ const OpdrachtDetail = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/opdrachten")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/opdrachten")} aria-label="Terug naar verkooporders">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -234,7 +234,7 @@ const OpdrachtDetail = () => {
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardContent className="py-4 flex flex-wrap gap-3">
             {opdracht.status === "nieuw" && (
-              <Button onClick={handleConfirm} className="gap-2"><Send className="h-4 w-4" /> Opdrachtbevestiging mailen</Button>
+              <Button onClick={handleConfirm} className="gap-2"><Send className="h-4 w-4" /> Orderbevestiging mailen</Button>
             )}
             {!opdracht.schouw_id && (
               <Button variant="outline" onClick={handlePlanSchouw} className="gap-2"><CalendarPlus className="h-4 w-4" /> Schouw inplannen</Button>
