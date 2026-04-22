@@ -259,6 +259,11 @@ export default function FactuurDetail() {
               <Send className="h-4 w-4 mr-2" /> E-mail versturen
             </Button>
           )}
+          {doc.verzonden_op && ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
+            <Button variant="outline" onClick={() => { setPdfOpen(true); setTimeout(() => setEmailOpen(true), 300); }}>
+              <Send className="h-4 w-4 mr-2" /> Opnieuw versturen
+            </Button>
+          )}
           {doc.status === "concept" && !["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
             <Button onClick={() => updateStatus("verzonden")}>
               <Send className="h-4 w-4 mr-2" /> Verzenden
@@ -436,6 +441,7 @@ export default function FactuurDetail() {
             factuur_subtype: doc.factuur_subtype,
           }}
           defaultTo={pdfKlant?.email || ""}
+          isResend={Boolean(doc.verzonden_op)}
           onSent={() => { setDoc({ ...doc, status: "verzonden", verzonden_op: new Date().toISOString() }); setPdfOpen(false); }}
         />
       )}
