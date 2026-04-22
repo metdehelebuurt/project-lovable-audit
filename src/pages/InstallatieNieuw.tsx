@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { createInstallatie } from "@/components/installaties/api/installatieApi";
+import InstallatieProductenEditor, { type InstallatieProductRegel } from "@/components/installaties/InstallatieProductenEditor";
 
 const InstallatieNieuw = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const InstallatieNieuw = () => {
   const opdrachtId = params.get("opdracht");
   const [monteurs, setMonteurs] = useState<{ id: string; voornaam: string; achternaam: string }[]>([]);
   const [busy, setBusy] = useState(false);
+  const [producten, setProducten] = useState<InstallatieProductRegel[]>([]);
   const [form, setForm] = useState({
     consument_naam: "",
     klant_email: "",
@@ -39,13 +41,29 @@ const InstallatieNieuw = () => {
     if (opdrachtId) {
       void supabase.from("opdrachten").select("*").eq("id", opdrachtId).single().then(({ data }) => {
         if (data) {
+          const regels = Array.isArray((data as Record<string, unknown>).regels)
+            ? ((data as Record<string, unknown>).regels as Array<Record<string, unknown>>)
+            : [];
+          const autoOmschrijving = regels
+            .slice(0, 3)
+            .map((r) => `${r.aantal ?? 1}× ${r.omschrijving ?? ""}`.trim())
+            .filter((s) => s.length > 1)
+            .join(" • ");
           setForm((f) => ({
             ...f,
             consument_naam: data.klant_naam ?? "",
             klant_email: data.klant_email ?? "",
             klant_telefoon: data.klant_telefoon ?? "",
             werkadres: data.klant_adres ?? "",
+            werkomschrijving: f.werkomschrijving || autoOmschrijving,
           }));
+          setProducten(
+            regels.map((r) => ({
+              omschrijving: String(r.omschrijving ?? ""),
+              aantal: Number(r.aantal ?? 1),
+              product_id: (r.product_id as string | undefined) ?? null,
+            })),
+          );
         }
       });
     }
