@@ -164,7 +164,7 @@ const Opdrachten = () => {
             klant_postcode: planDialog.klant_postcode,
             klant_plaats: planDialog.klant_plaats,
             regels: planDialog.regels,
-            werkomschrijving: planDialog.notitie ?? planDialog.werkomschrijving ?? null,
+            werkomschrijving: planDialog.notities ?? planDialog.werkomschrijving ?? null,
           }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["opdrachten"] });
