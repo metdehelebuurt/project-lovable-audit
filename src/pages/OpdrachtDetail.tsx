@@ -377,37 +377,38 @@ const OpdrachtDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Install planning dialog */}
-      <Dialog open={installDialog} onOpenChange={setInstallDialog}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Installatie plannen</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Monteur *</Label>
-              <Select value={installForm.monteur_id} onValueChange={v => setInstallForm(p => ({ ...p, monteur_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecteer monteur" /></SelectTrigger>
-                <SelectContent>
-                  {monteurs.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.voornaam} {m.achternaam}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Startdatum *</Label>
-              <Input type="date" value={installForm.start} onChange={e => setInstallForm(p => ({ ...p, start: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Einddatum</Label>
-              <Input type="date" value={installForm.eind} onChange={e => setInstallForm(p => ({ ...p, eind: e.target.value }))} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setInstallDialog(false)}>Annuleren</Button>
-            <Button onClick={handlePlanInstallatie}>Plan installatie</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Installatie plannen + monteur toewijzen */}
+      <MonteurToewijsDialog
+        open={installDialog}
+        onOpenChange={setInstallDialog}
+        opdracht={{
+          id: opdracht.id,
+          partner_id: opdracht.partner_id,
+          offerte_id: opdracht.offerte_id,
+          lead_id: opdracht.lead_id,
+          klant_naam: opdracht.klant_naam,
+          klant_email: opdracht.klant_email,
+          klant_telefoon: opdracht.klant_telefoon,
+          klant_adres: opdracht.klant_adres,
+          klant_postcode: opdracht.klant_postcode,
+          klant_plaats: opdracht.klant_plaats,
+          regels,
+        }}
+        onSuccess={(installatieId) => {
+          queryClient.invalidateQueries({ queryKey: ["opdracht", id] });
+          setAangemaakteInstallatieId(installatieId);
+          setKlantBevestigingOpen(true);
+        }}
+      />
+
+      {aangemaakteInstallatieId && (
+        <KlantBevestigingDialog
+          open={klantBevestigingOpen}
+          onOpenChange={setKlantBevestigingOpen}
+          installatieId={aangemaakteInstallatieId}
+          klantEmail={opdracht.klant_email ?? ""}
+        />
+      )}
 
       {/* Orderbevestiging PDF dialog */}
       <Dialog open={orderPdfOpen} onOpenChange={setOrderPdfOpen}>
