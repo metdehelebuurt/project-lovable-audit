@@ -61,6 +61,7 @@ interface ProductFormData {
   kostprijs: number | null;
   eenheid: string;
   voorraad: number | null;
+  min_voorraad: number | null;
   btw_percentage: number;
   max_korting_euro: number | null;
   max_korting_percentage: number | null;
@@ -82,7 +83,7 @@ interface ProductFormData {
 const emptyForm: ProductFormData = {
   naam: "", categorie: "zonnepanelen", merk: "", model: "",
   omschrijving: "", offerte_tekst: "", prijs_excl_btw: 0, kostprijs: null, eenheid: "stuk",
-  voorraad: null, btw_percentage: 21, max_korting_euro: null,
+  voorraad: null, min_voorraad: null, btw_percentage: 21, max_korting_euro: null,
   max_korting_percentage: null, product_code: "", leverancier: "",
   artikelnummer: "", ean_code: "", levertijd: "", garantie_jaren: null,
   certificeringen: "", status: "actief", afbeelding_url: null,
@@ -274,6 +275,7 @@ const Producten = () => {
       offerte_tekst: (p as any).offerte_tekst || "",
       prijs_excl_btw: Number(p.prijs_excl_btw), kostprijs: p.kostprijs ? Number(p.kostprijs) : null,
       eenheid: p.eenheid || "stuk", voorraad: p.voorraad,
+      min_voorraad: (p as any).min_voorraad ?? null,
       btw_percentage: p.btw_percentage ?? 21,
       max_korting_euro: p.max_korting_euro ? Number(p.max_korting_euro) : null,
       max_korting_percentage: p.max_korting_percentage ? Number(p.max_korting_percentage) : null,
@@ -522,6 +524,7 @@ const Producten = () => {
                     </Select>
                   </div>
                   <div><Label>Voorraad</Label><Input type="number" value={form.voorraad ?? ""} onChange={e => setForm(p => ({ ...p, voorraad: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
+                  <div><Label>Min. voorraad (waarschuwing)</Label><Input type="number" min="0" value={form.min_voorraad ?? ""} onChange={e => setForm(p => ({ ...p, min_voorraad: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
                   <div><Label>Max korting €</Label><Input type="number" step="0.01" value={form.max_korting_euro ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_euro: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
                   <div><Label>Max korting %</Label><Input type="number" step="0.1" value={form.max_korting_percentage ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_percentage: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
                 </div>
@@ -690,6 +693,7 @@ const Producten = () => {
                                   offerte_tekst: (product as any).offerte_tekst || "",
                                   prijs_excl_btw: Number(product.prijs_excl_btw), kostprijs: product.kostprijs ? Number(product.kostprijs) : null,
                                   eenheid: product.eenheid || "stuk", voorraad: product.voorraad,
+                                  min_voorraad: (product as any).min_voorraad ?? null,
                                   btw_percentage: product.btw_percentage ?? 21,
                                   max_korting_euro: product.max_korting_euro ? Number(product.max_korting_euro) : null,
                                   max_korting_percentage: product.max_korting_percentage ? Number(product.max_korting_percentage) : null,
