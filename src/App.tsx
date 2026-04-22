@@ -67,6 +67,10 @@ import TicketNieuw from "@/pages/helpdesk/TicketNieuw";
 import TicketDetail from "@/pages/helpdesk/TicketDetail";
 import Kennisbank from "@/pages/helpdesk/Kennisbank";
 import KennisArtikel from "@/pages/helpdesk/KennisArtikel";
+import Opleveringen from "@/pages/Opleveringen";
+import OpleverNieuw from "@/pages/OpleverNieuw";
+import OpleverDetail from "@/pages/OpleverDetail";
+import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
@@ -106,6 +110,7 @@ const App = () => (
 
             {/* Public embed routes — no auth, no layout */}
             <Route path="/offerte/:token" element={<OffertePublic />} />
+            <Route path="/oplevering/:token" element={<OpleverKlantOndertekenen />} />
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
             <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
             <Route path="/signup" element={<Signup />} />
@@ -281,6 +286,15 @@ const App = () => (
               } />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
+              <Route path="/opleveringen" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Opleveringen /></ProtectedRoute>
+              } />
+              <Route path="/opleveringen/nieuw" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverNieuw /></ProtectedRoute>
+              } />
+              <Route path="/opleveringen/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverDetail /></ProtectedRoute>
+              } />
             </Route>
             <Route path="/offertes/:id/pdf/print" element={<OffertePDFPrint />} />
 
