@@ -93,8 +93,8 @@ const InstallatieNieuw = () => {
       });
       toast.success("Installatie aangemaakt");
       navigate(`/installaties/${inst.id}`);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
     }
     setBusy(false);
   };
@@ -115,7 +115,7 @@ const InstallatieNieuw = () => {
             <Label>Klantnaam *</Label>
             <Input value={form.consument_naam} onChange={(e) => setForm({ ...form, consument_naam: e.target.value })} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>E-mail</Label><Input value={form.klant_email} onChange={(e) => setForm({ ...form, klant_email: e.target.value })} /></div>
             <div><Label>Telefoon</Label><Input value={form.klant_telefoon} onChange={(e) => setForm({ ...form, klant_telefoon: e.target.value })} /></div>
           </div>
@@ -134,7 +134,7 @@ const InstallatieNieuw = () => {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>Startdatum</Label><Input type="date" value={form.geplande_startdatum} onChange={(e) => setForm({ ...form, geplande_startdatum: e.target.value })} /></div>
             <div><Label>Starttijd</Label><Input type="time" value={form.start_tijd} onChange={(e) => setForm({ ...form, start_tijd: e.target.value })} /></div>
           </div>

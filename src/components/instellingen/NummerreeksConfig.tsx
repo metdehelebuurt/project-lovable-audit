@@ -28,6 +28,9 @@ const REEKSEN: Array<{ type: string; subtype: string; label: string; defaultPref
   { type: "pakbon", subtype: "regulier", label: "Pakbon", defaultPrefix: "PB" },
   { type: "installatie", subtype: "regulier", label: "Installatie", defaultPrefix: "INST" },
   { type: "oplevering", subtype: "regulier", label: "Opleverrapport", defaultPrefix: "OP" },
+  { type: "schouw", subtype: "regulier", label: "Schouw", defaultPrefix: "SCH" },
+  { type: "offerte", subtype: "regulier", label: "Offerte", defaultPrefix: "OF" },
+  { type: "ticket", subtype: "regulier", label: "Helpdesk-ticket", defaultPrefix: "TKT" },
 ];
 
 function key(type: string, subtype: string) {
@@ -135,12 +138,12 @@ export default function NummerreeksConfig({ partnerId }: { partnerId: string }) 
           if (!r) return null;
           return (
             <div key={key(meta.type, meta.subtype)} className="rounded-xl border border-border p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div>
+              <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <h4 className="font-medium">{meta.label}</h4>
-                  <p className="text-xs text-muted-foreground">Voorbeeld: <span className="font-mono text-foreground">{voorbeeld(r)}</span></p>
+                  <p className="text-xs text-muted-foreground">Eerstvolgende nummer: <span className="font-mono text-foreground">{voorbeeld(r)}</span></p>
                 </div>
-                <Button size="sm" onClick={() => opslaan(meta.type, meta.subtype)} disabled={saving === key(meta.type, meta.subtype)}>
+                <Button size="sm" className="w-full sm:w-auto" onClick={() => opslaan(meta.type, meta.subtype)} disabled={saving === key(meta.type, meta.subtype)}>
                   <Save className="h-4 w-4 mr-1" /> {saving === key(meta.type, meta.subtype) ? "…" : "Opslaan"}
                 </Button>
               </div>

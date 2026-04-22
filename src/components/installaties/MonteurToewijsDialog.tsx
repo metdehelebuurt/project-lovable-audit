@@ -105,15 +105,15 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
       toast.success("Installatie ingepland en monteur toegewezen");
       onSuccess?.(inst.id);
       onOpenChange(false);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
     }
     setBusy(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader><DialogTitle>Installatie plannen</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div>
@@ -127,7 +127,7 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Startdatum *</Label>
               <Input type="date" value={form.startdatum} onChange={(e) => setForm({ ...form, startdatum: e.target.value })} />
@@ -150,7 +150,7 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
             <Textarea value={form.werkomschrijving} onChange={(e) => setForm({ ...form, werkomschrijving: e.target.value })} rows={3} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
           <Button onClick={aanmaken} disabled={busy}>{busy ? "Opslaan…" : "Plannen"}</Button>
         </DialogFooter>
