@@ -18,6 +18,8 @@ import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 import OrderbevestigingEmailDialog from "@/components/opdrachten/OrderbevestigingEmailDialog";
+import MonteurToewijsDialog from "@/components/installaties/MonteurToewijsDialog";
+import KlantBevestigingDialog from "@/components/installaties/KlantBevestigingDialog";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
