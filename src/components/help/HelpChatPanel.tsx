@@ -1,4 +1,5 @@
-import { Trash2 } from "lucide-react";
+import { Trash2, Lightbulb } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,8 +16,27 @@ interface HelpChatPanelProps {
 
 export function HelpChatPanel({ open, onOpenChange }: HelpChatPanelProps) {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const { messages, isStreaming, send, clear } = useHelpChat();
   const suggestions = getSuggestions(profile?.rol);
+
+  const lastUserVraag = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
+
+  const dienVerzoekIn = () => {
+    const titel = lastUserVraag.trim().slice(0, 140);
+    const beschrijving = [
+      lastUserVraag.trim() ? `Vraag aan AI-hulp:\n${lastUserVraag.trim()}` : "",
+      lastAssistant.trim() ? `\n\nAntwoord van AI-hulp:\n${lastAssistant.trim()}` : "",
+    ]
+      .join("")
+      .trim();
+    const params = new URLSearchParams({ type: "functieverzoek" });
+    if (titel) params.set("titel", titel);
+    if (beschrijving) params.set("beschrijving", beschrijving);
+    navigate(`/feedback/nieuw?${params.toString()}`);
+    onOpenChange(false);
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -50,6 +70,19 @@ export function HelpChatPanel({ open, onOpenChange }: HelpChatPanelProps) {
             onNavigate={() => onOpenChange(false)}
           />
         </ScrollArea>
+        {lastUserVraag && !isStreaming && (
+          <div className="border-t bg-muted/40 px-4 py-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={dienVerzoekIn}
+            >
+              <Lightbulb className="h-4 w-4 text-amber-500" />
+              <span className="truncate">Functie nog niet beschikbaar? Dien een verzoek in</span>
+            </Button>
+          </div>
+        )}
         <HelpMessageInput
           onSend={send}
           disabled={isStreaming}
