@@ -394,6 +394,23 @@ export default function FactuurBeheer() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteFactuur} onOpenChange={(v) => !v && setDeleteFactuur(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Factuur verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Concept-factuur <strong>{deleteFactuur?.factuurnummer}</strong> wordt definitief verwijderd.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteFactuur} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
