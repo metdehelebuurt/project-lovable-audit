@@ -113,6 +113,39 @@ const KlantDetail = () => {
     enabled: !!klant?.lead_id,
   });
 
+  const { data: opleveringen = [] } = useQuery({
+    queryKey: ["klant-opleveringen", id, klant?.lead_id, opdrachten.map((o: any) => o.id).join(",")],
+    queryFn: async () => {
+      if (!id) return [];
+      const opdrachtIds = opdrachten.map((o: any) => o.id as string);
+      const filters: string[] = [`klant_id.eq.${id}`];
+      if (opdrachtIds.length > 0) filters.push(`opdracht_id.in.(${opdrachtIds.join(",")})`);
+      const { data, error } = await supabase
+        .from("opleverrapporten" as any)
+        .select("id, rapportnummer, status, opleverdatum, created_at, gefinaliseerd_op, installatie_id, pdf_url")
+        .or(filters.join(","))
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      const installatieIds = rows.map((r) => r.installatie_id).filter(Boolean) as string[];
+      let instMap: Record<string, string> = {};
+      if (installatieIds.length > 0) {
+        const { data: insts } = await supabase
+          .from("installaties")
+          .select("id, installatienummer")
+          .in("id", installatieIds);
+        instMap = Object.fromEntries((insts ?? []).map((i: any) => [i.id, i.installatienummer ?? ""]));
+      }
+      const versieMap = await fetchLaatsteVersieVoorRapporten(rows.map((r) => r.id));
+      return rows.map((r) => ({
+        ...r,
+        installatienummer: r.installatie_id ? instMap[r.installatie_id] : null,
+        versies: versieMap[r.id] ?? 0,
+      }));
+    },
+    enabled: !!id,
+  });
+
   /* ─── Mutations ─── */
   const updateKlantMutation = useMutation({
     mutationFn: async (fields: any) => {
