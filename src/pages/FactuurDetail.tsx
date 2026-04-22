@@ -441,6 +441,7 @@ export default function FactuurDetail() {
             factuur_subtype: doc.factuur_subtype,
           }}
           defaultTo={pdfKlant?.email || ""}
+          isResend={Boolean(doc.verzonden_op)}
           onSent={() => { setDoc({ ...doc, status: "verzonden", verzonden_op: new Date().toISOString() }); setPdfOpen(false); }}
         />
       )}
