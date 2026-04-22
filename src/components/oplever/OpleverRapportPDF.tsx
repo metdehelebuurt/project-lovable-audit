@@ -52,7 +52,7 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
               />
             ) : null}
             <div>
-            <div style={{ fontSize: "10pt", color: "#6b7280" }}>NEN 1010 Opleverrapport</div>
+            <div style={{ fontSize: "10pt", color: "#6b7280" }}>NEN 1010 / NEN 3140 Opleverrapport</div>
             <h1 style={{ fontSize: "22pt", margin: "4px 0 0", color: "#111827" }}>{rapport.rapportnummer}</h1>
             <div style={{ fontSize: "10pt", color: "#6b7280", marginTop: "4px" }}>
               Templateversie: {rapport.template_versie}
@@ -78,13 +78,27 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
       <Section title="Algemene gegevens">
         <Row label="Klant" value={klantNaam ?? "—"} />
         <Row label="Installateur" value={partnerNaam ?? "—"} />
+        <Row label="Projectnummer" value={rapport.extra_velden?.projectnummer ?? "—"} />
+        <Row label="Datum installatie" value={rapport.extra_velden?.installatiedatum ?? "—"} />
         <Row label="Opleverdatum" value={rapport.opleverdatum ?? "—"} />
         <Row label="Omvang" value={rapport.scope_omschrijving ?? "—"} />
       </Section>
 
+      {rapport.extra_velden?.scope_normen ? (
+        <Section title="Normen & scope">
+          <Row label="NEN 1010" value={rapport.extra_velden.scope_normen.nen1010 ? "Ja" : "Nee"} />
+          <Row label="NEN 3140" value={rapport.extra_velden.scope_normen.nen3140 ? "Ja" : "Nee"} />
+          <Row label="Fabrikantrichtlijnen" value={rapport.extra_velden.scope_normen.fabrikant ? "Ja" : "Nee"} />
+          <Row label="Eisen netbeheerder" value={rapport.extra_velden.scope_normen.netbeheerder ? "Ja" : "Nee"} />
+        </Section>
+      ) : null}
+
       <Section title="Installatie-omschrijving">
+        <Row label="Type systeem" value={rapport.extra_velden?.systeem_type ? `${rapport.extra_velden.systeem_type}-gekoppeld` : "—"} />
+        <Row label="Aansluitwaarde woning" value={rapport.extra_velden?.aansluitwaarde ?? "—"} />
         <Row label="Batterij" value={`${rapport.batterij_spec?.merk ?? ""} ${rapport.batterij_spec?.type ?? ""} (${rapport.batterij_spec?.capaciteit_kwh ?? "?"} kWh) — sn: ${rapport.batterij_spec?.serienummer ?? "—"}`} />
         <Row label="Omvormer" value={`${rapport.omvormer_spec?.merk ?? ""} ${rapport.omvormer_spec?.type ?? ""} (${rapport.omvormer_spec?.vermogen_kw ?? "?"} kW, ${rapport.omvormer_spec?.fasen ?? "?"}-fase) — sn: ${rapport.omvormer_spec?.serienummer ?? "—"}`} />
+        <Row label="Gateway / ATS sn" value={rapport.extra_velden?.gateway_serienummer ?? "—"} />
         <Row label="CE-markering" value={rapport.omvormer_spec?.ce_markering ? "Ja" : "Nee"} />
         <Row label="RfG-klasse" value={rapport.omvormer_spec?.rfg_klasse ?? "—"} />
       </Section>
@@ -109,6 +123,21 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
           </tbody>
         </table>
       </Section>
+
+      {rapport.extra_velden?.bekabeling_meterkast?.length ? (
+        <ChecklistTable title="Bekabeling & meterkast" items={rapport.extra_velden.bekabeling_meterkast} />
+      ) : null}
+
+      {rapport.extra_velden?.aarding_beveiliging?.length ? (
+        <Section title="Aarding & beveiligingen">
+          <ChecklistRows items={rapport.extra_velden.aarding_beveiliging} />
+          {typeof rapport.extra_velden.aardweerstand_ohm === "number" ? (
+            <div style={{ marginTop: "3mm" }}>
+              <Row label="Aardweerstand" value={`${rapport.extra_velden.aardweerstand_ohm} Ω`} />
+            </div>
+          ) : null}
+        </Section>
+      ) : null}
 
       <Section title="Metingen & beproevingen">
         <table style={tableStyle}>
@@ -140,6 +169,10 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
         </div>
       </Section>
 
+      {rapport.extra_velden?.heeft_backup && rapport.extra_velden?.backup_check?.length ? (
+        <ChecklistTable title="Backup / noodstroom" items={rapport.extra_velden.backup_check} />
+      ) : null}
+
       <Section title="Groepenverdeling">
         <table style={tableStyle}>
           <thead>
@@ -167,6 +200,10 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
         </table>
       </Section>
 
+      {rapport.extra_velden?.doc_labels?.length ? (
+        <ChecklistTable title="Documenten & labels op locatie" items={rapport.extra_velden.doc_labels} />
+      ) : null}
+
       <Section title="Bevindingen & conformiteitsverklaring">
         <p style={{ marginTop: 0 }}>
           <strong>Eindoordeel:</strong> {stempelLabel}
@@ -181,6 +218,12 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
           <div>
             <strong>Hersteladviezen:</strong>
             <ul>{rapport.bevindingen.recommendations.map((d, i) => <li key={i}>{d}</li>)}</ul>
+          </div>
+        ) : null}
+        {rapport.extra_velden?.opmerkingen_afwijkingen ? (
+          <div style={{ marginTop: "3mm" }}>
+            <strong>Opmerkingen / afwijkingen:</strong>
+            <p style={{ whiteSpace: "pre-wrap", marginTop: "1mm" }}>{rapport.extra_velden.opmerkingen_afwijkingen}</p>
           </div>
         ) : null}
         <p style={{ marginTop: "6mm", whiteSpace: "pre-wrap" }}>{rapport.conformiteitstekst}</p>
