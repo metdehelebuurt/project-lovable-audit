@@ -4494,6 +4494,7 @@ export type Database = {
           max_korting_euro: number | null
           max_korting_percentage: number | null
           merk: string | null
+          min_voorraad: number
           model: string | null
           naam: string
           offerte_tekst: string | null
@@ -4532,6 +4533,7 @@ export type Database = {
           max_korting_euro?: number | null
           max_korting_percentage?: number | null
           merk?: string | null
+          min_voorraad?: number
           model?: string | null
           naam: string
           offerte_tekst?: string | null
@@ -4570,6 +4572,7 @@ export type Database = {
           max_korting_euro?: number | null
           max_korting_percentage?: number | null
           merk?: string | null
+          min_voorraad?: number
           model?: string | null
           naam?: string
           offerte_tekst?: string | null
@@ -4911,6 +4914,146 @@ export type Database = {
           },
         ]
       }
+      voorraad_mutaties: {
+        Row: {
+          aantal: number
+          actor_id: string | null
+          created_at: string
+          id: string
+          partner_id: string
+          product_id: string
+          reden: string | null
+          referentie_id: string | null
+          referentie_type: string | null
+          type: string
+        }
+        Insert: {
+          aantal: number
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          partner_id: string
+          product_id: string
+          reden?: string | null
+          referentie_id?: string | null
+          referentie_type?: string | null
+          type: string
+        }
+        Update: {
+          aantal?: number
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          partner_id?: string
+          product_id?: string
+          reden?: string | null
+          referentie_id?: string | null
+          referentie_type?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voorraad_mutaties_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voorraad_mutaties_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voorraad_mutaties_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voorraad_mutaties_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voorraad_mutaties_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voorraad_reserveringen: {
+        Row: {
+          aantal: number
+          created_at: string
+          id: string
+          opdracht_id: string | null
+          partner_id: string
+          product_id: string
+          regel_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aantal: number
+          created_at?: string
+          id?: string
+          opdracht_id?: string | null
+          partner_id: string
+          product_id: string
+          regel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aantal?: number
+          created_at?: string
+          id?: string
+          opdracht_id?: string | null
+          partner_id?: string
+          product_id?: string
+          regel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voorraad_reserveringen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voorraad_reserveringen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voorraad_reserveringen_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voorraad_reserveringen_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       web_widgets: {
         Row: {
           actief: boolean
@@ -5215,11 +5358,13 @@ export type Database = {
         Args: { _partner_id: string }
         Returns: string
       }
+      get_gereserveerd: { Args: { _product_id: string }; Returns: number }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_voorraad_stand: { Args: { _product_id: string }; Returns: number }
       increment_kb_views: { Args: { _artikel_id: string }; Returns: undefined }
       insert_oplever_pdf_versie: {
         Args: {
