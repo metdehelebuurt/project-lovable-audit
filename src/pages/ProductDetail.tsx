@@ -914,6 +914,16 @@ const ProductDetail = () => {
               )}
             </CardContent>
           </Card>
+          <div className="mt-4">
+            <ProductHandleidingenSection
+              productId={product.id}
+              installatieUrl={(product as any).installatie_handleiding_url ?? null}
+              installatieNaam={(product as any).installatie_handleiding_naam ?? null}
+              gebruikerUrl={(product as any).gebruiker_handleiding_url ?? null}
+              gebruikerNaam={(product as any).gebruiker_handleiding_naam ?? null}
+              onChanged={() => queryClient.invalidateQueries({ queryKey: ["product", id] })}
+            />
+          </div>
         </TabsContent>
 
         {/* ── AI CONTROLE ── */}
