@@ -479,6 +479,17 @@ const OpdrachtDetail = () => {
           setOrderPdfOpen(false);
         }}
       />
+
+      <RetourDialog
+        open={retourOpen}
+        onOpenChange={setRetourOpen}
+        defaultType="klant_retour"
+        context={{
+          opdracht_id: opdracht.id,
+          klant_id: opdracht.klant_id ?? undefined,
+          suggestRegels: regels.map((r) => ({ omschrijving: r.omschrijving, aantal: r.aantal })),
+        }}
+      />
     </div>
   );
 };
