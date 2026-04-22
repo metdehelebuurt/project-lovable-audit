@@ -164,7 +164,6 @@ const OfferteNieuw = () => {
     setKlantPostcode(editOfferte.klant_postcode || "");
     setKlantPlaats(editOfferte.klant_plaats || "");
     setGeldigTot(editOfferte.geldig_tot);
-    setBetalingsvoorwaarden(editOfferte.betalingsvoorwaarden || "");
     setNotities(editOfferte.notities || "");
     setIntroductieTekst(editOfferte.introductie_tekst || "");
     setGarantieVoorwaarden(editOfferte.garantie_voorwaarden || "");
