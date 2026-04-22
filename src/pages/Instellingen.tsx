@@ -53,6 +53,7 @@ const Instellingen = () => {
     { id: "offertes", label: "Offertes", icon: FileText, adminOnly: true },
     { id: "leads", label: "Leads", icon: Users, adminOnly: true },
     { id: "schouwen", label: "Schouwen", icon: ClipboardList, adminOnly: true },
+    { id: "nummerreeksen", label: "Nummerreeksen", icon: Hash, adminOnly: true },
     { id: "helpdesk", label: "Helpdesk notificaties", icon: LifeBuoy, adminOnly: true },
     { id: "modules", label: "Modules & rollen", icon: KeyRound, adminOnly: true },
     { id: "abonnement", label: "Abonnement", icon: CreditCard, adminOnly: true },
@@ -106,6 +107,7 @@ const Instellingen = () => {
           {activeTab === "producten" && isPartnerAdmin && profile?.partner_id && <ProductenInstellingen partnerId={profile.partner_id} />}
           {activeTab === "leads" && isPartnerAdmin && profile?.partner_id && <LeadBronnenConfig partnerId={profile.partner_id} />}
           {activeTab === "schouwen" && isPartnerAdmin && profile?.partner_id && <SchouwInstellingen partnerId={profile.partner_id} />}
+          {activeTab === "nummerreeksen" && isPartnerAdmin && profile?.partner_id && <NummerreeksConfig partnerId={profile.partner_id} />}
           {activeTab === "helpdesk" && isPartnerAdmin && profile?.partner_id && <HelpdeskNotificatieConfig partnerId={profile.partner_id} />}
           {activeTab === "modules" && isPartnerAdmin && profile?.partner_id && <ModuleRolMatrix partnerId={profile.partner_id} />}
           {activeTab === "abonnement" && isPartnerAdmin && profile?.partner_id && <PartnerAbonnement />}
