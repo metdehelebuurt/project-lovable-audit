@@ -344,6 +344,26 @@ const OfferteNieuw = () => {
         record.offertenummer = generateOfferteNummer();
         const { data, error } = await supabase.from("offertes").insert(record).select("id").single();
         if (error) throw error;
+        // Sla direct het gekozen termijnschema op (tenzij "later")
+        if (termijnSchemaSlug && termijnSchemaSlug !== "later" && profile?.partner_id) {
+          const tpl = TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug);
+          if (tpl) {
+            try {
+              await saveTermijnschema(
+                data.id,
+                profile.partner_id,
+                tpl.termijnen.map((t) => ({
+                  omschrijving: t.omschrijving,
+                  percentage: t.percentage,
+                  trigger_status: t.trigger_status,
+                })),
+              );
+            } catch (err) {
+              // Niet-fataal: gebruiker kan later alsnog instellen via TermijnschemaCard
+              console.warn("Termijnschema automatisch opslaan mislukt", err);
+            }
+          }
+        }
         return data.id;
       }
     },
@@ -351,7 +371,8 @@ const OfferteNieuw = () => {
       queryClient.invalidateQueries({ queryKey: ["offertes"] });
       if (editId) queryClient.invalidateQueries({ queryKey: ["offerte", editId] });
       toast.success(editId ? "Offerte bijgewerkt" : "Offerte aangemaakt");
-      navigate(editId ? `/offertes/${editId}` : `/offertes/${newId}/pdf`);
+      // Ga altijd eerst naar de detailpagina — daar kan de gebruiker ondertekenen en versturen
+      navigate(`/offertes/${editId || newId}`);
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
