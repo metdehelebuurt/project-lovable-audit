@@ -67,6 +67,8 @@ export default function FactuurBeheer() {
     periode_start: format(startOfMonth(vorigeMaand), "yyyy-MM-dd"),
     periode_eind: format(endOfMonth(vorigeMaand), "yyyy-MM-dd"),
   });
+  const [mollieBezig, setMollieBezig] = useState<string | null>(null);
+  const [deleteFactuur, setDeleteFactuur] = useState<Factuur | null>(null);
 
   const fetchFacturen = async () => {
     const { data } = await supabase.from("facturen").select("*, partners(naam)").order("created_at", { ascending: false });
@@ -182,6 +184,37 @@ export default function FactuurBeheer() {
     setBulkDialog(false);
     if (aangemaakt > 0) toast.success(`${aangemaakt} factuur/facturen aangemaakt${mislukt > 0 ? ` (${mislukt} mislukt)` : ""}`);
     else toast.error("Geen facturen aangemaakt");
+    fetchFacturen();
+  };
+
+  const handleMollieLink = async (f: Factuur) => {
+    setMollieBezig(f.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("mollie-create-invoice-payment", {
+        body: { factuurId: f.id },
+      });
+      if (error) throw error;
+      const url = (data as { checkoutUrl?: string })?.checkoutUrl;
+      if (url) {
+        await navigator.clipboard.writeText(url).catch(() => undefined);
+        toast.success("Mollie betaallink aangemaakt en gekopieerd");
+      } else {
+        toast.success("Mollie betaling aangemaakt");
+      }
+      fetchFacturen();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Mollie-link mislukt");
+    } finally {
+      setMollieBezig(null);
+    }
+  };
+
+  const handleDeleteFactuur = async () => {
+    if (!deleteFactuur) return;
+    const { error } = await supabase.from("facturen").delete().eq("id", deleteFactuur.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Factuur verwijderd");
+    setDeleteFactuur(null);
     fetchFacturen();
   };
 
