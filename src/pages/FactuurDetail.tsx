@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
 import FactuurEmailDialog from "@/components/financieel/FactuurEmailDialog";
 import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
+import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
