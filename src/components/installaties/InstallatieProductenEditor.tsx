@@ -42,8 +42,8 @@ export default function InstallatieProductenEditor({ partnerId, value, onChange 
       ) : (
         <div className="space-y-2">
           {value.map((r, i) => (
-            <div key={i} className="flex items-end gap-2">
-              <div className="flex-1">
+            <div key={i} className="flex flex-col sm:flex-row sm:items-end gap-2">
+              <div className="flex-1 min-w-0">
                 <Label className="text-xs">Omschrijving</Label>
                 <Input
                   value={r.omschrijving}
@@ -51,7 +51,7 @@ export default function InstallatieProductenEditor({ partnerId, value, onChange 
                   placeholder="Productnaam of werkzaamheid"
                 />
               </div>
-              <div className="w-20">
+              <div className="w-full sm:w-20 min-w-[80px]">
                 <Label className="text-xs">Aantal</Label>
                 <Input
                   type="number"
@@ -60,7 +60,7 @@ export default function InstallatieProductenEditor({ partnerId, value, onChange 
                   onChange={(e) => update(i, { aantal: Number(e.target.value) || 1 })}
                 />
               </div>
-              <Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Regel verwijderen">
+              <Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Regel verwijderen" className="self-end min-h-[44px] min-w-[44px]">
                 <Trash2 className="h-4 w-4 text-muted-foreground" />
               </Button>
             </div>
@@ -101,10 +101,14 @@ function ProductPickerButton({ partnerId, onPick }: { partnerId: string; onPick:
       let query = supabase
         .from("producten")
         .select("id, naam, merk, model")
-        .or(`partner_id.eq.${partnerId},partner_id.is.null`)
         .limit(15);
       if (term.length > 0) {
-        query = query.or(`naam.ilike.%${term}%,merk.ilike.%${term}%,model.ilike.%${term}%`);
+        // Combineer partner-scope + tekst-search via een enkele compound `or`
+        query = query.or(
+          `and(or(partner_id.eq.${partnerId},partner_id.is.null),or(naam.ilike.%${term}%,merk.ilike.%${term}%,model.ilike.%${term}%))`,
+        );
+      } else {
+        query = query.or(`partner_id.eq.${partnerId},partner_id.is.null`);
       }
       const { data } = await query;
       setHits((data ?? []) as ProductHit[]);
