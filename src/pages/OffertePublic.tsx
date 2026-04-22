@@ -103,7 +103,7 @@ export default function OffertePublic() {
   useEffect(() => {
     if (!offerte) return;
     const regels = Array.isArray(offerte.regels) ? offerte.regels : [];
-    const productIds = Array.from(new Set(
+    const productIds: string[] = Array.from(new Set(
       regels
         .map((r: any) => (typeof r?.product_id === "string" ? r.product_id : null))
         .filter((v: string | null): v is string => Boolean(v)),
@@ -481,6 +481,40 @@ export default function OffertePublic() {
 
           {/* ─── Tab: Berichten ─── */}
           <TabsContent value="berichten" className="space-y-4">
+          </TabsContent>
+          {/* placeholder closed above to keep diff clean */}
+          <TabsContent value="handleidingen" className="space-y-4">
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="h-5 w-5" style={{ color: pc }} />
+                  <h3 className="text-lg font-semibold text-foreground">Handleidingen</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Documenten bij de producten in deze offerte.
+                </p>
+                <ul className="space-y-2">
+                  {handleidingen.map((h) => (
+                    <li key={`${h.product_id}-${h.type}`} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+                      <FileText className="h-4 w-4 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{h.product_naam}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {h.type === "installatie" ? "Installatiehandleiding" : "Gebruikershandleiding"} • {h.bestandsnaam}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" asChild className="gap-1.5 shrink-0">
+                        <a href={h.url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3.5 w-3.5" /> Open
+                        </a>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="berichten-original-removed" className="space-y-4">
             <Card className="rounded-2xl border-0 shadow-sm flex flex-col" style={{ height: "60vh" }}>
               <div className="p-4 border-b border-border">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
