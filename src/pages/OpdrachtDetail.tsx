@@ -55,7 +55,7 @@ const OpdrachtDetail = () => {
   const [orderPdfOpen, setOrderPdfOpen] = useState(false);
   const [orderEmailOpen, setOrderEmailOpen] = useState(false);
   const [klantBevestigingOpen, setKlantBevestigingOpen] = useState(false);
-  const [aangemaakteInstallatieId, setAangemaakteInstallatieId] = useState<string | null>(null);
+  const [aangemaakteInstallatie, setAangemaakteInstallatie] = useState<any | null>(null);
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
