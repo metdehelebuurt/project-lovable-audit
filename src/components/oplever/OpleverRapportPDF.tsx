@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import type { Opleverrapport, Verdict } from "./types";
+import type { ChecklistItem, Opleverrapport, Verdict } from "./types";
 
 const VERDICT_COLOR: Record<string, string> = {
   goedgekeurd: "#16a34a",
@@ -283,3 +283,43 @@ function SignBlock({ title, sig }: { title: string; sig: { image_url: string; na
 const tableStyle: React.CSSProperties = { width: "100%", borderCollapse: "collapse", fontSize: "10pt" };
 const thStyle: React.CSSProperties = { textAlign: "left", padding: "4px 6px", borderBottom: "1px solid #cbd5e1", background: "#f8fafc", color: "#475569", fontWeight: 600 };
 const tdStyle: React.CSSProperties = { padding: "4px 6px", borderBottom: "1px solid #f1f5f9", verticalAlign: "top" };
+
+function statusLabel(s: ChecklistItem["status"]): string {
+  if (s === "pass") return "OK";
+  if (s === "fail") return "Niet OK";
+  if (s === "nvt") return "n.v.t.";
+  return "—";
+}
+
+function ChecklistRows({ items }: { items: ChecklistItem[] }) {
+  return (
+    <table style={tableStyle}>
+      <thead>
+        <tr>
+          <th style={thStyle}>Punt</th>
+          <th style={{ ...thStyle, width: "25mm" }}>Status</th>
+          <th style={thStyle}>Opmerking</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((c) => (
+          <tr key={c.key}>
+            <td style={tdStyle}>{c.label}</td>
+            <td style={{ ...tdStyle, color: c.status === "fail" ? "#dc2626" : c.status === "pass" ? "#16a34a" : "#475569", fontWeight: 600 }}>
+              {statusLabel(c.status)}
+            </td>
+            <td style={tdStyle}>{c.opmerking ?? ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ChecklistTable({ title, items }: { title: string; items: ChecklistItem[] }) {
+  return (
+    <Section title={title}>
+      <ChecklistRows items={items} />
+    </Section>
+  );
+}
