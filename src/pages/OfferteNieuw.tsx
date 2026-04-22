@@ -310,7 +310,9 @@ const OfferteNieuw = () => {
         klant_postcode: klantPostcode || null,
         klant_plaats: klantPlaats || null,
         geldig_tot: geldigTot,
-        betalingsvoorwaarden: (betalingsvoorwaarden === "__custom__" ? customBetalingsvoorwaarden : betalingsvoorwaarden) || null,
+        betalingsvoorwaarden: termijnSchemaSlug && termijnSchemaSlug !== "later"
+          ? (TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug)?.beschrijving || null)
+          : null,
         notities: notities || null,
         introductie_tekst: introductieTekst || null,
         garantie_voorwaarden: garantieVoorwaarden || null,
@@ -422,14 +424,23 @@ const OfferteNieuw = () => {
               <div><Label>Plaats</Label><Input value={klantPlaats} onChange={e => setKlantPlaats(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Geldig tot *</Label><Input type="date" value={geldigTot} onChange={e => setGeldigTot(e.target.value)} required className="rounded-xl" /></div>
               <div>
-                <Label>Betalingsvoorwaarden</Label>
-                <BetalingsvoorwaardenSelect
-                  partnerId={profile?.partner_id}
-                  value={betalingsvoorwaarden}
-                  onChange={setBetalingsvoorwaarden}
-                  customValue={customBetalingsvoorwaarden}
-                  onCustomChange={setCustomBetalingsvoorwaarden}
-                />
+                <Label>Betaling / termijnschema</Label>
+                <Select value={termijnSchemaSlug} onValueChange={setTermijnSchemaSlug}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Kies betaalverdeling" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TERMIJN_TEMPLATES.map((tpl) => (
+                      <SelectItem key={tpl.slug} value={tpl.slug}>
+                        {tpl.naam} — {tpl.beschrijving}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="later">Later instellen</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Het gekozen schema wordt automatisch aangemaakt en kan na opslaan worden aangepast.
+                </p>
               </div>
             </div>
           </CardContent>
