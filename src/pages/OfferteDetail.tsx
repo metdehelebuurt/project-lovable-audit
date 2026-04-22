@@ -19,13 +19,14 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Send, Link2, Copy, FileDown, Pencil, Trash2,
   Check, XCircle, MessageSquare, Calendar, MapPin, Phone, Mail,
-  User, Clock, StickyNote, FileText, Bell, Receipt
+  User, Clock, StickyNote, FileText, Bell, Receipt, PenLine
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
+import SignaturePad from "@/components/schouwen/SignaturePad";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
@@ -80,6 +81,12 @@ const OfferteDetail = () => {
   const [pendingStatus, setPendingStatus] = useState<OfferteStatus | null>(null);
   const [afwijzingCategorie, setAfwijzingCategorie] = useState("");
   const [afwijzingReden, setAfwijzingReden] = useState("");
+
+  // Ondertekenen dialog
+  const [signDialog, setSignDialog] = useState(false);
+  const [signOpenSendAfter, setSignOpenSendAfter] = useState(false);
+  const [signatureDraft, setSignatureDraft] = useState<string | null>(null);
+  const [signSaving, setSignSaving] = useState(false);
 
   const isSuperadmin = profile?.rol === "superadmin";
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
@@ -152,6 +159,45 @@ const OfferteDetail = () => {
     });
     setAfwijzingDialog(false);
     setPendingStatus(null);
+  };
+
+  const isSigned = !!(offerte as any)?.partner_handtekening_data;
+
+  const openSignDialog = (sendAfter: boolean) => {
+    setSignatureDraft((offerte as any)?.partner_handtekening_data || null);
+    setSignOpenSendAfter(sendAfter);
+    setSignDialog(true);
+  };
+
+  const handleSendClick = () => {
+    if (isSigned) {
+      setEmailDialog(true);
+    } else {
+      openSignDialog(true);
+    }
+  };
+
+  const handleSignatureSave = async () => {
+    if (!id) return;
+    if (!signatureDraft) {
+      toast.error("Plaats eerst een handtekening");
+      return;
+    }
+    setSignSaving(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("offertes").update({
+      partner_handtekening_data: signatureDraft,
+      partner_handtekening_op: now,
+    } as any).eq("id", id);
+    setSignSaving(false);
+    if (error) {
+      toast.error("Handtekening opslaan mislukt", { description: error.message });
+      return;
+    }
+    toast.success("Offerte ondertekend");
+    queryClient.invalidateQueries({ queryKey: ["offerte", id] });
+    setSignDialog(false);
+    if (signOpenSendAfter) setEmailDialog(true);
   };
 
   const deleteMutation = useMutation({
@@ -286,15 +332,27 @@ const OfferteDetail = () => {
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => navigate(`/offertes/${offerte.id}/pdf`)}>
             <FileDown className="h-4 w-4" /> PDF
           </Button>
-          {(offerte as any).partner_handtekening_data ? (
-            <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => setEmailDialog(true)}>
-              <Send className="h-4 w-4" /> Versturen
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" className="rounded-pill gap-2 opacity-60" onClick={() => toast.error("Onderteken de offerte eerst in de PDF-editor voordat u deze kunt versturen")} title="Offerte moet eerst ondertekend worden in de PDF-editor">
-              <Send className="h-4 w-4" /> Versturen
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-pill gap-2"
+              onClick={() => openSignDialog(false)}
+              title={isSigned ? "Handtekening wijzigen" : "Offerte ondertekenen"}
+            >
+              <PenLine className="h-4 w-4" />
+              {isSigned ? "Ondertekend" : "Ondertekenen"}
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-pill gap-2"
+            onClick={handleSendClick}
+            title={isSigned ? "Offerte versturen" : "Onderteken en verstuur in één stap"}
+          >
+            <Send className="h-4 w-4" /> Versturen
+          </Button>
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={handleShareLink}>
             <Link2 className="h-4 w-4" /> Delen
           </Button>
@@ -802,6 +860,41 @@ const OfferteDetail = () => {
             <Button variant="outline" onClick={() => setAfwijzingDialog(false)} className="rounded-pill">Annuleren</Button>
             <Button onClick={handleAfwijzingConfirm} className="rounded-pill" variant="destructive">
               Bevestigen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Onderteken-dialog */}
+      <Dialog open={signDialog} onOpenChange={(open) => { setSignDialog(open); if (!open) setSignatureDraft(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PenLine className="h-4 w-4 text-primary" />
+              Offerte ondertekenen
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Plaats hieronder uw handtekening. Deze verschijnt op de PDF en is verplicht voordat de offerte naar de klant kan worden verstuurd.
+            </p>
+            <div className="rounded-xl border bg-muted/30 p-2">
+              <SignaturePad value={signatureDraft} onChange={setSignatureDraft} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Tip: u kunt de handtekening later wijzigen of het uitgebreide sjabloon opmaken via de PDF-editor.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSignDialog(false)} className="rounded-pill">
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleSignatureSave}
+              disabled={!signatureDraft || signSaving}
+              className="rounded-pill gap-2"
+            >
+              {signSaving ? "Opslaan..." : signOpenSendAfter ? "Ondertekenen & versturen" : "Ondertekening opslaan"}
             </Button>
           </DialogFooter>
         </DialogContent>

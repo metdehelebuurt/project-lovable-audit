@@ -16,8 +16,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
 import DatasheetCheckDialog from "@/components/offertes/DatasheetCheckDialog";
-import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { defaultTemplateConfig, type TemplateConfig } from "@/components/offertes/templates/templateRegistry";
+import { TERMIJN_TEMPLATES, saveTermijnschema, type TriggerStatus } from "@/lib/termijnschema";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -85,8 +85,9 @@ const OfferteNieuw = () => {
     d.setDate(d.getDate() + 30);
     return d.toISOString().split("T")[0];
   });
-  const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("");
-  const [customBetalingsvoorwaarden, setCustomBetalingsvoorwaarden] = useState("");
+  // Termijnschema-keuze tijdens aanmaken (vervangt vrij-tekst betalingsvoorwaarden)
+  // "100" = 100% bij oplevering (default), of een van de TERMIJN_TEMPLATES slugs, of "later" om over te slaan
+  const [termijnSchemaSlug, setTermijnSchemaSlug] = useState<string>("100");
   const [notities, setNotities] = useState("");
   const [introductieTekst, setIntroductieTekst] = useState("");
   const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
@@ -163,7 +164,6 @@ const OfferteNieuw = () => {
     setKlantPostcode(editOfferte.klant_postcode || "");
     setKlantPlaats(editOfferte.klant_plaats || "");
     setGeldigTot(editOfferte.geldig_tot);
-    setBetalingsvoorwaarden(editOfferte.betalingsvoorwaarden || "");
     setNotities(editOfferte.notities || "");
     setIntroductieTekst(editOfferte.introductie_tekst || "");
     setGarantieVoorwaarden(editOfferte.garantie_voorwaarden || "");
@@ -310,7 +310,9 @@ const OfferteNieuw = () => {
         klant_postcode: klantPostcode || null,
         klant_plaats: klantPlaats || null,
         geldig_tot: geldigTot,
-        betalingsvoorwaarden: (betalingsvoorwaarden === "__custom__" ? customBetalingsvoorwaarden : betalingsvoorwaarden) || null,
+        betalingsvoorwaarden: termijnSchemaSlug && termijnSchemaSlug !== "later"
+          ? (TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug)?.beschrijving || null)
+          : null,
         notities: notities || null,
         introductie_tekst: introductieTekst || null,
         garantie_voorwaarden: garantieVoorwaarden || null,
@@ -342,6 +344,26 @@ const OfferteNieuw = () => {
         record.offertenummer = generateOfferteNummer();
         const { data, error } = await supabase.from("offertes").insert(record).select("id").single();
         if (error) throw error;
+        // Sla direct het gekozen termijnschema op (tenzij "later")
+        if (termijnSchemaSlug && termijnSchemaSlug !== "later" && profile?.partner_id) {
+          const tpl = TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug);
+          if (tpl) {
+            try {
+              await saveTermijnschema(
+                data.id,
+                profile.partner_id,
+                tpl.termijnen.map((t) => ({
+                  omschrijving: t.omschrijving,
+                  percentage: t.percentage,
+                  trigger_status: t.trigger_status,
+                })),
+              );
+            } catch (err) {
+              // Niet-fataal: gebruiker kan later alsnog instellen via TermijnschemaCard
+              console.warn("Termijnschema automatisch opslaan mislukt", err);
+            }
+          }
+        }
         return data.id;
       }
     },
@@ -349,7 +371,8 @@ const OfferteNieuw = () => {
       queryClient.invalidateQueries({ queryKey: ["offertes"] });
       if (editId) queryClient.invalidateQueries({ queryKey: ["offerte", editId] });
       toast.success(editId ? "Offerte bijgewerkt" : "Offerte aangemaakt");
-      navigate(editId ? `/offertes/${editId}` : `/offertes/${newId}/pdf`);
+      // Ga altijd eerst naar de detailpagina — daar kan de gebruiker ondertekenen en versturen
+      navigate(`/offertes/${editId || newId}`);
     },
     onError: (err: Error) => toast.error("Fout", { description: err.message }),
   });
@@ -422,14 +445,23 @@ const OfferteNieuw = () => {
               <div><Label>Plaats</Label><Input value={klantPlaats} onChange={e => setKlantPlaats(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Geldig tot *</Label><Input type="date" value={geldigTot} onChange={e => setGeldigTot(e.target.value)} required className="rounded-xl" /></div>
               <div>
-                <Label>Betalingsvoorwaarden</Label>
-                <BetalingsvoorwaardenSelect
-                  partnerId={profile?.partner_id}
-                  value={betalingsvoorwaarden}
-                  onChange={setBetalingsvoorwaarden}
-                  customValue={customBetalingsvoorwaarden}
-                  onCustomChange={setCustomBetalingsvoorwaarden}
-                />
+                <Label>Betaling / termijnschema</Label>
+                <Select value={termijnSchemaSlug} onValueChange={setTermijnSchemaSlug}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Kies betaalverdeling" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TERMIJN_TEMPLATES.map((tpl) => (
+                      <SelectItem key={tpl.slug} value={tpl.slug}>
+                        {tpl.naam} — {tpl.beschrijving}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="later">Later instellen</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Het gekozen schema wordt automatisch aangemaakt en kan na opslaan worden aangepast.
+                </p>
               </div>
             </div>
           </CardContent>
