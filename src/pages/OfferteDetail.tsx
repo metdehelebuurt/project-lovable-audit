@@ -19,13 +19,14 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Send, Link2, Copy, FileDown, Pencil, Trash2,
   Check, XCircle, MessageSquare, Calendar, MapPin, Phone, Mail,
-  User, Clock, StickyNote, FileText, Bell, Receipt
+  User, Clock, StickyNote, FileText, Bell, Receipt, PenLine
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
+import SignaturePad from "@/components/schouwen/SignaturePad";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
