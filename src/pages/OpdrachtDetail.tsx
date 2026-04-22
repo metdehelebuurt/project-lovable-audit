@@ -22,6 +22,8 @@ import MonteurToewijsDialog from "@/components/installaties/MonteurToewijsDialog
 import KlantBevestigingDialog from "@/components/installaties/KlantBevestigingDialog";
 import OpdrachtVoorraadTab from "@/components/opdracht/OpdrachtVoorraadTab";
 import OpdrachtLeveringTab from "@/components/opdracht/OpdrachtLeveringTab";
+import RetourDialog from "@/components/retouren/RetourDialog";
+import { RotateCcw } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -58,6 +60,7 @@ const OpdrachtDetail = () => {
   const [orderEmailOpen, setOrderEmailOpen] = useState(false);
   const [klantBevestigingOpen, setKlantBevestigingOpen] = useState(false);
   const [aangemaakteInstallatie, setAangemaakteInstallatie] = useState<any | null>(null);
+  const [retourOpen, setRetourOpen] = useState(false);
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
@@ -262,6 +265,9 @@ const OpdrachtDetail = () => {
             </Button>
             <Button variant="outline" onClick={() => handleCreateFinancieel("pakbon")} className="gap-2">
               <Package className="h-4 w-4" /> Pakbon aanmaken
+            </Button>
+            <Button variant="outline" onClick={() => setRetourOpen(true)} className="gap-2">
+              <RotateCcw className="h-4 w-4" /> Retour aanmelden
             </Button>
             <Button variant="outline" onClick={() => {
               const params = new URLSearchParams({ bron: "order", opdracht_id: opdracht.id });
