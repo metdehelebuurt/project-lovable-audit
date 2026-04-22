@@ -17,6 +17,7 @@ interface Opdracht {
   partner_id: string;
   offerte_id?: string | null;
   lead_id?: string | null;
+  klant_id?: string | null;
   klant_naam?: string | null;
   klant_email?: string | null;
   klant_telefoon?: string | null;
@@ -24,6 +25,7 @@ interface Opdracht {
   klant_postcode?: string | null;
   klant_plaats?: string | null;
   regels?: unknown;
+  werkomschrijving?: string | null;
 }
 
 interface Props {
@@ -42,7 +44,7 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
     einddatum: "",
     starttijd: "",
     eindtijd: "",
-    werkomschrijving: "",
+    werkomschrijving: opdracht.werkomschrijving ?? "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -58,12 +60,34 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
     }
     setBusy(true);
     try {
-      const jaar = new Date().getFullYear();
+      // Probeer een net documentnummer via centrale RPC; valt anders terug op timestamp.
+      let installatienummer: string;
+      try {
+        const { data: nr } = await supabase.rpc("generate_documentnummer_v2" as never, {
+          _partner_id: opdracht.partner_id,
+          _type: "installatie",
+          _subtype: "regulier",
+        } as never);
+        installatienummer = (nr as string | null) ?? `INST-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
+      } catch {
+        installatienummer = `INST-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
+      }
+
+      // Auto-omschrijving vanuit eerste 3 productregels indien leeg
+      const regelsArr = Array.isArray(opdracht.regels) ? (opdracht.regels as Array<Record<string, unknown>>) : [];
+      const autoOmschrijving = regelsArr.slice(0, 3)
+        .map((r) => `${r.aantal ?? 1}× ${r.omschrijving ?? ""}`.trim())
+        .filter((s) => s.length > 1)
+        .join(" • ");
+      const finaleOmschrijving = form.werkomschrijving.trim() || autoOmschrijving || null;
+
       const inst = await createInstallatie({
         partner_id: opdracht.partner_id,
         opdracht_id: opdracht.id,
         offerte_id: opdracht.offerte_id ?? null,
         lead_id: opdracht.lead_id ?? null,
+        klant_id: opdracht.klant_id ?? null,
+        consument_id: opdracht.klant_id ?? null,
         installateur_id: form.monteur_id,
         consument_naam: opdracht.klant_naam ?? null,
         klant_email: opdracht.klant_email ?? null,
@@ -72,13 +96,13 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
         klant_postcode: opdracht.klant_postcode ?? null,
         klant_plaats: opdracht.klant_plaats ?? null,
         werkadres: opdracht.klant_adres ?? null,
-        werkomschrijving: form.werkomschrijving || null,
-        producten: (Array.isArray(opdracht.regels) ? opdracht.regels : []) as unknown as never,
+        werkomschrijving: finaleOmschrijving,
+        producten: regelsArr as unknown as never,
         geplande_startdatum: form.startdatum,
         geplande_einddatum: form.einddatum || form.startdatum,
         start_tijd: form.starttijd || null,
         eind_tijd: form.eindtijd || null,
-        installatienummer: `INST-${jaar}-${Date.now().toString().slice(-5)}`,
+        installatienummer,
         status: "gepland",
         created_by: user?.id ?? null,
       });

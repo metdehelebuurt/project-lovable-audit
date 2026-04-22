@@ -17,9 +17,11 @@ interface Props {
   rapport: Opleverrapport;
   partnerNaam?: string;
   klantNaam?: string;
+  partnerLogoUrl?: string;
+  partnerContact?: string;
 }
 
-const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam }, ref) => {
+const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, partnerLogoUrl, partnerContact }, ref) => {
   const verdict = (rapport.bevindingen?.verdict ?? "goedgekeurd") as Verdict;
   const stempelColor = VERDICT_COLOR[verdict];
   const stempelLabel = VERDICT_LABEL[verdict];
@@ -40,11 +42,21 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
       {/* Voorblad */}
       <header style={{ borderBottom: "2px solid #6d28d9", paddingBottom: "10mm", marginBottom: "10mm" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4mm" }}>
+            {partnerLogoUrl ? (
+              <img
+                src={partnerLogoUrl}
+                alt={partnerNaam ?? "Partner logo"}
+                crossOrigin="anonymous"
+                style={{ maxHeight: "25mm", maxWidth: "70mm", objectFit: "contain" }}
+              />
+            ) : null}
+            <div>
             <div style={{ fontSize: "10pt", color: "#6b7280" }}>NEN 1010 Opleverrapport</div>
             <h1 style={{ fontSize: "22pt", margin: "4px 0 0", color: "#111827" }}>{rapport.rapportnummer}</h1>
             <div style={{ fontSize: "10pt", color: "#6b7280", marginTop: "4px" }}>
               Templateversie: {rapport.template_versie}
+            </div>
             </div>
           </div>
           <div
@@ -182,7 +194,8 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
       </Section>
 
       <footer style={{ marginTop: "10mm", borderTop: "1px solid #e5e7eb", paddingTop: "4mm", fontSize: "9pt", color: "#6b7280" }}>
-        Rapport {rapport.rapportnummer} • Gegenereerd op {new Date().toLocaleString("nl-NL")}
+        <div>Rapport {rapport.rapportnummer} • Gegenereerd op {new Date().toLocaleString("nl-NL")}</div>
+        {partnerNaam ? <div style={{ marginTop: "1mm" }}>{partnerNaam}{partnerContact ? ` • ${partnerContact}` : ""}</div> : null}
       </footer>
     </div>
   );
