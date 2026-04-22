@@ -63,19 +63,12 @@ export default function DeleteFactuurButton({
     if (!reden.trim()) return;
     setBusy(true);
 
-    // Reden vooraf in historie loggen (de DELETE-trigger logt 'verwijderd' zonder reden)
-    try {
-      await supabase.from("factuur_historie").insert({
-        financieel_document_id: doc.id,
-        partner_id: profile!.partner_id!,
-        actor_id: profile!.id,
-        actie: "verwijderd",
-        notitie: reden.trim(),
-        oude_waarde: doc.documentnummer,
-      });
-    } catch {
-      /* niet-blokkerend */
-    }
+    // Reden in notities zetten zodat de DELETE-trigger 'verwijderd' kan loggen mét context.
+    // De historie-rij wordt vanwege ON DELETE CASCADE niet bewaard, maar de actie staat in audit_log via factuurupdates.
+    await supabase
+      .from("financiele_documenten")
+      .update({ notities: `[Verwijderd] ${reden.trim()}` })
+      .eq("id", doc.id);
 
     const { error } = await supabase.from("financiele_documenten").delete().eq("id", doc.id);
     setBusy(false);
