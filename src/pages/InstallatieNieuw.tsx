@@ -76,7 +76,6 @@ const InstallatieNieuw = () => {
     }
     setBusy(true);
     try {
-      const jaar = new Date().getFullYear();
       const inst = await createInstallatie({
         partner_id: profile.partner_id,
         opdracht_id: opdrachtId ?? null,
@@ -143,6 +142,16 @@ const InstallatieNieuw = () => {
             <Label>Werkomschrijving</Label>
             <Textarea value={form.werkomschrijving} onChange={(e) => setForm({ ...form, werkomschrijving: e.target.value })} rows={3} />
           </div>
+          {profile?.partner_id ? (
+            <div className="space-y-2">
+              <Label>Producten / werkzaamheden</Label>
+              <InstallatieProductenEditor
+                partnerId={profile.partner_id}
+                value={producten}
+                onChange={setProducten}
+              />
+            </div>
+          ) : null}
           <Button onClick={aanmaken} disabled={busy}>{busy ? "Opslaan…" : "Installatie aanmaken"}</Button>
         </CardContent>
       </Card>
