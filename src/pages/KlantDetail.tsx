@@ -14,17 +14,18 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Pencil,
   FileText, ClipboardCheck, Wrench, Loader2, Save,
-  User, TrendingUp, CalendarIcon, StickyNote, Send, Trash2, LifeBuoy,
+  User, TrendingUp, CalendarIcon, StickyNote, Send, Trash2, LifeBuoy, ShieldCheck,
 } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 import {
   QuickStat, TabButton, InfoRow, OffertesLijst, SchouwenLijst, AfsprakenLijst,
-  OpdrachtenLijst, InstallatiesLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
+  OpdrachtenLijst, InstallatiesLijst, OpleveringenLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
 import EmailAddressList from "@/components/email/EmailAddressList";
 import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
+import { fetchLaatsteVersieVoorRapporten, getSignedUrlForVersie } from "@/components/oplever/api/opleverPdfVersies";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -112,6 +113,39 @@ const KlantDetail = () => {
     enabled: !!klant?.lead_id,
   });
 
+  const { data: opleveringen = [] } = useQuery({
+    queryKey: ["klant-opleveringen", id, klant?.lead_id, opdrachten.map((o: any) => o.id).join(",")],
+    queryFn: async () => {
+      if (!id) return [];
+      const opdrachtIds = opdrachten.map((o: any) => o.id as string);
+      const filters: string[] = [`klant_id.eq.${id}`];
+      if (opdrachtIds.length > 0) filters.push(`opdracht_id.in.(${opdrachtIds.join(",")})`);
+      const { data, error } = await supabase
+        .from("opleverrapporten" as any)
+        .select("id, rapportnummer, status, opleverdatum, created_at, gefinaliseerd_op, installatie_id, pdf_url")
+        .or(filters.join(","))
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      const installatieIds = rows.map((r) => r.installatie_id).filter(Boolean) as string[];
+      let instMap: Record<string, string> = {};
+      if (installatieIds.length > 0) {
+        const { data: insts } = await supabase
+          .from("installaties")
+          .select("id, installatienummer")
+          .in("id", installatieIds);
+        instMap = Object.fromEntries((insts ?? []).map((i: any) => [i.id, i.installatienummer ?? ""]));
+      }
+      const versieMap = await fetchLaatsteVersieVoorRapporten(rows.map((r) => r.id));
+      return rows.map((r) => ({
+        ...r,
+        installatienummer: r.installatie_id ? instMap[r.installatie_id] : null,
+        versies: versieMap[r.id] ?? 0,
+      }));
+    },
+    enabled: !!id,
+  });
+
   /* ─── Mutations ─── */
   const updateKlantMutation = useMutation({
     mutationFn: async (fields: any) => {
@@ -175,6 +209,7 @@ const KlantDetail = () => {
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "opdrachten", label: "Verkooporders", count: opdrachten.length },
     { key: "installaties", label: "Installaties", count: installaties.length },
+    { key: "opleveringen", label: "Opleveringen", count: opleveringen.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
     { key: "afspraken", label: "Afspraken", count: afspraken.length },
     { key: "activiteit", label: "Activiteit" },
@@ -187,6 +222,20 @@ const KlantDetail = () => {
     ...schouwen.map((s: any) => ({ type: "schouw", date: s.geplande_datum, label: `Schouw ${s.schouw_nummer}`, detail: s.categorie })),
     ...afspraken.map((a: any) => ({ type: "afspraak", date: a.datum, label: a.titel, detail: a.type })),
     ...installaties.map((inst: any) => ({ type: "opdracht", date: inst.created_at, label: `Installatie ${inst.consument_naam || ""}`, detail: inst.status })),
+    ...opleveringen.map((r: any) => ({
+      type: "oplevering",
+      date: r.created_at,
+      label: `Opleverrapport ${r.rapportnummer}`,
+      detail: r.status === "ondertekend" ? "Ondertekend door klant" : r.status,
+    })),
+    ...opleveringen
+      .filter((r: any) => r.gefinaliseerd_op)
+      .map((r: any) => ({
+        type: "oplevering",
+        date: r.gefinaliseerd_op,
+        label: `Opleverrapport ${r.rapportnummer} ondertekend`,
+        detail: "Definitief afgerond",
+      })),
     { type: "created", date: klant.created_at, label: "Klant aangemaakt", detail: `${klant.voornaam} ${klant.achternaam}` },
   ];
 
@@ -236,11 +285,12 @@ const KlantDetail = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <QuickStat label="Offertes" value={offertes.length} icon={FileText} />
         <QuickStat label="Verkooporders" value={opdrachten.length} icon={Wrench} />
         <QuickStat label="Orderwaarde" value={formatCurrency(totalOpdrachtenValue)} icon={TrendingUp} />
         <QuickStat label="Schouwen" value={schouwen.length} icon={ClipboardCheck} />
+        <QuickStat label="Opleveringen" value={opleveringen.length} icon={ShieldCheck} />
         <QuickStat label="Afspraken" value={afspraken.length} icon={CalendarIcon} />
       </div>
 
@@ -354,6 +404,20 @@ const KlantDetail = () => {
           {/* INSTALLATIES */}
           {activeTab === "installaties" && <InstallatiesLijst installaties={installaties} onNavigate={(iid) => navigate(`/installaties/${iid}`)} />}
 
+          {/* OPLEVERINGEN */}
+          {activeTab === "opleveringen" && (
+            <OpleveringenLijst
+              opleveringen={opleveringen as any}
+              onNavigate={(rid) => navigate(`/opleveringen/${rid}`)}
+              onNew={() => navigate(`/opleveringen/nieuw?klant=${klant.id}`)}
+              onDownload={async (_rid, pdfUrl) => {
+                const url = await getSignedUrlForVersie(pdfUrl);
+                if (url) window.open(url, "_blank", "noopener,noreferrer");
+                else toast.error("Download niet beschikbaar");
+              }}
+            />
+          )}
+
           {/* SCHOUWEN */}
           {activeTab === "schouwen" && <SchouwenLijst schouwen={schouwen} onNew={() => navigate("/schouwen")} />}
 
@@ -383,6 +447,8 @@ const KlantDetail = () => {
             { label: "Schouwen", value: schouwen.length },
             { label: "Afspraken", value: afspraken.length },
             { label: "Installaties", value: installaties.length },
+            { label: "Opleveringen", value: opleveringen.length },
+            { label: "Ondertekende rapporten", value: opleveringen.filter((r: any) => r.status === "ondertekend").length },
           ]} />
 
           <SnelleActies

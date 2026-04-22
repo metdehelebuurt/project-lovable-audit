@@ -58,6 +58,20 @@ export async function fetchRapporten(partnerId: string): Promise<Opleverrapport[
   return (data ?? []) as unknown as Opleverrapport[];
 }
 
+export async function fetchRapportenVoorKlant(klantId: string, opdrachtIds: string[] = []): Promise<Opleverrapport[]> {
+  const filters: string[] = [`klant_id.eq.${klantId}`];
+  if (opdrachtIds.length > 0) {
+    filters.push(`opdracht_id.in.(${opdrachtIds.join(",")})`);
+  }
+  const { data, error } = await supabase
+    .from("opleverrapporten" as never)
+    .select("*")
+    .or(filters.join(","))
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as Opleverrapport[];
+}
+
 export async function patchRapport(id: string, patch: Partial<Opleverrapport>): Promise<void> {
   const { error } = await supabase
     .from("opleverrapporten" as never)

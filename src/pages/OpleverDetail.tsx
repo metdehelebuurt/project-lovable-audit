@@ -30,10 +30,13 @@ import { fetchHandleidingenVoorRapport, type Handleiding } from "@/lib/productHa
 import { Card as UICard, CardContent as UICardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BookOpen } from "lucide-react";
+import OpleverPdfVersies from "@/components/oplever/OpleverPdfVersies";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function OpleverDetail() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
+  const { profile } = useAuth();
   const { data: rapport, isLoading } = useOpleverRapport(id);
   const patch = usePatchRapport(id ?? "");
   const [stepIndex, setStepIndex] = useState(0);
@@ -128,7 +131,11 @@ export default function OpleverDetail() {
     try {
       setPdfBusy(true);
       const filename = `${merged.rapportnummer ?? "opleverrapport"}.pdf`;
-      const { path, hash } = await downloadOpleverPdf(pdfRef.current, filename, merged.partner_id, id);
+      const { path, hash } = await downloadOpleverPdf(pdfRef.current, filename, merged.partner_id, id, {
+        reden: "handmatige_download",
+        gegenereerdDoor: profile?.id ?? null,
+        statusOpMoment: merged.status,
+      });
       if (path) await patchRapport(id, { pdf_url: path, pdf_hash: hash });
       toast({ title: "PDF gedownload", description: path ? "Tevens gearchiveerd in dossier." : "Archivering overgeslagen." });
     } catch (e: unknown) {
@@ -217,6 +224,8 @@ export default function OpleverDetail() {
         onChange={setStepIndex}
         disabled={merged.status === "ondertekend"}
       />
+
+      <OpleverPdfVersies rapportId={merged.id} />
 
       {gebruikerDocs.length > 0 ? (
         <UICard>

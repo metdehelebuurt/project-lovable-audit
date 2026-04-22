@@ -3953,6 +3953,77 @@ export type Database = {
           },
         ]
       }
+      opleverrapport_pdf_versies: {
+        Row: {
+          bestandsgrootte: number | null
+          created_at: string
+          gegenereerd_door: string | null
+          id: string
+          partner_id: string
+          pdf_hash: string
+          pdf_path: string
+          rapport_id: string
+          reden: string | null
+          status_op_moment: string | null
+          versie: number
+        }
+        Insert: {
+          bestandsgrootte?: number | null
+          created_at?: string
+          gegenereerd_door?: string | null
+          id?: string
+          partner_id: string
+          pdf_hash: string
+          pdf_path: string
+          rapport_id: string
+          reden?: string | null
+          status_op_moment?: string | null
+          versie: number
+        }
+        Update: {
+          bestandsgrootte?: number | null
+          created_at?: string
+          gegenereerd_door?: string | null
+          id?: string
+          partner_id?: string
+          pdf_hash?: string
+          pdf_path?: string
+          rapport_id?: string
+          reden?: string | null
+          status_op_moment?: string | null
+          versie?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opleverrapport_pdf_versies_gegenereerd_door_fkey"
+            columns: ["gegenereerd_door"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapport_pdf_versies_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapport_pdf_versies_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapport_pdf_versies_rapport_id_fkey"
+            columns: ["rapport_id"]
+            isOneToOne: false
+            referencedRelation: "opleverrapporten"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opleverrapporten: {
         Row: {
           batterij_spec: Json
@@ -5150,6 +5221,22 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       increment_kb_views: { Args: { _artikel_id: string }; Returns: undefined }
+      insert_oplever_pdf_versie: {
+        Args: {
+          _bestandsgrootte: number
+          _gegenereerd_door: string
+          _partner_id: string
+          _pdf_hash: string
+          _pdf_path: string
+          _rapport_id: string
+          _reden: string
+          _status_op_moment: string
+        }
+        Returns: {
+          id: string
+          versie: number
+        }[]
+      }
       is_admin_tier: { Args: { _user_id: string }; Returns: boolean }
       is_partner_admin_or_higher: {
         Args: { _user_id: string }
