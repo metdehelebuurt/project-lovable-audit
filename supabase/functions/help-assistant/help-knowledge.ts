@@ -1,22 +1,18 @@
 // =====================================================================
-// HELP-ASSISTANT KENNISBANK
+// HELP-ASSISTANT — thin wrapper
 // =====================================================================
-// ONDERHOUD: Voeg bij elke nieuwe module een entry toe in MODULE_HELP
-// met: key, label, url, roles, howTo (3-5 regels uitleg).
-// De assistent gebruikt dit bestand om gefilterd op rol + toegestane
-// modules een correct antwoord met deeplinks te geven.
-// Houd de teksten kort, in het Nederlands, en met klikbare interne paden.
+// MODULE_HELP wordt automatisch gegenereerd uit src/lib/modules.ts via
+// scripts/generate-help-knowledge.ts (npm predev/prebuild). Bij nieuwe
+// modules: voeg entry toe aan src/lib/modules.ts + ENRICHMENT in het
+// generate-script. Niet handmatig in dit bestand of het generated-bestand.
 // =====================================================================
 
-export interface ModuleHelp {
-  key: string;
-  label: string;
-  url: string;
-  roles: string[];
-  howTo: string;
-}
+import { MODULE_HELP, type ModuleHelp } from "./help-knowledge.generated.ts";
 
-export const MODULE_HELP: ModuleHelp[] = [
+export { MODULE_HELP };
+export type { ModuleHelp };
+
+const _LEGACY_REMOVED = [
   {
     key: "leads",
     label: "Leads",
