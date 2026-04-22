@@ -202,6 +202,15 @@ const App = () => (
               <Route path="/installaties" element={
                 <ProtectedRoute moduleKey="installaties" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Installaties /></ProtectedRoute>
               } />
+              <Route path="/installaties/nieuw" element={
+                <ProtectedRoute moduleKey="installaties" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><InstallatieNieuw /></ProtectedRoute>
+              } />
+              <Route path="/installaties/:id" element={
+                <ProtectedRoute moduleKey="installaties" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><InstallatieDetail /></ProtectedRoute>
+              } />
+              <Route path="/installaties/:id/werk" element={
+                <ProtectedRoute moduleKey="installaties" allowedRoles={["superadmin", "partner_admin", "backoffice", "installateur"]}><InstallatieMonteurView /></ProtectedRoute>
+              } />
               <Route path="/planning" element={
                 <ProtectedRoute moduleKey="planning" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]}><Planning /></ProtectedRoute>
               } />
