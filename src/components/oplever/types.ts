@@ -101,6 +101,7 @@ export interface Opleverrapport {
   partner_id: string;
   installatie_id: string | null;
   klant_id: string | null;
+  opdracht_id: string | null;
   installateur_id: string | null;
   created_by: string;
   rapportnummer: string;
