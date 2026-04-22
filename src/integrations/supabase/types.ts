@@ -2396,51 +2396,238 @@ export type Database = {
           },
         ]
       }
+      installatie_historie: {
+        Row: {
+          actie: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          installatie_id: string
+          nieuwe_waarde: string | null
+          oude_waarde: string | null
+          partner_id: string
+          veld: string | null
+        }
+        Insert: {
+          actie: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          installatie_id: string
+          nieuwe_waarde?: string | null
+          oude_waarde?: string | null
+          partner_id: string
+          veld?: string | null
+        }
+        Update: {
+          actie?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          installatie_id?: string
+          nieuwe_waarde?: string | null
+          oude_waarde?: string | null
+          partner_id?: string
+          veld?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installatie_historie_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installatie_historie_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installatie_historie_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installatie_historie_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installatie_notities: {
+        Row: {
+          auteur_id: string | null
+          created_at: string
+          id: string
+          inhoud: string
+          installatie_id: string
+          intern: boolean
+          partner_id: string
+        }
+        Insert: {
+          auteur_id?: string | null
+          created_at?: string
+          id?: string
+          inhoud: string
+          installatie_id: string
+          intern?: boolean
+          partner_id: string
+        }
+        Update: {
+          auteur_id?: string | null
+          created_at?: string
+          id?: string
+          inhoud?: string
+          installatie_id?: string
+          intern?: boolean
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installatie_notities_auteur_id_fkey"
+            columns: ["auteur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installatie_notities_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installatie_notities_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installatie_notities_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installaties: {
         Row: {
+          bevestiging_verzonden_op: string | null
           consument_id: string | null
           consument_naam: string | null
           created_at: string
+          created_by: string | null
+          eind_tijd: string | null
           geplande_einddatum: string | null
           geplande_startdatum: string | null
+          gereedmelding_notitie: string | null
+          gereedmelding_op: string | null
           id: string
           installateur_id: string | null
+          installatienummer: string | null
+          klant_adres: string | null
+          klant_email: string | null
+          klant_id: string | null
+          klant_plaats: string | null
+          klant_postcode: string | null
+          klant_telefoon: string | null
           lead_id: string | null
+          monteur_geaccepteerd_op: string | null
           notities: string | null
           offerte_id: string | null
+          opdracht_id: string | null
+          oplevering_id: string | null
           partner_id: string
+          producten: Json
+          start_tijd: string | null
           status: Database["public"]["Enums"]["installatie_status"]
           updated_at: string
+          werkadres: string | null
+          werkelijke_eindtijd: string | null
+          werkelijke_starttijd: string | null
+          werkomschrijving: string | null
         }
         Insert: {
+          bevestiging_verzonden_op?: string | null
           consument_id?: string | null
           consument_naam?: string | null
           created_at?: string
+          created_by?: string | null
+          eind_tijd?: string | null
           geplande_einddatum?: string | null
           geplande_startdatum?: string | null
+          gereedmelding_notitie?: string | null
+          gereedmelding_op?: string | null
           id?: string
           installateur_id?: string | null
+          installatienummer?: string | null
+          klant_adres?: string | null
+          klant_email?: string | null
+          klant_id?: string | null
+          klant_plaats?: string | null
+          klant_postcode?: string | null
+          klant_telefoon?: string | null
           lead_id?: string | null
+          monteur_geaccepteerd_op?: string | null
           notities?: string | null
           offerte_id?: string | null
+          opdracht_id?: string | null
+          oplevering_id?: string | null
           partner_id: string
+          producten?: Json
+          start_tijd?: string | null
           status?: Database["public"]["Enums"]["installatie_status"]
           updated_at?: string
+          werkadres?: string | null
+          werkelijke_eindtijd?: string | null
+          werkelijke_starttijd?: string | null
+          werkomschrijving?: string | null
         }
         Update: {
+          bevestiging_verzonden_op?: string | null
           consument_id?: string | null
           consument_naam?: string | null
           created_at?: string
+          created_by?: string | null
+          eind_tijd?: string | null
           geplande_einddatum?: string | null
           geplande_startdatum?: string | null
+          gereedmelding_notitie?: string | null
+          gereedmelding_op?: string | null
           id?: string
           installateur_id?: string | null
+          installatienummer?: string | null
+          klant_adres?: string | null
+          klant_email?: string | null
+          klant_id?: string | null
+          klant_plaats?: string | null
+          klant_postcode?: string | null
+          klant_telefoon?: string | null
           lead_id?: string | null
+          monteur_geaccepteerd_op?: string | null
           notities?: string | null
           offerte_id?: string | null
+          opdracht_id?: string | null
+          oplevering_id?: string | null
           partner_id?: string
+          producten?: Json
+          start_tijd?: string | null
           status?: Database["public"]["Enums"]["installatie_status"]
           updated_at?: string
+          werkadres?: string | null
+          werkelijke_eindtijd?: string | null
+          werkelijke_starttijd?: string | null
+          werkomschrijving?: string | null
         }
         Relationships: [
           {
@@ -2451,10 +2638,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "installaties_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "installaties_installateur_id_fkey"
             columns: ["installateur_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installaties_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
             referencedColumns: ["id"]
           },
           {
@@ -2469,6 +2670,20 @@ export type Database = {
             columns: ["offerte_id"]
             isOneToOne: false
             referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installaties_opdracht_id_fkey"
+            columns: ["opdracht_id"]
+            isOneToOne: false
+            referencedRelation: "opdrachten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installaties_oplevering_id_fkey"
+            columns: ["oplevering_id"]
+            isOneToOne: false
+            referencedRelation: "opleverrapporten"
             referencedColumns: ["id"]
           },
           {
@@ -5022,8 +5237,12 @@ export type Database = {
         | "service_bezoek"
         | "overig"
       installatie_status:
+        | "concept"
         | "gepland"
+        | "bevestigd"
+        | "onderweg"
         | "in_uitvoering"
+        | "gereed"
         | "afgerond"
         | "geannuleerd"
       lead_status:
@@ -5287,8 +5506,12 @@ export const Constants = {
         "overig",
       ],
       installatie_status: [
+        "concept",
         "gepland",
+        "bevestigd",
+        "onderweg",
         "in_uitvoering",
+        "gereed",
         "afgerond",
         "geannuleerd",
       ],
