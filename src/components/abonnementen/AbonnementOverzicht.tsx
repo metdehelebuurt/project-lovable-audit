@@ -300,6 +300,39 @@ export default function AbonnementOverzicht() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NieuwAbonnementDialog
+        open={nieuwOpen}
+        onOpenChange={setNieuwOpen}
+        plans={plans}
+        onCreated={fetchAll}
+      />
+
+      <AddonToewijsDialog
+        open={addonOpen}
+        onOpenChange={(v) => { setAddonOpen(v); if (!v) fetchAll(); }}
+        partnerId={addonTarget?.partner_id ?? null}
+        abonnementId={addonTarget?.id ?? null}
+        partnerNaam={(addonTarget?.partners as { naam?: string } | null | undefined)?.naam ?? ""}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abonnement verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Je verwijdert het abonnement van <strong>{(deleteTarget?.partners as { naam?: string } | null | undefined)?.naam ?? "deze partner"}</strong>.
+              Dit kan niet ongedaan worden. Eventuele Mollie-subscription moet apart worden opgezegd.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
