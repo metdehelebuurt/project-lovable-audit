@@ -24,8 +24,14 @@ export default function FeedbackNieuw() {
 
   const initialType = searchParams.get("type") === "functieverzoek" ? "functieverzoek" : "feedback";
   const [type, setType] = useState<"feedback" | "functieverzoek">(initialType as any);
-  const [titel, setTitel] = useState("");
-  const [beschrijving, setBeschrijving] = useState("");
+  const [titel, setTitel] = useState(() => searchParams.get("titel")?.slice(0, 200) ?? "");
+  const [beschrijving, setBeschrijving] = useState(() => {
+    const raw = searchParams.get("beschrijving");
+    if (!raw) return "";
+    // Plain text uit query veilig in <p>-tag, regelafbrekingen behouden
+    const safe = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `<p>${safe.replace(/\n/g, "<br/>")}</p>`;
+  });
   const [bestanden, setBestanden] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
