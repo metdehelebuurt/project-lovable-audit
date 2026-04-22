@@ -3790,6 +3790,63 @@ export type Database = {
           },
         ]
       }
+      opdracht_zendingen: {
+        Row: {
+          afleverdatum: string | null
+          created_at: string
+          created_by: string | null
+          foto_aflevering_url: string | null
+          id: string
+          notitie: string | null
+          ontvangen_door: string | null
+          opdracht_id: string
+          partner_id: string
+          status: string
+          tracking_url: string | null
+          trackingnummer: string | null
+          updated_at: string
+          vervoerder: string
+          verwachte_leverdatum: string | null
+          verzenddatum: string | null
+        }
+        Insert: {
+          afleverdatum?: string | null
+          created_at?: string
+          created_by?: string | null
+          foto_aflevering_url?: string | null
+          id?: string
+          notitie?: string | null
+          ontvangen_door?: string | null
+          opdracht_id: string
+          partner_id: string
+          status?: string
+          tracking_url?: string | null
+          trackingnummer?: string | null
+          updated_at?: string
+          vervoerder?: string
+          verwachte_leverdatum?: string | null
+          verzenddatum?: string | null
+        }
+        Update: {
+          afleverdatum?: string | null
+          created_at?: string
+          created_by?: string | null
+          foto_aflevering_url?: string | null
+          id?: string
+          notitie?: string | null
+          ontvangen_door?: string | null
+          opdracht_id?: string
+          partner_id?: string
+          status?: string
+          tracking_url?: string | null
+          trackingnummer?: string | null
+          updated_at?: string
+          vervoerder?: string
+          verwachte_leverdatum?: string | null
+          verzenddatum?: string | null
+        }
+        Relationships: []
+      }
       opdrachten: {
         Row: {
           annulering_reden: string | null
@@ -4467,6 +4524,71 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      product_serienummers: {
+        Row: {
+          created_at: string
+          garantie_einddatum: string | null
+          garantie_maanden: number | null
+          geregistreerd_door: string | null
+          id: string
+          installatie_id: string | null
+          klant_id: string | null
+          levering_datum: string | null
+          notitie: string | null
+          opdracht_id: string | null
+          partner_id: string
+          product_id: string
+          serienummer: string
+          status: string
+          updated_at: string
+          zending_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          garantie_einddatum?: string | null
+          garantie_maanden?: number | null
+          geregistreerd_door?: string | null
+          id?: string
+          installatie_id?: string | null
+          klant_id?: string | null
+          levering_datum?: string | null
+          notitie?: string | null
+          opdracht_id?: string | null
+          partner_id: string
+          product_id: string
+          serienummer: string
+          status?: string
+          updated_at?: string
+          zending_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          garantie_einddatum?: string | null
+          garantie_maanden?: number | null
+          geregistreerd_door?: string | null
+          id?: string
+          installatie_id?: string | null
+          klant_id?: string | null
+          levering_datum?: string | null
+          notitie?: string | null
+          opdracht_id?: string | null
+          partner_id?: string
+          product_id?: string
+          serienummer?: string
+          status?: string
+          updated_at?: string
+          zending_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_serienummers_zending_id_fkey"
+            columns: ["zending_id"]
+            isOneToOne: false
+            referencedRelation: "opdracht_zendingen"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       producten: {
         Row: {
