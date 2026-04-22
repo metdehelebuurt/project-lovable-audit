@@ -1,6 +1,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
+import { HelpAssistantWidget } from "@/components/help/HelpAssistantWidget";
 import { Outlet } from "react-router-dom";
 
 export function AppLayout() {
@@ -14,6 +15,7 @@ export function AppLayout() {
             <Outlet />
           </main>
         </div>
+        <HelpAssistantWidget />
       </div>
     </SidebarProvider>
   );
