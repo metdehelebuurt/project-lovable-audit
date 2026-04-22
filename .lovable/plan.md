@@ -1,137 +1,81 @@
 
 
-# Plan — Volledige update Abonnementenbeheer
+## Plan — Facturatie grondig op orde
 
-## Probleemanalyse
+### 1. Nummerreeksen — race-condition fix + per partner instelbaar
 
-Bij scan gevonden:
+**Probleem nu:** `generate_financieel_documentnummer` gebruikt `COUNT(*)+1`. Bij gelijktijdige inserts → echte duplicaten. Geen partnerinstelling voor prefix/jaar/teller.
 
-1. **Modulelijst is verouderd** — `PlanConfigurator.tsx` heeft 14 hardcoded modules (mist `klanten`, `berichten`, `helpdesk`, `feedback`, alle 6 financieel-submodules, `leveranciers`). De centrale registry `src/lib/modules.ts` heeft ze wél maar wordt hier niet gebruikt → twee bronnen die uit elkaar lopen.
-2. **Featurelijst is incompleet** — mist o.a. AI-functies (offerte-intro, datasheet-parser, foutcode-analyzer, helpdesk-troubleshooter), Solar API, e-mail OAuth-koppeling, klantportaal, realtime chat, multi-handtekening, video-uploads schouw, BTW-aangifte export, demo-data reset.
-3. **Plannen in DB bevatten verouderde modulekeys** (`thuisbatterij`, `affiliates`) — deze bestaan niet in de registry.
-4. **`FeatureGate` wordt nergens gebruikt** — `useSubscriptionLimits.canAccess()` / `hasFeature()` zijn dood. Beperkingen per plan worden niet afgedwongen op modules of features.
-5. **`AppSidebar` filtert alleen op `useEffectieveModules` (rol-matrix)** — niet op abonnement-plan-modules. Een Starter-partner ziet dus toch Helpdesk/Financieel als zijn rol het mag.
-6. **Console-warning** in `PlanConfigurator`: ref doorgegeven aan function-component (`DialogFooter`) → onschadelijke React-warning, los te lossen door wrap-fix.
-7. **Geen koppeling abonnement ↔ effectieve modules** — `useEffectieveModules` houdt geen rekening met `abonnement_plannen.modules`.
-8. **AbonnementOverzicht**: filtert geen `gepauzeerd`-status in dropdown. Geen filter op plan. Geen kolom voor add-ons.
-9. **FactuurBeheer**: factuurnummer is willekeurig (`Math.random`) → kans op dubbels; geen partner-scoped jaarvolgnummer. Geen bulk-genereer-knop voor lopende abonnementen.
-10. **RevenueAnalytics**: trial-conversie-formule klopt niet (telt actieve dubbel). Geen MoM-grafiek, geen omzet-per-add-on.
-11. **KortingenAffiliates**: commissie-opslaan toont alleen toast — slaat niets op.
+**Oplossing:**
+- Nieuwe tabel `nummerreeks_config` (per `partner_id` + `type` + optioneel `subtype`):
+  `prefix` (bv. `VF`, `VS`, `CN`), `jaarformaat` (`YYYY`/`YY`/`geen`), `padding` (default 4), `volgende_nummer` (atomic teller), `reset_per_jaar` (bool), `huidig_jaar`.
+- Nieuwe SQL-functie `generate_documentnummer_v2(_partner_id, _type, _subtype)` — gebruikt `UPDATE ... RETURNING` op de teller (atomic, geen race). Maakt config aan met defaults als die nog niet bestaat. Reset teller bij jaarwissel als `reset_per_jaar=true`.
+- **UNIQUE constraint** `(partner_id, documentnummer)` op `financiele_documenten` zodat duplicatie hard onmogelijk wordt.
+- Migratie zet bestaande nummers om naar de nieuwe teller (max+1 per partner/type).
+- Nieuwe instellingen-UI `NummerreeksConfig.tsx` in `Instellingen` (sectie "Nummerreeksen"): tabel met prefix, jaarformaat, padding, volgend nummer, "reset per jaar". Live preview (`VF-2026-0042`).
 
-## Wat gaan we bouwen
+### 2. Bewerken & verwijderen van facturen
 
-### A. Centrale waarheidsbron voor modules & features
+**Nu:** geen edit-knop op `FactuurDetail`, geen delete.
+- **Bewerken**: knop "Bewerken" op `FactuurDetail` opent modus met `DocumentRegelEditor` + velden voor relatie, datum, vervaldatum, notities. Toegestaan voor `concept` altijd; voor `verzonden` alleen door `partner_admin`/`backoffice` met verplichte `wijziging_reden`.
+- **Niet wijzigbaar**: status `betaald`/`gecrediteerd` → enkel via creditnota (bestaande flow).
+- **Verwijderen**: knop met confirm-dialog + verplichte reden. Toegestaan voor `concept`; voor `verzonden` enkel door `partner_admin` met reden. Alle wijzigingen/verwijderingen → `factuur_historie`.
 
-**`src/lib/abonnementFeatures.ts`** — nieuw, ≤ 120 regels:
-- `ALL_PLAN_FEATURES`: complete lijst met `key`, `label`, `groep`, `beschrijving` voor ~28 features verdeeld over groepen:
-  - **Basis**: leads, klanten, schouwen, offertes, opdrachten, planning
-  - **Geavanceerd**: installaties, helpdesk, kennisbank, klantportaal, realtime-chat
-  - **Financieel** (per submodule): verkoopfacturen, inkoopfacturen, pakbonnen, BTW-aangifte, openstaande posten, leveranciers
-  - **Tools**: webtools-embeds, energieadvies-wizard, thuisbatterij-selector
-  - **AI**: ai-offerte-intro, ai-datasheet-parser, ai-foutcode-analyzer, ai-helpdesk-troubleshooter, ai-lead-signals, ai-product-import, ai-feedback-categorize
-  - **Integraties**: gmail-oauth, microsoft-oauth, solar-api, google-maps
-  - **White-label**: eigen-branding, eigen-domein, witlabel-emails, api-toegang
-- `MODULE_GROUPS` van de bestaande `MODULES`-registry hergebruikt in PlanConfigurator → één bron.
+### 3. Historielog per factuur
 
-### B. PlanConfigurator opschonen & uitbreiden
+Nieuwe tabel `factuur_historie`:
+- `id`, `financieel_document_id`, `partner_id`, `actor_id`, `actie` (`aangemaakt`/`bewerkt`/`status_gewijzigd`/`verzonden`/`opnieuw_verzonden`/`betaald_gemarkeerd`/`gecrediteerd`/`verwijderd`/`pdf_gegenereerd`), `veld`, `oude_waarde`, `nieuwe_waarde`, `notitie`, `created_at`.
+- DB-trigger `log_factuur_changes` op INSERT/UPDATE/DELETE — vergelijkbaar met `log_helpdesk_ticket_changes`.
+- Edge-functions schrijven extra entries voor `verzonden`/`opnieuw_verzonden` (incl. ontvanger).
+- Nieuwe UI-component `FactuurHistorieTab.tsx` met tijdlijn (gebruikt patroon `AuditTijdlijn`).
+- RLS: lezen voor partner-leden, schrijven enkel via service role / triggers.
 
-`src/components/abonnementen/PlanConfigurator/` — refactor naar folder met sub-componenten (huidige 279 regels splitsen):
-- `index.tsx` (≤ 200) — lijst + dialog-shell
-- `PlanForm.tsx` (≤ 250) — formulier
-- `ModuleSelector.tsx` (≤ 100) — checkbox-grid gegroepeerd per `groep` uit `MODULES`
-- `FeatureSelector.tsx` (≤ 100) — checkbox-grid gegroepeerd per groep uit `ALL_PLAN_FEATURES`
-- Toevoegen: kopieer-knop "Dupliceer plan", "Standaard reset" per groep, zoekveld in module/feature-lijst.
-- Console-warning fixen door `DialogFooter` te vervangen door eigen `<div>` met flex (de warning komt door `forwardRef`-mismatch).
+### 4. Opnieuw versturen
 
-### C. Effectieve modules ook plan-gebonden maken
+- Knop "Opnieuw versturen" op `FactuurDetail` zichtbaar zodra `verzonden_op` gevuld is.
+- Opent dezelfde `FactuurEmailDialog` met defaultTo + onderwerp `[Herinnering] …` en aanpasbare body.
+- Edge function `send-factuur-email` krijgt vlag `is_resend`: status blijft `verzonden`/`verlopen`, alleen `email_log` + `factuur_historie` krijgen entry `opnieuw_verzonden`.
 
-`src/lib/modules.ts` → `useEffectieveModules` uitbreiden:
-```text
-Effectief = (rol-default ∩ plan-modules) → daarna partner-rolmatrix → daarna user-override
-```
-Extra query: actieve `abonnementen + abonnement_plannen.modules` van eigen partner. Als plan een module níet bevat → blokkeren (override "deny" telt nog steeds). Superadmin-bypass blijft.
+### 5. E-mailverzending uniformeren
 
-### D. FeatureGate activeren
+**Nu:** offerte, factuur, orderbevestiging hebben elk eigen function met overlappende SMTP/OAuth-logica. `send-factuur-email` werkt al via partner-config (SMTP of Gmail/MS-OAuth) — dat is de juiste route.
 
-- `FeatureGate` wrappen rond knoppen/secties van premium features (AI-knoppen, BTW-export, klantportaal-share, white-label tab, webtool-embed-knop).
-- Lijst van ~10 strategische plekken waar gate komt — alleen UI-niveau, geen RLS (data-RLS blijft per partner).
+- Refactor naar één gedeelde helper `_shared/partner-email-send.ts` met functie `sendPartnerEmail({partner_id, to, subject, html, attachment, type, related_id})` die:
+  1. Partner ophaalt + actief `email_account` (OAuth) checkt
+  2. Provider kiest (OAuth Google → Gmail API, OAuth MS → Graph, anders SMTP)
+  3. Bij OAuth token refresh
+  4. Logging in `email_log` + `email_berichten` (uitgaand)
+  5. Foutafhandeling met duidelijke melding "E-mailconfiguratie niet ingesteld" + link naar instellingen
+- Bestaande functies `send-factuur-email`, `send-offerte-email`, `send-orderbevestiging-email` rewriten zodat ze allemaal `sendPartnerEmail` gebruiken — identiek gedrag, één bron van waarheid.
+- In `EmailConfiguratie` (instellingen) een **"Test e-mail versturen"**-knop toevoegen die dezelfde helper gebruikt → partner ziet meteen of zijn config werkt.
 
-### E. Migratie: bestaande plannen synchroniseren
-
-`supabase/migrations/..._plan_modules_sync.sql`:
-- `UPDATE abonnement_plannen` → vervang verouderde keys (`affiliates` → `affiliate_beheer`, `thuisbatterij` → blijft als feature, niet module).
-- Vul Starter / Professional / Enterprise opnieuw met juiste module-keys uit registry + bijbehorende features.
-- Geen schema-wijziging nodig (kolommen bestaan).
-
-### F. AbonnementOverzicht uitbreiden
-
-- Extra filter: per plan (dropdown gevuld uit `abonnement_plannen`).
-- Extra kolom "Add-ons" met badge-aantal.
-- Status `gepauzeerd` toevoegen aan filter.
-- Detail-link: rij klikbaar → opent grote sheet met volledige historie uit `abonnement_wijzigingen` voor die partner.
-
-### G. FactuurBeheer veiliger maken
-
-- Vervang `Math.random` door SQL-helper `generate_abonnement_factuurnummer(partner_id)` analoog aan bestaande `generate_financieel_documentnummer` — formaat `AB-YYYY-0001` per jaar globaal.
-- Knop **"Genereer maandfacturen"**: vraagt periode (default: vorige maand), maakt voor elk actief abonnement een concept-factuur incl. add-on-totalen + korting.
-- BTW-percentage-veld toevoegen (default 21).
-
-### H. RevenueAnalytics fixen
-
-- Correcte trial-conversie: tel partners met ooit `trial`-status én nu `actief` / totaal ooit `trial`.
-- Extra KPI: ARR-add-ons, gemiddelde MRR per partner.
-- Mini-grafiek MoM (laatste 6 maanden) via `recharts` (al aanwezig in stack via shadcn `chart.tsx`).
-
-### I. KortingenAffiliates afmaken
-
-- `saveCommissie()` slaat werkelijk op in `affiliate_referrals.commissie_percentage` (kolom check + migratie indien missend).
-- Knop "Nieuwe kortingscode" toevoegen — dialog → insert in `kortingscodes`.
-
-### J. Self-service: PartnerAbonnement
-
-- Tonen welke modules/features zijn vergrendeld in huidig plan met "Upgrade om te ontgrendelen"-CTA per item.
-- Vergelijkingsmatrix in upgrade-dialog: tabel modules × plannen i.p.v. losse cards.
-
-## Bestanden
+### 6. Bestanden (overzicht)
 
 | Bestand | Actie |
 |---|---|
-| `src/lib/abonnementFeatures.ts` | **Nieuw** — feature-registry |
-| `src/lib/modules.ts` | Uitbreiden: plan-module-cascade in `useEffectieveModules` |
-| `src/components/abonnementen/PlanConfigurator/index.tsx` | **Nieuw** — splitst huidige bestand |
-| `src/components/abonnementen/PlanConfigurator/PlanForm.tsx` | **Nieuw** |
-| `src/components/abonnementen/PlanConfigurator/ModuleSelector.tsx` | **Nieuw** |
-| `src/components/abonnementen/PlanConfigurator/FeatureSelector.tsx` | **Nieuw** |
-| `src/components/abonnementen/PlanConfigurator.tsx` | **Verwijderen** (vervangen door folder) |
-| `src/components/abonnementen/AbonnementOverzicht.tsx` | Filter per plan, addon-kolom, klikbare rij |
-| `src/components/abonnementen/FactuurBeheer.tsx` | Veilige nummering, bulk-genereer, BTW-veld |
-| `src/components/abonnementen/RevenueAnalytics.tsx` | Conversie-fix, MoM-chart, addon-KPI |
-| `src/components/abonnementen/KortingenAffiliates.tsx` | Commissie opslaan, kortingscode aanmaken |
-| `src/components/abonnementen/PartnerAbonnement.tsx` | Vergrendeld-overzicht + matrix-vergelijking |
-| `src/components/abonnementen/FeatureGate.tsx` | Klein label-prop voor consistentere CTA |
-| `supabase/migrations/..._plan_modules_sync.sql` | Plannen + factuurnummer-functie + evt. `commissie_percentage` |
-| ~10 plekken in app | `<FeatureGate>` wrappen rond premium-knoppen |
+| `supabase/migrations/..._nummerreeks_en_historie.sql` | nieuw: `nummerreeks_config`, `factuur_historie`, `generate_documentnummer_v2`, UNIQUE constraint, migratie bestaande tellers, triggers, RLS |
+| `src/components/instellingen/NummerreeksConfig.tsx` | nieuw |
+| `src/pages/Instellingen.tsx` | sectie "Nummerreeksen" toevoegen |
+| `src/pages/FactuurNieuw.tsx` + `OpdrachtDetail.tsx` | `generate_documentnummer_v2` aanroepen |
+| `src/pages/FactuurDetail.tsx` | knoppen Bewerken / Verwijderen / Opnieuw versturen + tab Historie |
+| `src/components/financieel/FactuurEditDialog.tsx` | nieuw (edit-modus met reden bij verzonden) |
+| `src/components/financieel/FactuurHistorieTab.tsx` | nieuw |
+| `src/components/financieel/FactuurEmailDialog.tsx` | `is_resend` doorgeven, onderwerp-prefill bij herinnering |
+| `supabase/functions/_shared/partner-email-send.ts` | nieuw — gedeelde sender |
+| `supabase/functions/send-factuur-email/index.ts` | refactor + `is_resend` + historie-entry |
+| `supabase/functions/send-offerte-email/index.ts` | refactor naar gedeelde helper |
+| `supabase/functions/send-orderbevestiging-email/index.ts` | refactor naar gedeelde helper |
+| `src/components/instellingen/EmailConfiguratie.tsx` | "Test e-mail versturen"-knop |
 
-## Niet wijzigen
-- Bestaande RLS-policies op `abonnementen` / `facturen`
-- `useSubscriptionLimits` API-vorm (alleen aanvullen, niet breken)
-- Mollie / payment-flow (blijft uitgesteld)
-- Rolbeheer (`module_rol_toegang` / `module_user_override`)
+### Volgorde van uitvoer
+1. Migratie (nummerreeks + historie + UNIQUE + atomic teller)
+2. Gedeelde e-mail-helper + refactor 3 send-functies
+3. UI: nummerreeks-instellingen
+4. UI: bewerken / verwijderen / opnieuw versturen / historietab op `FactuurDetail`
+5. Test-e-mailknop in instellingen
 
-## Volgorde
-1. `abonnementFeatures.ts` registry + migratie plannen sync
-2. PlanConfigurator splitsen + nieuwe selectors gebruiken
-3. `useEffectieveModules` plan-cascade
-4. FeatureGate wrappen op premium-knoppen
-5. AbonnementOverzicht / FactuurBeheer / RevenueAnalytics / KortingenAffiliates
-6. PartnerAbonnement upgrade-matrix
-
-## Resultaat
-- Eén centrale registry voor modules én features — geen drift meer
-- Partner-admins zien in self-service exact wat hun plan biedt en wat upgraden ontgrendelt
-- Beperkingen per plan worden ook in UI afgedwongen (sidebar + premium-knoppen)
-- Factuurnummers veilig en uniek; bulk-maandfacturen in één klik
-- Revenue-dashboard met juiste conversie + MoM-trend
-- Kortingscodes en affiliate-commissies daadwerkelijk opslaan en beheerbaar
-- Console-warning weg
+### Niet in scope
+- Periodieke automatische facturen (recurring buiten Mollie-abonnementen)
+- E-mail templates met merge-velden (apart vervolgproject)
+- Factuur PDF in storage archiveren bij elke wijziging — komt eventueel later
 
