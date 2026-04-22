@@ -21,9 +21,10 @@ interface Props {
   partnerLogoUrl?: string;
   partnerContact?: string;
   ordernummer?: string;
+  meegeleverdeDocumenten?: { naam: string; bestandsnaam: string; url: string }[];
 }
 
-const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer }, ref) => {
+const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer, meegeleverdeDocumenten }, ref) => {
   const verdict = (rapport.bevindingen?.verdict ?? "goedgekeurd") as Verdict;
   const stempelColor = VERDICT_COLOR[verdict];
   const stempelLabel = VERDICT_LABEL[verdict];
@@ -239,6 +240,30 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
           <SignBlock title="Klant" sig={rapport.klant_handtekening} />
         </div>
       </Section>
+
+      {meegeleverdeDocumenten && meegeleverdeDocumenten.length > 0 ? (
+        <Section title="Meegeleverde documenten">
+          <p style={{ marginTop: 0, marginBottom: "3mm", fontSize: "10pt", color: "#475569" }}>
+            De volgende gebruikershandleidingen zijn met dit opleverrapport meegestuurd en zijn online beschikbaar.
+          </p>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Product</th>
+                <th style={thStyle}>Document</th>
+              </tr>
+            </thead>
+            <tbody>
+              {meegeleverdeDocumenten.map((d, i) => (
+                <tr key={i}>
+                  <td style={tdStyle}>{d.naam}</td>
+                  <td style={tdStyle}>{d.bestandsnaam}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Section>
+      ) : null}
 
       <footer style={{ marginTop: "10mm", borderTop: "1px solid #e5e7eb", paddingTop: "4mm", fontSize: "9pt", color: "#6b7280" }}>
         <div>Rapport {rapport.rapportnummer} • Gegenereerd op {new Date().toLocaleString("nl-NL")}</div>

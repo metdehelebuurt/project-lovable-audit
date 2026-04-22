@@ -26,6 +26,10 @@ import StepNormenScope from "@/components/oplever/StepNormenScope";
 import StepBekabelingMeterkast from "@/components/oplever/StepBekabelingMeterkast";
 import StepAardingBeveiliging from "@/components/oplever/StepAardingBeveiliging";
 import StepBackup from "@/components/oplever/StepBackup";
+import { fetchHandleidingenVoorRapport, type Handleiding } from "@/lib/productHandleidingen";
+import { Card as UICard, CardContent as UICardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BookOpen } from "lucide-react";
 
 export default function OpleverDetail() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +40,7 @@ export default function OpleverDetail() {
   const [draft, setDraft] = useState<Partial<Opleverrapport>>({});
   const pdfRef = useRef<HTMLDivElement>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [uitgeslotenDocs, setUitgeslotenDocs] = useState<Set<string>>(new Set());
 
   useOpleverAutosave(id, draft);
 
@@ -85,6 +90,18 @@ export default function OpleverDetail() {
     },
     enabled: !!merged?.opdracht_id,
   });
+
+  const { data: handleidingen = [] } = useQuery({
+    queryKey: ["oplever-handleidingen", merged?.installatie_id, merged?.opdracht_id],
+    queryFn: () => fetchHandleidingenVoorRapport({
+      installatieId: merged?.installatie_id ?? null,
+      opdrachtId: merged?.opdracht_id ?? null,
+    }),
+    enabled: !!merged && (!!merged.installatie_id || !!merged.opdracht_id),
+  });
+  const gebruikerDocs: Handleiding[] = handleidingen.filter((h) => h.type === "gebruiker");
+  const meegestuurdeDocs = gebruikerDocs.filter((d) => !uitgeslotenDocs.has(`${d.product_id}-${d.type}`));
+  const meegeleverdePdfDocs = meegestuurdeDocs.map((d) => ({ naam: d.product_naam, bestandsnaam: d.bestandsnaam, url: d.url }));
 
   if (isLoading || !merged) return <div className="p-8 text-muted-foreground">Laden…</div>;
 
@@ -201,6 +218,48 @@ export default function OpleverDetail() {
         disabled={merged.status === "ondertekend"}
       />
 
+      {gebruikerDocs.length > 0 ? (
+        <UICard>
+          <UICardHeader className="pb-3">
+            <UICardTitle className="text-base flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-primary" /> Bijlagen voor klant
+            </UICardTitle>
+          </UICardHeader>
+          <UICardContent className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              De volgende gebruikershandleidingen worden automatisch meegestuurd met het opleverrapport. Vink uit wat u niet wilt meesturen.
+            </p>
+            <ul className="space-y-1.5">
+              {gebruikerDocs.map((d) => {
+                const key = `${d.product_id}-${d.type}`;
+                const checked = !uitgeslotenDocs.has(key);
+                return (
+                  <li key={key} className="flex items-center gap-2 rounded-lg border p-2">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        setUitgeslotenDocs((prev) => {
+                          const next = new Set(prev);
+                          if (v) next.delete(key); else next.add(key);
+                          return next;
+                        });
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{d.product_naam}</p>
+                      <p className="text-xs text-muted-foreground truncate">{d.bestandsnaam}</p>
+                    </div>
+                    <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline shrink-0">
+                      bekijk
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </UICardContent>
+        </UICard>
+      ) : null}
+
       <Card className="hidden md:block">
         <CardContent className="pt-4">
           <div className="text-sm font-medium mb-2 flex items-center gap-2">
@@ -216,6 +275,7 @@ export default function OpleverDetail() {
                 klantNaam={klantNaam}
                 klantContact={klantContact}
                 ordernummer={ordernummer}
+                meegeleverdeDocumenten={meegeleverdePdfDocs}
               />
             </div>
           </div>
@@ -244,6 +304,7 @@ export default function OpleverDetail() {
           klantNaam={klantNaam}
           klantContact={klantContact}
           ordernummer={ordernummer}
+          meegeleverdeDocumenten={meegeleverdePdfDocs}
         />
       </div>
     </div>

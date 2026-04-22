@@ -40,6 +40,9 @@ export default function ProductDatasheetPage() {
   if (!product || !partner) return <div style={{ padding: 32, textAlign: "center", fontFamily: "'Rubik', sans-serif" }}>Product niet gevonden</div>;
 
   const specs = product.specs && typeof product.specs === "object" && !Array.isArray(product.specs) ? product.specs : null;
+  const buildUrl = (p: string | null) => p ? (p.startsWith("http") ? p : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${p}`) : null;
+  const installatieUrl = buildUrl(product.installatie_handleiding_url ?? null);
+  const gebruikerUrl = buildUrl(product.gebruiker_handleiding_url ?? null);
 
   if (mode === "edit") {
     return (

@@ -21,6 +21,7 @@ import ProductImage from "@/components/producten/ProductImage";
 import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import { getGroupedSpecs, categorySpecDefinitions } from "@/components/producten/categorySpecDefinitions";
 import SpecsEditor from "@/components/producten/SpecsEditor";
+import ProductHandleidingenSection from "@/components/producten/ProductHandleidingenSection";
 import type { Database } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -913,6 +914,16 @@ const ProductDetail = () => {
               )}
             </CardContent>
           </Card>
+          <div className="mt-4">
+            <ProductHandleidingenSection
+              productId={product.id}
+              installatieUrl={(product as any).installatie_handleiding_url ?? null}
+              installatieNaam={(product as any).installatie_handleiding_naam ?? null}
+              gebruikerUrl={(product as any).gebruiker_handleiding_url ?? null}
+              gebruikerNaam={(product as any).gebruiker_handleiding_naam ?? null}
+              onChanged={() => queryClient.invalidateQueries({ queryKey: ["product", id] })}
+            />
+          </div>
         </TabsContent>
 
         {/* ── AI CONTROLE ── */}

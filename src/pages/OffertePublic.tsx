@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle } from "lucide-react";
+import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle, BookOpen, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { ensureHtml, formatCurrency, regelSubtotaal, type OfferteRegel } from "@/types/offerte";
+import { buildHandleidingUrl, type Handleiding } from "@/lib/productHandleidingen";
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
@@ -46,6 +47,7 @@ export default function OffertePublic() {
   const [senderName, setSenderName] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [handleidingen, setHandleidingen] = useState<Handleiding[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -96,6 +98,34 @@ export default function OffertePublic() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Laad handleidingen voor producten in de offerte
+  useEffect(() => {
+    if (!offerte) return;
+    const regels = Array.isArray(offerte.regels) ? offerte.regels : [];
+    const productIds: string[] = Array.from(new Set(
+      regels
+        .map((r: any) => (typeof r?.product_id === "string" ? r.product_id : null))
+        .filter((v: string | null): v is string => Boolean(v)),
+    ));
+    if (productIds.length === 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("producten")
+        .select("id, naam, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam")
+        .in("id", productIds);
+      const out: Handleiding[] = [];
+      for (const p of data ?? []) {
+        if (p.installatie_handleiding_url) {
+          out.push({ product_id: p.id, product_naam: p.naam, type: "installatie", url: buildHandleidingUrl(p.installatie_handleiding_url), bestandsnaam: p.installatie_handleiding_naam ?? "Installatiehandleiding.pdf" });
+        }
+        if (p.gebruiker_handleiding_url) {
+          out.push({ product_id: p.id, product_naam: p.naam, type: "gebruiker", url: buildHandleidingUrl(p.gebruiker_handleiding_url), bestandsnaam: p.gebruiker_handleiding_naam ?? "Gebruikershandleiding.pdf" });
+        }
+      }
+      setHandleidingen(out);
+    })();
+  }, [offerte]);
 
   const handleSendMessage = async () => {
     if (!newMsg.trim() || !senderName.trim() || !token) return;
@@ -195,12 +225,14 @@ export default function OffertePublic() {
 
   const hasSchouw = !!schouw;
   const hasEnergie = !!offerte.include_energieadvies;
+  const hasHandleidingen = handleidingen.length > 0;
 
   // Build available tabs
   const tabs = [
     { id: "offerte", label: "Offerte", icon: FileText },
     ...(hasEnergie ? [{ id: "energie", label: "Energierapport", icon: Zap }] : []),
     ...(hasSchouw ? [{ id: "schouw", label: "Schouwrapport", icon: ClipboardList }] : []),
+    ...(hasHandleidingen ? [{ id: "handleidingen", label: "Handleidingen", icon: BookOpen }] : []),
     { id: "berichten", label: "Berichten", icon: MessageSquare },
   ];
 
@@ -446,6 +478,39 @@ export default function OffertePublic() {
               </Card>
             </TabsContent>
           )}
+
+          {/* ─── Tab: Handleidingen ─── */}
+          <TabsContent value="handleidingen" className="space-y-4">
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="h-5 w-5" style={{ color: pc }} />
+                  <h3 className="text-lg font-semibold text-foreground">Handleidingen</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Documenten bij de producten in deze offerte.
+                </p>
+                <ul className="space-y-2">
+                  {handleidingen.map((h) => (
+                    <li key={`${h.product_id}-${h.type}`} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+                      <FileText className="h-4 w-4 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{h.product_naam}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {h.type === "installatie" ? "Installatiehandleiding" : "Gebruikershandleiding"} • {h.bestandsnaam}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" asChild className="gap-1.5 shrink-0">
+                        <a href={h.url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3.5 w-3.5" /> Open
+                        </a>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* ─── Tab: Berichten ─── */}
           <TabsContent value="berichten" className="space-y-4">
