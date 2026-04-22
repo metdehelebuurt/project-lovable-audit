@@ -332,15 +332,27 @@ const OfferteDetail = () => {
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => navigate(`/offertes/${offerte.id}/pdf`)}>
             <FileDown className="h-4 w-4" /> PDF
           </Button>
-          {(offerte as any).partner_handtekening_data ? (
-            <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={() => setEmailDialog(true)}>
-              <Send className="h-4 w-4" /> Versturen
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" className="rounded-pill gap-2 opacity-60" onClick={() => toast.error("Onderteken de offerte eerst in de PDF-editor voordat u deze kunt versturen")} title="Offerte moet eerst ondertekend worden in de PDF-editor">
-              <Send className="h-4 w-4" /> Versturen
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-pill gap-2"
+              onClick={() => openSignDialog(false)}
+              title={isSigned ? "Handtekening wijzigen" : "Offerte ondertekenen"}
+            >
+              <PenLine className="h-4 w-4" />
+              {isSigned ? "Ondertekend" : "Ondertekenen"}
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-pill gap-2"
+            onClick={handleSendClick}
+            title={isSigned ? "Offerte versturen" : "Onderteken en verstuur in één stap"}
+          >
+            <Send className="h-4 w-4" /> Versturen
+          </Button>
           <Button variant="outline" size="sm" className="rounded-pill gap-2" onClick={handleShareLink}>
             <Link2 className="h-4 w-4" /> Delen
           </Button>
