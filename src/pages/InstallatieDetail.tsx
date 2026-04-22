@@ -9,6 +9,8 @@ import InstallatieProductenCard from "@/components/installaties/InstallatieProdu
 import InstallatieNotitiesTab from "@/components/installaties/InstallatieNotitiesTab";
 import InstallatieCommunicatieTab from "@/components/installaties/InstallatieCommunicatieTab";
 import InstallatieHistorieTab from "@/components/installaties/InstallatieHistorieTab";
+import InstallatieActieBalk from "@/components/installaties/InstallatieActieBalk";
+import InstallatieTijdlijn from "@/components/installaties/InstallatieTijdlijn";
 
 const InstallatieDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +43,8 @@ const InstallatieDetail = () => {
         </TabsList>
 
         <TabsContent value="overzicht" className="space-y-4">
+          <InstallatieActieBalk installatie={installatie} onMaakOplevering={naarOplevering} />
+          <InstallatieTijdlijn installatie={installatie} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <InstallatieKlantCard installatie={installatie} />
             <InstallatiePlanningCard installatie={installatie} onChanged={refetch} readOnly />
