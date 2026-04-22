@@ -3,7 +3,7 @@ import {
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
   MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck,
-  ChevronRight, LifeBuoy, BookOpen, ShieldCheck
+  ChevronRight, LifeBuoy, BookOpen, ShieldCheck, RotateCcw
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -116,6 +116,8 @@ const getNavGroups = (rol: string): NavGroup[] => {
   }
   if (["superadmin", "partner_admin", "backoffice"].includes(rol))
     financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Truck });
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol))
+    financieel.push({ title: "Retouren", url: "/retouren", icon: RotateCcw });
   if (financieel.length) groups.push({ label: "Financieel", items: financieel });
 
   const planning: NavItem[] = [];
