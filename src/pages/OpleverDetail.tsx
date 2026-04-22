@@ -19,9 +19,9 @@ import { useOpleverAutosave } from "@/components/oplever/useOpleverAutosave";
 import { downloadOpleverPdf } from "@/lib/renderOpleverPdf";
 import { patchRapport } from "@/components/oplever/api/opleverApi";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Download, FileText, ExternalLink } from "lucide-react";
+import { ArrowLeft, Download, FileText, ExternalLink, Lock } from "lucide-react";
 import type { Opleverrapport } from "@/components/oplever/types";
-import { User, Cpu, BookCheck, Eye, Cable, ShieldCheck, Gauge, BatteryCharging, FileText as FileTextIcon, ClipboardCheck, PenLine } from "lucide-react";
+import { User, Cpu, BookCheck, Eye, Cable, ShieldCheck, Gauge, BatteryCharging, ClipboardCheck, PenLine } from "lucide-react";
 import StepNormenScope from "@/components/oplever/StepNormenScope";
 import StepBekabelingMeterkast from "@/components/oplever/StepBekabelingMeterkast";
 import StepAardingBeveiliging from "@/components/oplever/StepAardingBeveiliging";
@@ -58,18 +58,18 @@ export default function OpleverDetail() {
   });
 
   const { data: klantData } = useQuery({
-    queryKey: ["klant-for-oplever", (merged as any)?.klant_id],
+    queryKey: ["klant-for-oplever", merged?.klant_id],
     queryFn: async () => {
-      const klantId = (merged as any)?.klant_id as string | undefined;
+      const klantId = merged?.klant_id ?? undefined;
       if (!klantId) return null;
       const { data } = await supabase
         .from("klanten")
-        .select("voornaam, achternaam, bedrijfsnaam, adres, postcode, plaats")
+        .select("voornaam, achternaam, bedrijfsnaam, email, telefoon, adres, postcode, plaats")
         .eq("id", klantId)
         .single();
       return data;
     },
-    enabled: !!(merged as any)?.klant_id,
+    enabled: !!merged?.klant_id,
   });
 
   const { data: opdrachtData } = useQuery({
