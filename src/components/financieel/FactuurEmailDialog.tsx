@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface Props {
   doc: { id: string; documentnummer: string; partner_id: string; type?: string; factuur_subtype?: string };
   defaultTo: string;
   pdfElementSelector?: string;
+  isResend?: boolean;
   onSent?: () => void;
 }
 
@@ -34,12 +35,33 @@ function getLabel(type?: string, subtype?: string): string {
   return TYPE_LABELS[type || "verkoopfactuur"] || "Document";
 }
 
-export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo, pdfElementSelector = ".pdf-print-root", onSent }: Props) {
+function createDefaultSubject(label: string, documentnummer: string, isResend: boolean) {
+  if (isResend) return `[Herinnering] ${label} ${documentnummer}`;
+  return `${label} ${documentnummer}`;
+}
+
+function createDefaultBody(label: string, documentnummer: string, isResend: boolean) {
+  if (isResend) {
+    return `Beste relatie,\n\nHierbij sturen wij u nogmaals ${label.toLowerCase()} ${documentnummer}.\n\nMet vriendelijke groet`;
+  }
+
+  return `Beste relatie,\n\nHierbij ontvangt u ${label.toLowerCase()} ${documentnummer}.\n\nMet vriendelijke groet`;
+}
+
+export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo, pdfElementSelector = ".pdf-print-root", isResend = false, onSent }: Props) {
   const label = getLabel(doc.type, doc.factuur_subtype);
   const [to, setTo] = useState(defaultTo);
-  const [subject, setSubject] = useState(`${label} ${doc.documentnummer}`);
-  const [body, setBody] = useState(`Beste relatie,\n\nHierbij ontvangt u ${label.toLowerCase()} ${doc.documentnummer}.\n\nMet vriendelijke groet`);
+  const [subject, setSubject] = useState(createDefaultSubject(label, doc.documentnummer, isResend));
+  const [body, setBody] = useState(createDefaultBody(label, doc.documentnummer, isResend));
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setTo(defaultTo);
+    setSubject(createDefaultSubject(label, doc.documentnummer, isResend));
+    setBody(createDefaultBody(label, doc.documentnummer, isResend));
+  }, [defaultTo, doc.documentnummer, isResend, label, open]);
 
   const handleSend = async () => {
     if (!to.trim()) { toast.error("Vul een ontvanger in"); return; }
@@ -67,6 +89,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
           html_body: html,
           attachment_path: path || null,
           attachment_filename: `${label.replace(/\s+/g, "")}-${doc.documentnummer}.pdf`,
+          is_resend: isResend,
         },
       });
       if (error || data?.error) {
@@ -85,7 +108,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
-        <DialogHeader><DialogTitle>{label} per e-mail versturen</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isResend ? `${label} opnieuw versturen` : `${label} per e-mail versturen`}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div><Label>Aan</Label><Input value={to} onChange={(e) => setTo(e.target.value)} className="mt-1" /></div>
           <div><Label>Onderwerp</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} className="mt-1" /></div>
