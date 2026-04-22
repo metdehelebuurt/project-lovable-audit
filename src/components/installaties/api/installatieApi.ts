@@ -7,6 +7,21 @@ type InstallatieInsert = Database["public"]["Tables"]["installaties"]["Insert"];
 
 export type Installatie = InstallatieRow;
 
+export async function generateInstallatienummer(partnerId: string): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc("generate_documentnummer_v2", {
+      _partner_id: partnerId,
+      _type: "installatie",
+      _subtype: "regulier",
+    });
+    if (!error && typeof data === "string" && data.length > 0) return data;
+  } catch {
+    /* fallback hieronder */
+  }
+  const jaar = new Date().getFullYear();
+  return `INST-${jaar}-${Date.now().toString().slice(-5)}`;
+}
+
 export async function fetchInstallatie(id: string): Promise<Installatie | null> {
   const { data, error } = await supabase
     .from("installaties")
@@ -34,8 +49,7 @@ export async function fetchInstallaties(filters?: {
 export async function createInstallatie(payload: InstallatieInsert): Promise<Installatie> {
   const insert: InstallatieInsert = { ...payload };
   if (!insert.installatienummer) {
-    const jaar = new Date().getFullYear();
-    insert.installatienummer = `INST-${jaar}-${Date.now().toString().slice(-5)}`;
+    insert.installatienummer = await generateInstallatienummer(insert.partner_id);
   }
   const { data, error } = await supabase.from("installaties").insert(insert).select("*").single();
   if (error) throw error;
