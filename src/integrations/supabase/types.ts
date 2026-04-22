@@ -24,6 +24,8 @@ export type Database = {
           id: string
           interval: string
           maand_bedrag: number
+          mollie_payment_id: string | null
+          mollie_subscription_id: string | null
           partner_id: string
           start_datum: string
           status: string
@@ -37,6 +39,8 @@ export type Database = {
           id?: string
           interval?: string
           maand_bedrag?: number
+          mollie_payment_id?: string | null
+          mollie_subscription_id?: string | null
           partner_id: string
           start_datum?: string
           status?: string
@@ -50,6 +54,8 @@ export type Database = {
           id?: string
           interval?: string
           maand_bedrag?: number
+          mollie_payment_id?: string | null
+          mollie_subscription_id?: string | null
           partner_id?: string
           start_datum?: string
           status?: string
@@ -299,6 +305,9 @@ export type Database = {
           korting_vast_bedrag: number | null
           kortingscode_id: string | null
           maand_bedrag: number
+          mandaat_vereist_voor: string | null
+          mollie_status: string | null
+          mollie_subscription_id: string | null
           notities: string | null
           opzeg_datum: string | null
           opzegtermijn_dagen: number
@@ -323,6 +332,9 @@ export type Database = {
           korting_vast_bedrag?: number | null
           kortingscode_id?: string | null
           maand_bedrag?: number
+          mandaat_vereist_voor?: string | null
+          mollie_status?: string | null
+          mollie_subscription_id?: string | null
           notities?: string | null
           opzeg_datum?: string | null
           opzegtermijn_dagen?: number
@@ -347,6 +359,9 @@ export type Database = {
           korting_vast_bedrag?: number | null
           kortingscode_id?: string | null
           maand_bedrag?: number
+          mandaat_vereist_voor?: string | null
+          mollie_status?: string | null
+          mollie_subscription_id?: string | null
           notities?: string | null
           opzeg_datum?: string | null
           opzegtermijn_dagen?: number
@@ -1254,6 +1269,9 @@ export type Database = {
           factuurnummer: string
           id: string
           korting_bedrag: number
+          mollie_checkout_url: string | null
+          mollie_payment_id: string | null
+          mollie_payment_status: string | null
           notities: string | null
           partner_id: string
           pdf_url: string | null
@@ -1272,6 +1290,9 @@ export type Database = {
           factuurnummer: string
           id?: string
           korting_bedrag?: number
+          mollie_checkout_url?: string | null
+          mollie_payment_id?: string | null
+          mollie_payment_status?: string | null
           notities?: string | null
           partner_id: string
           pdf_url?: string | null
@@ -1290,6 +1311,9 @@ export type Database = {
           factuurnummer?: string
           id?: string
           korting_bedrag?: number
+          mollie_checkout_url?: string | null
+          mollie_payment_id?: string | null
+          mollie_payment_status?: string | null
           notities?: string | null
           partner_id?: string
           pdf_url?: string | null
@@ -3009,6 +3033,48 @@ export type Database = {
           },
         ]
       }
+      mollie_webhook_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          mollie_customer_id: string | null
+          mollie_mandate_id: string | null
+          mollie_payment_id: string | null
+          mollie_subscription_id: string | null
+          payload: Json
+          processed: boolean
+          processed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          mollie_customer_id?: string | null
+          mollie_mandate_id?: string | null
+          mollie_payment_id?: string | null
+          mollie_subscription_id?: string | null
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          mollie_customer_id?: string | null
+          mollie_mandate_id?: string | null
+          mollie_payment_id?: string | null
+          mollie_subscription_id?: string | null
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+        }
+        Relationships: []
+      }
       notificaties: {
         Row: {
           bericht: string
@@ -3652,6 +3718,9 @@ export type Database = {
           licentie_installateurs: number | null
           logo_url: string | null
           logo_url_donker: string | null
+          mollie_customer_id: string | null
+          mollie_mandate_id: string | null
+          mollie_mandate_status: string | null
           naam: string
           notities: string | null
           plaats: string | null
@@ -3705,6 +3774,9 @@ export type Database = {
           licentie_installateurs?: number | null
           logo_url?: string | null
           logo_url_donker?: string | null
+          mollie_customer_id?: string | null
+          mollie_mandate_id?: string | null
+          mollie_mandate_status?: string | null
           naam: string
           notities?: string | null
           plaats?: string | null
@@ -3758,6 +3830,9 @@ export type Database = {
           licentie_installateurs?: number | null
           logo_url?: string | null
           logo_url_donker?: string | null
+          mollie_customer_id?: string | null
+          mollie_mandate_id?: string | null
+          mollie_mandate_status?: string | null
           naam?: string
           notities?: string | null
           plaats?: string | null
