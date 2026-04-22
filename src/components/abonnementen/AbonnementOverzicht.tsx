@@ -12,7 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { AlertTriangle, Pencil, Calendar, RefreshCw } from "lucide-react";
+import { AlertTriangle, Pencil, RefreshCw, Plus, Trash2, Package } from "lucide-react";
+import NieuwAbonnementDialog from "./NieuwAbonnementDialog";
+import AddonToewijsDialog from "./AddonToewijsDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Abonnement {
   id: string;
@@ -44,7 +50,7 @@ const statusKleuren: Record<string, string> = {
 
 export default function AbonnementOverzicht() {
   const [abonnementen, setAbonnementen] = useState<Abonnement[]>([]);
-  const [plans, setPlans] = useState<{ id: string; naam: string; slug: string; maand_prijs: number }[]>([]);
+  const [plans, setPlans] = useState<{ id: string; naam: string; slug: string; maand_prijs: number; jaar_prijs: number }[]>([]);
   const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -55,11 +61,15 @@ export default function AbonnementOverzicht() {
   const [selected, setSelected] = useState<Abonnement | null>(null);
   const [editForm, setEditForm] = useState({ plan_id: "", status: "", korting_percentage: 0, korting_vast_bedrag: 0, korting_reden: "", gratis_maanden: 0, notities: "", verloop_datum: "" });
   const [saving, setSaving] = useState(false);
+  const [nieuwOpen, setNieuwOpen] = useState(false);
+  const [addonOpen, setAddonOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Abonnement | null>(null);
+  const [addonTarget, setAddonTarget] = useState<Abonnement | null>(null);
 
   const fetchAll = async () => {
     const [{ data: aboData }, { data: planData }, { data: addonData }] = await Promise.all([
       supabase.from("abonnementen").select("*, partners(naam), abonnement_plannen(naam, slug)").order("created_at", { ascending: false }),
-      supabase.from("abonnement_plannen").select("id, naam, slug, maand_prijs").eq("actief", true).order("volgorde"),
+      supabase.from("abonnement_plannen").select("id, naam, slug, maand_prijs, jaar_prijs").eq("actief", true).order("volgorde"),
       supabase.from("abonnement_addon_aankopen").select("partner_id, aantal").eq("status", "actief"),
     ]);
     if (aboData) setAbonnementen(aboData as any);
