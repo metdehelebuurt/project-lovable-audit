@@ -17,6 +17,7 @@ const VERDICTS: { value: Verdict; label: string; tone: string }[] = [
 
 export default function StepBevindingen({ draft, onChange }: Props) {
   const bev: Bevindingen = draft.bevindingen ?? { verdict: null, deficiencies: [], recommendations: [] };
+  const extra = draft.extra_velden ?? {};
 
   const setVerdict = (v: Verdict) => onChange({ bevindingen: { ...bev, verdict: v } });
   const updateList = (key: "deficiencies" | "recommendations", idx: number, value: string) => {
@@ -59,6 +60,17 @@ export default function StepBevindingen({ draft, onChange }: Props) {
       <section className="space-y-2">
         <Label>Conformiteitsverklaring</Label>
         <Textarea rows={4} value={draft.conformiteitstekst ?? ""} onChange={(e) => onChange({ conformiteitstekst: e.target.value })} />
+      </section>
+
+      <section className="space-y-2">
+        <Label htmlFor="opmerkingen">Opmerkingen / afwijkingen</Label>
+        <Textarea
+          id="opmerkingen"
+          rows={4}
+          placeholder="Aanvullende opmerkingen, afwijkingen ten opzichte van het ontwerp, of toelichtingen voor de klant."
+          value={extra.opmerkingen_afwijkingen ?? ""}
+          onChange={(e) => onChange({ extra_velden: { ...extra, opmerkingen_afwijkingen: e.target.value } })}
+        />
       </section>
     </div>
   );

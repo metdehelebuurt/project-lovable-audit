@@ -6,6 +6,8 @@ import { Upload, Trash2, Plus } from "lucide-react";
 import { uploadOpleverFile } from "./api/opleverApi";
 import { toast } from "@/hooks/use-toast";
 import type { CircuitGroep, OpleverDocument, Opleverrapport } from "./types";
+import ChecklistSection from "./ChecklistSection";
+import { DOC_LABELS_CHECKLIST } from "./GrenswaardenLogic";
 
 interface Props {
   rapportId: string;
@@ -25,6 +27,7 @@ export default function StepDocumentatie({ rapportId, partnerId, draft, onChange
   const ref = useRef<HTMLInputElement>(null);
   const docs = draft.documenten ?? [];
   const groepen = draft.groepenverdeling ?? [];
+  const extra = draft.extra_velden ?? {};
 
   const handleUpload = async (file: File, type: OpleverDocument["type"]) => {
     try {
@@ -46,7 +49,16 @@ export default function StepDocumentatie({ rapportId, partnerId, draft, onChange
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <h3 className="font-semibold">Documenten</h3>
+        <h3 className="font-semibold">Documenten & labels op locatie</h3>
+        <ChecklistSection
+          items={extra.doc_labels}
+          preset={DOC_LABELS_CHECKLIST}
+          onChange={(items) => onChange({ extra_velden: { ...extra, doc_labels: items } })}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="font-semibold">Te uploaden documenten</h3>
         {DOC_TYPES.map((dt) => (
           <div key={dt.type} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
             <div>
