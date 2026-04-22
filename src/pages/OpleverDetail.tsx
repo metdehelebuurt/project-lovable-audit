@@ -40,7 +40,6 @@ export default function OpleverDetail() {
   if (isLoading || !merged) return <div className="p-8 text-muted-foreground">Laden…</div>;
 
   const update = (p: Partial<Opleverrapport>) => setDraft((d) => ({ ...d, ...p }));
-  const readOnly = merged.status === "ondertekend";
 
   const downloadPdf = async () => {
     if (!pdfRef.current || !id || !merged.partner_id) return;
@@ -58,12 +57,12 @@ export default function OpleverDetail() {
   };
 
   const steps = [
-    { key: "id", label: "Identificatie", content: <StepIdentificatie rapport={merged} onChange={update} readOnly={readOnly} /> },
-    { key: "install", label: "Installatie", content: <StepInstallatie rapport={merged} onChange={update} readOnly={readOnly} /> },
-    { key: "visueel", label: "Visuele inspectie", content: <StepVisueleInspectie rapport={merged} onChange={update} readOnly={readOnly} /> },
-    { key: "meting", label: "Metingen", content: <StepMetingen rapport={merged} onChange={update} readOnly={readOnly} /> },
-    { key: "doc", label: "Documentatie", content: <StepDocumentatie rapport={merged} onChange={update} readOnly={readOnly} /> },
-    { key: "bevind", label: "Bevindingen", content: <StepBevindingen rapport={merged} onChange={update} readOnly={readOnly} /> },
+    { key: "id", label: "Identificatie", content: <StepIdentificatie draft={merged} onChange={update} /> },
+    { key: "install", label: "Installatie", content: <StepInstallatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
+    { key: "visueel", label: "Visuele inspectie", content: <StepVisueleInspectie draft={merged} onChange={update} /> },
+    { key: "meting", label: "Metingen", content: <StepMetingen draft={merged} onChange={update} /> },
+    { key: "doc", label: "Documentatie", content: <StepDocumentatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
+    { key: "bevind", label: "Bevindingen", content: <StepBevindingen draft={merged} onChange={update} /> },
     { key: "onder", label: "Ondertekening", content: <StepOndertekening rapport={merged} onSent={() => setDraft({})} /> },
   ];
 
