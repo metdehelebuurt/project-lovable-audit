@@ -15,6 +15,7 @@ interface Props {
 }
 
 export default function StepIdentificatie({ draft, onChange, klantNaam, klantAdres, partnerId, klantId, onKlantChange }: Props) {
+  const extra = draft.extra_velden ?? {};
   return (
     <div className="space-y-4">
       <div>
@@ -27,6 +28,24 @@ export default function StepIdentificatie({ draft, onChange, klantNaam, klantAdr
       </div>
       <KlantSelector partnerId={partnerId} klantId={klantId} onChange={onKlantChange} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="projectnummer">Projectnummer</Label>
+          <Input
+            id="projectnummer"
+            placeholder="Bijv. PRJ-2025-0123"
+            value={extra.projectnummer ?? ""}
+            onChange={(e) => onChange({ extra_velden: { ...extra, projectnummer: e.target.value } })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="installatiedatum">Datum installatie</Label>
+          <Input
+            id="installatiedatum"
+            type="date"
+            value={extra.installatiedatum ?? ""}
+            onChange={(e) => onChange({ extra_velden: { ...extra, installatiedatum: e.target.value } })}
+          />
+        </div>
         <div>
           <Label htmlFor="opleverdatum">Opleverdatum</Label>
           <Input
