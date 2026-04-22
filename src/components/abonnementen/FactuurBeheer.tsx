@@ -275,11 +275,35 @@ export default function FactuurBeheer() {
                 <TableCell><Badge className={statusKleuren[f.status] ?? ""}>{f.status}</Badge></TableCell>
                 <TableCell className="text-sm">{f.betaald_op ? format(new Date(f.betaald_op), "d MMM yyyy", { locale: nl }) : "-"}</TableCell>
                 <TableCell>
-                  {f.status !== "betaald" && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => { setSelected(f); setPayDialog(true); }}>
-                      <CheckCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {f.mollie_checkout_url && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Open Mollie checkout">
+                        <a href={f.mollie_checkout_url} target="_blank" rel="noreferrer">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    )}
+                    {f.status !== "betaald" && (
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7"
+                        onClick={() => handleMollieLink(f)}
+                        disabled={mollieBezig === f.id}
+                        title="Mollie betaallink genereren"
+                      >
+                        <Link2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {f.status !== "betaald" && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => { setSelected(f); setPayDialog(true); }} title="Betaling registreren">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {f.status === "concept" && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteFactuur(f)} title="Verwijderen">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
