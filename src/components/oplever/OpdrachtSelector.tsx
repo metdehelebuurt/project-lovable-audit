@@ -10,9 +10,9 @@ interface OpdrachtLite {
   id: string;
   klant_naam: string | null;
   klant_email: string | null;
-  klant_id: string | null;
   status: string | null;
   created_at: string;
+  lead_id: string | null;
 }
 
 interface Props {
@@ -45,7 +45,7 @@ export default function OpdrachtSelector({ partnerId, opdrachtId, onChange }: Pr
     (async () => {
       const { data } = await supabase
         .from("opdrachten")
-        .select("id, klant_naam, klant_email, klant_id, status, created_at")
+        .select("id, klant_naam, klant_email, status, created_at, lead_id")
         .eq("id", opdrachtId)
         .maybeSingle();
       if (!cancelled && data) setSelected(data as OpdrachtLite);
@@ -68,7 +68,7 @@ export default function OpdrachtSelector({ partnerId, opdrachtId, onChange }: Pr
     try {
       let req = supabase
         .from("opdrachten")
-        .select("id, klant_naam, klant_email, klant_id, status, created_at")
+        .select("id, klant_naam, klant_email, status, created_at, lead_id")
         .eq("partner_id", partnerId)
         .order("created_at", { ascending: false })
         .limit(15);

@@ -34,15 +34,7 @@ export default function StepIdentificatie({ draft, onChange, klantNaam, klantAdr
         <OpdrachtSelector
           partnerId={partnerId}
           opdrachtId={opdrachtId}
-          onChange={(id, opdracht) => {
-            const patch: Partial<Opleverrapport> = { opdracht_id: id };
-            // Auto-koppel klant als die nog niet gezet is
-            if (id && opdracht?.klant_id && !klantId) {
-              patch.klant_id = opdracht.klant_id;
-              onKlantChange(opdracht.klant_id);
-            }
-            onChange(patch);
-          }}
+          onChange={(id) => onChange({ opdracht_id: id })}
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
