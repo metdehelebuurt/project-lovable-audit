@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import KlantSelector from "./KlantSelector";
+import OpdrachtSelector from "./OpdrachtSelector";
 import type { Opleverrapport } from "./types";
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 
 export default function StepIdentificatie({ draft, onChange, klantNaam, klantAdres, partnerId, klantId, onKlantChange }: Props) {
   const extra = draft.extra_velden ?? {};
+  const opdrachtId = draft.opdracht_id ?? null;
   return (
     <div className="space-y-4">
       <div>
@@ -27,6 +29,22 @@ export default function StepIdentificatie({ draft, onChange, klantNaam, klantAdr
         ) : null}
       </div>
       <KlantSelector partnerId={partnerId} klantId={klantId} onChange={onKlantChange} />
+      <div>
+        <Label className="mb-1 block">Verkooporder (optioneel)</Label>
+        <OpdrachtSelector
+          partnerId={partnerId}
+          opdrachtId={opdrachtId}
+          onChange={(id, opdracht) => {
+            const patch: Partial<Opleverrapport> = { opdracht_id: id };
+            // Auto-koppel klant als die nog niet gezet is
+            if (id && opdracht?.klant_id && !klantId) {
+              patch.klant_id = opdracht.klant_id;
+              onKlantChange(opdracht.klant_id);
+            }
+            onChange(patch);
+          }}
+        />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="projectnummer">Projectnummer</Label>
