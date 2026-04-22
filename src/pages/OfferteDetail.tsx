@@ -864,6 +864,41 @@ const OfferteDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Onderteken-dialog */}
+      <Dialog open={signDialog} onOpenChange={(open) => { setSignDialog(open); if (!open) setSignatureDraft(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PenLine className="h-4 w-4 text-primary" />
+              Offerte ondertekenen
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Plaats hieronder uw handtekening. Deze verschijnt op de PDF en is verplicht voordat de offerte naar de klant kan worden verstuurd.
+            </p>
+            <div className="rounded-xl border bg-muted/30 p-2">
+              <SignaturePad value={signatureDraft} onChange={setSignatureDraft} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Tip: u kunt de handtekening later wijzigen of het uitgebreide sjabloon opmaken via de PDF-editor.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSignDialog(false)} className="rounded-pill">
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleSignatureSave}
+              disabled={!signatureDraft || signSaving}
+              className="rounded-pill gap-2"
+            >
+              {signSaving ? "Opslaan..." : signOpenSendAfter ? "Ondertekenen & versturen" : "Ondertekening opslaan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
