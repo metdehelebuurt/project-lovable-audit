@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
 import FactuurEmailDialog from "@/components/financieel/FactuurEmailDialog";
+import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -259,10 +260,19 @@ export default function FactuurDetail() {
               <Send className="h-4 w-4 mr-2" /> E-mail versturen
             </Button>
           )}
-          {doc.verzonden_op && ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
-            <Button variant="outline" onClick={() => { setPdfOpen(true); setTimeout(() => setEmailOpen(true), 300); }}>
-              <Send className="h-4 w-4 mr-2" /> Opnieuw versturen
-            </Button>
+          {(["verzonden", "verlopen", "betaald"].includes(doc.status) || !!doc.verzonden_op) &&
+            ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
+              <ResendFactuurButton
+                doc={{
+                  id: doc.id,
+                  documentnummer: doc.documentnummer,
+                  partner_id: doc.partner_id,
+                  type: doc.type,
+                  factuur_subtype: doc.factuur_subtype,
+                }}
+                defaultTo={pdfKlant?.email || ""}
+                onSent={() => setDoc({ ...doc, verzonden_op: new Date().toISOString() })}
+              />
           )}
           {doc.status === "concept" && !["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
             <Button onClick={() => updateStatus("verzonden")}>

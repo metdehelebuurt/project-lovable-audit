@@ -77,6 +77,17 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
           console.error(e);
           toast.warning("PDF kon niet worden gegenereerd, e-mail wordt zonder bijlage verstuurd");
         }
+      } else {
+        // Geen DOM-element (bijv. vanuit overzicht/klant-pagina): probeer bestaande PDF uit storage.
+        const storagePath = `${doc.partner_id}/factuur/${doc.id}.pdf`;
+        const { data: existing } = await supabase.storage.from("facturen").list(`${doc.partner_id}/factuur`, {
+          search: `${doc.id}.pdf`,
+        });
+        if (existing && existing.some((f) => f.name === `${doc.id}.pdf`)) {
+          path = storagePath;
+        } else {
+          toast.warning("Geen eerdere PDF gevonden — e-mail wordt zonder bijlage verstuurd");
+        }
       }
 
       const html = `<div style="font-family:sans-serif;padding:20px;">${body.split("\n").map(l => `<p>${l || "&nbsp;"}</p>`).join("")}</div>`;
