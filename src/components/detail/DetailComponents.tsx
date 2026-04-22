@@ -172,11 +172,11 @@ const opdStatusLabels: Record<string, string> = {
 export const OpdrachtenLijst = ({ opdrachten, onNavigate }: { opdrachten: any[]; onNavigate?: (id: string) => void }) => (
   <Card className="rounded-2xl border-0 shadow-sm">
     <CardHeader className="pb-3">
-      <CardTitle className="text-base flex items-center gap-2"><Wrench className="h-4 w-4 text-primary" /> Opdrachten</CardTitle>
+      <CardTitle className="text-base flex items-center gap-2"><Wrench className="h-4 w-4 text-primary" /> Verkooporders</CardTitle>
     </CardHeader>
     <CardContent>
       {opdrachten.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4 text-center">Geen opdrachten</p>
+        <p className="text-sm text-muted-foreground py-4 text-center">Geen verkooporders</p>
       ) : (
         <div className="space-y-2">
           {opdrachten.map((o: any) => (
