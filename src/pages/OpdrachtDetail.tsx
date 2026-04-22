@@ -18,6 +18,8 @@ import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 import OrderbevestigingEmailDialog from "@/components/opdrachten/OrderbevestigingEmailDialog";
+import MonteurToewijsDialog from "@/components/installaties/MonteurToewijsDialog";
+import KlantBevestigingDialog from "@/components/installaties/KlantBevestigingDialog";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -52,6 +54,8 @@ const OpdrachtDetail = () => {
   const [installForm, setInstallForm] = useState({ monteur_id: "", start: "", eind: "" });
   const [orderPdfOpen, setOrderPdfOpen] = useState(false);
   const [orderEmailOpen, setOrderEmailOpen] = useState(false);
+  const [klantBevestigingOpen, setKlantBevestigingOpen] = useState(false);
+  const [aangemaakteInstallatie, setAangemaakteInstallatie] = useState<any | null>(null);
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
@@ -373,37 +377,43 @@ const OpdrachtDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Install planning dialog */}
-      <Dialog open={installDialog} onOpenChange={setInstallDialog}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Installatie plannen</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Monteur *</Label>
-              <Select value={installForm.monteur_id} onValueChange={v => setInstallForm(p => ({ ...p, monteur_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecteer monteur" /></SelectTrigger>
-                <SelectContent>
-                  {monteurs.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.voornaam} {m.achternaam}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Startdatum *</Label>
-              <Input type="date" value={installForm.start} onChange={e => setInstallForm(p => ({ ...p, start: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Einddatum</Label>
-              <Input type="date" value={installForm.eind} onChange={e => setInstallForm(p => ({ ...p, eind: e.target.value }))} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setInstallDialog(false)}>Annuleren</Button>
-            <Button onClick={handlePlanInstallatie}>Plan installatie</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Installatie plannen + monteur toewijzen */}
+      <MonteurToewijsDialog
+        open={installDialog}
+        onOpenChange={setInstallDialog}
+        opdracht={{
+          id: opdracht.id,
+          partner_id: opdracht.partner_id,
+          offerte_id: opdracht.offerte_id,
+          lead_id: opdracht.lead_id,
+          klant_naam: opdracht.klant_naam,
+          klant_email: opdracht.klant_email,
+          klant_telefoon: opdracht.klant_telefoon,
+          klant_adres: opdracht.klant_adres,
+          klant_postcode: opdracht.klant_postcode,
+          klant_plaats: opdracht.klant_plaats,
+          regels,
+        }}
+        onSuccess={(installatieId) => {
+          queryClient.invalidateQueries({ queryKey: ["opdracht", id] });
+          // Haal de net aangemaakte installatie op om aan KlantBevestigingDialog te geven
+          supabase.from("installaties").select("*").eq("id", installatieId).single()
+            .then(({ data }) => {
+              if (data) {
+                setAangemaakteInstallatie(data);
+                setKlantBevestigingOpen(true);
+              }
+            });
+        }}
+      />
+
+      {aangemaakteInstallatie && (
+        <KlantBevestigingDialog
+          open={klantBevestigingOpen}
+          onOpenChange={setKlantBevestigingOpen}
+          installatie={aangemaakteInstallatie}
+        />
+      )}
 
       {/* Orderbevestiging PDF dialog */}
       <Dialog open={orderPdfOpen} onOpenChange={setOrderPdfOpen}>

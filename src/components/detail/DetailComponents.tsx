@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText, ClipboardCheck, MapPin, Video, Plus, CalendarIcon,
-  PhoneCall, Wrench, Mail, Phone,
+  PhoneCall, Wrench, Mail, Phone, HardHat,
 } from "lucide-react";
 
 /* ─── Formatters ─── */
@@ -199,6 +199,58 @@ export const OpdrachtenLijst = ({ opdrachten, onNavigate }: { opdrachten: any[];
                 <span className="text-sm font-semibold">{formatCurrency(o.totaal_bedrag || 0)}</span>
                 <Badge className={opdStatusColors[o.status] || ""}>{opdStatusLabels[o.status] || o.status}</Badge>
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+);
+
+/* ─── Installaties List ─── */
+const instStatusColors: Record<string, string> = {
+  concept: "bg-muted text-muted-foreground",
+  gepland: "bg-primary/10 text-primary",
+  bevestigd: "bg-blue-100 text-blue-700",
+  onderweg: "bg-amber-100 text-amber-700",
+  in_uitvoering: "bg-amber-100 text-amber-700",
+  gereed: "bg-emerald-100 text-emerald-700",
+  afgerond: "bg-emerald-100 text-emerald-700",
+  geannuleerd: "bg-red-100 text-red-600",
+};
+const instStatusLabels: Record<string, string> = {
+  concept: "Concept", gepland: "Gepland", bevestigd: "Bevestigd",
+  onderweg: "Onderweg", in_uitvoering: "In uitvoering",
+  gereed: "Gereed", afgerond: "Afgerond", geannuleerd: "Geannuleerd",
+};
+
+export const InstallatiesLijst = ({ installaties, onNavigate }: { installaties: any[]; onNavigate?: (id: string) => void }) => (
+  <Card className="rounded-2xl border-0 shadow-sm">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base flex items-center gap-2"><HardHat className="h-4 w-4 text-primary" /> Installaties</CardTitle>
+    </CardHeader>
+    <CardContent>
+      {installaties.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">Geen installaties</p>
+      ) : (
+        <div className="space-y-2">
+          {installaties.map((inst: any) => (
+            <div
+              key={inst.id}
+              onClick={() => onNavigate?.(inst.id)}
+              className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center"><HardHat className="h-4 w-4 text-primary" /></div>
+                <div>
+                  <p className="text-sm font-medium">{inst.installatienummer ?? inst.consument_naam ?? "Installatie"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {inst.geplande_startdatum ? formatDate(inst.geplande_startdatum) : formatDate(inst.created_at)}
+                    {inst.werkadres && ` • ${inst.werkadres}`}
+                  </p>
+                </div>
+              </div>
+              <Badge className={instStatusColors[inst.status] || ""}>{instStatusLabels[inst.status] || inst.status}</Badge>
             </div>
           ))}
         </div>
