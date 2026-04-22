@@ -2364,6 +2364,38 @@ export type Database = {
         }
         Relationships: []
       }
+      installateur_voorkeuren: {
+        Row: {
+          erkenningsnummer: string | null
+          kvk_nummer: string | null
+          meetapparatuur: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          erkenningsnummer?: string | null
+          kvk_nummer?: string | null
+          meetapparatuur?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          erkenningsnummer?: string | null
+          kvk_nummer?: string | null
+          meetapparatuur?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installateur_voorkeuren_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installaties: {
         Row: {
           consument_id: string | null
@@ -3661,6 +3693,189 @@ export type Database = {
             columns: ["toegewezen_monteur_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opleverrapport_audit: {
+        Row: {
+          actie: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          ip: string | null
+          partner_id: string
+          rapport_id: string
+        }
+        Insert: {
+          actie: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          ip?: string | null
+          partner_id: string
+          rapport_id: string
+        }
+        Update: {
+          actie?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          ip?: string | null
+          partner_id?: string
+          rapport_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opleverrapport_audit_rapport_id_fkey"
+            columns: ["rapport_id"]
+            isOneToOne: false
+            referencedRelation: "opleverrapporten"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opleverrapporten: {
+        Row: {
+          batterij_spec: Json
+          bevindingen: Json
+          conformiteitstekst: string | null
+          created_at: string
+          created_by: string
+          documenten: Json
+          gefinaliseerd_op: string | null
+          groepenverdeling: Json
+          id: string
+          installateur_handtekening: Json | null
+          installateur_id: string | null
+          installatie_id: string | null
+          klant_handtekening: Json | null
+          klant_id: string | null
+          klant_token: string | null
+          klant_token_expires_at: string | null
+          meetapparatuur: Json
+          metingen: Json
+          omvormer_spec: Json
+          opleverdatum: string | null
+          opstelling: Json
+          partner_id: string
+          pdf_hash: string | null
+          pdf_url: string | null
+          rapportnummer: string
+          scope_omschrijving: string | null
+          status: string
+          template_versie: string
+          updated_at: string
+          visuele_inspectie: Json
+        }
+        Insert: {
+          batterij_spec?: Json
+          bevindingen?: Json
+          conformiteitstekst?: string | null
+          created_at?: string
+          created_by: string
+          documenten?: Json
+          gefinaliseerd_op?: string | null
+          groepenverdeling?: Json
+          id?: string
+          installateur_handtekening?: Json | null
+          installateur_id?: string | null
+          installatie_id?: string | null
+          klant_handtekening?: Json | null
+          klant_id?: string | null
+          klant_token?: string | null
+          klant_token_expires_at?: string | null
+          meetapparatuur?: Json
+          metingen?: Json
+          omvormer_spec?: Json
+          opleverdatum?: string | null
+          opstelling?: Json
+          partner_id: string
+          pdf_hash?: string | null
+          pdf_url?: string | null
+          rapportnummer: string
+          scope_omschrijving?: string | null
+          status?: string
+          template_versie?: string
+          updated_at?: string
+          visuele_inspectie?: Json
+        }
+        Update: {
+          batterij_spec?: Json
+          bevindingen?: Json
+          conformiteitstekst?: string | null
+          created_at?: string
+          created_by?: string
+          documenten?: Json
+          gefinaliseerd_op?: string | null
+          groepenverdeling?: Json
+          id?: string
+          installateur_handtekening?: Json | null
+          installateur_id?: string | null
+          installatie_id?: string | null
+          klant_handtekening?: Json | null
+          klant_id?: string | null
+          klant_token?: string | null
+          klant_token_expires_at?: string | null
+          meetapparatuur?: Json
+          metingen?: Json
+          omvormer_spec?: Json
+          opleverdatum?: string | null
+          opstelling?: Json
+          partner_id?: string
+          pdf_hash?: string | null
+          pdf_url?: string | null
+          rapportnummer?: string
+          scope_omschrijving?: string | null
+          status?: string
+          template_versie?: string
+          updated_at?: string
+          visuele_inspectie?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opleverrapporten_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_installateur_id_fkey"
+            columns: ["installateur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
         ]
