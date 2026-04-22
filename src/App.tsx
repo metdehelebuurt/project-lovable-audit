@@ -65,6 +65,8 @@ import Financieel from "@/pages/Financieel";
 import FactuurNieuw from "@/pages/FactuurNieuw";
 import FactuurDetail from "@/pages/FactuurDetail";
 import Leveranciers from "@/pages/Leveranciers";
+import Retouren from "@/pages/Retouren";
+import RetourDetail from "@/pages/RetourDetail";
 import HelpdeskDashboard from "@/pages/helpdesk/Dashboard";
 import TicketsOverzicht from "@/pages/helpdesk/TicketsOverzicht";
 import TicketNieuw from "@/pages/helpdesk/TicketNieuw";
@@ -310,6 +312,12 @@ const App = () => (
               } />
               <Route path="/opleveringen/:id" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverDetail /></ProtectedRoute>
+              } />
+              <Route path="/retouren" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><Retouren /></ProtectedRoute>
+              } />
+              <Route path="/retouren/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><RetourDetail /></ProtectedRoute>
               } />
             </Route>
             <Route path="/offertes/:id/pdf/print" element={<OffertePDFPrint />} />

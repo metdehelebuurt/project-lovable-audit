@@ -13,12 +13,16 @@ import InstallatieActieBalk from "@/components/installaties/InstallatieActieBalk
 import InstallatieTijdlijn from "@/components/installaties/InstallatieTijdlijn";
 import InstallatieDocumentatieCard from "@/components/installaties/InstallatieDocumentatieCard";
 import SerienummerEditor from "@/components/serienummers/SerienummerEditor";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
+import RetourDialog from "@/components/retouren/RetourDialog";
 
 const InstallatieDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: installatie, isLoading, refetch } = useInstallatie(id);
   const [tab, setTab] = useState("overzicht");
+  const [retourOpen, setRetourOpen] = useState(false);
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Laden...</div>;
   if (!installatie) return <div className="p-6 text-muted-foreground">Installatie niet gevonden</div>;
@@ -33,6 +37,11 @@ const InstallatieDetail = () => {
   return (
     <div className="space-y-6 max-w-6xl">
       <InstallatieHeader installatie={installatie} onMaakOplevering={naarOplevering} />
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => setRetourOpen(true)} className="gap-1.5">
+          <RotateCcw className="h-4 w-4" /> Retour aanmelden
+        </Button>
+      </div>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -89,6 +98,21 @@ const InstallatieDetail = () => {
           <InstallatieHistorieTab installatieId={installatie.id} />
         </TabsContent>
       </Tabs>
+
+      <RetourDialog
+        open={retourOpen}
+        onOpenChange={setRetourOpen}
+        defaultType="klant_retour"
+        context={{
+          installatie_id: installatie.id,
+          opdracht_id: installatie.opdracht_id ?? undefined,
+          klant_id: installatie.klant_id ?? undefined,
+          suggestRegels: (installatie.producten as any[] | undefined)?.map((p) => ({
+            omschrijving: p.omschrijving ?? p.naam ?? "",
+            aantal: Number(p.aantal ?? 1),
+          })),
+        }}
+      />
     </div>
   );
 };

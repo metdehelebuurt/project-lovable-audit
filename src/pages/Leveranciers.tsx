@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Building2, ListOrdered } from "lucide-react";
+import PrijslijstEditor from "@/components/leveranciers/PrijslijstEditor";
 
 interface Leverancier {
   id: string;
@@ -41,6 +42,7 @@ export default function Leveranciers() {
   const [form, setForm] = useState(emptyLeverancier);
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [prijslijstId, setPrijslijstId] = useState<string | null>(null);
 
   const fetchData = async () => {
     if (!profile?.partner_id) return;
@@ -206,6 +208,9 @@ export default function Leveranciers() {
                     <TableCell>{item.telefoon || "—"}</TableCell>
                     <TableCell>{item.plaats || "—"}</TableCell>
                     <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" onClick={() => setPrijslijstId(item.id)} title="Prijslijst">
+                        <ListOrdered className="h-4 w-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => handleEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -220,6 +225,19 @@ export default function Leveranciers() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!prijslijstId} onOpenChange={(o) => !o && setPrijslijstId(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Prijslijst — {items.find((i) => i.id === prijslijstId)?.naam ?? ""}
+            </DialogTitle>
+          </DialogHeader>
+          {prijslijstId && profile?.partner_id && (
+            <PrijslijstEditor partnerId={profile.partner_id} leverancierId={prijslijstId} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

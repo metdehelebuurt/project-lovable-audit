@@ -27,6 +27,8 @@ import EmailAddressList from "@/components/email/EmailAddressList";
 import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
 import { fetchLaatsteVersieVoorRapporten, getSignedUrlForVersie } from "@/components/oplever/api/opleverPdfVersies";
 import GeleverdeApparatuurLijst from "@/components/serienummers/GeleverdeApparatuurLijst";
+import RetourDialog from "@/components/retouren/RetourDialog";
+import { RotateCcw } from "lucide-react";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +36,7 @@ const KlantDetail = () => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [afspraakOpen, setAfspraakOpen] = useState(false);
+  const [retourOpen, setRetourOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -273,6 +276,9 @@ const KlantDetail = () => {
           <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => setAfspraakOpen(true)}>
             <CalendarIcon className="h-4 w-4" /> Afspraak
           </Button>
+          <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => setRetourOpen(true)}>
+            <RotateCcw className="h-4 w-4" /> Retour
+          </Button>
           <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => {
             const params = new URLSearchParams({ bron: "klant", klant_id: klant.id });
             if (klant.lead_id) params.set("lead_id", klant.lead_id);
@@ -474,6 +480,13 @@ const KlantDetail = () => {
         klantId={id}
         defaultTitle={`Afspraak ${klant.voornaam} ${klant.achternaam}`}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["klant-afspraken", id] })}
+      />
+
+      <RetourDialog
+        open={retourOpen}
+        onOpenChange={setRetourOpen}
+        defaultType="klant_retour"
+        context={{ klant_id: klant.id }}
       />
     </div>
   );
