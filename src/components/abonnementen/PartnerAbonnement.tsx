@@ -15,6 +15,7 @@ import { Crown, Check, ArrowUp, FileText, AlertTriangle, Plus, Package } from "l
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import MollieBetaalmethode from "./MollieBetaalmethode";
 
 export default function PartnerAbonnement() {
   const { profile } = useAuth();
@@ -73,16 +74,29 @@ export default function PartnerAbonnement() {
   const handleCancel = async () => {
     if (!abo) return;
     setCancelling(true);
-    const opzegDatum = new Date();
-    opzegDatum.setDate(opzegDatum.getDate() + ((abo as any).opzegtermijn_dagen ?? 30));
-    const { error } = await supabase.from("abonnementen").update({
-      opzeg_datum: opzegDatum.toISOString().split("T")[0],
-      status: "opgezegd",
-    } as any).eq("id", abo.id);
-    setCancelling(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Abonnement opgezegd. Uw account blijft actief tot " + format(opzegDatum, "d MMMM yyyy", { locale: nl }));
-    setAbo({ ...abo, status: "opgezegd", opzeg_datum: opzegDatum.toISOString().split("T")[0] });
+    try {
+      if ((abo as any).mollie_subscription_id) {
+        const { error } = await supabase.functions.invoke("mollie-cancel-subscription", {
+          body: { abonnementId: abo.id },
+        });
+        if (error) throw error;
+      } else {
+        const opzegDatum = new Date();
+        opzegDatum.setDate(opzegDatum.getDate() + ((abo as any).opzegtermijn_dagen ?? 30));
+        const { error } = await supabase.from("abonnementen").update({
+          opzeg_datum: opzegDatum.toISOString().split("T")[0],
+          status: "opgezegd",
+        } as any).eq("id", abo.id);
+        if (error) throw error;
+      }
+      toast.success("Abonnement opgezegd.");
+      window.location.reload();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Onbekende fout";
+      toast.error(msg);
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const handleUpgrade = async (targetPlan: any) => {
@@ -113,21 +127,25 @@ export default function PartnerAbonnement() {
     setAddonSaving(true);
     const addon = beschikbareAddons.find((a: any) => a.id === addonForm.addon_id);
     if (!addon) { setAddonSaving(false); return; }
-    const bedrag = addon.maand_prijs * addonForm.aantal;
-    const { error } = await supabase.from("abonnement_addon_aankopen").insert({
-      abonnement_id: abo.id,
-      addon_id: addonForm.addon_id,
-      partner_id: partnerId,
-      aantal: addonForm.aantal,
-      interval: (abo as any).interval ?? "maandelijks",
-      maand_bedrag: bedrag,
-      status: "actief",
-    } as any);
-    setAddonSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`${addonForm.aantal}x ${addon.naam} toegevoegd!`);
-    setAddonDialog(false);
-    window.location.reload();
+    try {
+      const { data, error } = await supabase.functions.invoke("mollie-purchase-addon", {
+        body: { addonId: addonForm.addon_id, aantal: addonForm.aantal, interval: "maand" },
+      });
+      if (error) throw error;
+      const checkoutUrl = (data as { checkoutUrl?: string })?.checkoutUrl;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
+      toast.success(`${addonForm.aantal}x ${addon.naam} toegevoegd!`);
+      setAddonDialog(false);
+      window.location.reload();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Onbekende fout";
+      toast.error(msg);
+    } finally {
+      setAddonSaving(false);
+    }
   };
 
   if (loading) return <p className="text-sm text-muted-foreground">Laden...</p>;
@@ -177,6 +195,13 @@ export default function PartnerAbonnement() {
             </div>
           )}
 
+          {abo.status === "trial" && !(abo as any).mollie_subscription_id && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 text-amber-900 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              Voeg een betaalmethode toe vóór {(abo as any).verloop_datum ? format(new Date((abo as any).verloop_datum), "d MMMM yyyy", { locale: nl }) : "het einde van uw proefperiode"} om uw abonnement te activeren.
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button onClick={() => setUpgradeDialog(true)} size="sm">
               <ArrowUp className="h-4 w-4 mr-1" />Upgrade plan
@@ -205,6 +230,9 @@ export default function PartnerAbonnement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Mollie betaalmethode */}
+      {partnerId && <MollieBetaalmethode partnerId={partnerId} />}
 
       {/* Gebruiksoverzicht */}
       <Card className="rounded-2xl">

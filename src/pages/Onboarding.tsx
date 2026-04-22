@@ -13,6 +13,7 @@ import StepVoorkeuren from "@/components/onboarding/StepVoorkeuren";
 import StepOrganisatie from "@/components/onboarding/StepOrganisatie";
 import StepBeveiliging from "@/components/onboarding/StepBeveiliging";
 import StepKlaar from "@/components/onboarding/StepKlaar";
+import StepBetaalmethode from "@/components/onboarding/StepBetaalmethode";
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Onboarding = () => {
 
   const steps = useMemo(() => {
     const base = ["welkom", "profiel", "email", "handtekening", "voorkeuren"];
-    if (state.isAdmin) base.push("organisatie");
+    if (state.isAdmin) base.push("organisatie", "betaalmethode");
     base.push("beveiliging", "klaar");
     return base;
   }, [state.isAdmin]);
@@ -91,6 +92,9 @@ const Onboarding = () => {
           {current === "organisatie" && state.partner && profile.partner_id && (
             <StepOrganisatie partner={state.partner} partnerId={profile.partner_id}
               onSave={state.savePartner} onNext={next} onPrev={prev} />
+          )}
+          {current === "betaalmethode" && profile.partner_id && (
+            <StepBetaalmethode partnerId={profile.partner_id} onNext={next} onPrev={prev} />
           )}
           {current === "beveiliging" && (
             <StepBeveiliging user={state.user} onSave={state.saveUser} onNext={next} onPrev={prev} />
