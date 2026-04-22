@@ -1,0 +1,89 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchRapporten } from "@/components/oplever/api/opleverApi";
+import OpleverStatusBadge from "@/components/oplever/StatusBadge";
+import type { Opleverrapport } from "@/components/oplever/types";
+import { Plus, FileText } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+
+export default function Opleveringen() {
+  const { profile } = useAuth();
+  const nav = useNavigate();
+  const [rows, setRows] = useState<Opleverrapport[]>([]);
+  const [zoek, setZoek] = useState("");
+  const [busy, setBusy] = useState(true);
+
+  useEffect(() => {
+    if (!profile?.partner_id) return;
+    fetchRapporten(profile.partner_id)
+      .then(setRows)
+      .catch((e) => toast({ title: "Laden mislukt", description: e.message, variant: "destructive" }))
+      .finally(() => setBusy(false));
+  }, [profile?.partner_id]);
+
+  const filtered = useMemo(() => {
+    const q = zoek.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => r.rapportnummer.toLowerCase().includes(q) || r.scope_omschrijving?.toLowerCase().includes(q));
+  }, [rows, zoek]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">Opleveringen</h1>
+          <p className="text-sm text-muted-foreground">NEN 1010 opleverrapporten</p>
+        </div>
+        <Button onClick={() => nav("/opleveringen/nieuw")}>
+          <Plus className="h-4 w-4 mr-2" /> Nieuw rapport
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rapporten</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input placeholder="Zoek op nummer of omvang…" value={zoek} onChange={(e) => setZoek(e.target.value)} />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Rapportnummer</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Opleverdatum</TableHead>
+                <TableHead>Omvang</TableHead>
+                <TableHead className="text-right">Actie</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {busy ? (
+                <TableRow><TableCell colSpan={5}>Laden…</TableCell></TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Geen rapporten gevonden</TableCell></TableRow>
+              ) : filtered.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-sm">{r.rapportnummer}</TableCell>
+                  <TableCell><OpleverStatusBadge status={r.status} /></TableCell>
+                  <TableCell>{r.opleverdatum ?? "—"}</TableCell>
+                  <TableCell className="max-w-xs truncate">{r.scope_omschrijving ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/opleveringen/${r.id}`}>
+                        <FileText className="h-3.5 w-3.5 mr-1" /> Openen
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
