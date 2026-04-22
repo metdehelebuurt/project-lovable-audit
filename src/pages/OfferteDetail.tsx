@@ -161,6 +161,45 @@ const OfferteDetail = () => {
     setPendingStatus(null);
   };
 
+  const isSigned = !!(offerte as any)?.partner_handtekening_data;
+
+  const openSignDialog = (sendAfter: boolean) => {
+    setSignatureDraft((offerte as any)?.partner_handtekening_data || null);
+    setSignOpenSendAfter(sendAfter);
+    setSignDialog(true);
+  };
+
+  const handleSendClick = () => {
+    if (isSigned) {
+      setEmailDialog(true);
+    } else {
+      openSignDialog(true);
+    }
+  };
+
+  const handleSignatureSave = async () => {
+    if (!id) return;
+    if (!signatureDraft) {
+      toast.error("Plaats eerst een handtekening");
+      return;
+    }
+    setSignSaving(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("offertes").update({
+      partner_handtekening_data: signatureDraft,
+      partner_handtekening_op: now,
+    } as any).eq("id", id);
+    setSignSaving(false);
+    if (error) {
+      toast.error("Handtekening opslaan mislukt", { description: error.message });
+      return;
+    }
+    toast.success("Offerte ondertekend");
+    queryClient.invalidateQueries({ queryKey: ["offerte", id] });
+    setSignDialog(false);
+    if (signOpenSendAfter) setEmailDialog(true);
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async ({ reden, verwijderKlant }: { reden: string; verwijderKlant: boolean }) => {
       const offerteId = id!;
