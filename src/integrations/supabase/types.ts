@@ -2364,6 +2364,80 @@ export type Database = {
         }
         Relationships: []
       }
+      inkoop_ontvangsten: {
+        Row: {
+          created_at: string
+          discrepantie: boolean
+          fotos: Json | null
+          id: string
+          inkooporder_id: string
+          ontvangen_door: string | null
+          ontvangstdatum: string
+          opmerking: string | null
+          partner_id: string
+          regels: Json
+          updated_at: string
+          voorraad_geboekt: boolean
+        }
+        Insert: {
+          created_at?: string
+          discrepantie?: boolean
+          fotos?: Json | null
+          id?: string
+          inkooporder_id: string
+          ontvangen_door?: string | null
+          ontvangstdatum?: string
+          opmerking?: string | null
+          partner_id: string
+          regels?: Json
+          updated_at?: string
+          voorraad_geboekt?: boolean
+        }
+        Update: {
+          created_at?: string
+          discrepantie?: boolean
+          fotos?: Json | null
+          id?: string
+          inkooporder_id?: string
+          ontvangen_door?: string | null
+          ontvangstdatum?: string
+          opmerking?: string | null
+          partner_id?: string
+          regels?: Json
+          updated_at?: string
+          voorraad_geboekt?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inkoop_ontvangsten_inkooporder_id_fkey"
+            columns: ["inkooporder_id"]
+            isOneToOne: false
+            referencedRelation: "financiele_documenten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inkoop_ontvangsten_ontvangen_door_fkey"
+            columns: ["ontvangen_door"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inkoop_ontvangsten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inkoop_ontvangsten_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installateur_voorkeuren: {
         Row: {
           erkenningsnummer: string | null
@@ -3126,6 +3200,90 @@ export type Database = {
             columns: ["toegewezen_aan"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leverancier_artikelen: {
+        Row: {
+          created_at: string
+          id: string
+          inkoopprijs: number
+          laatst_gewijzigd: string
+          leverancier_artikelnummer: string | null
+          leverancier_id: string
+          levertijd_dagen: number | null
+          min_bestelhoeveelheid: number
+          notities: string | null
+          partner_id: string
+          product_id: string
+          updated_at: string
+          voorkeur: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inkoopprijs?: number
+          laatst_gewijzigd?: string
+          leverancier_artikelnummer?: string | null
+          leverancier_id: string
+          levertijd_dagen?: number | null
+          min_bestelhoeveelheid?: number
+          notities?: string | null
+          partner_id: string
+          product_id: string
+          updated_at?: string
+          voorkeur?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inkoopprijs?: number
+          laatst_gewijzigd?: string
+          leverancier_artikelnummer?: string | null
+          leverancier_id?: string
+          levertijd_dagen?: number | null
+          min_bestelhoeveelheid?: number
+          notities?: string | null
+          partner_id?: string
+          product_id?: string
+          updated_at?: string
+          voorkeur?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leverancier_artikelen_leverancier_id_fkey"
+            columns: ["leverancier_id"]
+            isOneToOne: false
+            referencedRelation: "leveranciers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leverancier_artikelen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leverancier_artikelen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leverancier_artikelen_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leverancier_artikelen_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
             referencedColumns: ["id"]
           },
         ]
@@ -4725,6 +4883,149 @@ export type Database = {
           },
         ]
       }
+      retouren: {
+        Row: {
+          afgehandeld_door: string | null
+          afgehandeld_op: string | null
+          created_at: string
+          creditnota_id: string | null
+          fotos: Json | null
+          gemaakt_door: string | null
+          id: string
+          inkooporder_id: string | null
+          installatie_id: string | null
+          klant_id: string | null
+          leverancier_id: string | null
+          notities: string | null
+          opdracht_id: string | null
+          oplossing: string | null
+          partner_id: string
+          reden: string
+          regels: Json
+          rma_nummer: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          afgehandeld_door?: string | null
+          afgehandeld_op?: string | null
+          created_at?: string
+          creditnota_id?: string | null
+          fotos?: Json | null
+          gemaakt_door?: string | null
+          id?: string
+          inkooporder_id?: string | null
+          installatie_id?: string | null
+          klant_id?: string | null
+          leverancier_id?: string | null
+          notities?: string | null
+          opdracht_id?: string | null
+          oplossing?: string | null
+          partner_id: string
+          reden: string
+          regels?: Json
+          rma_nummer: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          afgehandeld_door?: string | null
+          afgehandeld_op?: string | null
+          created_at?: string
+          creditnota_id?: string | null
+          fotos?: Json | null
+          gemaakt_door?: string | null
+          id?: string
+          inkooporder_id?: string | null
+          installatie_id?: string | null
+          klant_id?: string | null
+          leverancier_id?: string | null
+          notities?: string | null
+          opdracht_id?: string | null
+          oplossing?: string | null
+          partner_id?: string
+          reden?: string
+          regels?: Json
+          rma_nummer?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retouren_afgehandeld_door_fkey"
+            columns: ["afgehandeld_door"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_creditnota_id_fkey"
+            columns: ["creditnota_id"]
+            isOneToOne: false
+            referencedRelation: "financiele_documenten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_gemaakt_door_fkey"
+            columns: ["gemaakt_door"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_inkooporder_id_fkey"
+            columns: ["inkooporder_id"]
+            isOneToOne: false
+            referencedRelation: "financiele_documenten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_leverancier_id_fkey"
+            columns: ["leverancier_id"]
+            isOneToOne: false
+            referencedRelation: "leveranciers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_opdracht_id_fkey"
+            columns: ["opdracht_id"]
+            isOneToOne: false
+            referencedRelation: "opdrachten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retouren_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schouwen: {
         Row: {
           aandachtspunten: string | null
@@ -5480,6 +5781,7 @@ export type Database = {
         Args: { _partner_id: string }
         Returns: string
       }
+      generate_rma_nummer: { Args: { _partner_id: string }; Returns: string }
       get_gereserveerd: { Args: { _product_id: string }; Returns: number }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
@@ -5542,6 +5844,15 @@ export type Database = {
           message: Json
           msg_id: number
           read_ct: number
+        }[]
+      }
+      suggest_leverancier: {
+        Args: { _partner_id: string; _product_id: string }
+        Returns: {
+          inkoopprijs: number
+          leverancier_id: string
+          leverancier_naam: string
+          levertijd_dagen: number
         }[]
       }
       user_kan_module: {
