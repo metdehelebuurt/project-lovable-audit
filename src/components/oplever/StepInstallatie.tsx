@@ -15,6 +15,14 @@ interface Props {
   onChange: (patch: Partial<Opleverrapport>) => void;
 }
 
+const OPSTELLING_OPTIES = [
+  { key: "droog", label: "Droge omgeving" },
+  { key: "geventileerd", label: "Goed geventileerd" },
+  { key: "stevige_ondergrond", label: "Stevige ondergrond" },
+  { key: "geen_leefruimte", label: "Niet in leefruimte" },
+  { key: "vrije_werkruimte", label: "Voldoende vrije werkruimte" },
+] as const;
+
 export default function StepInstallatie({ rapportId, partnerId, draft, onChange }: Props) {
   const batterijRef = useRef<HTMLInputElement>(null);
   const omvormerRef = useRef<HTMLInputElement>(null);
@@ -152,10 +160,10 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
           <Input value={ops.locatie ?? ""} onChange={(e) => onChange({ opstelling: { ...ops, locatie: e.target.value } })} placeholder="Bijv. technische ruimte / schuur" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {(["droog","geventileerd","stevige_ondergrond","geen_leefruimte","vrije_werkruimte"] as const).map((k) => (
-            <label key={k} className="flex items-center gap-2 text-sm">
-              <Checkbox checked={Boolean(ops[k])} onCheckedChange={(v) => onChange({ opstelling: { ...ops, [k]: Boolean(v) } })} />
-              {k.replace(/_/g, " ")}
+          {OPSTELLING_OPTIES.map(({ key, label }) => (
+            <label key={key} className="flex items-center gap-2 text-sm">
+              <Checkbox checked={Boolean(ops[key])} onCheckedChange={(v) => onChange({ opstelling: { ...ops, [key]: Boolean(v) } })} />
+              {label}
             </label>
           ))}
         </div>

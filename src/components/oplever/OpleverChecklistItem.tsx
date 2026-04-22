@@ -19,7 +19,7 @@ export default function OpleverChecklistItem({ item, onChange }: Props) {
     <div className="rounded-xl border border-border bg-card p-3 space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <span className="text-sm font-medium flex-1">{item.label}</span>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {STATUSES.map((s) => {
             const active = item.status === s.value;
             const Icon = s.icon;
@@ -29,7 +29,7 @@ export default function OpleverChecklistItem({ item, onChange }: Props) {
                 type="button"
                 size="sm"
                 variant="outline"
-                className={active ? s.tone : ""}
+                className={`${active ? s.tone : ""} min-h-[44px]`}
                 onClick={() => onChange({ ...item, status: s.value })}
               >
                 <Icon className="h-4 w-4" />

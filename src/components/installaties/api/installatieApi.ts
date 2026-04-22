@@ -8,18 +8,16 @@ type InstallatieInsert = Database["public"]["Tables"]["installaties"]["Insert"];
 export type Installatie = InstallatieRow;
 
 export async function generateInstallatienummer(partnerId: string): Promise<string> {
-  try {
-    const { data, error } = await supabase.rpc("generate_documentnummer_v2", {
-      _partner_id: partnerId,
-      _type: "installatie",
-      _subtype: "regulier",
-    });
-    if (!error && typeof data === "string" && data.length > 0) return data;
-  } catch {
-    /* fallback hieronder */
+  const { data, error } = await supabase.rpc("generate_documentnummer_v2", {
+    _partner_id: partnerId,
+    _type: "installatie",
+    _subtype: "regulier",
+  });
+  if (error) throw new Error(`Kon installatienummer niet genereren: ${error.message}`);
+  if (typeof data !== "string" || data.length === 0) {
+    throw new Error("Installatienummer-generator gaf geen geldig nummer terug");
   }
-  const jaar = new Date().getFullYear();
-  return `INST-${jaar}-${Date.now().toString().slice(-5)}`;
+  return data;
 }
 
 export async function fetchInstallatie(id: string): Promise<Installatie | null> {

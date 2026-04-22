@@ -66,7 +66,7 @@ const rolDashboards: Record<string, { title: string; description: string }> = {
   partner_admin: { title: "Organisatie Overzicht", description: "Beheer uw organisatie, medewerkers en leads." },
   partner_staff: { title: "Overzicht", description: "Bekijk uw taken en activiteiten." },
   adviseur: { title: "Mijn Overzicht", description: "Uw leads, schouwen en offertes op een rij." },
-  installateur: { title: "Mijn Opdrachten", description: "Uw geplande en lopende installaties." },
+  installateur: { title: "Mijn Verkooporders", description: "Uw geplande en lopende installaties." },
   consument: { title: "Mijn Woning", description: "Volg de status van uw woningverbeteringen." },
 };
 
