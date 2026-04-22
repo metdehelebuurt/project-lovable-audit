@@ -17,12 +17,13 @@ interface Props {
   rapport: Opleverrapport;
   partnerNaam?: string;
   klantNaam?: string;
+  klantContact?: string;
   partnerLogoUrl?: string;
   partnerContact?: string;
   ordernummer?: string;
 }
 
-const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, partnerLogoUrl, partnerContact, ordernummer }, ref) => {
+const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer }, ref) => {
   const verdict = (rapport.bevindingen?.verdict ?? "goedgekeurd") as Verdict;
   const stempelColor = VERDICT_COLOR[verdict];
   const stempelLabel = VERDICT_LABEL[verdict];
@@ -78,6 +79,7 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
 
       <Section title="Algemene gegevens">
         <Row label="Klant" value={klantNaam ?? "—"} />
+        {klantContact ? <Row label="Contact klant" value={klantContact} /> : null}
         <Row label="Installateur" value={partnerNaam ?? "—"} />
         <Row label="Projectnummer" value={rapport.extra_velden?.projectnummer ?? "—"} />
         <Row label="Verkoopordernummer" value={ordernummer ?? "—"} />
