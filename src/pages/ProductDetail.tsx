@@ -21,6 +21,7 @@ import ProductImage from "@/components/producten/ProductImage";
 import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import { getGroupedSpecs, categorySpecDefinitions } from "@/components/producten/categorySpecDefinitions";
 import SpecsEditor from "@/components/producten/SpecsEditor";
+import ProductHandleidingenSection from "@/components/producten/ProductHandleidingenSection";
 import type { Database } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];

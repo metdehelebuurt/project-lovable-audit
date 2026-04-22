@@ -11,6 +11,7 @@ import InstallatieCommunicatieTab from "@/components/installaties/InstallatieCom
 import InstallatieHistorieTab from "@/components/installaties/InstallatieHistorieTab";
 import InstallatieActieBalk from "@/components/installaties/InstallatieActieBalk";
 import InstallatieTijdlijn from "@/components/installaties/InstallatieTijdlijn";
+import InstallatieDocumentatieCard from "@/components/installaties/InstallatieDocumentatieCard";
 
 const InstallatieDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +51,7 @@ const InstallatieDetail = () => {
             <InstallatiePlanningCard installatie={installatie} onChanged={refetch} readOnly />
           </div>
           <InstallatieProductenCard installatie={installatie} onChanged={refetch} />
+          <InstallatieDocumentatieCard installatieId={installatie.id} />
         </TabsContent>
 
         <TabsContent value="planning">
