@@ -176,7 +176,7 @@ const App = () => (
                 <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><ProductDetail /></ProtectedRoute>
               } />
               <Route path="/voorraad" element={
-                <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Voorraad /></ProtectedRoute>
+                <ProtectedRoute moduleKey="voorraad" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Voorraad /></ProtectedRoute>
               } />
               <Route path="/schouwen" element={
                 <ProtectedRoute moduleKey="schouwen" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]}><Schouwen /></ProtectedRoute>
@@ -305,19 +305,19 @@ const App = () => (
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
               <Route path="/opleveringen" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Opleveringen /></ProtectedRoute>
+                <ProtectedRoute moduleKey="opleveringen" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Opleveringen /></ProtectedRoute>
               } />
               <Route path="/opleveringen/nieuw" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverNieuw /></ProtectedRoute>
+                <ProtectedRoute moduleKey="opleveringen" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverNieuw /></ProtectedRoute>
               } />
               <Route path="/opleveringen/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverDetail /></ProtectedRoute>
+                <ProtectedRoute moduleKey="opleveringen" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverDetail /></ProtectedRoute>
               } />
               <Route path="/retouren" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><Retouren /></ProtectedRoute>
+                <ProtectedRoute moduleKey="retouren" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><Retouren /></ProtectedRoute>
               } />
               <Route path="/retouren/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><RetourDetail /></ProtectedRoute>
+                <ProtectedRoute moduleKey="retouren" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><RetourDetail /></ProtectedRoute>
               } />
             </Route>
             <Route path="/offertes/:id/pdf/print" element={<OffertePDFPrint />} />
