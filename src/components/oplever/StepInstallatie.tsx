@@ -37,9 +37,62 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
   const bat = draft.batterij_spec ?? {};
   const omv = draft.omvormer_spec ?? {};
   const ops = draft.opstelling ?? {};
+  const extra = draft.extra_velden ?? {};
 
   return (
     <div className="space-y-6">
+      <section className="space-y-3">
+        <h3 className="font-semibold">Systeem & aansluiting</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <Label>Type systeem</Label>
+            <select
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={extra.systeem_type ?? ""}
+              onChange={(e) =>
+                onChange({
+                  extra_velden: {
+                    ...extra,
+                    systeem_type: (e.target.value || undefined) as "AC" | "DC" | undefined,
+                  },
+                })
+              }
+            >
+              <option value="">—</option>
+              <option value="AC">AC-gekoppeld</option>
+              <option value="DC">DC-gekoppeld</option>
+            </select>
+          </div>
+          <div>
+            <Label>Aansluitwaarde woning</Label>
+            <select
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={extra.aansluitwaarde ?? ""}
+              onChange={(e) => onChange({ extra_velden: { ...extra, aansluitwaarde: e.target.value || undefined } })}
+            >
+              <option value="">—</option>
+              <option value="1x25A">1×25A</option>
+              <option value="1x35A">1×35A</option>
+              <option value="1x40A">1×40A</option>
+              <option value="3x25A">3×25A</option>
+              <option value="3x35A">3×35A</option>
+              <option value="3x40A">3×40A</option>
+              <option value="3x50A">3×50A</option>
+              <option value="3x63A">3×63A</option>
+              <option value="3x80A">3×80A</option>
+            </select>
+          </div>
+          <div>
+            <Label>Gateway / ATS serienummer</Label>
+            <Input
+              value={extra.gateway_serienummer ?? ""}
+              onChange={(e) => onChange({ extra_velden: { ...extra, gateway_serienummer: e.target.value } })}
+              placeholder="Optioneel"
+            />
+          </div>
+        </div>
+      </section>
+
       <section className="space-y-3">
         <h3 className="font-semibold">Batterij</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

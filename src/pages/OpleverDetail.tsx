@@ -21,6 +21,11 @@ import { patchRapport } from "@/components/oplever/api/opleverApi";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Download, FileText, ExternalLink } from "lucide-react";
 import type { Opleverrapport } from "@/components/oplever/types";
+import { User, Cpu, BookCheck, Eye, Cable, ShieldCheck, Gauge, BatteryCharging, FileText as FileTextIcon, ClipboardCheck, PenLine } from "lucide-react";
+import StepNormenScope from "@/components/oplever/StepNormenScope";
+import StepBekabelingMeterkast from "@/components/oplever/StepBekabelingMeterkast";
+import StepAardingBeveiliging from "@/components/oplever/StepAardingBeveiliging";
+import StepBackup from "@/components/oplever/StepBackup";
 
 export default function OpleverDetail() {
   const { id } = useParams<{ id: string }>();
@@ -106,7 +111,8 @@ export default function OpleverDetail() {
   const steps = [
     {
       key: "id",
-      label: "Identificatie",
+      label: "Klant & project",
+      icon: User,
       content: (
         <StepIdentificatie
           draft={merged}
@@ -118,12 +124,18 @@ export default function OpleverDetail() {
         />
       ),
     },
-    { key: "install", label: "Installatie", content: <StepInstallatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
-    { key: "visueel", label: "Visuele inspectie", content: <StepVisueleInspectie draft={merged} onChange={update} /> },
-    { key: "meting", label: "Metingen", content: <StepMetingen draft={merged} onChange={update} /> },
-    { key: "doc", label: "Documentatie", content: <StepDocumentatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
-    { key: "bevind", label: "Bevindingen", content: <StepBevindingen draft={merged} onChange={update} /> },
-    { key: "onder", label: "Ondertekening", content: <StepOndertekening rapport={merged} onSent={() => setDraft({})} /> },
+    { key: "install", label: "Installatie & specs", icon: Cpu, content: <StepInstallatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
+    { key: "normen", label: "Normen & scope", icon: BookCheck, content: <StepNormenScope draft={merged} onChange={update} /> },
+    { key: "visueel", label: "Visuele inspectie", icon: Eye, content: <StepVisueleInspectie draft={merged} onChange={update} /> },
+    { key: "bekabeling", label: "Bekabeling & meterkast", icon: Cable, content: <StepBekabelingMeterkast draft={merged} onChange={update} /> },
+    { key: "aarding", label: "Aarding & beveiligingen", icon: ShieldCheck, content: <StepAardingBeveiliging draft={merged} onChange={update} /> },
+    { key: "meting", label: "Metingen", icon: Gauge, content: <StepMetingen draft={merged} onChange={update} /> },
+    ...(merged.extra_velden?.heeft_backup
+      ? [{ key: "backup", label: "Backup / noodstroom", icon: BatteryCharging, content: <StepBackup draft={merged} onChange={update} /> }]
+      : []),
+    { key: "doc", label: "Documenten & labels", icon: FileTextIcon, content: <StepDocumentatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
+    { key: "bevind", label: "Bevindingen & verklaring", icon: ClipboardCheck, content: <StepBevindingen draft={merged} onChange={update} /> },
+    { key: "onder", label: "Ondertekening", icon: PenLine, content: <StepOndertekening rapport={merged} onSent={() => setDraft({})} /> },
   ];
 
   return (
@@ -151,7 +163,11 @@ export default function OpleverDetail() {
         </div>
       </div>
 
-      <WizardShell steps={steps} currentIndex={stepIndex} onChange={setStepIndex} />
+      <WizardShell
+        steps={steps}
+        currentIndex={Math.min(stepIndex, steps.length - 1)}
+        onChange={setStepIndex}
+      />
 
       <Card>
         <CardContent className="pt-4">

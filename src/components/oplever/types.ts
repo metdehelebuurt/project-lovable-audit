@@ -127,6 +127,30 @@ export interface Opleverrapport {
   gefinaliseerd_op: string | null;
   created_at: string;
   updated_at: string;
+  extra_velden?: ExtraVelden;
+}
+
+export interface ScopeNormen {
+  nen1010?: boolean;
+  nen3140?: boolean;
+  fabrikant?: boolean;
+  netbeheerder?: boolean;
+}
+
+export interface ExtraVelden {
+  projectnummer?: string;
+  installatiedatum?: string;
+  aansluitwaarde?: string;
+  systeem_type?: "AC" | "DC";
+  gateway_serienummer?: string;
+  aardweerstand_ohm?: number;
+  heeft_backup?: boolean;
+  scope_normen?: ScopeNormen;
+  bekabeling_meterkast?: ChecklistItem[];
+  aarding_beveiliging?: ChecklistItem[];
+  backup_check?: ChecklistItem[];
+  doc_labels?: ChecklistItem[];
+  opmerkingen_afwijkingen?: string;
 }
 
 export const DEFAULT_CONFORMITEITSTEKST =
