@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mollieFetch, webhookUrl, corsHeaders } from "../_shared/mollie.ts";
 
 // Scheduled (dagelijks). Converteert trials naar actieve abonnementen wanneer:
