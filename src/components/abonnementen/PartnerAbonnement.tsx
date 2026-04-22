@@ -15,6 +15,7 @@ import { Crown, Check, ArrowUp, FileText, AlertTriangle, Plus, Package } from "l
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import MollieBetaalmethode from "./MollieBetaalmethode";
 
 export default function PartnerAbonnement() {
   const { profile } = useAuth();
