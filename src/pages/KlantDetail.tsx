@@ -209,6 +209,7 @@ const KlantDetail = () => {
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "opdrachten", label: "Verkooporders", count: opdrachten.length },
     { key: "installaties", label: "Installaties", count: installaties.length },
+    { key: "opleveringen", label: "Opleveringen", count: opleveringen.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
     { key: "afspraken", label: "Afspraken", count: afspraken.length },
     { key: "activiteit", label: "Activiteit" },
@@ -221,6 +222,20 @@ const KlantDetail = () => {
     ...schouwen.map((s: any) => ({ type: "schouw", date: s.geplande_datum, label: `Schouw ${s.schouw_nummer}`, detail: s.categorie })),
     ...afspraken.map((a: any) => ({ type: "afspraak", date: a.datum, label: a.titel, detail: a.type })),
     ...installaties.map((inst: any) => ({ type: "opdracht", date: inst.created_at, label: `Installatie ${inst.consument_naam || ""}`, detail: inst.status })),
+    ...opleveringen.map((r: any) => ({
+      type: "oplevering",
+      date: r.created_at,
+      label: `Opleverrapport ${r.rapportnummer}`,
+      detail: r.status === "ondertekend" ? "Ondertekend door klant" : r.status,
+    })),
+    ...opleveringen
+      .filter((r: any) => r.gefinaliseerd_op)
+      .map((r: any) => ({
+        type: "oplevering",
+        date: r.gefinaliseerd_op,
+        label: `Opleverrapport ${r.rapportnummer} ondertekend`,
+        detail: "Definitief afgerond",
+      })),
     { type: "created", date: klant.created_at, label: "Klant aangemaakt", detail: `${klant.voornaam} ${klant.achternaam}` },
   ];
 
