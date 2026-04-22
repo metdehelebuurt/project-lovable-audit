@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { createInstallatie } from "./api/installatieApi";
+import { createInstallatie, generateInstallatienummer } from "./api/installatieApi";
 
 interface Opdracht {
   id: string;
@@ -60,18 +60,7 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
     }
     setBusy(true);
     try {
-      // Probeer een net documentnummer via centrale RPC; valt anders terug op timestamp.
-      let installatienummer: string;
-      try {
-        const { data: nr } = await supabase.rpc("generate_documentnummer_v2" as never, {
-          _partner_id: opdracht.partner_id,
-          _type: "installatie",
-          _subtype: "regulier",
-        } as never);
-        installatienummer = (nr as string | null) ?? `INST-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
-      } catch {
-        installatienummer = `INST-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
-      }
+      const installatienummer = await generateInstallatienummer(opdracht.partner_id);
 
       // Auto-omschrijving vanuit eerste 3 productregels indien leeg
       const regelsArr = Array.isArray(opdracht.regels) ? (opdracht.regels as Array<Record<string, unknown>>) : [];
