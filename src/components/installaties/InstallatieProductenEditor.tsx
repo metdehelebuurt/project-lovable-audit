@@ -101,10 +101,14 @@ function ProductPickerButton({ partnerId, onPick }: { partnerId: string; onPick:
       let query = supabase
         .from("producten")
         .select("id, naam, merk, model")
-        .or(`partner_id.eq.${partnerId},partner_id.is.null`)
         .limit(15);
       if (term.length > 0) {
-        query = query.or(`naam.ilike.%${term}%,merk.ilike.%${term}%,model.ilike.%${term}%`);
+        // Combineer partner-scope + tekst-search via een enkele compound `or`
+        query = query.or(
+          `and(or(partner_id.eq.${partnerId},partner_id.is.null),or(naam.ilike.%${term}%,merk.ilike.%${term}%,model.ilike.%${term}%))`,
+        );
+      } else {
+        query = query.or(`partner_id.eq.${partnerId},partner_id.is.null`);
       }
       const { data } = await query;
       setHits((data ?? []) as ProductHit[]);
