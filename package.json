@@ -11,7 +11,6 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "predev": "tsx scripts/generate-help-knowledge.ts",
     "prebuild": "tsx scripts/generate-help-knowledge.ts",
     "generate:help": "tsx scripts/generate-help-knowledge.ts"
   },
