@@ -19,9 +19,10 @@ interface Props {
   klantNaam?: string;
   partnerLogoUrl?: string;
   partnerContact?: string;
+  ordernummer?: string;
 }
 
-const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, partnerLogoUrl, partnerContact }, ref) => {
+const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, partnerLogoUrl, partnerContact, ordernummer }, ref) => {
   const verdict = (rapport.bevindingen?.verdict ?? "goedgekeurd") as Verdict;
   const stempelColor = VERDICT_COLOR[verdict];
   const stempelLabel = VERDICT_LABEL[verdict];
@@ -79,6 +80,7 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
         <Row label="Klant" value={klantNaam ?? "—"} />
         <Row label="Installateur" value={partnerNaam ?? "—"} />
         <Row label="Projectnummer" value={rapport.extra_velden?.projectnummer ?? "—"} />
+        <Row label="Verkoopordernummer" value={ordernummer ?? "—"} />
         <Row label="Datum installatie" value={rapport.extra_velden?.installatiedatum ?? "—"} />
         <Row label="Opleverdatum" value={rapport.opleverdatum ?? "—"} />
         <Row label="Omvang" value={rapport.scope_omschrijving ?? "—"} />
