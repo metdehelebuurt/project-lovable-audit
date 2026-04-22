@@ -48,12 +48,12 @@ export default function InstallateurVoorkeurenForm() {
   const opslaan = async () => {
     if (!user?.id) return;
     setBusy(true);
-    const { error } = await supabase.from("installateur_voorkeuren").upsert({
+    const { error } = await supabase.from("installateur_voorkeuren").upsert([{
       user_id: user.id,
-      meetapparatuur: meting,
+      meetapparatuur: meting as unknown as Record<string, string>,
       kvk_nummer: kvk || null,
       erkenningsnummer: erkenning || null,
-    });
+    }]);
     setBusy(false);
     if (error) {
       toast.error(error.message);
