@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle } from "lucide-react";
+import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, ClipboardList, Zap, XCircle, BookOpen, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { ensureHtml, formatCurrency, regelSubtotaal, type OfferteRegel } from "@/types/offerte";
+import { buildHandleidingUrl, type Handleiding } from "@/lib/productHandleidingen";
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
@@ -46,6 +47,7 @@ export default function OffertePublic() {
   const [senderName, setSenderName] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [handleidingen, setHandleidingen] = useState<Handleiding[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -96,6 +98,34 @@ export default function OffertePublic() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Laad handleidingen voor producten in de offerte
+  useEffect(() => {
+    if (!offerte) return;
+    const regels = Array.isArray(offerte.regels) ? offerte.regels : [];
+    const productIds = Array.from(new Set(
+      regels
+        .map((r: any) => (typeof r?.product_id === "string" ? r.product_id : null))
+        .filter((v: string | null): v is string => Boolean(v)),
+    ));
+    if (productIds.length === 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("producten")
+        .select("id, naam, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam")
+        .in("id", productIds);
+      const out: Handleiding[] = [];
+      for (const p of data ?? []) {
+        if (p.installatie_handleiding_url) {
+          out.push({ product_id: p.id, product_naam: p.naam, type: "installatie", url: buildHandleidingUrl(p.installatie_handleiding_url), bestandsnaam: p.installatie_handleiding_naam ?? "Installatiehandleiding.pdf" });
+        }
+        if (p.gebruiker_handleiding_url) {
+          out.push({ product_id: p.id, product_naam: p.naam, type: "gebruiker", url: buildHandleidingUrl(p.gebruiker_handleiding_url), bestandsnaam: p.gebruiker_handleiding_naam ?? "Gebruikershandleiding.pdf" });
+        }
+      }
+      setHandleidingen(out);
+    })();
+  }, [offerte]);
 
   const handleSendMessage = async () => {
     if (!newMsg.trim() || !senderName.trim() || !token) return;
@@ -195,12 +225,14 @@ export default function OffertePublic() {
 
   const hasSchouw = !!schouw;
   const hasEnergie = !!offerte.include_energieadvies;
+  const hasHandleidingen = handleidingen.length > 0;
 
   // Build available tabs
   const tabs = [
     { id: "offerte", label: "Offerte", icon: FileText },
     ...(hasEnergie ? [{ id: "energie", label: "Energierapport", icon: Zap }] : []),
     ...(hasSchouw ? [{ id: "schouw", label: "Schouwrapport", icon: ClipboardList }] : []),
+    ...(hasHandleidingen ? [{ id: "handleidingen", label: "Handleidingen", icon: BookOpen }] : []),
     { id: "berichten", label: "Berichten", icon: MessageSquare },
   ];
 
