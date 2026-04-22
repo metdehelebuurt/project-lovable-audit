@@ -19,7 +19,7 @@ import {
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 import {
   QuickStat, TabButton, InfoRow, OffertesLijst, SchouwenLijst, AfsprakenLijst,
-  OpdrachtenLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
+  OpdrachtenLijst, InstallatiesLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
