@@ -10,6 +10,7 @@ import { useInstallatieActies } from "@/components/installaties/useInstallatieAc
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
 import type { InstallatieStatus } from "@/components/installaties/status";
 import { fetchHandleidingenVoorInstallatie } from "@/lib/productHandleidingen";
+import SerienummerEditor from "@/components/serienummers/SerienummerEditor";
 
 const InstallatieMonteurView = () => {
   const { id } = useParams<{ id: string }>();
@@ -109,6 +110,17 @@ const InstallatieMonteurView = () => {
           )}
         </CardContent>
       </Card>
+
+      <SerienummerEditor
+        installatieId={installatie.id}
+        partnerId={installatie.partner_id}
+        opdrachtId={installatie.opdracht_id ?? null}
+        klantId={installatie.klant_id ?? null}
+        regels={(installatie.producten as any[] | undefined)?.map((p) => ({
+          omschrijving: p.omschrijving ?? p.naam ?? "",
+          aantal: Number(p.aantal ?? 1),
+        })) ?? []}
+      />
 
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader><CardTitle className="text-base">Gereedmelding</CardTitle></CardHeader>
