@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, FileText, Eye } from "lucide-react";
 import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
+import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
 import { formatCurrency } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
 import { FinancieelDashboard } from "@/components/financieel/FinancieelDashboard";
