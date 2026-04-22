@@ -359,6 +359,12 @@ export default function FactuurDetail() {
           }}>
             <LifeBuoy className="h-4 w-4 mr-2" /> Ticket aanmaken
           </Button>
+          <DeleteFactuurButton
+            doc={{ id: doc.id, documentnummer: doc.documentnummer, type: doc.type, status: doc.status }}
+            variant="outline"
+            label="Verwijderen"
+            redirectToOverview
+          />
         </div>
       </div>
 
