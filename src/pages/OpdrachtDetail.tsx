@@ -396,17 +396,22 @@ const OpdrachtDetail = () => {
         }}
         onSuccess={(installatieId) => {
           queryClient.invalidateQueries({ queryKey: ["opdracht", id] });
-          setAangemaakteInstallatieId(installatieId);
-          setKlantBevestigingOpen(true);
+          // Haal de net aangemaakte installatie op om aan KlantBevestigingDialog te geven
+          supabase.from("installaties").select("*").eq("id", installatieId).single()
+            .then(({ data }) => {
+              if (data) {
+                setAangemaakteInstallatie(data);
+                setKlantBevestigingOpen(true);
+              }
+            });
         }}
       />
 
-      {aangemaakteInstallatieId && (
+      {aangemaakteInstallatie && (
         <KlantBevestigingDialog
           open={klantBevestigingOpen}
           onOpenChange={setKlantBevestigingOpen}
-          installatieId={aangemaakteInstallatieId}
-          klantEmail={opdracht.klant_email ?? ""}
+          installatie={aangemaakteInstallatie}
         />
       )}
 
