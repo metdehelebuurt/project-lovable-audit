@@ -481,6 +481,13 @@ const KlantDetail = () => {
         defaultTitle={`Afspraak ${klant.voornaam} ${klant.achternaam}`}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["klant-afspraken", id] })}
       />
+
+      <RetourDialog
+        open={retourOpen}
+        onOpenChange={setRetourOpen}
+        defaultType="klant_retour"
+        context={{ klant_id: klant.id }}
+      />
     </div>
   );
 };
