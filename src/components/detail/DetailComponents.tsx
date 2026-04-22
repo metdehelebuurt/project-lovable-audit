@@ -259,6 +259,107 @@ export const InstallatiesLijst = ({ installaties, onNavigate }: { installaties: 
   </Card>
 );
 
+/* ─── Opleveringen List ─── */
+const opleverStatusColors: Record<string, string> = {
+  concept: "bg-muted text-muted-foreground",
+  wacht_op_klant: "bg-amber-100 text-amber-700",
+  ondertekend: "bg-emerald-100 text-emerald-700",
+  afgekeurd: "bg-red-100 text-red-600",
+};
+const opleverStatusLabels: Record<string, string> = {
+  concept: "Concept",
+  wacht_op_klant: "Wacht op klant",
+  ondertekend: "Ondertekend",
+  afgekeurd: "Afgekeurd",
+};
+
+interface OpleverItem {
+  id: string;
+  rapportnummer: string;
+  status: string;
+  opleverdatum: string | null;
+  created_at: string;
+  installatienummer?: string | null;
+  pdf_url?: string | null;
+  versies?: number;
+}
+
+export const OpleveringenLijst = ({
+  opleveringen,
+  onNavigate,
+  onNew,
+  onDownload,
+}: {
+  opleveringen: OpleverItem[];
+  onNavigate?: (id: string) => void;
+  onNew?: () => void;
+  onDownload?: (id: string, pdfUrl: string) => void;
+}) => (
+  <Card className="rounded-2xl border-0 shadow-sm">
+    <CardHeader className="flex flex-row items-center justify-between pb-3">
+      <CardTitle className="text-base flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-primary" /> Opleveringen
+      </CardTitle>
+      {onNew && (
+        <Button size="sm" variant="outline" onClick={onNew} className="rounded-xl gap-1">
+          <Plus className="h-3.5 w-3.5" /> Nieuw rapport
+        </Button>
+      )}
+    </CardHeader>
+    <CardContent>
+      {opleveringen.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">Geen opleverrapporten</p>
+      ) : (
+        <div className="space-y-2">
+          {opleveringen.map((r) => (
+            <div
+              key={r.id}
+              className="flex flex-col gap-2 rounded-xl border p-3 hover:bg-muted/30 transition-colors sm:flex-row sm:items-center sm:justify-between"
+            >
+              <button
+                type="button"
+                onClick={() => onNavigate?.(r.id)}
+                className="flex flex-1 items-center gap-3 text-left min-w-0"
+              >
+                <div className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="text-sm font-medium truncate">{r.rapportnummer}</p>
+                    {r.versies && r.versies > 0 ? (
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5">v{r.versies}</Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {r.opleverdatum ? formatDate(r.opleverdatum) : formatDate(r.created_at)}
+                    {r.installatienummer ? ` • ${r.installatienummer}` : ""}
+                  </p>
+                </div>
+              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge className={opleverStatusColors[r.status] || ""}>
+                  {opleverStatusLabels[r.status] || r.status}
+                </Badge>
+                {r.pdf_url && onDownload ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-xl gap-1"
+                    onClick={() => onDownload(r.id, r.pdf_url!)}
+                  >
+                    <Download className="h-3.5 w-3.5" /> PDF
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+);
+
 /* ─── Snelle Acties Sidebar ─── */
 export const SnelleActies = ({
   onAfspraak, onOfferte, onSchouw, email, telefoon,
