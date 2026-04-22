@@ -195,6 +195,13 @@ export default function PartnerAbonnement() {
             </div>
           )}
 
+          {abo.status === "trial" && !(abo as any).mollie_subscription_id && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 text-amber-900 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              Voeg een betaalmethode toe vóór {(abo as any).verloop_datum ? format(new Date((abo as any).verloop_datum), "d MMMM yyyy", { locale: nl }) : "het einde van uw proefperiode"} om uw abonnement te activeren.
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button onClick={() => setUpgradeDialog(true)} size="sm">
               <ArrowUp className="h-4 w-4 mr-1" />Upgrade plan
@@ -223,6 +230,9 @@ export default function PartnerAbonnement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Mollie betaalmethode */}
+      {partnerId && <MollieBetaalmethode partnerId={partnerId} />}
 
       {/* Gebruiksoverzicht */}
       <Card className="rounded-2xl">
