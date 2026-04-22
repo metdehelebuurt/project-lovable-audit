@@ -23,6 +23,33 @@ export function HelpChatPanel({ open, onOpenChange }: HelpChatPanelProps) {
   const lastUserVraag = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
 
+  // Toon de "functieverzoek"-knop alleen wanneer het AI-antwoord aangeeft dat
+  // de gevraagde functie (nog) niet bestaat of niet beschikbaar is.
+  const toonFunctieverzoek = (() => {
+    if (!lastAssistant || isStreaming) return false;
+    const tekst = lastAssistant.toLowerCase();
+    const signalen = [
+      "nog niet beschikbaar",
+      "nog niet mogelijk",
+      "niet beschikbaar",
+      "niet mogelijk",
+      "bestaat nog niet",
+      "bestaat (nog) niet",
+      "is er nog geen",
+      "is er (nog) geen",
+      "geen functie",
+      "geen module",
+      "wordt niet ondersteund",
+      "niet ondersteund",
+      "kan ik niet vinden",
+      "ik kan deze functie niet",
+      "deze functie ontbreekt",
+      "functieverzoek",
+      "feature request",
+    ];
+    return signalen.some((s) => tekst.includes(s));
+  })();
+
   const dienVerzoekIn = () => {
     const titel = lastUserVraag.trim().slice(0, 140);
     const beschrijving = [
@@ -70,7 +97,7 @@ export function HelpChatPanel({ open, onOpenChange }: HelpChatPanelProps) {
             onNavigate={() => onOpenChange(false)}
           />
         </ScrollArea>
-        {lastUserVraag && !isStreaming && (
+        {toonFunctieverzoek && lastUserVraag && (
           <div className="border-t bg-muted/40 px-4 py-2">
             <Button
               variant="outline"
