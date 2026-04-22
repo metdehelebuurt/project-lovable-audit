@@ -1,46 +1,44 @@
 
 
-## Plan — "Opnieuw versturen" overal vindbaar maken
+## Plan — Altijd PDF genereren én tonen vóór verzenden
 
 ### Probleem
-De knop "Opnieuw versturen" zit nu **alleen** op `/financieel/:id` (detailpagina) én alleen als `verzonden_op` gevuld is. In de praktijk:
-- Je kijkt vaak naar facturen via de klantkaart of het factuuroverzicht — dáár ontbreekt de actie.
-- Sommige verzonden facturen hebben `verzonden_op = NULL` (oude data) → knop blijft verborgen.
-- De huidige conditie sluit `verlopen` facturen onnodig uit terwijl je die juist wil herinneren.
+Bij verzenden van een (voorschot)factuur vanuit het overzicht of klantkaart bestaat het DOM-element `.pdf-print-root` niet. De huidige fallback zoekt naar een al-bestaande PDF in storage; vindt die niets, dan gaat de mail **zonder bijlage** weg. Dat moet stoppen — er moet áltijd een PDF gegenereerd, gepreviewd en pas na bevestiging verstuurd worden.
 
-### Oplossing — knop op 3 plekken + ruimere conditie
+### Oplossing — headless PDF-generatie + preview-stap
 
-**1. `FactuurDetail.tsx` — conditie verruimen**
-Vervang `doc.verzonden_op && [...].includes(doc.type)` door:
-```ts
-const isVerstuurbaar = ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type);
-const isAlVerzonden = ["verzonden", "verlopen", "betaald"].includes(doc.status) || !!doc.verzonden_op;
-```
-Knop "Opnieuw versturen" tonen wanneer `isVerstuurbaar && isAlVerzonden`. Knop "E-mail versturen" alleen bij `concept`.
+**1. Headless render-helper** `src/lib/renderFactuurPdf.ts`
+Nieuwe util die zelf de factuur rendert (geen DOM nodig op de pagina):
+- Haalt `financiele_documenten` + `klanten`/`leveranciers` + `partners` (branding) op via één query
+- Mount `<FinancieelPDF doc={...} klant={...} partner={...} />` in een verborgen off-screen container (`position: fixed; left: -10000px; width: 210mm`) via `ReactDOM.createRoot`
+- Wacht tot fonts/afbeeldingen geladen zijn (`document.fonts.ready` + `img.decode()` op alle `<img>` in de container)
+- Roept `renderElementToPdfBlob` aan op die container
+- Unmount + verwijdert container
+- Retourneert `{ blob, dataUrl }`
 
-**2. `FactuurBeheer.tsx` (overzicht onder Financieel) — rij-actie toevoegen**
-In de bestaande actie-kolom een dropdown-item / icoon-knop "Opnieuw versturen" (envelop-icoon) bij elke rij waar de factuur al verzonden/verlopen is. Klik → opent dezelfde `FactuurEmailDialog` met `isResend={true}`.
+**2. `FactuurEmailDialog` — verplichte PDF + preview**
+- Bij openen (en steeds als `doc.id` wijzigt): direct `renderFactuurPdf(doc.id)` aanroepen → state `pdfBlob` + `pdfDataUrl` + `pdfStatus: "loading" | "ready" | "error"`.
+- Boven de velden: een **PDF-preview** (250–320px hoog) via `<iframe src={pdfDataUrl} />` met knop "Volledig openen" (opent in nieuw tabblad) en "Opnieuw genereren".
+- Selector-prop blijft bestaan voor de detailpagina (sneller pad: als element gevonden → die gebruiken; anders headless render).
+- "Verzenden"-knop is **disabled** zolang `pdfStatus !== "ready"`. Bij fout → duidelijke melding + knop "Opnieuw proberen"; verzenden zonder bijlage is **niet meer mogelijk**.
+- Bij klik op Verzenden: upload `pdfBlob` naar `email-bijlagen` storage (bestaande `uploadPdfToStorage`), vervolgens `send-factuur-email` met `attachment_path`.
 
-**3. `KlantDetail.tsx` — actie in factuurlijst per klant**
-In de tab/sectie waar facturen van een klant staan: per rij een kleine "Opnieuw versturen"-knop (envelop-icoon) zichtbaar zodra status `verzonden`/`verlopen`/`betaald` is. Hergebruikt `FactuurEmailDialog`.
+**3. PDF in `facturen`-bucket archiveren**
+Na succesvolle verzending: dezelfde blob ook opslaan onder `facturen/{partner_id}/factuur/{doc.id}.pdf` (upsert), zodat de "opnieuw versturen"-fallback in de toekomst altijd een eerdere PDF vindt en voor audit/historie de versturen-PDF bewaard blijft.
 
-**4. Gedeelde wrapper** — om dubbele dialog-state te vermijden:
-Nieuw klein component `ResendFactuurButton.tsx` (variant: `icon` of `outline`) dat intern de `FactuurEmailDialog` met `isResend` rendert. Hergebruikt op alle 3 plekken zodat gedrag identiek is.
-
-**5. PDF-bijlage bij hergebruik**
-`FactuurEmailDialog` rendert nu de PDF via `document.querySelector(pdfElementSelector)`. In overzichtsschermen bestaat dat element niet → de dialog moet zelf de PDF ophalen. Aanpassing: als selector niets vindt **en** de factuur is al eerder verstuurd → de dialog probeert eerst de bestaande PDF in storage (`facturen/{partner_id}/factuur/{id}.pdf`) te downloaden en als bijlage te gebruiken; valt anders terug op "geen bijlage" met waarschuwing.
+**4. `ResendFactuurButton`**
+Geen wijziging in API. Door punt 2 werkt resend nu ook altijd met een verse PDF + preview, ongeacht of er een storage-versie is.
 
 ### Bestanden
 
 | Bestand | Actie |
 |---|---|
-| `src/components/financieel/ResendFactuurButton.tsx` | nieuw — herbruikbare knop + dialog |
-| `src/pages/FactuurDetail.tsx` | conditie verruimen, knop vervangen door `<ResendFactuurButton />` |
-| `src/components/financieel/FactuurBeheer.tsx` | actie-kolom: `<ResendFactuurButton />` per rij |
-| `src/pages/KlantDetail.tsx` | factuurlijst: per rij `<ResendFactuurButton />` |
-| `src/components/financieel/FactuurEmailDialog.tsx` | fallback naar bestaande storage-PDF wanneer DOM-element ontbreekt |
+| `src/lib/renderFactuurPdf.ts` | nieuw — headless React-render naar PDF blob |
+| `src/components/financieel/FactuurEmailDialog.tsx` | preview-iframe, verplichte PDF, disabled-state, geen verzending-zonder-bijlage |
+| `src/lib/pdfFromElement.ts` | kleine helper toevoegen: `uploadPdfToFacturenBucket(partnerId, docId, blob)` voor archivering |
 
 ### Niet in scope
-- Bulk "herinnering naar alle openstaande" (apart vervolg).
-- Automatische herinneringsmails op vervaldatum (cron) — apart project.
+- Server-side PDF-generatie (edge function met Puppeteer) — blijft client-side, consistent met huidige aanpak.
+- Wijzigingen aan `FinancieelPDF`-component zelf.
+- Edit-flow van bestaande facturen (apart traject).
 
