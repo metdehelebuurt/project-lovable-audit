@@ -20,6 +20,7 @@ import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 import OrderbevestigingEmailDialog from "@/components/opdrachten/OrderbevestigingEmailDialog";
 import MonteurToewijsDialog from "@/components/installaties/MonteurToewijsDialog";
 import KlantBevestigingDialog from "@/components/installaties/KlantBevestigingDialog";
+import OpdrachtVoorraadTab from "@/components/opdracht/OpdrachtVoorraadTab";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -361,6 +362,14 @@ const OpdrachtDetail = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Voorraad & Inkoop */}
+      <OpdrachtVoorraadTab
+        opdrachtId={opdracht.id}
+        partnerId={opdracht.partner_id}
+        opdrachtStatus={opdracht.status}
+        regels={regels.map((r) => ({ omschrijving: r.omschrijving, aantal: r.aantal }))}
+      />
 
       {/* Cancel dialog */}
       <Dialog open={cancelDialog} onOpenChange={setCancelDialog}>
