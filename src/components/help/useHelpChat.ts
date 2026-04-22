@@ -40,31 +40,64 @@ interface ParseState {
   buffer: string;
 }
 
-function extractDeltas(state: ParseState, chunk: string): { deltas: string[]; done: boolean } {
+function parseDataPayload(payload: string, deltas: string[]): boolean {
+  if (payload === "[DONE]") return true;
+  try {
+    const parsed = JSON.parse(payload);
+    const txt = parsed?.choices?.[0]?.delta?.content;
+    if (typeof txt === "string" && txt) deltas.push(txt);
+  } catch {
+    // negeer onparseerbaar event — al geprobeerd na buffering
+  }
+  return false;
+}
+
+function processEventBlock(block: string, deltas: string[]): boolean {
+  const dataLines: string[] = [];
+  for (const rawLine of block.split("\n")) {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+    if (!line || line.startsWith(":")) continue;
+    if (line.startsWith("data:")) {
+      // ondersteun "data:foo" en "data: foo"
+      dataLines.push(line.slice(5).replace(/^ /, ""));
+    }
+  }
+  if (dataLines.length === 0) return false;
+  const payload = dataLines.join("\n").trim();
+  if (!payload) return false;
+  return parseDataPayload(payload, deltas);
+}
+
+/**
+ * Parse SSE-chunk. Groepeert per event-blok (gescheiden door lege regel) en
+ * concat meerdere `data:`-regels per event vóór JSON.parse. Houdt de laatste
+ * onvolledige event in de buffer voor de volgende chunk.
+ */
+export function extractDeltas(state: ParseState, chunk: string): { deltas: string[]; done: boolean } {
   state.buffer += chunk;
   const deltas: string[] = [];
   let done = false;
-  let nlIdx: number;
-  while ((nlIdx = state.buffer.indexOf("\n")) !== -1) {
-    let line = state.buffer.slice(0, nlIdx);
-    state.buffer = state.buffer.slice(nlIdx + 1);
-    if (line.endsWith("\r")) line = line.slice(0, -1);
-    if (!line || line.startsWith(":") || !line.startsWith("data: ")) continue;
-    const json = line.slice(6).trim();
-    if (json === "[DONE]") {
+  // Normaliseer CRLF naar LF voor splitsing op blanco-regel.
+  const normalized = state.buffer.replace(/\r\n/g, "\n");
+  const parts = normalized.split(/\n\n/);
+  // Laatste deel kan onvolledig zijn — terug in buffer.
+  state.buffer = parts.pop() ?? "";
+  for (const block of parts) {
+    if (processEventBlock(block, deltas)) {
       done = true;
       break;
     }
-    try {
-      const parsed = JSON.parse(json);
-      const txt = parsed.choices?.[0]?.delta?.content;
-      if (typeof txt === "string" && txt) deltas.push(txt);
-    } catch {
-      // partial JSON — terugleggen en wachten op meer
-      state.buffer = `${line}\n${state.buffer}`;
-      break;
-    }
   }
+  return { deltas, done };
+}
+
+/** Verwerk eventueel resterend buffer-fragment bij stream-einde. */
+export function flushBuffer(state: ParseState): { deltas: string[]; done: boolean } {
+  const deltas: string[] = [];
+  const remainder = state.buffer.trim();
+  state.buffer = "";
+  if (!remainder) return { deltas, done: false };
+  const done = processEventBlock(remainder, deltas);
   return { deltas, done };
 }
 
