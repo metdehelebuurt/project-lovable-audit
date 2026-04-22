@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { AlertTriangle, Pencil, Calendar } from "lucide-react";
+import { AlertTriangle, Pencil, Calendar, RefreshCw } from "lucide-react";
 
 interface Abonnement {
   id: string;
@@ -47,6 +47,7 @@ export default function AbonnementOverzicht() {
   const [plans, setPlans] = useState<{ id: string; naam: string; slug: string; maand_prijs: number }[]>([]);
   const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [filter, setFilter] = useState("alle");
   const [planFilter, setPlanFilter] = useState("alle");
   const [search, setSearch] = useState("");
@@ -72,6 +73,21 @@ export default function AbonnementOverzicht() {
   };
 
   useEffect(() => { fetchAll(); }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mollie-sync-status", { body: {} });
+      if (error) throw error;
+      const synced = (data as { synced?: number })?.synced ?? 0;
+      toast.success(`${synced} abonnement(en) gesynchroniseerd met Mollie`);
+      fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Synchronisatie mislukt");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const filtered = abonnementen.filter(a => {
     if (filter !== "alle" && a.status !== filter) return false;
@@ -166,6 +182,10 @@ export default function AbonnementOverzicht() {
             <SelectItem value="opgezegd">Opgezegd</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="ml-auto">
+          <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
+          Sync Mollie
+        </Button>
       </div>
 
       <Card className="rounded-2xl">
