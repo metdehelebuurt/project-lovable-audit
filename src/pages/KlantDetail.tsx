@@ -14,17 +14,18 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Pencil,
   FileText, ClipboardCheck, Wrench, Loader2, Save,
-  User, TrendingUp, CalendarIcon, StickyNote, Send, Trash2, LifeBuoy,
+  User, TrendingUp, CalendarIcon, StickyNote, Send, Trash2, LifeBuoy, ShieldCheck,
 } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 import {
   QuickStat, TabButton, InfoRow, OffertesLijst, SchouwenLijst, AfsprakenLijst,
-  OpdrachtenLijst, InstallatiesLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
+  OpdrachtenLijst, InstallatiesLijst, OpleveringenLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
 import EmailAddressList from "@/components/email/EmailAddressList";
 import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
+import { fetchLaatsteVersieVoorRapporten, getSignedUrlForVersie } from "@/components/oplever/api/opleverPdfVersies";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
