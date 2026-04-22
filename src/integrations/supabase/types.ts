@@ -3975,6 +3975,7 @@ export type Database = {
           meetapparatuur: Json
           metingen: Json
           omvormer_spec: Json
+          opdracht_id: string | null
           opleverdatum: string | null
           opstelling: Json
           partner_id: string
@@ -4008,6 +4009,7 @@ export type Database = {
           meetapparatuur?: Json
           metingen?: Json
           omvormer_spec?: Json
+          opdracht_id?: string | null
           opleverdatum?: string | null
           opstelling?: Json
           partner_id: string
@@ -4041,6 +4043,7 @@ export type Database = {
           meetapparatuur?: Json
           metingen?: Json
           omvormer_spec?: Json
+          opdracht_id?: string | null
           opleverdatum?: string | null
           opstelling?: Json
           partner_id?: string
@@ -4080,6 +4083,13 @@ export type Database = {
             columns: ["klant_id"]
             isOneToOne: false
             referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_opdracht_id_fkey"
+            columns: ["opdracht_id"]
+            isOneToOne: false
+            referencedRelation: "opdrachten"
             referencedColumns: ["id"]
           },
           {

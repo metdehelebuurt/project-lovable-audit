@@ -173,7 +173,7 @@ const KlantDetail = () => {
     { key: "overzicht", label: "Overzicht" },
     { key: "email", label: "E-mail" },
     { key: "offertes", label: "Offertes", count: offertes.length },
-    { key: "opdrachten", label: "Opdrachten", count: opdrachten.length },
+    { key: "opdrachten", label: "Verkooporders", count: opdrachten.length },
     { key: "installaties", label: "Installaties", count: installaties.length },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
     { key: "afspraken", label: "Afspraken", count: afspraken.length },

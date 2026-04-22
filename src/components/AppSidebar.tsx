@@ -69,7 +69,7 @@ const getNavGroups = (rol: string): NavGroup[] => {
   }
 
   if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
-    werk.push({ title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck });
+    werk.push({ title: "Verkooporders", url: "/opdrachten", icon: ClipboardCheck });
   if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol)) {
     werk.push({
       title: rol === "installateur" ? "Mijn werk" : "Installaties",

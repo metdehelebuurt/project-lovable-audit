@@ -9,7 +9,7 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { rapport_id } = await req.json();
+    const { rapport_id, klant_email: overrideEmail } = await req.json();
     if (!rapport_id) throw new Error("rapport_id verplicht");
 
     const admin = createClient(
@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
 
     const { data: rapport, error: rErr } = await admin
       .from("opleverrapporten")
-      .select("id, partner_id, rapportnummer, klant_id")
+      .select("id, partner_id, rapportnummer, klant_id, opdracht_id")
       .eq("id", rapport_id)
       .single();
     if (rErr || !rapport) throw new Error(rErr?.message ?? "Rapport niet gevonden");
@@ -40,6 +40,19 @@ Deno.serve(async (req) => {
       const { data: klant } = await admin.from("klanten").select("email, voornaam, achternaam").eq("id", rapport.klant_id).maybeSingle();
       klantEmail = klant?.email ?? null;
       klantNaam = klant ? `${klant.voornaam ?? ""} ${klant.achternaam ?? ""}`.trim() : null;
+    }
+    if (!klantEmail && rapport.opdracht_id) {
+      const { data: opd } = await admin
+        .from("opdrachten")
+        .select("klant_email, klant_naam")
+        .eq("id", rapport.opdracht_id)
+        .maybeSingle();
+      klantEmail = opd?.klant_email ?? klantEmail;
+      klantNaam = klantNaam || (opd?.klant_naam ?? null);
+    }
+    // Override door installateur ingevoerd e-mailadres heeft voorrang
+    if (typeof overrideEmail === "string" && overrideEmail.trim()) {
+      klantEmail = overrideEmail.trim();
     }
 
     const origin = req.headers.get("origin") ?? "";

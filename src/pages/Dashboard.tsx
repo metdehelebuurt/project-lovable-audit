@@ -252,7 +252,7 @@ const Dashboard = () => {
     }
     if (rol === "installateur") {
       cards.push(
-        { label: "Opdrachten", value: s.installaties ?? 0, icon: Wrench },
+        { label: "Verkooporders", value: s.installaties ?? 0, icon: Wrench },
         { label: "Gepland", value: s.gepland ?? 0, icon: Calendar },
       );
     }
@@ -275,7 +275,7 @@ const Dashboard = () => {
     if (["superadmin", "partner_admin", "partner_staff", "adviseur", "consument"].includes(rol))
       tiles.push({ title: "Schouwen", subtitle: "Schouwrapportages beheren", icon: ClipboardList, to: "/schouwen" });
     if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))
-      tiles.push({ title: "Opdrachten", subtitle: "Lopende opdrachten inzien", icon: ClipboardCheck, to: "/opdrachten" });
+      tiles.push({ title: "Verkooporders", subtitle: "Lopende verkooporders inzien", icon: ClipboardCheck, to: "/opdrachten" });
     if (["partner_admin", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
       tiles.push({ title: "Planning", subtitle: "Afspraken en agenda", icon: Calendar, to: "/planning" });
     if (["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"].includes(rol))

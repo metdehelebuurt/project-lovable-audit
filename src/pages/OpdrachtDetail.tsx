@@ -223,7 +223,7 @@ const OpdrachtDetail = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold text-foreground">Opdracht: {opdracht.klant_naam}</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Verkooporder: {opdracht.klant_naam}</h1>
           <p className="text-muted-foreground text-sm">{opdracht.klant_email} • {opdracht.klant_telefoon}</p>
         </div>
         <Badge className={statusColors[opdracht.status] || ""}>{statusLabels[opdracht.status] || opdracht.status}</Badge>

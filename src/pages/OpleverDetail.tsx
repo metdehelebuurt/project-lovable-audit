@@ -72,6 +72,20 @@ export default function OpleverDetail() {
     enabled: !!(merged as any)?.klant_id,
   });
 
+  const { data: opdrachtData } = useQuery({
+    queryKey: ["opdracht-for-oplever", merged?.opdracht_id],
+    queryFn: async () => {
+      if (!merged?.opdracht_id) return null;
+      const { data } = await supabase
+        .from("opdrachten")
+        .select("id, created_at, klant_naam")
+        .eq("id", merged.opdracht_id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!merged?.opdracht_id,
+  });
+
   if (isLoading || !merged) return <div className="p-8 text-muted-foreground">Laden…</div>;
 
   const update = (p: Partial<Opleverrapport>) => setDraft((d) => ({ ...d, ...p }));
@@ -83,6 +97,10 @@ export default function OpleverDetail() {
     ? [partnerData.email, partnerData.telefoonnummer, partnerData.kvk ? `KvK ${partnerData.kvk}` : null]
         .filter(Boolean)
         .join(" • ")
+    : undefined;
+
+  const ordernummer = opdrachtData
+    ? `${opdrachtData.id.slice(0, 8).toUpperCase()} — ${new Date(opdrachtData.created_at).toLocaleDateString("nl-NL")}`
     : undefined;
 
   const downloadPdf = async () => {
@@ -181,6 +199,7 @@ export default function OpleverDetail() {
               partnerLogoUrl={partnerData?.logo_url ?? undefined}
               partnerContact={partnerContact}
               klantNaam={klantNaam}
+              ordernummer={ordernummer}
             />
           </div>
         </CardContent>
@@ -206,6 +225,7 @@ export default function OpleverDetail() {
           partnerLogoUrl={partnerData?.logo_url ?? undefined}
           partnerContact={partnerContact}
           klantNaam={klantNaam}
+          ordernummer={ordernummer}
         />
       </div>
     </div>
