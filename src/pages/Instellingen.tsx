@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import {
   User, Lock, Shield, Download, Trash2, Sparkles, Palette, FileText,
   Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy, KeyRound, Wrench
+  , Hash
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
