@@ -123,6 +123,8 @@ const getNavGroups = (rol: string): NavGroup[] => {
     planning.push({ title: rol === "adviseur" ? "Agenda" : rol === "consument" ? "Afspraken" : "Planning", url: "/planning", icon: Calendar });
   if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
     planning.push({ title: "Producten", url: "/producten", icon: Package });
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
+    planning.push({ title: "Voorraad", url: "/voorraad", icon: Package });
   if (["superadmin", "partner_admin", "adviseur"].includes(rol))
     planning.push({ title: "Tools", url: "/tools", icon: PenTool });
   if (["partner_admin", "backoffice"].includes(rol))
