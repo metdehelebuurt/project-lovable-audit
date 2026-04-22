@@ -116,17 +116,21 @@ const getNavGroups = (rol: string): NavGroup[] => {
   }
   if (["superadmin", "partner_admin", "backoffice"].includes(rol))
     financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Truck });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol))
-    financieel.push({ title: "Retouren", url: "/retouren", icon: RotateCcw });
   if (financieel.length) groups.push({ label: "Financieel", items: financieel });
+
+  // Logistiek (voorraad, retouren) — apart blok zodat het in plan/matrix beheerd kan worden
+  const logistiek: NavItem[] = [];
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
+    logistiek.push({ title: "Voorraad", url: "/voorraad", icon: Package });
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol))
+    logistiek.push({ title: "Retouren", url: "/retouren", icon: RotateCcw });
+  if (logistiek.length) groups.push({ label: "Logistiek", items: logistiek });
 
   const planning: NavItem[] = [];
   if (["partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
     planning.push({ title: rol === "adviseur" ? "Agenda" : rol === "consument" ? "Afspraken" : "Planning", url: "/planning", icon: Calendar });
   if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
     planning.push({ title: "Producten", url: "/producten", icon: Package });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
-    planning.push({ title: "Voorraad", url: "/voorraad", icon: Package });
   if (["superadmin", "partner_admin", "adviseur"].includes(rol))
     planning.push({ title: "Tools", url: "/tools", icon: PenTool });
   if (["partner_admin", "backoffice"].includes(rol))
