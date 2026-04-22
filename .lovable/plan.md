@@ -1,172 +1,149 @@
 
 
-## Plan — NEN 1010 Opleverrapport Module (MVP v1.0)
+## Plan — Uitgebreide Installaties-module (werkproces)
 
-Een nieuwe module binnen mijnhuis waarmee installateurs digitaal een NEN 1010-conform opleverrapport samenstellen, laten ondertekenen en archiveren.
+Doel: van een opdracht naar een volwaardige installatie met monteurplanning, klantcommunicatie, notities, voortgang en doorzetten naar oplevering. Zichtbaar vanuit klantkaart, automatische notificatie naar monteur, en een werkomgeving voor de monteur.
 
-### Scope MVP (v1.0)
-- Wizard 7 stappen
-- Live PDF-preview + definitieve PDF
-- Tweezijdige digitale handtekening (installateur in-app, klant via tokenlink)
-- Opslag in klant- én installateurdossier
-- Mobile-first
-- Auto-save concept
+### 1. Datamodel-uitbreiding (tabel `installaties`)
 
-### Niet in MVP (vervolgfases)
-- Offline-modus / IndexedDB sync (v1.1)
-- QR-scan typeplaatje (v1.1)
-- eIDAS / Signhost integratie (v2.0)
-- Energieleveren.nl API (v2.0)
-- Publieke hash-verificatie endpoint (v2.0)
-- Admin template-beheer met versies/changelog (v2.0) — wel templateVersion-veld vastleggen
+Nieuwe kolommen op de bestaande `installaties` tabel:
+- `installatienummer` text uniek (INST-YYYY-0001 via `generate_documentnummer_v2`)
+- `opdracht_id` uuid — FK naar `opdrachten` (twee-richtings link)
+- `klant_id` uuid — FK naar `klanten`
+- `klant_email`, `klant_telefoon`, `klant_adres`, `klant_postcode`, `klant_plaats` text — snapshot
+- `start_tijd`, `eind_tijd` time — exacte tijdvensters per dag
+- `werkadres` text — locatie van uitvoering (kan afwijken van klantadres)
+- `werkomschrijving` text — wat moet er gebeuren
+- `producten` jsonb — overgenomen uit opdracht/offerte
+- `bevestiging_verzonden_op` timestamptz
+- `monteur_geaccepteerd_op` timestamptz
+- `werkelijke_starttijd`, `werkelijke_eindtijd` timestamptz
+- `gereedmelding_op` timestamptz
+- `gereedmelding_notitie` text
+- `oplevering_id` uuid — FK naar `opleverrapporten`
+- `created_by` uuid
 
-### Navigatie & toegangsrechten
-- Nieuwe sidebar-entry **"Opleveringen"** onder *Installaties* (sectie Werk)
-- Routes:
-  - `/opleveringen` — overzicht (filter op status, installateur, klant)
-  - `/opleveringen/nieuw?installatie=:id` — wizard
-  - `/opleveringen/:id` — detail + edit (tot ondertekening)
-  - `/opleveringen/:id/pdf` — preview-pagina
-  - `/oplevering/:token` — publieke klant-ondertekenpagina (geen login)
-- Rolrechten:
-  - `installateur`, `partner_admin`, `partner_staff`, `superadmin` → aanmaken/bewerken
-  - `consument` → eigen rapport inzien + downloaden via klantportaal
-  - `affiliate` → geen toegang
+Status enum uitbreiden: `concept`, `gepland`, `bevestigd`, `onderweg`, `in_uitvoering`, `gereed`, `afgerond`, `geannuleerd`.
 
-### Datamodel (nieuwe tabellen)
+Twee nieuwe tabellen:
+- `installatie_notities` (id, installatie_id, partner_id, auteur_id, inhoud, intern bool, created_at)
+- `installatie_historie` (id, installatie_id, partner_id, actor_id, actie, veld, oude_waarde, nieuwe_waarde, created_at) + trigger zoals factuur_historie
+
+RLS per partner_id, security-definer functies hergebruiken. Trigger `notify_on_status_change` (bestaat al) blijft notificaties pushen naar `installateur_id`.
+
+### 2. Pagina's & componenten
 
 ```text
-opleverrapporten
-  id, partner_id, installatie_id (FK), klant_id (FK), installateur_id (FK)
-  rapportnummer (OPL-YYYY-0001), template_versie (default 'NEN1010-2020+A1-2024-v1.0')
-  status (concept | wacht_op_klant | ondertekend | afgekeurd)
-  scope_omschrijving, opleverdatum
-  batterij_spec jsonb, omvormer_spec jsonb, opstelling jsonb
-  visuele_inspectie jsonb (array items)
-  metingen jsonb (array)
-  meetapparatuur jsonb
-  groepenverdeling jsonb (array)
-  documenten jsonb (array {type,url})
-  bevindingen jsonb {verdict, deficiencies[], recommendations[]}
-  conformiteitstekst text
-  installateur_handtekening jsonb {image_url,name,signed_at,ip}
-  klant_handtekening jsonb {image_url,name,signed_at,ip}
-  klant_token text unique, klant_token_expires_at timestamptz
-  pdf_url text, pdf_hash text, gefinaliseerd_op timestamptz
-  created_at, updated_at, created_by
+src/pages/Installaties.tsx              edit — nieuwe kolommen, status-filter, monteur-filter, "Mijn opdrachten" voor installateurs
+src/pages/InstallatieDetail.tsx         nieuw — tabs: Overzicht / Planning / Klant / Producten / Notities / Communicatie / Historie / Oplevering
+src/pages/InstallatieNieuw.tsx          nieuw — wizard vanuit opdracht of standalone
 
-opleverrapport_audit
-  id, rapport_id, actor_id, actie, details jsonb, ip, created_at
-
-installateur_voorkeuren
-  user_id PK, meetapparatuur jsonb, kvk_nummer, erkenningsnummer
+src/components/installaties/
+  InstallatieHeader.tsx                 statusbadge + acties
+  InstallatiePlanningCard.tsx           datum, tijd, monteur, werkadres
+  InstallatieKlantCard.tsx              contact + actieknoppen
+  InstallatieProductenCard.tsx          regels read-only (uit opdracht)
+  InstallatieNotitiesTab.tsx            CRUD intern/extern, real-time
+  InstallatieCommunicatieTab.tsx        e-mail naar klant + monteur (templates)
+  InstallatieHistorieTab.tsx            audit-feed
+  InstallatieMonteurView.tsx            mobile-first werkscherm: starten/pauze/gereedmelden
+  KlantBevestigingDialog.tsx            preview + verstuur datum-bevestiging
+  MonteurToewijsDialog.tsx              monteur + datum + tijdvenster
+  InstallatieStatusBadge.tsx
+  api/installatieApi.ts
+  useInstallatie.ts                     TanStack hook
 ```
 
-- RLS per partner_id (security definer functies hergebruiken)
-- Aparte SELECT-policy voor publieke ondertekenpagina via Edge Function (geen RLS uitzondering)
-- Numbering via bestaande `generate_documentnummer_v2(_partner_id, 'oplevering')`
-- Storage bucket **`oplever-media`** (private, RLS per partner) voor foto's, schema's, handtekeningen, PDF's
+Elk bestand <800 regels, functies <50 regels.
 
-### Wizard-componenten
+### 3. Workflow opdracht → installatie
 
-```text
-src/pages/OpleverNieuw.tsx              (wizard shell + step routing)
-src/pages/OpleverDetail.tsx             (read-only + acties)
-src/pages/Opleveringen.tsx              (overzicht)
-src/pages/OpleverKlantOndertekenen.tsx  (publieke route /oplevering/:token)
+Vanuit `OpdrachtDetail.tsx`:
+- Bestaande "Installatie plannen"-dialog vervangen door **MonteurToewijsDialog** die:
+  - installatie aanmaakt met installatienummer, snapshot klantgegevens, producten uit opdracht, status `gepland`
+  - opdracht.installatie_id + status `installatie_gepland` zet
+  - direct **klantbevestiging-mail** aanbiedt (template "installatie-gepland")
+  - automatisch een monteur-notificatie en e-mail triggert
 
-src/components/oplever/
-  WizardShell.tsx                       (progress bar, prev/next, autosave)
-  StepIdentificatie.tsx
-  StepInstallatie.tsx                   (incl. foto-upload typeplaten)
-  StepVisueleInspectie.tsx              (dynamische checklist)
-  StepMetingen.tsx                      (validatie tegen grenswaarden)
-  StepDocumentatie.tsx                  (uploads + groepenverdelingstabel)
-  StepBevindingen.tsx
-  StepOndertekening.tsx                 (preview + signature pad installateur)
-  PdfPreview.tsx                        (iframe pdf data-url)
-  SignaturePad.tsx                      (hergebruik schouw SignaturePad)
-  OpleverChecklistItem.tsx
-  MetingInput.tsx                       (groen/rood validatie)
-  GrenswaardenLogic.ts                  (NEN drempels constants)
-  useOpleverAutosave.ts
-  useOpleverRapport.ts                  (TanStack Query hook)
-  api/opleverApi.ts                     (alle Supabase calls)
-```
+### 4. Klantcommunicatie
 
-Elk bestand <800 regels, elke functie <50 regels, max 4 params.
+Twee transactional templates aanmaken via Lovable Email infra:
+- `installatie-gepland` — naar klant: datum, tijdvenster, monteur, werkadres, contactlink
+- `installatie-herinnering` — handmatig of 1 dag vooraf (later via cron)
 
-### PDF-generatie
-- Client-side via bestaande aanpak `pdfFromElement` + nieuwe component `OpleverRapportPDF.tsx` (A4-secties)
-- Headless render-helper analoog aan `renderFactuurPdf.ts` → `renderOpleverPdf.ts`
-- Bevat per pagina: paginanummer, rapportnummer, datum
-- Voorblad met groene/oranje/rode goedkeuringsstempel obv `verdict`
-- Bijlagen-appendix met uploads en handtekeningen
-- Bij finalisatie: SHA-256 hash van blob → opgeslagen in `pdf_hash`, geüpload naar `oplever-media/{partner_id}/{rapport_id}.pdf`
+E-mail wordt verstuurd via bestaande `send-transactional-email` flow, met `templateData` met datum/tijd/monteur/werkomschrijving. Vereist eerst e-mail-infra opzet.
 
-### Edge Functions
+### 5. Monteur-ervaring
 
-```text
-supabase/functions/oplever-public-view      GET token → rapport-data + pdf_url
-supabase/functions/oplever-klant-ondertekenen POST token, signature_image, naam → finaliseert
-supabase/functions/oplever-verzend-klant    POST rapport_id → genereert token, mailt klant
-supabase/functions/oplever-deel-derde       POST rapport_id, email, expires → audit + mail (later)
-```
+- **Notificatie**: bestaande `notify_on_status_change` trigger zet al een rij in `notificaties` voor `installateur_id`. Aanvullend e-mail via `send-transactional-email` template `installatie-toegewezen-monteur` direct na toewijzing.
+- **Planning-zichtbaarheid**: bestaande `Planning.tsx` toont al installaties geel; we voegen filter "Mijn agenda" werking voor rol `installateur` (toont enkel eigen installaties + werkt al via `installateur_id`).
+- **Werkscherm `InstallatieMonteurView.tsx`** (mobile-first):
+  - Knoppen: "Start onderweg" / "Aangekomen / starten" / "Pauze" / "Gereed melden"
+  - Foto's uploaden naar `oplever-media/installatie/{id}` (snel werkbewijs)
+  - Notitieveld
+  - Knop **"Opleverrapport maken"** → navigeert naar `/opleveringen/nieuw?installatie={id}` met prefill (klant, monteur, datum, producten)
 
-- Hergebruik `email-send` shared util voor SendGrid mail
-- Token: `crypto.randomUUID()`, geldig 14 dagen
-- Bij ondertekening: lock record (status `ondertekend`), append audit-row, regenereer PDF met beide handtekeningen embedded, hash + upload, mail beide partijen.
+### 6. Klantkaart-integratie
 
-### NEN-grenswaarden (constants)
-Hardcoded in `GrenswaardenLogic.ts` voor v1.0:
-- Continuïteit ≤ 1 Ω
-- Isolatieweerstand ≥ 1 MΩ (500V)
-- Aardlek uitschakeltijd ≤ 300 ms bij 30 mA
-- Aardcircuitimpedantie context-afhankelijk → waarschuwing > 1.5 Ω
-Inputvelden tonen direct rood/groen badge.
+In `KlantDetail.tsx`:
+- Nieuwe tab **"Installaties"** met `InstallatiesLijst` component (telt naast Opdrachten/Schouwen)
+- Quick-stat "Installaties" toegevoegd
+- Timeline-events uitgebreid met installatie-aanmaak, gereedmelding, oplevering
+- `InstallatiesLijst` herbruikbaar component in `DetailComponents.tsx`
 
-### UX
-- Mobile-first: stap navigeert full-screen op <md, kolomlayout op desktop
-- Numerieke inputs met `inputMode="decimal"`
-- Camera-capture: `<input type="file" accept="image/*" capture="environment">`
-- Auto-save elke 30s + bij stap-wissel via debounced mutation
-- Voortgangsbalk "Stap X van 7" + percentage
-- Statusbadges: Concept (grijs) / Wacht op klant (oranje) / Ondertekend (groen) / Afgekeurd (rood)
+### 7. Routes & navigatie
 
-### Klantportaal-integratie
-- In bestaande `/offerte/:token` portaal-stijl een nieuwe publieke route `/oplevering/:token`
-- Toont PDF-iframe + 2 tabs: "Akkoord en ondertekenen" / "Ik heb vragen" (laatste opent mailto installateur)
-- Na onderteken: bedankpagina + download link (signed URL 1 uur)
-- Voor ingelogde consumenten: rapport zichtbaar in klantportaal-dossier
+`src/App.tsx` toevoegen:
+- `/installaties/nieuw` → `InstallatieNieuw`
+- `/installaties/:id` → `InstallatieDetail`
+- `/installaties/:id/werk` → `InstallatieMonteurView` (mobile route, alleen rol `installateur`/admin)
 
-### Audit & compliance
-- Elke statuswijziging, download, deelactie → `opleverrapport_audit`
-- IP-adres uit Edge Function request headers
-- Bewaartermijn: geen automatische cleanup (10 jaar minimum)
+Sidebar `AppSidebar.tsx`:
+- "Installaties" entry blijft, voor `installateur` label "Mijn werk"
+- Sub-items toevoegen voor admin: "Alle installaties" / "Te plannen" / "Vandaag" / "Gereed te leveren"
 
-### Memory
-Toevoegen aan `mem://index.md`:
-- `oplever/nen1010-module` — NEN 1010 opleverrapport wizard, tokenondertekening, hash-archief
+### 8. Toegangsrechten
+
+- `superadmin`, `partner_admin`, `partner_staff`, `backoffice` → vol beheer
+- `installateur` → eigen installaties (filter `installateur_id = auth.uid()`)
+- `consument` → eigen installaties read-only via klantkaart-portaal
+- `affiliate` → geen toegang
+
+### 9. PDF & opleveringskoppeling
+
+Bij gereedmelding wordt knop "Maak opleverrapport" actief; deze prefilled de bestaande NEN 1010-wizard (`/opleveringen/nieuw`) met installatie-id, klant, monteur, opleverdatum. Na finalisatie schrijft `oplever-klant-ondertekenen` `installaties.oplevering_id` en zet status op `afgerond`.
+
+### 10. Geen build wijzigingen aan
+
+- `OpleverDetail/Wizard` blijft, krijgt alleen prefill via querystring
+- `Planning.tsx` blijft, krijgt geen wijzigingen — installaties tonen al
+- Bestaande `installaties` rijen blijven werken (nieuwe kolommen nullable)
+
+### Memory updates
+
+Toevoegen `mem://workflow/installaties-module` met: tabel-uitbreiding, statusverloop concept→afgerond, monteur-werkscherm, klantbevestiging template, koppeling met opleverwizard.
+Update `mem://orders/workflow` om door te verwijzen naar nieuwe installatie-flow.
 
 ### Bestanden-overzicht
 
 | Bestand | Actie |
 |---|---|
-| `supabase/migrations/...nen1010.sql` | nieuw — tabellen, RLS, bucket, numbering |
-| `src/pages/Opleveringen.tsx` | nieuw — overzicht |
-| `src/pages/OpleverNieuw.tsx` | nieuw — wizard host |
-| `src/pages/OpleverDetail.tsx` | nieuw |
-| `src/pages/OpleverKlantOndertekenen.tsx` | nieuw — publieke route |
-| `src/components/oplever/*` | nieuw — wizard steps + helpers (zie boven) |
-| `src/components/oplever/OpleverRapportPDF.tsx` | nieuw — A4 layout |
-| `src/lib/renderOpleverPdf.ts` | nieuw — headless render + hash |
-| `src/components/AppSidebar.tsx` | edit — menu-item "Opleveringen" |
-| `src/App.tsx` | edit — routes registreren |
-| `supabase/functions/oplever-public-view/index.ts` | nieuw |
-| `supabase/functions/oplever-klant-ondertekenen/index.ts` | nieuw |
-| `supabase/functions/oplever-verzend-klant/index.ts` | nieuw |
-| `mem://index.md` + `mem://oplever/nen1010-module` | update + nieuw |
+| `supabase/migrations/...installaties_uitbreiden.sql` | nieuw — kolommen, enum, RLS, triggers, notities & historie tabellen |
+| `src/pages/Installaties.tsx` | edit — filters, kolommen, rolbewust |
+| `src/pages/InstallatieDetail.tsx` | nieuw |
+| `src/pages/InstallatieNieuw.tsx` | nieuw |
+| `src/components/installaties/*` | nieuw — alle componenten hierboven |
+| `src/components/detail/DetailComponents.tsx` | edit — `InstallatiesLijst` + Installatie-tab in klantkaart |
+| `src/pages/KlantDetail.tsx` | edit — tab + stat + timeline |
+| `src/pages/OpdrachtDetail.tsx` | edit — nieuwe MonteurToewijsDialog + bevestiging-mail |
+| `src/App.tsx` | edit — routes |
+| `src/components/AppSidebar.tsx` | edit — sub-items |
+| `supabase/functions/_shared/transactional-email-templates/installatie-gepland.tsx` | nieuw |
+| `supabase/functions/_shared/transactional-email-templates/installatie-toegewezen-monteur.tsx` | nieuw |
+| `supabase/functions/_shared/transactional-email-templates/registry.ts` | edit |
+| `mem://workflow/installaties-module` + `mem://index.md` | nieuw + update |
 
-### Bevestigingsvragen vóór implementatie
-Geen — alle keuzes volgen bestaande platform-patronen (multi-tenant RLS, security definer functies, client-side PDF, tokenportaal zoals offerte). Bij twijfel pak ik bestaande conventies.
+### Bevestigingsvragen
+
+Geen — patronen volgen bestaande modules (oplever, opdracht, schouw). Voor de e-mailtemplates wordt de bestaande Lovable Email-infrastructuur gebruikt; als die nog niet is opgezet wordt dat als eerste stap uitgevoerd voordat de templates worden geactiveerd.
 
