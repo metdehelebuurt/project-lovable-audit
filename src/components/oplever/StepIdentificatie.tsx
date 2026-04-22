@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import KlantSelector from "./KlantSelector";
 import type { Opleverrapport } from "./types";
 
 interface Props {
@@ -8,17 +9,23 @@ interface Props {
   onChange: (patch: Partial<Opleverrapport>) => void;
   klantNaam?: string;
   klantAdres?: string;
+  partnerId: string;
+  klantId: string | null;
+  onKlantChange: (id: string | null) => void;
 }
 
-export default function StepIdentificatie({ draft, onChange, klantNaam, klantAdres }: Props) {
+export default function StepIdentificatie({ draft, onChange, klantNaam, klantAdres, partnerId, klantId, onKlantChange }: Props) {
   return (
     <div className="space-y-4">
       <div>
         <h3 className="font-semibold">Klant- en projectgegevens</h3>
-        <p className="text-sm text-muted-foreground">
-          {klantNaam ? `${klantNaam}${klantAdres ? ` — ${klantAdres}` : ""}` : "Nog geen klant gekoppeld"}
-        </p>
+        {klantNaam ? (
+          <p className="text-sm text-muted-foreground">
+            {klantNaam}{klantAdres ? ` — ${klantAdres}` : ""}
+          </p>
+        ) : null}
       </div>
+      <KlantSelector partnerId={partnerId} klantId={klantId} onChange={onKlantChange} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="opleverdatum">Opleverdatum</Label>

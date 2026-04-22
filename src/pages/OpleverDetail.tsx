@@ -104,7 +104,20 @@ export default function OpleverDetail() {
   };
 
   const steps = [
-    { key: "id", label: "Identificatie", content: <StepIdentificatie draft={merged} onChange={update} /> },
+    {
+      key: "id",
+      label: "Identificatie",
+      content: (
+        <StepIdentificatie
+          draft={merged}
+          onChange={update}
+          klantNaam={klantNaam}
+          partnerId={merged.partner_id}
+          klantId={((merged as unknown) as { klant_id: string | null }).klant_id ?? null}
+          onKlantChange={(id) => update({ klant_id: id } as Partial<Opleverrapport>)}
+        />
+      ),
+    },
     { key: "install", label: "Installatie", content: <StepInstallatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
     { key: "visueel", label: "Visuele inspectie", content: <StepVisueleInspectie draft={merged} onChange={update} /> },
     { key: "meting", label: "Metingen", content: <StepMetingen draft={merged} onChange={update} /> },
