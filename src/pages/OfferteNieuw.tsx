@@ -16,8 +16,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
 import DatasheetCheckDialog from "@/components/offertes/DatasheetCheckDialog";
-import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { defaultTemplateConfig, type TemplateConfig } from "@/components/offertes/templates/templateRegistry";
+import { TERMIJN_TEMPLATES, saveTermijnschema, type TriggerStatus } from "@/lib/termijnschema";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -85,8 +85,9 @@ const OfferteNieuw = () => {
     d.setDate(d.getDate() + 30);
     return d.toISOString().split("T")[0];
   });
-  const [betalingsvoorwaarden, setBetalingsvoorwaarden] = useState("");
-  const [customBetalingsvoorwaarden, setCustomBetalingsvoorwaarden] = useState("");
+  // Termijnschema-keuze tijdens aanmaken (vervangt vrij-tekst betalingsvoorwaarden)
+  // "100" = 100% bij oplevering (default), of een van de TERMIJN_TEMPLATES slugs, of "later" om over te slaan
+  const [termijnSchemaSlug, setTermijnSchemaSlug] = useState<string>("100");
   const [notities, setNotities] = useState("");
   const [introductieTekst, setIntroductieTekst] = useState("");
   const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
