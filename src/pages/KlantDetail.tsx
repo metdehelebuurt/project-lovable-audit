@@ -285,11 +285,12 @@ const KlantDetail = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <QuickStat label="Offertes" value={offertes.length} icon={FileText} />
         <QuickStat label="Verkooporders" value={opdrachten.length} icon={Wrench} />
         <QuickStat label="Orderwaarde" value={formatCurrency(totalOpdrachtenValue)} icon={TrendingUp} />
         <QuickStat label="Schouwen" value={schouwen.length} icon={ClipboardCheck} />
+        <QuickStat label="Opleveringen" value={opleveringen.length} icon={ShieldCheck} />
         <QuickStat label="Afspraken" value={afspraken.length} icon={CalendarIcon} />
       </div>
 
@@ -403,6 +404,20 @@ const KlantDetail = () => {
           {/* INSTALLATIES */}
           {activeTab === "installaties" && <InstallatiesLijst installaties={installaties} onNavigate={(iid) => navigate(`/installaties/${iid}`)} />}
 
+          {/* OPLEVERINGEN */}
+          {activeTab === "opleveringen" && (
+            <OpleveringenLijst
+              opleveringen={opleveringen as any}
+              onNavigate={(rid) => navigate(`/opleveringen/${rid}`)}
+              onNew={() => navigate(`/opleveringen/nieuw?klant=${klant.id}`)}
+              onDownload={async (_rid, pdfUrl) => {
+                const url = await getSignedUrlForVersie(pdfUrl);
+                if (url) window.open(url, "_blank", "noopener,noreferrer");
+                else toast.error("Download niet beschikbaar");
+              }}
+            />
+          )}
+
           {/* SCHOUWEN */}
           {activeTab === "schouwen" && <SchouwenLijst schouwen={schouwen} onNew={() => navigate("/schouwen")} />}
 
@@ -432,6 +447,8 @@ const KlantDetail = () => {
             { label: "Schouwen", value: schouwen.length },
             { label: "Afspraken", value: afspraken.length },
             { label: "Installaties", value: installaties.length },
+            { label: "Opleveringen", value: opleveringen.length },
+            { label: "Ondertekende rapporten", value: opleveringen.filter((r: any) => r.status === "ondertekend").length },
           ]} />
 
           <SnelleActies

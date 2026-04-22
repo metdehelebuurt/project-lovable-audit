@@ -428,6 +428,7 @@ const timelineColors: Record<string, string> = {
   schouw: "bg-emerald-500",
   afspraak: "bg-blue-500",
   opdracht: "bg-orange-500",
+  oplevering: "bg-teal-500",
   created: "bg-muted-foreground",
 };
 
