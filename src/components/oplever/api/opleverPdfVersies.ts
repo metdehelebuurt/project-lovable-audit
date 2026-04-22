@@ -43,8 +43,8 @@ export async function insertOpleverPdfVersie(input: InsertVersieInput): Promise<
       console.warn("PDF-versie registratie mislukt:", error.message);
       return null;
     }
-    const row = Array.isArray(data) ? (data[0] as { id: string; versie: number } | undefined) : null;
-    return row ?? null;
+    const arr = data as unknown as { id: string; versie: number }[] | null;
+    return Array.isArray(arr) && arr[0] ? arr[0] : null;
   } catch (e) {
     console.warn("PDF-versie registratie faalde:", e);
     return null;
