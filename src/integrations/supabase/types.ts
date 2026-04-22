@@ -1346,6 +1346,56 @@ export type Database = {
           },
         ]
       }
+      factuur_historie: {
+        Row: {
+          actie: string
+          actor_id: string | null
+          created_at: string
+          financieel_document_id: string
+          id: string
+          metadata: Json | null
+          nieuwe_waarde: string | null
+          notitie: string | null
+          oude_waarde: string | null
+          partner_id: string
+          veld: string | null
+        }
+        Insert: {
+          actie: string
+          actor_id?: string | null
+          created_at?: string
+          financieel_document_id: string
+          id?: string
+          metadata?: Json | null
+          nieuwe_waarde?: string | null
+          notitie?: string | null
+          oude_waarde?: string | null
+          partner_id: string
+          veld?: string | null
+        }
+        Update: {
+          actie?: string
+          actor_id?: string | null
+          created_at?: string
+          financieel_document_id?: string
+          id?: string
+          metadata?: Json | null
+          nieuwe_waarde?: string | null
+          notitie?: string | null
+          oude_waarde?: string | null
+          partner_id?: string
+          veld?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factuur_historie_financieel_document_id_fkey"
+            columns: ["financieel_document_id"]
+            isOneToOne: false
+            referencedRelation: "financiele_documenten"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback_verzoeken: {
         Row: {
           admin_reactie: string | null
@@ -3119,6 +3169,66 @@ export type Database = {
           },
         ]
       }
+      nummerreeks_config: {
+        Row: {
+          created_at: string
+          huidig_jaar: number
+          id: string
+          jaarformaat: string
+          padding: number
+          partner_id: string
+          prefix: string
+          reset_per_jaar: boolean
+          subtype: string
+          type: string
+          updated_at: string
+          volgende_nummer: number
+        }
+        Insert: {
+          created_at?: string
+          huidig_jaar?: number
+          id?: string
+          jaarformaat?: string
+          padding?: number
+          partner_id: string
+          prefix?: string
+          reset_per_jaar?: boolean
+          subtype?: string
+          type: string
+          updated_at?: string
+          volgende_nummer?: number
+        }
+        Update: {
+          created_at?: string
+          huidig_jaar?: number
+          id?: string
+          jaarformaat?: string
+          padding?: number
+          partner_id?: string
+          prefix?: string
+          reset_per_jaar?: boolean
+          subtype?: string
+          type?: string
+          updated_at?: string
+          volgende_nummer?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nummerreeks_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nummerreeks_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offerte_berichten: {
         Row: {
           afzender_naam: string
@@ -4563,6 +4673,10 @@ export type Database = {
         Returns: number
       }
       generate_abonnement_factuurnummer: { Args: never; Returns: string }
+      generate_documentnummer_v2: {
+        Args: { _partner_id: string; _subtype?: string; _type: string }
+        Returns: string
+      }
       generate_financieel_documentnummer:
         | {
             Args: {
