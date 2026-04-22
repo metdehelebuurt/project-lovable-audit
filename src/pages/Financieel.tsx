@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, FileText, Eye } from "lucide-react";
+import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
 import { formatCurrency } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
 import { FinancieelDashboard } from "@/components/financieel/FinancieelDashboard";
@@ -74,7 +75,7 @@ export default function Financieel() {
     const fetchDocs = async () => {
       const { data, error } = await supabase
         .from("financiele_documenten")
-        .select("*, klanten(voornaam, achternaam, bedrijfsnaam), leveranciers(naam)")
+        .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email), leveranciers(naam, email)")
         .eq("partner_id", profile.partner_id)
         .order("created_at", { ascending: false });
       if (error) {
@@ -133,6 +134,10 @@ export default function Financieel() {
             const relatie = doc.klanten
               ? doc.klanten.bedrijfsnaam || `${doc.klanten.voornaam} ${doc.klanten.achternaam}`
               : doc.leveranciers?.naam || "—";
+            const klantEmail = doc.klanten?.email || "";
+            const kanResend =
+              ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) &&
+              (["verzonden", "verlopen", "betaald"].includes(doc.status) || !!doc.verzonden_op);
             return (
               <TableRow
                 key={doc.id}
@@ -150,9 +155,24 @@ export default function Financieel() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); navigate(`/financieel/${doc.id}`); }}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    {kanResend && (
+                      <ResendFactuurButton
+                        variant="icon"
+                        doc={{
+                          id: doc.id,
+                          documentnummer: doc.documentnummer,
+                          partner_id: doc.partner_id,
+                          type: doc.type,
+                          factuur_subtype: doc.factuur_subtype,
+                        }}
+                        defaultTo={klantEmail}
+                      />
+                    )}
+                    <Button size="sm" variant="ghost" onClick={() => navigate(`/financieel/${doc.id}`)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );
