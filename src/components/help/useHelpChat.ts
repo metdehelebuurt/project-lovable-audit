@@ -159,17 +159,21 @@ export function useHelpChat() {
 
         if (resp.status === 429) {
           toast.error("Even druk, probeer het zo opnieuw.");
-          setMessages(messages);
+          setMessages([...messages, userMsg]);
           return;
         }
         if (resp.status === 402) {
           toast.error("AI-tegoed op. Neem contact op met je beheerder.");
-          setMessages(messages);
+          setMessages([...messages, userMsg]);
           return;
         }
         if (!resp.ok || !resp.body) {
           toast.error("Kon geen antwoord ophalen.");
-          setMessages(messages);
+          setMessages([
+            ...messages,
+            userMsg,
+            { role: "assistant", content: "Er ging iets mis tijdens het antwoorden. Probeer het opnieuw." },
+          ]);
           return;
         }
 
@@ -184,11 +188,24 @@ export function useHelpChat() {
           for (const d of deltas) upsert(d);
           if (sseDone) streamDone = true;
         }
+        // Flush eventuele rest na stream-einde (geen trailing newline).
+        if (!streamDone) {
+          const { deltas } = flushBuffer(state);
+          for (const d of deltas) upsert(d);
+        }
       } catch (e) {
         if ((e as Error).name !== "AbortError") {
           console.error("help-chat error", e);
           toast.error("Er ging iets mis. Probeer het opnieuw.");
-          setMessages(messages);
+          if (!assistantText) {
+            setMessages([
+              ...messages,
+              userMsg,
+              { role: "assistant", content: "Er ging iets mis tijdens het antwoorden. Probeer het opnieuw." },
+            ]);
+          } else {
+            upsert("\n\n_Antwoord onderbroken door een fout. Probeer het opnieuw._");
+          }
         }
       } finally {
         setIsStreaming(false);
