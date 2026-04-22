@@ -49,7 +49,7 @@ const InstallatieDetail = () => {
             <InstallatieKlantCard installatie={installatie} />
             <InstallatiePlanningCard installatie={installatie} onChanged={refetch} readOnly />
           </div>
-          <InstallatieProductenCard installatie={installatie} />
+          <InstallatieProductenCard installatie={installatie} onChanged={refetch} />
         </TabsContent>
 
         <TabsContent value="planning">
@@ -57,7 +57,7 @@ const InstallatieDetail = () => {
         </TabsContent>
 
         <TabsContent value="producten">
-          <InstallatieProductenCard installatie={installatie} />
+          <InstallatieProductenCard installatie={installatie} onChanged={refetch} />
         </TabsContent>
 
         <TabsContent value="notities">
