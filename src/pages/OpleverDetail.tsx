@@ -163,7 +163,11 @@ export default function OpleverDetail() {
         </div>
       </div>
 
-      <WizardShell steps={steps} currentIndex={stepIndex} onChange={setStepIndex} />
+      <WizardShell
+        steps={steps}
+        currentIndex={Math.min(stepIndex, steps.length - 1)}
+        onChange={setStepIndex}
+      />
 
       <Card>
         <CardContent className="pt-4">
