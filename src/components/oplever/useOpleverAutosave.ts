@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { patchRapport } from "./api/opleverApi";
+import { patchRapport, fetchRapport } from "./api/opleverApi";
 import type { Opleverrapport } from "./types";
 
 const DEBOUNCE_MS = 1500;
@@ -15,7 +15,20 @@ export function useOpleverAutosave(id: string | undefined, draft: Partial<Opleve
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       try {
-        await patchRapport(id, draft);
+        // Merge extra_velden with the latest server state to prevent partial JSONB overwrites
+        let toPatch: Partial<Opleverrapport> = draft;
+        if (draft.extra_velden) {
+          try {
+            const fresh = await fetchRapport(id);
+            toPatch = {
+              ...draft,
+              extra_velden: { ...(fresh.extra_velden ?? {}), ...draft.extra_velden },
+            };
+          } catch {
+            // fall back to plain patch
+          }
+        }
+        await patchRapport(id, toPatch);
         lastSerialized.current = serialized;
       } catch (e) {
         console.warn("Autosave mislukt", e);
