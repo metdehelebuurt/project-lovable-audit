@@ -154,7 +154,7 @@ export default function OpleverDetail() {
     ...(merged.extra_velden?.heeft_backup
       ? [{ key: "backup", label: "Backup / noodstroom", icon: BatteryCharging, content: <StepBackup draft={merged} onChange={update} /> }]
       : []),
-    { key: "doc", label: "Documenten & labels", icon: FileTextIcon, content: <StepDocumentatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
+    { key: "doc", label: "Documenten & labels", icon: FileText, content: <StepDocumentatie rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
     { key: "bevind", label: "Bevindingen & verklaring", icon: ClipboardCheck, content: <StepBevindingen draft={merged} onChange={update} /> },
     { key: "onder", label: "Ondertekening", icon: PenLine, content: <StepOndertekening rapport={merged} onSent={() => setDraft({})} /> },
   ];
