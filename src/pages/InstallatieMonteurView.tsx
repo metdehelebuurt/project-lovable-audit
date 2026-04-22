@@ -4,37 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Navigation, PlayCircle, Pause, CheckCircle2, ShieldCheck, MapPin } from "lucide-react";
-import { toast } from "sonner";
 import { useInstallatie } from "@/components/installaties/useInstallatie";
+import { useInstallatieActies } from "@/components/installaties/useInstallatieActies";
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
 import type { InstallatieStatus } from "@/components/installaties/status";
 
 const InstallatieMonteurView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: installatie, isLoading, update, refetch } = useInstallatie(id);
+  const { data: installatie, isLoading } = useInstallatie(id);
+  const acties = useInstallatieActies(id);
   const [gereedNotitie, setGereedNotitie] = useState("");
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Laden...</div>;
   if (!installatie) return <div className="p-6 text-muted-foreground">Installatie niet gevonden</div>;
-
-  const setStatus = async (status: InstallatieStatus, extra: Record<string, unknown> = {}) => {
-    try {
-      await update.mutateAsync({ status, ...extra });
-      await refetch();
-      toast.success("Status bijgewerkt");
-    } catch (e: any) {
-      toast.error(e.message);
-    }
-  };
-
-  const gereedMelden = async () => {
-    await setStatus("gereed", {
-      gereedmelding_op: new Date().toISOString(),
-      gereedmelding_notitie: gereedNotitie || null,
-      werkelijke_eindtijd: new Date().toISOString(),
-    });
-  };
 
   const naarOplevering = () => {
     const params = new URLSearchParams({ installatie: installatie.id });
@@ -75,13 +58,13 @@ const InstallatieMonteurView = () => {
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader><CardTitle className="text-base">Voortgang</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          <Button onClick={() => setStatus("onderweg")} disabled={installatie.status === "onderweg"} className="w-full gap-2" variant="outline">
+          <Button onClick={acties.markeerOnderweg} disabled={installatie.status === "onderweg" || acties.isPending} className="w-full gap-2" variant="outline">
             <Navigation className="h-4 w-4" /> Onderweg
           </Button>
-          <Button onClick={() => setStatus("in_uitvoering", { werkelijke_starttijd: new Date().toISOString() })} disabled={installatie.status === "in_uitvoering"} className="w-full gap-2">
+          <Button onClick={acties.markeerGestart} disabled={installatie.status === "in_uitvoering" || acties.isPending} className="w-full gap-2">
             <PlayCircle className="h-4 w-4" /> Aangekomen / starten
           </Button>
-          <Button onClick={() => setStatus("bevestigd")} className="w-full gap-2" variant="outline">
+          <Button onClick={acties.markeerPauze} disabled={acties.isPending} className="w-full gap-2" variant="outline">
             <Pause className="h-4 w-4" /> Pauzeren
           </Button>
         </CardContent>
@@ -91,7 +74,7 @@ const InstallatieMonteurView = () => {
         <CardHeader><CardTitle className="text-base">Gereedmelding</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <Textarea value={gereedNotitie} onChange={(e) => setGereedNotitie(e.target.value)} placeholder="Eventuele notitie / bijzonderheden" rows={3} />
-          <Button onClick={gereedMelden} className="w-full gap-2">
+          <Button onClick={() => acties.gereedMelden(gereedNotitie)} disabled={acties.isPending} className="w-full gap-2">
             <CheckCircle2 className="h-4 w-4" /> Gereed melden
           </Button>
           {(installatie.status === "gereed" || installatie.status === "in_uitvoering") && (
