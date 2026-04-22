@@ -58,6 +58,12 @@ export default function InstallatieProductenCard({
       toast.error("Geen gekoppelde opdracht");
       return;
     }
+    if (regels.length > 0) {
+      const ok = window.confirm(
+        `Hiermee worden de huidige ${regels.length} regels vervangen door de regels uit de gekoppelde verkooporder. Doorgaan?`,
+      );
+      if (!ok) return;
+    }
     const { data, error } = await supabase
       .from("opdrachten")
       .select("regels")

@@ -238,8 +238,8 @@ const KlantDetail = () => {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <QuickStat label="Offertes" value={offertes.length} icon={FileText} />
-        <QuickStat label="Opdrachten" value={opdrachten.length} icon={Wrench} />
-        <QuickStat label="Opdrachtwaarde" value={formatCurrency(totalOpdrachtenValue)} icon={TrendingUp} />
+        <QuickStat label="Verkooporders" value={opdrachten.length} icon={Wrench} />
+        <QuickStat label="Orderwaarde" value={formatCurrency(totalOpdrachtenValue)} icon={TrendingUp} />
         <QuickStat label="Schouwen" value={schouwen.length} icon={ClipboardCheck} />
         <QuickStat label="Afspraken" value={afspraken.length} icon={CalendarIcon} />
       </div>
@@ -378,8 +378,8 @@ const KlantDetail = () => {
           <SamenvattingCard items={[
             { label: "Totaal offertes", value: offertes.length },
             { label: "Offertewaarde", value: formatCurrency(totalOfferteValue) },
-            { label: "Opdrachten", value: opdrachten.length },
-            { label: "Opdrachtwaarde", value: formatCurrency(totalOpdrachtenValue) },
+            { label: "Verkooporders", value: opdrachten.length },
+            { label: "Orderwaarde", value: formatCurrency(totalOpdrachtenValue) },
             { label: "Schouwen", value: schouwen.length },
             { label: "Afspraken", value: afspraken.length },
             { label: "Installaties", value: installaties.length },

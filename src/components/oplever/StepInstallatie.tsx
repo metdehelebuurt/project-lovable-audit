@@ -15,6 +15,14 @@ interface Props {
   onChange: (patch: Partial<Opleverrapport>) => void;
 }
 
+const OPSTELLING_OPTIES = [
+  { key: "droog", label: "Droge omgeving" },
+  { key: "geventileerd", label: "Goed geventileerd" },
+  { key: "stevige_ondergrond", label: "Stevige ondergrond" },
+  { key: "geen_leefruimte", label: "Niet in leefruimte" },
+  { key: "vrije_werkruimte", label: "Voldoende vrije werkruimte" },
+] as const;
+
 export default function StepInstallatie({ rapportId, partnerId, draft, onChange }: Props) {
   const batterijRef = useRef<HTMLInputElement>(null);
   const omvormerRef = useRef<HTMLInputElement>(null);

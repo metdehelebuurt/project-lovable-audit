@@ -45,11 +45,11 @@ const Opdrachten = () => {
     queryKey: ["opdrachten"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("opdrachten" as any)
+        .from("opdrachten")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return data ?? [];
     },
   });
 
@@ -96,7 +96,7 @@ const Opdrachten = () => {
           ) : filtered.length === 0 ? (
             <div className="text-center py-12">
               <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Geen opdrachten gevonden</p>
+              <p className="text-muted-foreground">Geen verkooporders gevonden</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
