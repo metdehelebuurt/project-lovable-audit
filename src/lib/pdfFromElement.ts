@@ -54,3 +54,32 @@ export async function uploadPdfToStorage(
   if (error) throw new Error(`Upload mislukt: ${error.message}`);
   return path;
 }
+
+/**
+ * Archiveert de verzonden factuur-PDF in de `facturen` bucket onder een
+ * voorspelbaar pad ({partnerId}/factuur/{docId}.pdf), zodat latere "opnieuw
+ * versturen"-acties altijd de laatst verzonden PDF terug kunnen vinden.
+ * Faalt stilzwijgend (return null) — archivering mag het verzendproces niet breken.
+ */
+export async function uploadPdfToFacturenBucket(
+  supabase: any,
+  partnerId: string,
+  docId: string,
+  blob: Blob,
+): Promise<string | null> {
+  const path = `${partnerId}/factuur/${docId}.pdf`;
+  try {
+    const { error } = await supabase.storage.from("facturen").upload(path, blob, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+    if (error) {
+      console.warn("Archivering naar facturen-bucket mislukt:", error.message);
+      return null;
+    }
+    return path;
+  } catch (e) {
+    console.warn("Archivering naar facturen-bucket faalde:", e);
+    return null;
+  }
+}
