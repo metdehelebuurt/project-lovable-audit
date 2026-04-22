@@ -16,6 +16,7 @@ import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
 import FactuurEmailDialog from "@/components/financieel/FactuurEmailDialog";
 import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
 import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
+import InkoopOntvangstenLijst from "@/components/inkoop/InkoopOntvangstenLijst";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -424,6 +425,15 @@ export default function FactuurDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {doc.type === "inkooporder" && (
+        <InkoopOntvangstenLijst
+          inkooporderId={doc.id}
+          partnerId={doc.partner_id}
+          inkooporderRegels={regels.map((r: any) => ({ omschrijving: r.omschrijving, aantal: Number(r.aantal ?? 0) }))}
+          kanBoeken={!["volledig_ontvangen","betaald","gecrediteerd"].includes(doc.status)}
+        />
+      )}
 
       {/* PDF Preview Dialog */}
       <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
