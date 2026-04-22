@@ -161,49 +161,63 @@ export default function OpleverDetail() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3 flex-wrap">
           <Button variant="ghost" size="sm" onClick={() => nav("/opleveringen")}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Terug
           </Button>
-          <div>
-            <h1 className="text-xl font-semibold">{merged.rapportnummer}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold truncate">{merged.rapportnummer}</h1>
             <div className="text-xs text-muted-foreground">Templateversie {merged.template_versie}</div>
           </div>
           <OpleverStatusBadge status={merged.status} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {merged.pdf_url ? (
-            <Button variant="ghost" onClick={openArchive}>
+            <Button variant="ghost" size="sm" onClick={openArchive}>
               <ExternalLink className="h-4 w-4 mr-1" /> Archief openen
             </Button>
           ) : null}
-          <Button variant="outline" onClick={downloadPdf} disabled={pdfBusy}>
+          <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfBusy}>
             <Download className="h-4 w-4 mr-1" /> {pdfBusy ? "Bezig…" : "PDF downloaden"}
           </Button>
         </div>
       </div>
 
+      {merged.status === "ondertekend" ? (
+        <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success-light/40 p-3 text-sm">
+          <Lock className="h-4 w-4 text-success mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-success">Rapport definitief ondertekend</p>
+            <p className="text-muted-foreground text-xs">Wijzigingen zijn vergrendeld. Download een PDF-kopie indien nodig.</p>
+          </div>
+        </div>
+      ) : null}
+
       <WizardShell
         steps={steps}
         currentIndex={Math.min(stepIndex, steps.length - 1)}
         onChange={setStepIndex}
+        disabled={merged.status === "ondertekend"}
       />
 
-      <Card>
+      <Card className="hidden md:block">
         <CardContent className="pt-4">
           <div className="text-sm font-medium mb-2 flex items-center gap-2">
             <FileText className="h-4 w-4" /> PDF-preview
           </div>
           <div className="overflow-auto max-h-[600px] border rounded">
-            <OpleverRapportPDF
-              rapport={merged}
-              partnerNaam={partnerData?.naam}
-              partnerLogoUrl={partnerData?.logo_url ?? undefined}
-              partnerContact={partnerContact}
-              klantNaam={klantNaam}
-              ordernummer={ordernummer}
-            />
+            <div style={{ minWidth: 794 }}>
+              <OpleverRapportPDF
+                rapport={merged}
+                partnerNaam={partnerData?.naam}
+                partnerLogoUrl={partnerData?.logo_url ?? undefined}
+                partnerContact={partnerContact}
+                klantNaam={klantNaam}
+                klantContact={klantContact}
+                ordernummer={ordernummer}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -213,10 +227,10 @@ export default function OpleverDetail() {
         aria-hidden
         style={{
           position: "fixed",
-          left: 0,
+          left: "-10000px",
           top: 0,
           width: "210mm",
-          opacity: 0,
+          opacity: 1,
           pointerEvents: "none",
           zIndex: -1,
         }}
@@ -228,6 +242,7 @@ export default function OpleverDetail() {
           partnerLogoUrl={partnerData?.logo_url ?? undefined}
           partnerContact={partnerContact}
           klantNaam={klantNaam}
+          klantContact={klantContact}
           ordernummer={ordernummer}
         />
       </div>
