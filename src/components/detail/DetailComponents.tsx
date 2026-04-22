@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText, ClipboardCheck, MapPin, Video, Plus, CalendarIcon,
-  PhoneCall, Wrench, Mail, Phone, HardHat,
+  PhoneCall, Wrench, Mail, Phone, HardHat, ShieldCheck, Download,
 } from "lucide-react";
 
 /* ─── Formatters ─── */
