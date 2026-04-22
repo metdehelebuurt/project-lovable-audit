@@ -12,7 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { nl } from "date-fns/locale";
-import { Plus, CheckCircle, Wand2 } from "lucide-react";
+import { Plus, CheckCircle, Wand2, Link2, Trash2, ExternalLink } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Factuur {
   id: string; factuurnummer: string; partner_id: string;
@@ -20,6 +24,9 @@ interface Factuur {
   periode_start: string; periode_eind: string; status: string;
   betaald_op: string | null; betaald_via: string | null; pdf_url: string | null;
   notities: string | null; created_at: string; partners?: { naam: string } | null;
+  mollie_payment_id?: string | null;
+  mollie_payment_status?: string | null;
+  mollie_checkout_url?: string | null;
 }
 
 const statusKleuren: Record<string, string> = {
