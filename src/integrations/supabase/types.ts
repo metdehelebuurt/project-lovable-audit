@@ -4411,7 +4411,11 @@ export type Database = {
           ean_code: string | null
           eenheid: string | null
           garantie_jaren: number | null
+          gebruiker_handleiding_naam: string | null
+          gebruiker_handleiding_url: string | null
           id: string
+          installatie_handleiding_naam: string | null
+          installatie_handleiding_url: string | null
           installatie_instructies: string | null
           kostprijs: number | null
           leverancier: string | null
@@ -4445,7 +4449,11 @@ export type Database = {
           ean_code?: string | null
           eenheid?: string | null
           garantie_jaren?: number | null
+          gebruiker_handleiding_naam?: string | null
+          gebruiker_handleiding_url?: string | null
           id?: string
+          installatie_handleiding_naam?: string | null
+          installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
           kostprijs?: number | null
           leverancier?: string | null
@@ -4479,7 +4487,11 @@ export type Database = {
           ean_code?: string | null
           eenheid?: string | null
           garantie_jaren?: number | null
+          gebruiker_handleiding_naam?: string | null
+          gebruiker_handleiding_url?: string | null
           id?: string
+          installatie_handleiding_naam?: string | null
+          installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
           kostprijs?: number | null
           leverancier?: string | null
