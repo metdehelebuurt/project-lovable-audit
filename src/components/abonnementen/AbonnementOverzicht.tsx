@@ -158,6 +158,15 @@ export default function AbonnementOverzicht() {
     fetchAll();
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("abonnementen").delete().eq("id", deleteTarget.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Abonnement verwijderd");
+    setDeleteTarget(null);
+    fetchAll();
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground">Laden...</p>;
 
   return (
