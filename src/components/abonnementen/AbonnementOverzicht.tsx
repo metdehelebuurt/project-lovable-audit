@@ -237,9 +237,20 @@ export default function AbonnementOverzicht() {
                   {abo.verloop_datum ? format(new Date(abo.verloop_datum), "d MMM yyyy", { locale: nl }) : "-"}
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(abo)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(abo)} title="Bewerken">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddonTarget(abo); setAddonOpen(true); }} title="Add-ons">
+                      <Package className="h-3.5 w-3.5" />
+                      {addonCounts[abo.partner_id] ? (
+                        <span className="ml-0.5 text-[10px]">{addonCounts[abo.partner_id]}</span>
+                      ) : null}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(abo)} title="Verwijderen">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
