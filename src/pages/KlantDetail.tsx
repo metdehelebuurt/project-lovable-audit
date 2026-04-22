@@ -26,6 +26,7 @@ import EmailTab from "@/components/email/EmailTab";
 import EmailAddressList from "@/components/email/EmailAddressList";
 import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
 import { fetchLaatsteVersieVoorRapporten, getSignedUrlForVersie } from "@/components/oplever/api/opleverPdfVersies";
+import GeleverdeApparatuurLijst from "@/components/serienummers/GeleverdeApparatuurLijst";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -210,6 +211,7 @@ const KlantDetail = () => {
     { key: "opdrachten", label: "Verkooporders", count: opdrachten.length },
     { key: "installaties", label: "Installaties", count: installaties.length },
     { key: "opleveringen", label: "Opleveringen", count: opleveringen.length },
+    { key: "apparatuur", label: "Apparatuur" },
     { key: "schouwen", label: "Schouwen", count: schouwen.length },
     { key: "afspraken", label: "Afspraken", count: afspraken.length },
     { key: "activiteit", label: "Activiteit" },
@@ -420,6 +422,11 @@ const KlantDetail = () => {
 
           {/* SCHOUWEN */}
           {activeTab === "schouwen" && <SchouwenLijst schouwen={schouwen} onNew={() => navigate("/schouwen")} />}
+
+          {/* APPARATUUR */}
+          {activeTab === "apparatuur" && (
+            <GeleverdeApparatuurLijst klantId={klant.id} leadId={klant.lead_id} />
+          )}
 
           {/* AFSPRAKEN */}
           {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />}

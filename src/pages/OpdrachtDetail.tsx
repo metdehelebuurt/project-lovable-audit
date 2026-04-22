@@ -21,6 +21,7 @@ import OrderbevestigingEmailDialog from "@/components/opdrachten/Orderbevestigin
 import MonteurToewijsDialog from "@/components/installaties/MonteurToewijsDialog";
 import KlantBevestigingDialog from "@/components/installaties/KlantBevestigingDialog";
 import OpdrachtVoorraadTab from "@/components/opdracht/OpdrachtVoorraadTab";
+import OpdrachtLeveringTab from "@/components/opdracht/OpdrachtLeveringTab";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -369,6 +370,14 @@ const OpdrachtDetail = () => {
         partnerId={opdracht.partner_id}
         opdrachtStatus={opdracht.status}
         regels={regels.map((r) => ({ omschrijving: r.omschrijving, aantal: r.aantal }))}
+      />
+
+      {/* Levering & verzending */}
+      <OpdrachtLeveringTab
+        opdrachtId={opdracht.id}
+        partnerId={opdracht.partner_id}
+        klantEmail={opdracht.klant_email}
+        klantNaam={opdracht.klant_naam}
       />
 
       {/* Cancel dialog */}

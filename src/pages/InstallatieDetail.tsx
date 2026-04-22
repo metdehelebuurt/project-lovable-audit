@@ -12,6 +12,7 @@ import InstallatieHistorieTab from "@/components/installaties/InstallatieHistori
 import InstallatieActieBalk from "@/components/installaties/InstallatieActieBalk";
 import InstallatieTijdlijn from "@/components/installaties/InstallatieTijdlijn";
 import InstallatieDocumentatieCard from "@/components/installaties/InstallatieDocumentatieCard";
+import SerienummerEditor from "@/components/serienummers/SerienummerEditor";
 
 const InstallatieDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +39,7 @@ const InstallatieDetail = () => {
           <TabsTrigger value="overzicht">Overzicht</TabsTrigger>
           <TabsTrigger value="planning">Planning</TabsTrigger>
           <TabsTrigger value="producten">Producten</TabsTrigger>
+          <TabsTrigger value="serienummers">Serienummers</TabsTrigger>
           <TabsTrigger value="notities">Notities</TabsTrigger>
           <TabsTrigger value="communicatie">Communicatie</TabsTrigger>
           <TabsTrigger value="historie">Historie</TabsTrigger>
@@ -60,6 +62,19 @@ const InstallatieDetail = () => {
 
         <TabsContent value="producten">
           <InstallatieProductenCard installatie={installatie} onChanged={refetch} />
+        </TabsContent>
+
+        <TabsContent value="serienummers">
+          <SerienummerEditor
+            installatieId={installatie.id}
+            partnerId={installatie.partner_id}
+            opdrachtId={installatie.opdracht_id ?? null}
+            klantId={installatie.klant_id ?? null}
+            regels={(installatie.producten as any[] | undefined)?.map((p) => ({
+              omschrijving: p.omschrijving ?? p.naam ?? "",
+              aantal: Number(p.aantal ?? 1),
+            })) ?? []}
+          />
         </TabsContent>
 
         <TabsContent value="notities">
