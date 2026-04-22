@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ClipboardCheck, Eye } from "lucide-react";
+import { Search, ClipboardCheck, Eye, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import MonteurToewijsDialog from "@/components/installaties/MonteurToewijsDialog";
+import { toast } from "sonner";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw",
@@ -34,8 +36,10 @@ const statusColors: Record<string, string> = {
 const Opdrachten = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
+  const [planDialog, setPlanDialog] = useState<any | null>(null);
 
   const { data: opdrachten = [], isLoading } = useQuery({
     queryKey: ["opdrachten"],
@@ -56,6 +60,8 @@ const Opdrachten = () => {
   });
 
   const formatCurrency = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
+
+  const planbareStatussen = new Set(["bevestigd", "schouw_gepland", "installatie_gepland", "in_uitvoering"]);
 
   return (
     <div className="space-y-6">
@@ -116,9 +122,21 @@ const Opdrachten = () => {
                       </TableCell>
                       <TableCell>{new Date(o.created_at).toLocaleDateString("nl-NL")}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); navigate(`/opdrachten/${o.id}`); }}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {planbareStatussen.has(o.status) && !o.installatie_id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Installatie plannen"
+                              onClick={(e) => { e.stopPropagation(); setPlanDialog(o); }}
+                            >
+                              <Wrench className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); navigate(`/opdrachten/${o.id}`); }}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -128,6 +146,33 @@ const Opdrachten = () => {
           )}
         </CardContent>
       </Card>
+
+      {planDialog && (
+        <MonteurToewijsDialog
+          open={!!planDialog}
+          onOpenChange={(o) => { if (!o) setPlanDialog(null); }}
+          opdracht={{
+            id: planDialog.id,
+            partner_id: planDialog.partner_id,
+            offerte_id: planDialog.offerte_id,
+            lead_id: planDialog.lead_id,
+            klant_id: planDialog.klant_id ?? null,
+            klant_naam: planDialog.klant_naam,
+            klant_email: planDialog.klant_email,
+            klant_telefoon: planDialog.klant_telefoon,
+            klant_adres: planDialog.klant_adres,
+            klant_postcode: planDialog.klant_postcode,
+            klant_plaats: planDialog.klant_plaats,
+            regels: planDialog.regels,
+            werkomschrijving: planDialog.notitie ?? planDialog.werkomschrijving ?? null,
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["opdrachten"] });
+            toast.success("Installatie ingepland");
+            setPlanDialog(null);
+          }}
+        />
+      )}
     </div>
   );
 };

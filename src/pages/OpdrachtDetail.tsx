@@ -386,6 +386,7 @@ const OpdrachtDetail = () => {
           partner_id: opdracht.partner_id,
           offerte_id: opdracht.offerte_id,
           lead_id: opdracht.lead_id,
+          klant_id: opdracht.klant_id ?? null,
           klant_naam: opdracht.klant_naam,
           klant_email: opdracht.klant_email,
           klant_telefoon: opdracht.klant_telefoon,
@@ -393,6 +394,7 @@ const OpdrachtDetail = () => {
           klant_postcode: opdracht.klant_postcode,
           klant_plaats: opdracht.klant_plaats,
           regels,
+          werkomschrijving: opdracht.notitie ?? null,
         }}
         onSuccess={(installatieId) => {
           queryClient.invalidateQueries({ queryKey: ["opdracht", id] });
