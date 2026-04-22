@@ -205,6 +205,9 @@ export default function AbonnementOverzicht() {
           <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
           Sync Mollie
         </Button>
+        <Button size="sm" onClick={() => setNieuwOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" />Nieuw abonnement
+        </Button>
       </div>
 
       <Card className="rounded-2xl">
