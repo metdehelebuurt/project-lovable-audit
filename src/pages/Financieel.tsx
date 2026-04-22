@@ -173,6 +173,15 @@ export default function Financieel() {
                     <Button size="sm" variant="ghost" onClick={() => navigate(`/financieel/${doc.id}`)}>
                       <Eye className="h-4 w-4" />
                     </Button>
+                    <DeleteFactuurButton
+                      doc={{
+                        id: doc.id,
+                        documentnummer: doc.documentnummer,
+                        type: doc.type,
+                        status: doc.status,
+                      }}
+                      onDeleted={() => setDocs((prev) => prev.filter((d) => d.id !== doc.id))}
+                    />
                   </div>
                 </TableCell>
               </TableRow>
