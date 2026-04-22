@@ -19,7 +19,7 @@ async function fetchFactuurContext(factuurId: string) {
   const { data: doc, error } = await supabase
     .from("financiele_documenten")
     .select(
-      "*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), offertes(offertenummer)",
+      "*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), offertes(offertenummer)",
     )
     .eq("id", factuurId)
     .single();
@@ -60,9 +60,9 @@ async function fetchFactuurContext(factuurId: string) {
       : null);
 
   return {
-    doc: { ...doc, offerte_nummer: doc.offertes?.offertenummer },
-    klant,
-    leverancier: doc.leveranciers,
+    doc: { ...doc, offerte_nummer: (doc as any).offertes?.offertenummer } as any,
+    klant: klant as any,
+    leverancier: doc.leveranciers as any,
     partner,
     installatie,
   };
