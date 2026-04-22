@@ -7,6 +7,7 @@ import BetalingsvoorwaardenConfig from "@/components/instellingen/Betalingsvoorw
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
 import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
+import NummerreeksConfig from "@/components/instellingen/NummerreeksConfig";
 import InstallateurVoorkeurenForm from "@/components/oplever/InstallateurVoorkeurenForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
