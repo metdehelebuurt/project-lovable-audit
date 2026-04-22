@@ -1,5 +1,6 @@
 import { renderElementToPdfBlob } from "./pdfFromElement";
 import { supabase } from "@/integrations/supabase/client";
+import { insertOpleverPdfVersie, type VersieReden } from "@/components/oplever/api/opleverPdfVersies";
 
 export async function hashBlobSha256(blob: Blob): Promise<string> {
   const buf = await blob.arrayBuffer();
@@ -26,6 +27,7 @@ export async function downloadOpleverPdf(
   filename: string,
   partnerId?: string,
   rapportId?: string,
+  options?: { reden?: VersieReden; gegenereerdDoor?: string | null; statusOpMoment?: string | null },
 ): Promise<{ path: string | null; hash: string; blob: Blob }> {
   const blob = await renderElementToPdfBlob(el);
   const hash = await hashBlobSha256(blob);
@@ -39,8 +41,21 @@ export async function downloadOpleverPdf(
         contentType: "application/pdf",
         upsert: true,
       });
-      if (!error) path = archivePath;
-      else console.warn("Archivering opleverrapport mislukt:", error.message);
+      if (!error) {
+        path = archivePath;
+        await insertOpleverPdfVersie({
+          rapportId,
+          partnerId,
+          pdfPath: archivePath,
+          pdfHash: hash,
+          bestandsgrootte: blob.size,
+          gegenereerdDoor: options?.gegenereerdDoor ?? null,
+          reden: options?.reden ?? "handmatige_download",
+          statusOpMoment: options?.statusOpMoment ?? null,
+        });
+      } else {
+        console.warn("Archivering opleverrapport mislukt:", error.message);
+      }
     } catch (e) {
       console.warn("Archivering opleverrapport faalde:", e);
     }
