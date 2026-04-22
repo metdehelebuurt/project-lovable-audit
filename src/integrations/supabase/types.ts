@@ -1386,15 +1386,7 @@ export type Database = {
           partner_id?: string
           veld?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "factuur_historie_financieel_document_id_fkey"
-            columns: ["financieel_document_id"]
-            isOneToOne: false
-            referencedRelation: "financiele_documenten"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       feedback_verzoeken: {
         Row: {
