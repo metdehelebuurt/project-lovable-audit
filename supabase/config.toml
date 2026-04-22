@@ -83,3 +83,9 @@ verify_jwt = false
 
 [functions.mollie-trial-converter]
 verify_jwt = false
+
+[functions.oplever-public-view]
+verify_jwt = false
+
+[functions.oplever-klant-ondertekenen]
+verify_jwt = false
