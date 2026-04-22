@@ -65,11 +65,32 @@ Deno.serve(async (req) => {
       : "";
     const baseSubject = customSubject || `${docLabel} ${doc.documentnummer}${termijnSuffix} — ${partner?.afzender_naam || partner?.naam || ""}`;
     const subject = is_resend && !customSubject ? `[Herinnering] ${baseSubject}` : baseSubject;
-    const html = html_body || `<div style="font-family:sans-serif;padding:20px;"><p>Beste klant,</p><p>Hierbij ontvangt u onze ${docLabel.toLowerCase()} <strong>${doc.documentnummer}</strong>${termijnSuffix}.</p><p>Met vriendelijke groet,<br/>${partner?.afzender_naam || partner?.naam || ""}</p></div>`;
+    // Body-fallback: nooit een kale "Beste klant" zonder context — altijd documentnummer en afzender.
+    const bodyTrimmed = typeof html_body === "string" ? html_body.trim() : "";
+    const fallbackHtml = `<div style="font-family:sans-serif;padding:20px;"><p>Beste relatie,</p><p>Hierbij ontvangt u${is_resend ? " nogmaals" : ""} onze ${docLabel.toLowerCase()} <strong>${doc.documentnummer}</strong>${termijnSuffix}.</p><p>Met vriendelijke groet,<br/>${partner?.afzender_naam || partner?.naam || ""}</p></div>`;
+    const html = bodyTrimmed.length > 0 ? html_body : fallbackHtml;
 
-    const attachment = attachment_path
-      ? await fetchAttachment(adminClient, attachment_path, attachment_filename || `${doc.documentnummer}.pdf`)
-      : null;
+    let attachment = null;
+    if (attachment_path) {
+      attachment = await fetchAttachment(adminClient, attachment_path, attachment_filename || `${doc.documentnummer}.pdf`);
+      if (!attachment) {
+        // Bijlage was opgegeven maar kon niet worden gedownload — NIET stilzwijgend zonder bijlage versturen.
+        await adminClient.from("email_log").insert({
+          partner_id: userRow.partner_id,
+          ontvanger_email,
+          onderwerp: subject,
+          type: doc.factuur_subtype === "voorschot" ? "voorschotfactuur"
+            : doc.factuur_subtype === "eindafrekening" ? "eindafrekening" : "factuur",
+          status: "mislukt",
+          error_message: `Bijlage ${attachment_path} kon niet worden gedownload uit email-bijlagen`,
+          html_body: html,
+          verzonden_door_id: userId,
+        });
+        return jsonResponse({
+          error: "Bijlage kon niet worden opgehaald uit storage. Genereer de PDF opnieuw en probeer het nogmaals.",
+        }, 400);
+      }
+    }
 
     const emailType = doc.factuur_subtype === "voorschot" ? "voorschotfactuur"
       : doc.factuur_subtype === "eindafrekening" ? "eindafrekening" : "factuur";
@@ -85,7 +106,7 @@ Deno.serve(async (req) => {
       financieel_document_id, partner_id: userRow.partner_id, actor_id: userId,
       actie: is_resend ? "opnieuw_verzonden" : "verzonden",
       notitie: ontvanger_email,
-      metadata: { onderwerp: subject },
+      metadata: { onderwerp: subject, heeft_bijlage: !!attachment },
     });
 
     if (!is_resend && doc.status === "concept") {
@@ -95,10 +116,14 @@ Deno.serve(async (req) => {
     }
 
     if (attachment_path) {
-      await adminClient.storage.from("email-bijlagen").remove([attachment_path]);
+      try {
+        await adminClient.storage.from("email-bijlagen").remove([attachment_path]);
+      } catch (cleanupErr) {
+        console.warn("Cleanup email-bijlagen mislukt (niet kritiek):", cleanupErr);
+      }
     }
 
-    return jsonResponse({ success: true });
+    return jsonResponse({ success: true, heeft_bijlage: !!attachment });
   } catch (err: any) {
     console.error("send-factuur-email error:", err);
     if (err instanceof PartnerEmailError) return jsonResponse({ error: err.message }, err.status);
