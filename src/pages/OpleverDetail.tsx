@@ -92,7 +92,10 @@ export default function OpleverDetail() {
 
   const klantNaam = klantData
     ? klantData.bedrijfsnaam || `${klantData.voornaam ?? ""} ${klantData.achternaam ?? ""}`.trim()
-    : (merged as any).klant_naam_snapshot ?? undefined;
+    : undefined;
+  const klantContact = klantData
+    ? [klantData.email, klantData.telefoon].filter(Boolean).join(" • ") || undefined
+    : undefined;
   const partnerContact = partnerData
     ? [partnerData.email, partnerData.telefoonnummer, partnerData.kvk ? `KvK ${partnerData.kvk}` : null]
         .filter(Boolean)
@@ -100,7 +103,7 @@ export default function OpleverDetail() {
     : undefined;
 
   const ordernummer = opdrachtData
-    ? `${opdrachtData.id.slice(0, 8).toUpperCase()} — ${new Date(opdrachtData.created_at).toLocaleDateString("nl-NL")}`
+    ? `OPD-${opdrachtData.id.slice(0, 8).toUpperCase()} — ${new Date(opdrachtData.created_at).toLocaleDateString("nl-NL")}`
     : undefined;
 
   const downloadPdf = async () => {
