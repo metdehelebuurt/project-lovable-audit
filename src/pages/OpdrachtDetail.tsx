@@ -54,6 +54,8 @@ const OpdrachtDetail = () => {
   const [installForm, setInstallForm] = useState({ monteur_id: "", start: "", eind: "" });
   const [orderPdfOpen, setOrderPdfOpen] = useState(false);
   const [orderEmailOpen, setOrderEmailOpen] = useState(false);
+  const [klantBevestigingOpen, setKlantBevestigingOpen] = useState(false);
+  const [aangemaakteInstallatieId, setAangemaakteInstallatieId] = useState<string | null>(null);
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
