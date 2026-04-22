@@ -12,7 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { AlertTriangle, Pencil, Calendar, RefreshCw } from "lucide-react";
+import { AlertTriangle, Pencil, RefreshCw, Plus, Trash2, Package } from "lucide-react";
+import NieuwAbonnementDialog from "./NieuwAbonnementDialog";
+import AddonToewijsDialog from "./AddonToewijsDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Abonnement {
   id: string;
@@ -44,7 +50,7 @@ const statusKleuren: Record<string, string> = {
 
 export default function AbonnementOverzicht() {
   const [abonnementen, setAbonnementen] = useState<Abonnement[]>([]);
-  const [plans, setPlans] = useState<{ id: string; naam: string; slug: string; maand_prijs: number }[]>([]);
+  const [plans, setPlans] = useState<{ id: string; naam: string; slug: string; maand_prijs: number; jaar_prijs: number }[]>([]);
   const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -55,11 +61,15 @@ export default function AbonnementOverzicht() {
   const [selected, setSelected] = useState<Abonnement | null>(null);
   const [editForm, setEditForm] = useState({ plan_id: "", status: "", korting_percentage: 0, korting_vast_bedrag: 0, korting_reden: "", gratis_maanden: 0, notities: "", verloop_datum: "" });
   const [saving, setSaving] = useState(false);
+  const [nieuwOpen, setNieuwOpen] = useState(false);
+  const [addonOpen, setAddonOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Abonnement | null>(null);
+  const [addonTarget, setAddonTarget] = useState<Abonnement | null>(null);
 
   const fetchAll = async () => {
     const [{ data: aboData }, { data: planData }, { data: addonData }] = await Promise.all([
       supabase.from("abonnementen").select("*, partners(naam), abonnement_plannen(naam, slug)").order("created_at", { ascending: false }),
-      supabase.from("abonnement_plannen").select("id, naam, slug, maand_prijs").eq("actief", true).order("volgorde"),
+      supabase.from("abonnement_plannen").select("id, naam, slug, maand_prijs, jaar_prijs").eq("actief", true).order("volgorde"),
       supabase.from("abonnement_addon_aankopen").select("partner_id, aantal").eq("status", "actief"),
     ]);
     if (aboData) setAbonnementen(aboData as any);
@@ -148,6 +158,15 @@ export default function AbonnementOverzicht() {
     fetchAll();
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("abonnementen").delete().eq("id", deleteTarget.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Abonnement verwijderd");
+    setDeleteTarget(null);
+    fetchAll();
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground">Laden...</p>;
 
   return (
@@ -186,6 +205,9 @@ export default function AbonnementOverzicht() {
           <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
           Sync Mollie
         </Button>
+        <Button size="sm" onClick={() => setNieuwOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" />Nieuw abonnement
+        </Button>
       </div>
 
       <Card className="rounded-2xl">
@@ -215,9 +237,20 @@ export default function AbonnementOverzicht() {
                   {abo.verloop_datum ? format(new Date(abo.verloop_datum), "d MMM yyyy", { locale: nl }) : "-"}
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(abo)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(abo)} title="Bewerken">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddonTarget(abo); setAddonOpen(true); }} title="Add-ons">
+                      <Package className="h-3.5 w-3.5" />
+                      {addonCounts[abo.partner_id] ? (
+                        <span className="ml-0.5 text-[10px]">{addonCounts[abo.partner_id]}</span>
+                      ) : null}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(abo)} title="Verwijderen">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -267,6 +300,39 @@ export default function AbonnementOverzicht() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NieuwAbonnementDialog
+        open={nieuwOpen}
+        onOpenChange={setNieuwOpen}
+        plans={plans}
+        onCreated={fetchAll}
+      />
+
+      <AddonToewijsDialog
+        open={addonOpen}
+        onOpenChange={(v) => { setAddonOpen(v); if (!v) fetchAll(); }}
+        partnerId={addonTarget?.partner_id ?? null}
+        abonnementId={addonTarget?.id ?? null}
+        partnerNaam={(addonTarget?.partners as { naam?: string } | null | undefined)?.naam ?? ""}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abonnement verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Je verwijdert het abonnement van <strong>{(deleteTarget?.partners as { naam?: string } | null | undefined)?.naam ?? "deze partner"}</strong>.
+              Dit kan niet ongedaan worden. Eventuele Mollie-subscription moet apart worden opgezegd.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

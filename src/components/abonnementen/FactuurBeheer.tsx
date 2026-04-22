@@ -12,7 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { nl } from "date-fns/locale";
-import { Plus, CheckCircle, Wand2 } from "lucide-react";
+import { Plus, CheckCircle, Wand2, Link2, Trash2, ExternalLink } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Factuur {
   id: string; factuurnummer: string; partner_id: string;
@@ -20,6 +24,9 @@ interface Factuur {
   periode_start: string; periode_eind: string; status: string;
   betaald_op: string | null; betaald_via: string | null; pdf_url: string | null;
   notities: string | null; created_at: string; partners?: { naam: string } | null;
+  mollie_payment_id?: string | null;
+  mollie_payment_status?: string | null;
+  mollie_checkout_url?: string | null;
 }
 
 const statusKleuren: Record<string, string> = {
@@ -60,6 +67,8 @@ export default function FactuurBeheer() {
     periode_start: format(startOfMonth(vorigeMaand), "yyyy-MM-dd"),
     periode_eind: format(endOfMonth(vorigeMaand), "yyyy-MM-dd"),
   });
+  const [mollieBezig, setMollieBezig] = useState<string | null>(null);
+  const [deleteFactuur, setDeleteFactuur] = useState<Factuur | null>(null);
 
   const fetchFacturen = async () => {
     const { data } = await supabase.from("facturen").select("*, partners(naam)").order("created_at", { ascending: false });
@@ -178,6 +187,37 @@ export default function FactuurBeheer() {
     fetchFacturen();
   };
 
+  const handleMollieLink = async (f: Factuur) => {
+    setMollieBezig(f.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("mollie-create-invoice-payment", {
+        body: { factuurId: f.id },
+      });
+      if (error) throw error;
+      const url = (data as { checkoutUrl?: string })?.checkoutUrl;
+      if (url) {
+        await navigator.clipboard.writeText(url).catch(() => undefined);
+        toast.success("Mollie betaallink aangemaakt en gekopieerd");
+      } else {
+        toast.success("Mollie betaling aangemaakt");
+      }
+      fetchFacturen();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Mollie-link mislukt");
+    } finally {
+      setMollieBezig(null);
+    }
+  };
+
+  const handleDeleteFactuur = async () => {
+    if (!deleteFactuur) return;
+    const { error } = await supabase.from("facturen").delete().eq("id", deleteFactuur.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Factuur verwijderd");
+    setDeleteFactuur(null);
+    fetchFacturen();
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground">Laden...</p>;
 
   return (
@@ -235,11 +275,35 @@ export default function FactuurBeheer() {
                 <TableCell><Badge className={statusKleuren[f.status] ?? ""}>{f.status}</Badge></TableCell>
                 <TableCell className="text-sm">{f.betaald_op ? format(new Date(f.betaald_op), "d MMM yyyy", { locale: nl }) : "-"}</TableCell>
                 <TableCell>
-                  {f.status !== "betaald" && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => { setSelected(f); setPayDialog(true); }}>
-                      <CheckCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {f.mollie_checkout_url && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Open Mollie checkout">
+                        <a href={f.mollie_checkout_url} target="_blank" rel="noreferrer">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    )}
+                    {f.status !== "betaald" && (
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7"
+                        onClick={() => handleMollieLink(f)}
+                        disabled={mollieBezig === f.id}
+                        title="Mollie betaallink genereren"
+                      >
+                        <Link2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {f.status !== "betaald" && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => { setSelected(f); setPayDialog(true); }} title="Betaling registreren">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {f.status === "concept" && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteFactuur(f)} title="Verwijderen">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -330,6 +394,23 @@ export default function FactuurBeheer() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteFactuur} onOpenChange={(v) => !v && setDeleteFactuur(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Factuur verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Concept-factuur <strong>{deleteFactuur?.factuurnummer}</strong> wordt definitief verwijderd.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteFactuur} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
