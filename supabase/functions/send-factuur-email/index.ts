@@ -1,8 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  sendViaSMTP, sendViaGmailApi, sendViaMsGraphApi,
-  refreshOAuthToken, fetchAttachment,
-} from "../_shared/email-send.ts";
+import { fetchAttachment } from "../_shared/email-send.ts";
+import { sendPartnerEmail, PartnerEmailError } from "../_shared/partner-email-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +35,7 @@ Deno.serve(async (req) => {
     const {
       financieel_document_id, ontvanger_email,
       html_body, subject: customSubject, attachment_path, attachment_filename,
+      is_resend,
     } = body;
 
     if (!financieel_document_id || !ontvanger_email) {
@@ -54,17 +53,7 @@ Deno.serve(async (req) => {
     if (!doc) return jsonResponse({ error: "Document niet gevonden" }, 404);
 
     const { data: partner } = await adminClient.from("partners")
-      .select("naam, smtp_host, smtp_port, smtp_user, smtp_pass_encrypted, afzender_email, afzender_naam, email_provider")
-      .eq("id", userRow.partner_id).single();
-    if (!partner) return jsonResponse({ error: "Partner niet gevonden" }, 404);
-
-    const { data: emailAccount } = await adminClient.from("email_accounts")
-      .select("*").eq("partner_id", userRow.partner_id).eq("actief", true).maybeSingle();
-
-    const useOAuth = emailAccount && (partner.email_provider === "oauth_google" || partner.email_provider === "oauth_microsoft");
-    if (!useOAuth && (!partner.smtp_host || !partner.afzender_email)) {
-      return jsonResponse({ error: "E-mailconfiguratie is niet ingesteld." }, 400);
-    }
+      .select("naam, afzender_naam").eq("id", userRow.partner_id).single();
 
     const docLabel = doc.factuur_subtype === "voorschot"
       ? "Voorschotfactuur"
@@ -74,47 +63,32 @@ Deno.serve(async (req) => {
     const termijnSuffix = doc.factuur_subtype === "voorschot" && doc.termijn_volgnummer && doc.termijn_totaal
       ? ` (termijn ${doc.termijn_volgnummer} van ${doc.termijn_totaal})`
       : "";
-    const subject = customSubject || `${docLabel} ${doc.documentnummer}${termijnSuffix} — ${partner.afzender_naam || partner.naam}`;
-    const html = html_body || `<div style="font-family:sans-serif;padding:20px;"><p>Beste klant,</p><p>Hierbij ontvangt u onze ${docLabel.toLowerCase()} <strong>${doc.documentnummer}</strong>${termijnSuffix}.</p><p>Met vriendelijke groet,<br/>${partner.afzender_naam || partner.naam}</p></div>`;
+    const baseSubject = customSubject || `${docLabel} ${doc.documentnummer}${termijnSuffix} — ${partner?.afzender_naam || partner?.naam || ""}`;
+    const subject = is_resend && !customSubject ? `[Herinnering] ${baseSubject}` : baseSubject;
+    const html = html_body || `<div style="font-family:sans-serif;padding:20px;"><p>Beste klant,</p><p>Hierbij ontvangt u onze ${docLabel.toLowerCase()} <strong>${doc.documentnummer}</strong>${termijnSuffix}.</p><p>Met vriendelijke groet,<br/>${partner?.afzender_naam || partner?.naam || ""}</p></div>`;
 
     const attachment = attachment_path
       ? await fetchAttachment(adminClient, attachment_path, attachment_filename || `${doc.documentnummer}.pdf`)
       : null;
 
-    if (useOAuth) {
-      let accessToken = emailAccount.access_token;
-      if (new Date(emailAccount.token_expiry) <= new Date()) {
-        accessToken = await refreshOAuthToken(adminClient, emailAccount);
-      }
-      if (emailAccount.provider === "google") {
-        await sendViaGmailApi({ accessToken, from: emailAccount.email_adres, to: ontvanger_email, subject, html, attachment });
-      } else {
-        await sendViaMsGraphApi({ accessToken, to: ontvanger_email, subject, html, attachment });
-      }
-      await adminClient.from("email_berichten").insert({
-        email_account_id: emailAccount.id, partner_id: userRow.partner_id,
-        richting: "uitgaand", van: emailAccount.email_adres, aan: ontvanger_email,
-        onderwerp: subject, body_html: html, datum: new Date().toISOString(),
-        is_gelezen: true, klant_id: doc.klant_id || null,
-      });
-    } else {
-      await sendViaSMTP({
-        host: partner.smtp_host!, port: partner.smtp_port || 587,
-        user: partner.smtp_user!, pass: partner.smtp_pass_encrypted!,
-        from: partner.afzender_email!, fromName: partner.afzender_naam || partner.naam,
-        to: ontvanger_email, subject, html, attachment,
-      });
-    }
+    const emailType = doc.factuur_subtype === "voorschot" ? "voorschotfactuur"
+      : doc.factuur_subtype === "eindafrekening" ? "eindafrekening" : "factuur";
 
-    await adminClient.from("email_log").insert({
-      partner_id: userRow.partner_id,
-      ontvanger_email, onderwerp: subject, html_body: html,
-      status: "verzonden",
-      type: doc.factuur_subtype === "voorschot" ? "voorschotfactuur" : doc.factuur_subtype === "eindafrekening" ? "eindafrekening" : "factuur",
-      verzonden_door_id: userId,
+    await sendPartnerEmail({
+      adminClient, partnerId: userRow.partner_id, to: ontvanger_email,
+      subject, html, attachment, type: emailType,
+      klantId: doc.klant_id || null, verzondenDoorId: userId,
     });
 
-    if (doc.status === "concept") {
+    // Historie-entry voor verzonden/opnieuw verzonden
+    await adminClient.from("factuur_historie").insert({
+      financieel_document_id, partner_id: userRow.partner_id, actor_id: userId,
+      actie: is_resend ? "opnieuw_verzonden" : "verzonden",
+      notitie: ontvanger_email,
+      metadata: { onderwerp: subject },
+    });
+
+    if (!is_resend && doc.status === "concept") {
       await adminClient.from("financiele_documenten")
         .update({ status: "verzonden", verzonden_op: new Date().toISOString() })
         .eq("id", financieel_document_id);
@@ -127,6 +101,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: true });
   } catch (err: any) {
     console.error("send-factuur-email error:", err);
+    if (err instanceof PartnerEmailError) return jsonResponse({ error: err.message }, err.status);
     return jsonResponse({ error: err.message || "Interne fout" }, 500);
   }
 });
