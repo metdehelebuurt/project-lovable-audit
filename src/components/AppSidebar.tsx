@@ -3,7 +3,7 @@ import {
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
   MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck,
-  ChevronRight, LifeBuoy, BookOpen
+  ChevronRight, LifeBuoy, BookOpen, ShieldCheck
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,6 +72,8 @@ const getNavGroups = (rol: string): NavGroup[] => {
     werk.push({ title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck });
   if (["partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
     werk.push({ title: rol === "installateur" ? "Mijn Opdrachten" : "Installaties", url: "/installaties", icon: Wrench });
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
+    werk.push({ title: "Opleveringen", url: "/opleveringen", icon: ShieldCheck });
   if (werk.length) groups.push({ label: "Werkproces", items: werk });
 
   // Helpdesk
