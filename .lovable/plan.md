@@ -1,77 +1,88 @@
 
 
-## Plan — Slimme "Hulp nodig" AI-assistent
+## Plan — Robuuste streaming, QA-testplan, automatische route-registratie
 
-Een drijvende help-knop (rechtsonder, zichtbaar op elke pagina binnen het platform) opent een chat-paneel waar gebruikers in natuurlijke taal vragen kunnen stellen over mijnhuis.nu. De AI antwoordt met een duidelijke uitleg én klikbare deeplinks naar de juiste pagina, rekening houdend met de rol van de gebruiker en de modules waar hij/zij toegang toe heeft.
+### 1) Streaming-parsing (kleine verbetering, niet groots overhalen)
 
-### Wat de gebruiker krijgt
+De huidige `extractDeltas` in `src/components/help/useHelpChat.ts` is al grotendeels robuust: hij splitst per `\n`, handelt CRLF en SSE-comments af, herkent `[DONE]` en legt onvolledige JSON terug in de buffer. Twee subtiele issues los ik op:
 
-- **Floating help-knop** (paars cirkel, lifebuoy-icoon) rechtsonder in de viewport — verbergt zich automatisch op publieke routes (`/`, `/login`, `/offerte/:token`, `/embed/...`).
-- **Chat-paneel** (Sheet vanaf rechts, op mobiel full-screen) met:
-  - Titel "Hulp nodig?" + uitleg in één zin
-  - Suggestie-chips bij start: "Hoe maak ik een offerte?", "Waar zie ik mijn voorraad?", "Hoe registreer ik een retour?", "Hoe plan ik een installatie?" (rolspecifiek)
-  - Berichtenlijst met markdown-rendering en klikbare interne links
-  - Inputveld + verzenden, streaming antwoord (token-per-token)
-  - "Wis gesprek" knop
-- **Slimme links in antwoorden**: AI gebruikt geen externe URL's, alleen interne paden zoals `/offertes/nieuw`. Klikken navigeert in-app via React Router (geen page reload).
-- **Voorbeeld-antwoord**: 
-  > Je kunt een nieuwe offerte aanmaken via [Offertes → Nieuw](/offertes/nieuw). Vul daar de klant, regels en betalingstermijnen in. Na opslaan ga je naar de detailpagina waar je direct kunt ondertekenen en versturen.
+- **Multi-line `data:`-events** — sommige gateways sturen een event verspreid over meerdere `data:`-regels gevolgd door een lege regel. We gaan voortaan groeperen per event-blok (split op lege regel) en alle `data:`-regels concatten vóór JSON.parse.
+- **Buffer-flush bij stream-einde** — als de stream sluit zonder afsluitende newline, worden laatste bytes nu genegeerd. We voegen een `flushBuffer()` toe die na de while-loop wordt aangeroepen.
+- **Nette herstelmelding** — bij netwerk- of parse-fout tonen we naast de bestaande toast nu ook een inline assistant-bubble met "Er ging iets mis tijdens het antwoorden. Probeer het opnieuw." in plaats van het halve antwoord stilletjes weg te gooien. De gebruikersvraag blijft staan in plaats van te resetten, zodat hij opnieuw kan verzenden.
+- Er komt een unit-testbestand `useHelpChat.parser.test.ts` dat fragmentatie, CRLF, multi-line events, `[DONE]`, en partial JSON dekt.
 
-### Hoe het systeem zichzelf bijhoudt
+### 2) Automatische route-registratie
 
-De AI hoeft niet "getraind" te worden bij elke nieuwe module. Twee mechanismen zorgen voor automatische actualiteit:
+Dubbele URL's worden vermeden door **één bron van waarheid** in plaats van twee.
 
-1. **Statische module-registry** (`src/lib/modules.ts`) is al de bron-van-waarheid voor alle modules. Deze wordt op de server (edge function) ingelezen samen met een **handmatig onderhouden help-context bestand** (`supabase/functions/help-assistant/help-knowledge.ts`) dat per module korte beschrijvingen, taken en deeplinks bevat. Dit bestand groeit automatisch mee als ontwikkelaars nieuwe modules bouwen — er staat een README-instructie in dat een nieuwe module een entry moet krijgen.
-2. **Route-registry** wordt eveneens in `help-knowledge.ts` gehouden (zelfde bestand, één plek). De edge function bouwt hier dynamisch een system-prompt van, gefilterd op de rol en effectieve modules van de gebruiker, zodat de AI alleen links voorstelt waar hij/zij ook echt toegang toe heeft.
+**Aanpak**: `src/lib/modules.ts` wordt uitgebreid met optionele velden per module:
 
-Voordeel: één bestand bijwerken bij nieuwe modules, geen externe vector-DB nodig, geen embedding-kosten, antwoorden blijven snel en accuraat.
-
-### Architectuur
-
-```text
-HelpAssistantWidget (mounted in AppLayout)
-   ├─ HelpButton (floating, paars)
-   └─ HelpChatPanel (Sheet)
-         ├─ MessageList (markdown + interne links)
-         └─ MessageInput → streamHelpChat()
-                              │
-                              ▼
-              edge function /help-assistant
-                 ├─ system prompt = bouwHelpPrompt(rol, modules)
-                 ├─ messages: history + nieuwe vraag
-                 └─ Lovable AI Gateway (gemini-3-flash-preview, stream)
+```ts
+interface ModuleDefinition {
+  // bestaand…
+  primaryPath?: string;        // bijv. "/offertes"
+  extraPaths?: { path: string; label: string; howTo?: string }[];
+  howTo?: string;              // korte uitleg voor help-assistent
+}
 ```
 
-### Bestanden (alle <800 regels, componenten gesplitst)
+De edge function `help-assistant` haalt deze data niet meer uit een handmatig dubbele lijst, maar uit een **gegenereerd kennisbestand** `supabase/functions/help-assistant/help-knowledge.generated.ts` dat we **vanuit `src/lib/modules.ts` afleiden**.
+
+Omdat edge functions geen import uit `src/` mogen hebben, lossen we dit op met een bouwscript:
+
+- `scripts/generate-help-knowledge.ts` (Node + ts-node via `tsx`) leest `src/lib/modules.ts`, transformeert naar plain JSON-objecten en schrijft naar `supabase/functions/help-assistant/help-knowledge.generated.ts`.
+- We voegen een `predev`/`prebuild` npm-script toe: `"prebuild": "tsx scripts/generate-help-knowledge.ts"` zodat het bestand altijd vers is.
+- De bestaande `help-knowledge.ts` houden we als **wrapper** die uit het generated-bestand exporteert + `buildHelpSystemPrompt` levert. Geen handmatige duplicatie meer.
+
+**Resultaat**: nieuwe module toevoegen = één entry in `src/lib/modules.ts` met `primaryPath` + `howTo`. De assistent kent hem automatisch bij de volgende build. Routes in `App.tsx` blijven leidend voor de router; modules.ts blijft puur metadata.
+
+Voor routes die niet 1-op-1 een module zijn (bv. `/offertes/nieuw`), gebruiken we `extraPaths` per module zodat de assistent specifieke deeplinks blijft suggereren.
+
+### 3) Testplan & QA-check (Playwright + handmatige checklist)
+
+**Geautomatiseerd** — `tests/help-assistant.spec.ts` (Playwright):
+1. Login als partner_admin → controleer dat de help-knop rechtsonder zichtbaar is op `/dashboard`.
+2. Open paneel, verstuur "Waar maak ik een offerte?" → wacht op assistant-bubble met markdown-link → assert dat link `href="/offertes/nieuw"` heeft.
+3. Klik de link → assert dat URL verandert naar `/offertes/nieuw` zonder full reload (geen `window` navigation event) én dat het Sheet-paneel sluit.
+4. Verstuur opnieuw → assert dat geschiedenis behouden blijft (assertion op aantal bubbles).
+5. Klik "Wis gesprek" → assert dat `localStorage.getItem('help-chat:{id}')` leeg is.
+6. Mobiele viewport (375×812): herhaal stap 1-3, assert dat Sheet full-screen is en links nog werken.
+7. Mock 429-respons via route-intercept → assert toast "Even druk".
+8. Mock netwerkfout midden in stream → assert herstelmelding-bubble verschijnt.
+
+**Unit (Vitest)** — `useHelpChat.parser.test.ts`:
+- chunk-splits midden in JSON → één delta na hereniging
+- CRLF-only stream
+- multi-line `data:` blok
+- `[DONE]` zonder trailing newline
+- onbekende velden in choices → geen crash
+
+**Handmatige QA-checklist** (in `docs/qa/help-assistant.md`):
+- [ ] Knop verborgen op `/`, `/login`, `/offerte/:token`, `/embed/...`
+- [ ] Knop verborgen voor rol `consument`
+- [ ] AI noemt nooit pagina's waar de gebruiker geen toegang toe heeft (test met installateur-account)
+- [ ] Esc sluit paneel; Tab-focus blijft binnen Sheet
+- [ ] Geschiedenis blijft na refresh
+- [ ] Op mobiel (≤768px) is Sheet full-screen, input bereikbaar boven keyboard
+
+### Te wijzigen / nieuwe bestanden
+
+**Wijzigen**
+- `src/components/help/useHelpChat.ts` — multi-line event-parser, buffer-flush, herstelmelding-bubble
+- `src/lib/modules.ts` — velden `primaryPath`, `extraPaths`, `howTo` toevoegen + waarden invullen
+- `supabase/functions/help-assistant/help-knowledge.ts` — wordt thin wrapper rond `help-knowledge.generated.ts`
+- `package.json` — `tsx` als devDep + `prebuild` script
+- `playwright.config.ts` — alleen als nodig (er bestaat al een `playwright-fixture.ts`)
 
 **Nieuw**
-- `src/components/help/HelpAssistantWidget.tsx` — wrapper, render-conditie op route
-- `src/components/help/HelpButton.tsx` — drijvende knop
-- `src/components/help/HelpChatPanel.tsx` — Sheet + layout
-- `src/components/help/HelpMessageList.tsx` — markdown rendering + interne link-handler
-- `src/components/help/HelpMessageInput.tsx` — textarea + verzendknop + suggesties
-- `src/components/help/useHelpChat.ts` — state + streaming-logica + localStorage history
-- `src/components/help/suggestionsByRol.ts` — startsuggesties per rol
-- `supabase/functions/help-assistant/index.ts` — edge function (CORS, validatie, gateway-stream)
-- `supabase/functions/help-assistant/help-knowledge.ts` — modules + routes + how-to teksten + onderhouds-README in commentaarblok
+- `scripts/generate-help-knowledge.ts` — codegen-script
+- `supabase/functions/help-assistant/help-knowledge.generated.ts` — auto-gegenereerd (in git, met header "DO NOT EDIT")
+- `src/components/help/useHelpChat.parser.test.ts` — vitest
+- `tests/help-assistant.spec.ts` — Playwright e2e
+- `docs/qa/help-assistant.md` — handmatige checklist
 
-**Aanpassingen**
-- `src/components/AppLayout.tsx` — render `<HelpAssistantWidget />` binnen layout
-- `package.json` (indirect) — `react-markdown` toevoegen voor message-rendering
-
-### Technische details
-
-- **AI-model**: `google/gemini-3-flash-preview` via Lovable AI Gateway (snel, goedkoop, prima voor Q&A). Streaming via SSE.
-- **Edge function** is publiek (`verify_jwt = false` standaard), maar verwacht `rol` en `module_keys` in de request body — frontend bepaalt deze uit `useAuth()` + `useEffectieveModules()` zodat antwoorden alleen verwijzen naar toegestane paden.
-- **System prompt** bevat: (1) korte uitleg over mijnhuis.nu, (2) tabel met modules → URL → korte how-to → vereiste rol, gefilterd op gebruikersrol/modules, (3) regel "gebruik alleen interne paden uit de tabel, formatteer als markdown link".
-- **Linkafhandeling**: `react-markdown` met custom `a`-component die `e.preventDefault()` doet en `navigate(href)` aanroept als href met `/` begint, zodat het een SPA-navigatie is en het paneel sluit.
-- **Geschiedenis**: laatste 20 berichten in `localStorage` per gebruiker (`help-chat:{userId}`), zodat een gebruiker zijn vorige vragen terugziet binnen dezelfde sessie/dag.
-- **Foutafhandeling**: 429/402 → vriendelijke toast ("Even druk, probeer het zo opnieuw"). Geen technische details richting gebruiker.
-- **Rolverbergen**: widget niet renderen voor rol `consument` (publieke portal-gebruikers krijgen geen platform-help) — wel actief voor alle interne rollen.
-- **Toegankelijkheid**: knop heeft `aria-label="Hulp nodig"`, paneel sluit met Esc, focus-trap binnen Sheet (al ingebouwd in shadcn).
-- **Geen wijzigingen aan rolmatrix nodig** — help is altijd beschikbaar voor ingelogde interne gebruikers, geen aparte module-toggle.
-
-### Onderhoud bij nieuwe modules
-
-In `help-knowledge.ts` staat boven het bestand een commentaarblok met de instructie: "Bij elke nieuwe module hier een entry toevoegen met `key`, `label`, `url`, `roles`, en `howTo` (3-5 regels uitleg)." Zo blijft de assistent automatisch in sync zonder extra infrastructuur.
+### Niet-doelen
+- Geen vector-DB / embeddings — knowledge blijft statisch en build-time.
+- Geen wijzigingen aan rollen/RLS — alle filtering blijft client-side via rol + moduleSet doorgegeven aan de edge function.
+- Geen wijziging aan AI-model of system-prompt-structuur, alleen de **bron** van de modules-tabel.
 
