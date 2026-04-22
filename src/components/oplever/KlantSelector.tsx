@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { Search, Plus, X, User, Loader2 } from "lucide-react";
 
@@ -44,8 +45,8 @@ export default function KlantSelector({ partnerId, klantId, onChange }: Props) {
     voornaam: "", achternaam: "", bedrijfsnaam: "", email: "",
     telefoon: "", adres: "", postcode: "", plaats: "",
   });
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Laad geselecteerde klant zodra klantId wijzigt
   useEffect(() => {
@@ -65,13 +66,9 @@ export default function KlantSelector({ partnerId, klantId, onChange }: Props) {
 
   // Sluit dropdown bij klik buiten
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const search = useCallback(async (q: string) => {
@@ -162,21 +159,27 @@ export default function KlantSelector({ partnerId, klantId, onChange }: Props) {
   }
 
   return (
-    <div ref={wrapperRef} className="space-y-3 relative">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Zoek klant op naam, bedrijf of e-mail…"
-          value={query}
-          onChange={(e) => handleInput(e.target.value)}
-          onFocus={() => query.length >= 2 && setShowDropdown(true)}
-          className="pl-10 rounded-xl"
-        />
-        {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
-      </div>
-
-      {showDropdown && (query.length >= 2 || results.length > 0) && (
-        <Card className="absolute z-50 w-full max-h-64 overflow-y-auto shadow-lg border">
+    <div className="space-y-3">
+      <Popover open={showDropdown && (query.length >= 2 || results.length > 0)} onOpenChange={setShowDropdown}>
+        <PopoverTrigger asChild>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              placeholder="Zoek klant op naam, bedrijf of e-mail…"
+              value={query}
+              onChange={(e) => handleInput(e.target.value)}
+              onFocus={() => query.length >= 2 && setShowDropdown(true)}
+              className="pl-10 rounded-xl"
+            />
+            {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+          </div>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="p-0 w-[--radix-popover-trigger-width] max-h-64 overflow-y-auto"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           {results.length > 0 ? (
             <div className="p-1">
               {results.map((k) => (
@@ -205,8 +208,8 @@ export default function KlantSelector({ partnerId, klantId, onChange }: Props) {
               <Plus className="h-4 w-4" /> Nieuwe klant aanmaken
             </button>
           </div>
-        </Card>
-      )}
+        </PopoverContent>
+      </Popover>
 
       {!showNewForm && !showDropdown && (
         <Button type="button" variant="outline" size="sm" className="rounded-pill gap-1" onClick={() => setShowNewForm(true)}>
