@@ -7,6 +7,7 @@ import BetalingsvoorwaardenConfig from "@/components/instellingen/Betalingsvoorw
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
 import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
+import InstallateurVoorkeurenForm from "@/components/oplever/InstallateurVoorkeurenForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   User, Lock, Shield, Download, Trash2, Sparkles, Palette, FileText,
-  Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy, KeyRound
+  Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy, KeyRound, Wrench
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ const Instellingen = () => {
   const tabs: SettingsTab[] = [
     { id: "profiel", label: "Profiel", icon: User },
     { id: "beveiliging", label: "Beveiliging", icon: Lock },
+    { id: "oplever", label: "Opleverrapport", icon: Wrench },
     { id: "bedrijf", label: "Bedrijfsgegevens", icon: Building2, adminOnly: true },
     { id: "huisstijl", label: "Huisstijl", icon: Palette, adminOnly: true },
     { id: "email", label: "E-mail", icon: Mail, adminOnly: true },
