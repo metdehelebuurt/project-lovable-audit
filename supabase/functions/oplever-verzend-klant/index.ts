@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendPartnerEmail, PartnerEmailError } from "../_shared/partner-email-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,19 +52,36 @@ Deno.serve(async (req) => {
       details: { klantEmail, link_expires: expires.toISOString() },
     });
 
-    // Email versturen via send-transactional-email indien beschikbaar
+    // Email versturen via partner e-mailaccount (OAuth/SMTP)
     if (klantEmail) {
       try {
-        await admin.functions.invoke("send-transactional-email", {
-          body: {
-            templateName: "oplever-klant-ondertekenen",
-            recipientEmail: klantEmail,
-            idempotencyKey: `oplever-${rapport_id}-${token.slice(0, 8)}`,
-            templateData: { name: klantNaam ?? "", link, rapportnummer: rapport.rapportnummer },
-          },
+        const begroeting = klantNaam ? `Beste ${klantNaam},` : "Beste klant,";
+        const html = `
+          <div style="font-family:Arial,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:24px">
+            <h2 style="margin:0 0 16px;font-size:20px">Opleverrapport ${rapport.rapportnummer}</h2>
+            <p>${begroeting}</p>
+            <p>Uw installateur heeft het opleverrapport voor uw installatie afgerond. We vragen u dit rapport te bekijken en digitaal te ondertekenen.</p>
+            <p style="margin:24px 0">
+              <a href="${link}" style="background:#7c3aed;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">Bekijk en onderteken rapport</a>
+            </p>
+            <p style="font-size:13px;color:#666">Of kopieer deze link in uw browser:<br/><span style="word-break:break-all">${link}</span></p>
+            <p style="font-size:13px;color:#666;margin-top:24px">Deze link is 14 dagen geldig.</p>
+          </div>`;
+        await sendPartnerEmail({
+          adminClient: admin,
+          partnerId: rapport.partner_id,
+          to: klantEmail,
+          subject: `Opleverrapport ${rapport.rapportnummer} — graag ondertekenen`,
+          html,
+          type: "oplever",
+          klantId: rapport.klant_id ?? null,
         });
       } catch (e) {
-        console.warn("Mail-trigger faalde (template ontbreekt vermoedelijk):", e);
+        if (e instanceof PartnerEmailError) {
+          console.warn("Partner-email mislukt:", e.message);
+        } else {
+          console.warn("Mail versturen faalde:", e);
+        }
       }
     }
 
