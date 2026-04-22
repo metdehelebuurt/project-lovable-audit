@@ -82,13 +82,17 @@ async function waitForAssets(container: HTMLElement) {
       (img) =>
         new Promise<void>((resolve) => {
           if (img.complete && img.naturalWidth > 0) return resolve();
+          // Geen CORS-fail laten breken: timeout valt terug.
+          if (!img.crossOrigin) img.crossOrigin = "anonymous";
           img.addEventListener("load", () => resolve(), { once: true });
           img.addEventListener("error", () => resolve(), { once: true });
+          // Hard cap van 5s per image om niet voor altijd te wachten.
+          setTimeout(() => resolve(), 5000);
         }),
     ),
   );
-  // korte tick zodat layout settled is
-  await new Promise((r) => setTimeout(r, 50));
+  // Twee animatieframes wachten zodat layout/paint settled is.
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -104,8 +108,9 @@ export async function renderFactuurPdf(factuurId: string): Promise<RenderedFactu
   const ctx = await fetchFactuurContext(factuurId);
 
   const container = document.createElement("div");
+  // Binnen viewport rendert browser fonts/layout daadwerkelijk; off-screen wordt gedeprioriteerd.
   container.style.cssText =
-    "position:fixed;left:-10000px;top:0;width:210mm;background:#fff;z-index:-1;pointer-events:none;";
+    "position:fixed;left:0;top:0;width:210mm;background:#fff;opacity:0;pointer-events:none;z-index:-1;";
   container.className = "pdf-print-root";
   document.body.appendChild(container);
 
@@ -121,11 +126,25 @@ export async function renderFactuurPdf(factuurId: string): Promise<RenderedFactu
         installatie: ctx.installatie,
       }),
     );
-    // Wacht tot React heeft gerenderd
-    await new Promise((r) => setTimeout(r, 100));
+    // Wacht tot React heeft gerenderd (twee animatieframes).
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
     await waitForAssets(container);
+    // Extra veiligheid: als container nog geen meetbare hoogte heeft, geef React tijd.
+    let attempts = 0;
+    while (container.scrollHeight < 200 && attempts < 20) {
+      await new Promise((r) => setTimeout(r, 100));
+      attempts++;
+    }
+    if (container.scrollHeight < 200) {
+      throw new Error("PDF-render leeg: factuurinhoud kon niet worden opgebouwd. Probeer opnieuw.");
+    }
 
     const blob = await renderElementToPdfBlob(container);
+    if (blob.size < 2000) {
+      throw new Error("PDF-render leeg: gegenereerde bijlage is te klein. Probeer opnieuw.");
+    }
     const dataUrl = await blobToDataUrl(blob);
     return { blob, dataUrl };
   } finally {

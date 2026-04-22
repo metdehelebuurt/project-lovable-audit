@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -59,30 +59,67 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const generationToken = useRef(0);
+
+  const blobToDataUrl = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+
+  const tryDownloadArchivedPdf = async (): Promise<Blob | null> => {
+    try {
+      const path = `${doc.partner_id}/factuur/${doc.id}.pdf`;
+      const { data, error } = await supabase.storage.from("facturen").download(path);
+      if (error || !data || data.size < 2000) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  };
 
   const generatePdf = async () => {
+    const token = ++generationToken.current;
     setPdfStatus("loading");
     setPdfError(null);
     try {
-      // Snel pad: als de detailpagina het element rendert, gebruik dat.
-      const el = document.querySelector(pdfElementSelector) as HTMLElement | null;
-      let blob: Blob;
-      if (el) {
-        blob = await renderElementToPdfBlob(el);
-      } else {
+      let blob: Blob | null = null;
+
+      // 1. Bij "opnieuw versturen" eerst proberen het archief te hergebruiken.
+      if (isResend) {
+        blob = await tryDownloadArchivedPdf();
+      }
+
+      // 2. Anders: gebruik het in-DOM element als dat bestaat (snelste pad).
+      if (!blob) {
+        const el = document.querySelector(pdfElementSelector) as HTMLElement | null;
+        if (el && el.scrollHeight > 200) {
+          blob = await renderElementToPdfBlob(el);
+        }
+      }
+
+      // 3. Fallback: headless render via renderFactuurPdf.
+      if (!blob) {
         const result = await renderFactuurPdf(doc.id);
         blob = result.blob;
       }
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-      });
+
+      // Validatie: te kleine blob = lege render.
+      if (!blob || blob.size < 2000) {
+        throw new Error("PDF-render lijkt leeg. Probeer 'Opnieuw genereren'.");
+      }
+
+      // Race-veiligheid: alleen toepassen als dit nog de laatste run is.
+      if (token !== generationToken.current) return;
+
+      const dataUrl = await blobToDataUrl(blob);
       setPdfBlob(blob);
       setPdfDataUrl(dataUrl);
       setPdfStatus("ready");
     } catch (err) {
+      if (token !== generationToken.current) return;
       console.error("PDF generatie mislukt:", err);
       setPdfError(err instanceof Error ? err.message : "Onbekende fout");
       setPdfStatus("error");
@@ -92,20 +129,27 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
   useEffect(() => {
     if (!open) return;
 
+    // Volledige reset zodat oude state nooit per ongeluk wordt verzonden.
     setTo(defaultTo);
     setSubject(createDefaultSubject(label, doc.documentnummer, isResend));
     setBody(createDefaultBody(label, doc.documentnummer, isResend));
     setPdfBlob(null);
     setPdfDataUrl(null);
     setPdfError(null);
+    setPdfStatus("idle");
     void generatePdf();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultTo, doc.id, isResend, open]);
 
   const handleSend = async () => {
     if (!to.trim()) { toast.error("Vul een ontvanger in"); return; }
+    if (!body.trim()) { toast.error("Bericht mag niet leeg zijn"); return; }
     if (pdfStatus !== "ready" || !pdfBlob) {
       toast.error("PDF is nog niet klaar — wacht tot het voorbeeld is geladen.");
+      return;
+    }
+    if (pdfBlob.size < 2000) {
+      toast.error("Bijlage lijkt leeg — genereer de PDF opnieuw.");
       return;
     }
     setSending(true);
@@ -113,6 +157,19 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
     try {
       // Upload naar email-bijlagen bucket (verplicht — geen verzending zonder bijlage).
       path = await uploadPdfToStorage(supabase, doc.partner_id, "factuur", doc.id, pdfBlob);
+
+      // Verifieer dat de upload daadwerkelijk leesbaar is voordat we de Edge Function aanroepen.
+      const { data: signed, error: signedErr } = await supabase
+        .storage
+        .from("email-bijlagen")
+        .createSignedUrl(path, 60);
+      if (signedErr || !signed?.signedUrl) {
+        throw new Error("Bijlage kon niet worden geverifieerd. Probeer het opnieuw.");
+      }
+      const verifyResp = await fetch(signed.signedUrl, { method: "HEAD" });
+      if (!verifyResp.ok) {
+        throw new Error("Bijlage is nog niet beschikbaar in storage. Probeer het opnieuw.");
+      }
 
       // Archiveer parallel in facturen-bucket voor latere "opnieuw versturen".
       void uploadPdfToFacturenBucket(supabase, doc.partner_id, doc.id, pdfBlob);
@@ -210,7 +267,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
           <div><Label>Bericht</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className="mt-1" /></div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
-            <Button onClick={handleSend} disabled={sending || pdfStatus !== "ready"} className="gap-2">
+            <Button onClick={handleSend} disabled={sending || pdfStatus !== "ready" || !body.trim() || !to.trim()} className="gap-2">
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Verzenden
             </Button>
