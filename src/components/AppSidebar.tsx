@@ -70,8 +70,13 @@ const getNavGroups = (rol: string): NavGroup[] => {
 
   if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
     werk.push({ title: "Opdrachten", url: "/opdrachten", icon: ClipboardCheck });
-  if (["partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
-    werk.push({ title: rol === "installateur" ? "Mijn Opdrachten" : "Installaties", url: "/installaties", icon: Wrench });
+  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol)) {
+    werk.push({
+      title: rol === "installateur" ? "Mijn werk" : "Installaties",
+      url: "/installaties",
+      icon: Wrench,
+    });
+  }
   if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
     werk.push({ title: "Opleveringen", url: "/opleveringen", icon: ShieldCheck });
   if (werk.length) groups.push({ label: "Werkproces", items: werk });
