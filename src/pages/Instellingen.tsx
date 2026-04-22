@@ -92,6 +92,7 @@ const Instellingen = () => {
         <div className="flex-1 min-w-0 max-w-2xl">
           {activeTab === "profiel" && <ProfielTab />}
           {activeTab === "beveiliging" && <BeveiligingTab />}
+          {activeTab === "oplever" && <InstallateurVoorkeurenForm />}
           {activeTab === "bedrijf" && isPartnerAdmin && profile?.partner_id && <BedrijfsgegevensTab partnerId={profile.partner_id} />}
           {activeTab === "huisstijl" && isPartnerAdmin && profile?.partner_id && <HuisstijlTab partnerId={profile.partner_id} />}
           {activeTab === "email" && isPartnerAdmin && profile?.partner_id && <EmailConfiguratie partnerId={profile.partner_id} />}
