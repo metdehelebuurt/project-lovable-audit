@@ -11,11 +11,20 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, LifeBuoy, Eye, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
 import { INSTALLATIE_STATUS_LABELS, type InstallatieStatus } from "@/components/installaties/status";
 import type { Installatie } from "@/components/installaties/api/installatieApi";
+
+const OPEN_STATUSSEN: InstallatieStatus[] = ["gepland", "bevestigd", "onderweg", "in_uitvoering", "gereed"];
+const AFGEROND_STATUSSEN: InstallatieStatus[] = ["afgerond", "geannuleerd"];
+
+type FocusTab = "vandaag" | "week" | "open" | "afgerond";
+
+const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const endOfDay = (d: Date) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
 
 const Installaties = () => {
   const { profile } = useAuth();
@@ -26,15 +35,20 @@ const Installaties = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("alles");
   const [monteurFilter, setMonteurFilter] = useState<string>("alles");
+  const [focusTab, setFocusTab] = useState<FocusTab>("open");
 
   const isInstallateur = profile?.rol === "installateur";
+
+  useEffect(() => {
+    if (isInstallateur) setFocusTab("vandaag");
+  }, [isInstallateur]);
 
   const fetchData = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("installaties")
       .select("*")
-      .order("geplande_startdatum", { ascending: false, nullsFirst: false });
+      .order("geplande_startdatum", { ascending: true, nullsFirst: false });
     if (error) toast.error(error.message);
     setInstallaties(data ?? []);
 
@@ -49,7 +63,27 @@ const Installaties = () => {
   useEffect(() => { void fetchData(); }, []);
 
   const filtered = useMemo(() => {
+    const now = new Date();
+    const todayStart = startOfDay(now).getTime();
+    const todayEnd = endOfDay(now).getTime();
+    const weekEnd = endOfDay(new Date(now.getTime() + 6 * 86_400_000)).getTime();
+
     return installaties.filter((i) => {
+      const ts = i.geplande_startdatum ? new Date(i.geplande_startdatum).getTime() : null;
+      const status = i.status as InstallatieStatus;
+
+      if (focusTab === "vandaag") {
+        if (!ts || ts < todayStart || ts > todayEnd) return false;
+        if (AFGEROND_STATUSSEN.includes(status)) return false;
+      } else if (focusTab === "week") {
+        if (!ts || ts < todayStart || ts > weekEnd) return false;
+        if (AFGEROND_STATUSSEN.includes(status)) return false;
+      } else if (focusTab === "open") {
+        if (!OPEN_STATUSSEN.includes(status)) return false;
+      } else if (focusTab === "afgerond") {
+        if (!AFGEROND_STATUSSEN.includes(status)) return false;
+      }
+
       if (statusFilter !== "alles" && i.status !== statusFilter) return false;
       if (monteurFilter !== "alles" && i.installateur_id !== monteurFilter) return false;
       const q = search.toLowerCase().trim();
@@ -60,7 +94,25 @@ const Installaties = () => {
         (i.werkadres ?? "").toLowerCase().includes(q)
       );
     });
-  }, [installaties, search, statusFilter, monteurFilter]);
+  }, [installaties, search, statusFilter, monteurFilter, focusTab]);
+
+  const counts = useMemo(() => {
+    const now = new Date();
+    const todayStart = startOfDay(now).getTime();
+    const todayEnd = endOfDay(now).getTime();
+    const weekEnd = endOfDay(new Date(now.getTime() + 6 * 86_400_000)).getTime();
+    let vandaag = 0, week = 0, open = 0, afgerond = 0;
+    for (const i of installaties) {
+      const ts = i.geplande_startdatum ? new Date(i.geplande_startdatum).getTime() : null;
+      const status = i.status as InstallatieStatus;
+      const isAfgerond = AFGEROND_STATUSSEN.includes(status);
+      if (ts && ts >= todayStart && ts <= todayEnd && !isAfgerond) vandaag++;
+      if (ts && ts >= todayStart && ts <= weekEnd && !isAfgerond) week++;
+      if (OPEN_STATUSSEN.includes(status)) open++;
+      if (isAfgerond) afgerond++;
+    }
+    return { vandaag, week, open, afgerond };
+  }, [installaties]);
 
   return (
     <div className="space-y-6">
@@ -79,6 +131,15 @@ const Installaties = () => {
           </Button>
         )}
       </div>
+
+      <Tabs value={focusTab} onValueChange={(v) => setFocusTab(v as FocusTab)}>
+        <TabsList>
+          <TabsTrigger value="vandaag">Vandaag ({counts.vandaag})</TabsTrigger>
+          <TabsTrigger value="week">Deze week ({counts.week})</TabsTrigger>
+          <TabsTrigger value="open">Open ({counts.open})</TabsTrigger>
+          <TabsTrigger value="afgerond">Afgerond ({counts.afgerond})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 max-w-sm">
