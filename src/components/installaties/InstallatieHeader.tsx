@@ -1,18 +1,31 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LifeBuoy, Smartphone, ShieldCheck } from "lucide-react";
+import { ArrowLeft, LifeBuoy, Smartphone, ShieldCheck, UserCog, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InstallatieStatusBadge from "./InstallatieStatusBadge";
+import MonteurWijzigDialog from "./MonteurWijzigDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Installatie } from "./api/installatieApi";
 import type { InstallatieStatus } from "./status";
+
+const BEHEER_ROLLEN = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur"];
+const NOG_TE_PLANNEN_STATUS: InstallatieStatus[] = ["concept", "gepland", "bevestigd", "onderweg"];
 
 interface Props {
   installatie: Installatie;
   onMaakOplevering?: () => void;
+  onChanged?: () => void;
 }
 
-export default function InstallatieHeader({ installatie, onMaakOplevering }: Props) {
+export default function InstallatieHeader({ installatie, onMaakOplevering, onChanged }: Props) {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const [monteurDialog, setMonteurDialog] = useState(false);
   const showOpleverButton = ["gereed", "in_uitvoering"].includes(installatie.status);
+  const isBeheerder = profile ? BEHEER_ROLLEN.includes(profile.rol) : false;
+  const status = installatie.status as InstallatieStatus;
+  const magMonteurWijzigen = isBeheerder && NOG_TE_PLANNEN_STATUS.includes(status);
+  const heeftMonteur = Boolean(installatie.installateur_id);
 
   return (
     <div className="flex items-start gap-3">
@@ -34,6 +47,17 @@ export default function InstallatieHeader({ installatie, onMaakOplevering }: Pro
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {magMonteurWijzigen && (
+          <Button
+            variant={heeftMonteur ? "outline" : "default"}
+            size="sm"
+            className="rounded-xl gap-1.5"
+            onClick={() => setMonteurDialog(true)}
+          >
+            {heeftMonteur ? <UserCog className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+            {heeftMonteur ? "Monteur wijzigen" : "Monteur toewijzen"}
+          </Button>
+        )}
         <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => navigate(`/installaties/${installatie.id}/werk`)}>
           <Smartphone className="h-4 w-4" /> Werkscherm
         </Button>
@@ -51,6 +75,12 @@ export default function InstallatieHeader({ installatie, onMaakOplevering }: Pro
           <LifeBuoy className="h-4 w-4" /> Ticket
         </Button>
       </div>
+      <MonteurWijzigDialog
+        open={monteurDialog}
+        onOpenChange={setMonteurDialog}
+        installatie={installatie}
+        onSaved={onChanged}
+      />
     </div>
   );
 }
