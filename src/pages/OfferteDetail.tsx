@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
-import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
+import GecombineerdeTijdlijn from "@/components/historie/GecombineerdeTijdlijn";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
@@ -900,7 +900,7 @@ const OfferteDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {id && <EntiteitHistorieTab entiteitType="offerte" entiteitId={id} />}
+      {id && <GecombineerdeTijdlijn entiteitType="offerte" entiteitId={id} titel="Activiteit & wijzigingen" />}
     </div>
   );
 };
