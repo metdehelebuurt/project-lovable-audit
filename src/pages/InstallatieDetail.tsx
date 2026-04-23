@@ -8,6 +8,7 @@ import InstallatiePlanningCard from "@/components/installaties/InstallatiePlanni
 import InstallatieKlantCard from "@/components/installaties/InstallatieKlantCard";
 import InstallatieProductenCard from "@/components/installaties/InstallatieProductenCard";
 import InstallatieSchouwCard from "@/components/installaties/InstallatieSchouwCard";
+import InstallatieWoninggegevensTab from "@/components/installaties/InstallatieWoninggegevensTab";
 import InstallatieNotitiesTab from "@/components/installaties/InstallatieNotitiesTab";
 import InstallatieCommunicatieTab from "@/components/installaties/InstallatieCommunicatieTab";
 import InstallatieHistorieTab from "@/components/installaties/InstallatieHistorieTab";
@@ -64,6 +65,7 @@ const InstallatieDetail = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overzicht">Overzicht</TabsTrigger>
+          <TabsTrigger value="woning">Woninggegevens</TabsTrigger>
           {!isInstallateur && <TabsTrigger value="planning">Planning</TabsTrigger>}
           {!isInstallateur && <TabsTrigger value="werkvoorbereiding">Werkvoorbereiding</TabsTrigger>}
           <TabsTrigger value="producten">Producten</TabsTrigger>
@@ -84,6 +86,10 @@ const InstallatieDetail = () => {
           <InstallatieSchouwCard installatie={installatie} />
           <InstallatieProductenCard installatie={installatie} onChanged={refetch} />
           <InstallatieDocumentatieCard installatieId={installatie.id} />
+        </TabsContent>
+
+        <TabsContent value="woning">
+          <InstallatieWoninggegevensTab installatie={installatie} />
         </TabsContent>
 
         {!isInstallateur && (
