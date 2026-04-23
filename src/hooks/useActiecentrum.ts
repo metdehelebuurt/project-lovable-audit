@@ -81,7 +81,7 @@ export function useActiecentrum() {
           const [tickets, installaties, offertes, facturen] = await Promise.all([
             supabase.from("helpdesk_tickets").select("id, ticketnummer, titel").eq("partner_id", partnerId!).eq("toegewezen_aan", userId!).eq("is_geescaleerd", true).limit(20),
             supabase.from("installaties").select("id, installatienummer, consument_naam, geplande_startdatum").eq("partner_id", partnerId!).gte("geplande_startdatum", today).lte("geplande_startdatum", week).in("status", ["concept", "gepland"]).limit(20),
-            supabase.from("offertes").select("id, offertenummer, klant_naam, verzonden_op").eq("partner_id", partnerId!).eq("status", "verzonden").lt("verzonden_op", weekGeleden).limit(20),
+            supabase.from("offertes").select("id, offertenummer, klant_naam, created_at").eq("partner_id", partnerId!).eq("status", "verzonden").lt("created_at", weekGeleden).limit(20),
             supabase.from("financiele_documenten").select("id, documentnummer, totaal_bedrag, vervaldatum").eq("partner_id", partnerId!).eq("type", "verkoopfactuur").eq("status", "verzonden").lt("vervaldatum", today).limit(20),
           ]);
           return {
@@ -112,7 +112,7 @@ export function useActiecentrum() {
   const aandachtData = (aandacht.data ?? { geescaleerd: [], installaties_komend: [], offertes_oud: [], facturen_vervallen: [] }) as {
     geescaleerd: Array<{ id: string; ticketnummer: string; titel: string }>;
     installaties_komend: Array<{ id: string; installatienummer: string | null; consument_naam: string | null; geplande_startdatum: string | null }>;
-    offertes_oud: Array<{ id: string; offertenummer: string; klant_naam: string | null; verzonden_op: string | null }>;
+    offertes_oud: Array<{ id: string; offertenummer: string; klant_naam: string | null; created_at: string | null }>;
     facturen_vervallen: Array<{ id: string; documentnummer: string; totaal_bedrag: number; vervaldatum: string | null }>;
   };
   const aandachtAantal =

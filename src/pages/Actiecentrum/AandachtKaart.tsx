@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 interface Props {
   geescaleerd: Array<{ id: string; ticketnummer: string; titel: string }>;
   installaties_komend: Array<{ id: string; installatienummer: string | null; consument_naam: string | null; geplande_startdatum: string | null }>;
-  offertes_oud: Array<{ id: string; offertenummer: string; klant_naam: string | null; verzonden_op: string | null }>;
+  offertes_oud: Array<{ id: string; offertenummer: string; klant_naam: string | null; created_at: string | null }>;
   facturen_vervallen: Array<{ id: string; documentnummer: string; totaal_bedrag: number; vervaldatum: string | null }>;
 }
 
