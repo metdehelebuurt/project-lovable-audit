@@ -53,7 +53,7 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
         .from("users")
         .select("id, voornaam, achternaam, rol")
         .eq("partner_id", profile.partner_id!)
-        .in("rol", ["adviseur", "partner_staff", "partner_admin"])
+        .in("rol", ["adviseur", "partner_staff", "partner_admin", "backoffice"])
         .eq("status", "actief");
       if (data) setTeamUsers(data as TeamUser[]);
     };
