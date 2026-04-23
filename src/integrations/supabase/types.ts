@@ -1963,6 +1963,7 @@ export type Database = {
           created_at: string
           geplande_datum: string | null
           geplande_tijd: string | null
+          geschatte_duur_minuten: number | null
           handtekening_url: string | null
           id: string
           klant_naam_handtekening: string | null
@@ -1983,6 +1984,7 @@ export type Database = {
           created_at?: string
           geplande_datum?: string | null
           geplande_tijd?: string | null
+          geschatte_duur_minuten?: number | null
           handtekening_url?: string | null
           id?: string
           klant_naam_handtekening?: string | null
@@ -2003,6 +2005,7 @@ export type Database = {
           created_at?: string
           geplande_datum?: string | null
           geplande_tijd?: string | null
+          geschatte_duur_minuten?: number | null
           handtekening_url?: string | null
           id?: string
           klant_naam_handtekening?: string | null
@@ -2079,8 +2082,13 @@ export type Database = {
           auteur_id: string
           bijlagen: Json | null
           created_at: string
+          extern_email: string | null
+          extern_naam: string | null
+          extern_organisatie: string | null
+          extern_telefoon: string | null
           id: string
           inhoud: string
+          kanaal_type: string
           partner_id: string
           richting: string
           ticket_id: string
@@ -2089,8 +2097,13 @@ export type Database = {
           auteur_id: string
           bijlagen?: Json | null
           created_at?: string
+          extern_email?: string | null
+          extern_naam?: string | null
+          extern_organisatie?: string | null
+          extern_telefoon?: string | null
           id?: string
           inhoud: string
+          kanaal_type?: string
           partner_id: string
           richting?: string
           ticket_id: string
@@ -2099,8 +2112,13 @@ export type Database = {
           auteur_id?: string
           bijlagen?: Json | null
           created_at?: string
+          extern_email?: string | null
+          extern_naam?: string | null
+          extern_organisatie?: string | null
+          extern_telefoon?: string | null
           id?: string
           inhoud?: string
+          kanaal_type?: string
           partner_id?: string
           richting?: string
           ticket_id?: string
@@ -2273,6 +2291,7 @@ export type Database = {
           factuur_id: string | null
           foutcode: string | null
           gemaakt_door: string
+          geschatte_duur_minuten: number | null
           gesloten_op: string | null
           id: string
           installatie_id: string | null
@@ -2305,6 +2324,7 @@ export type Database = {
           factuur_id?: string | null
           foutcode?: string | null
           gemaakt_door: string
+          geschatte_duur_minuten?: number | null
           gesloten_op?: string | null
           id?: string
           installatie_id?: string | null
@@ -2337,6 +2357,7 @@ export type Database = {
           factuur_id?: string | null
           foutcode?: string | null
           gemaakt_door?: string
+          geschatte_duur_minuten?: number | null
           gesloten_op?: string | null
           id?: string
           installatie_id?: string | null
@@ -2596,6 +2617,7 @@ export type Database = {
       }
       installaties: {
         Row: {
+          backoffice_eigenaar_id: string | null
           bevestiging_verzonden_op: string | null
           consument_id: string | null
           consument_naam: string | null
@@ -2632,6 +2654,7 @@ export type Database = {
           werkomschrijving: string | null
         }
         Insert: {
+          backoffice_eigenaar_id?: string | null
           bevestiging_verzonden_op?: string | null
           consument_id?: string | null
           consument_naam?: string | null
@@ -2668,6 +2691,7 @@ export type Database = {
           werkomschrijving?: string | null
         }
         Update: {
+          backoffice_eigenaar_id?: string | null
           bevestiging_verzonden_op?: string | null
           consument_id?: string | null
           consument_naam?: string | null
@@ -2704,6 +2728,13 @@ export type Database = {
           werkomschrijving?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "installaties_backoffice_eigenaar_id_fkey"
+            columns: ["backoffice_eigenaar_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "installaties_consument_id_fkey"
             columns: ["consument_id"]
@@ -3521,6 +3552,44 @@ export type Database = {
           processed_at?: string | null
         }
         Relationships: []
+      }
+      notificatie_voorkeuren: {
+        Row: {
+          created_at: string
+          email: boolean
+          id: string
+          in_app: boolean
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: boolean
+          id?: string
+          in_app?: boolean
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: boolean
+          id?: string
+          in_app?: boolean
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificatie_voorkeuren_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notificaties: {
         Row: {
