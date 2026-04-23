@@ -40,6 +40,7 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }:
                 <>
                   <TableHead className="w-28">Prijs</TableHead>
                   <TableHead className="w-20">BTW %</TableHead>
+                  <TableHead className="w-28">Kortingstype</TableHead>
                   <TableHead className="w-24">Korting</TableHead>
                   <TableHead className="w-28 text-right">Subtotaal</TableHead>
                 </>
