@@ -133,14 +133,18 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
 
   const pasTemplate = useMutation({
     mutationFn: async () => {
-      const { data: tmpl } = await supabase
+      const { data: tmpl, error: tmplError } = await supabase
         .from("installatie_checklist_templates")
         .select("*")
         .eq("partner_id", installatie.partner_id)
         .eq("actief", true)
         .order("volgorde");
+      if (tmplError) throw tmplError;
+      if (!tmpl || tmpl.length === 0) {
+        return { added: 0, totalTemplate: 0 };
+      }
       const bestaande = new Set(items.map(i => i.item_key));
-      const nieuweRecords = (tmpl ?? [])
+      const nieuweRecords = tmpl
         .filter(t => !bestaande.has(t.item_key))
         .map(t => ({
           installatie_id: installatie.id,
@@ -149,13 +153,19 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
           label: t.label,
           blokkerend: t.blokkerend,
         }));
-      if (nieuweRecords.length === 0) return 0;
+      if (nieuweRecords.length === 0) return { added: 0, totalTemplate: tmpl.length };
       const { error } = await supabase.from("installatie_checklist_items").insert(nieuweRecords);
       if (error) throw error;
-      return nieuweRecords.length;
+      return { added: nieuweRecords.length, totalTemplate: tmpl.length };
     },
-    onSuccess: (n) => {
-      toast.success(n ? `${n} item(s) toegevoegd uit template` : "Alle template-items waren al aanwezig");
+    onSuccess: ({ added, totalTemplate }) => {
+      if (totalTemplate === 0) {
+        toast.info("Geen actieve standaard checklist gevonden. Maak eerst een template aan onder Instellingen.");
+      } else if (added === 0) {
+        toast.info(`Alle ${totalTemplate} standaard items zijn al aanwezig`);
+      } else {
+        toast.success(`${added} item(s) toegevoegd uit standaard checklist`);
+      }
       qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] });
     },
     onError: (e: Error) => toast.error(e.message),
