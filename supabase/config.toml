@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.oplever-klant-ondertekenen]
 verify_jwt = false
+
+[functions.genereer-werkomschrijving]
+verify_jwt = true
