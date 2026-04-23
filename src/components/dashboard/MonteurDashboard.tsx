@@ -31,8 +31,7 @@ interface InstallatieRij {
 
 interface OpenOpleverRij {
   id: string;
-  rapport_nummer: string | null;
-  klant_naam: string | null;
+  rapportnummer: string | null;
   status: string;
   installatie_id: string | null;
 }
@@ -88,9 +87,9 @@ const MonteurDashboard = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("opleverrapporten")
-        .select("id, rapport_nummer, klant_naam, status, installatie_id, installateur_id")
+        .select("id, rapportnummer, status, installatie_id, installateur_id")
         .eq("installateur_id", userId!)
-        .neq("status", "definitief")
+        .neq("status", "verzonden")
         .order("updated_at", { ascending: false })
         .limit(8);
       return (data ?? []) as OpenOpleverRij[];
@@ -242,7 +241,7 @@ const MonteurDashboard = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {r.klant_naam ?? r.rapport_nummer ?? "Opleverrapport"}
+                        {r.rapportnummer ?? "Opleverrapport"}
                       </p>
                       <p className="text-[11px] text-muted-foreground">{r.status}</p>
                     </div>
