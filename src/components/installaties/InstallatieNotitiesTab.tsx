@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { StickyNote, Trash2, Lock, Globe } from "lucide-react";
+import { StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
 import {
   fetchInstallatieNotities, addInstallatieNotitie, deleteInstallatieNotitie,
 } from "./api/installatieApi";
@@ -78,12 +77,7 @@ export default function InstallatieNotitiesTab({ installatieId, partnerId }: Pro
         <CardContent className="space-y-3">
           <Textarea value={nieuweInhoud} onChange={(e) => setNieuweInhoud(e.target.value)} rows={3} placeholder="Schrijf een notitie..." />
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch id="intern" checked={intern} onCheckedChange={setIntern} />
-              <Label htmlFor="intern" className="cursor-pointer flex items-center gap-1.5 text-sm">
-                {intern ? <><Lock className="h-3.5 w-3.5" /> Intern</> : <><Globe className="h-3.5 w-3.5" /> Zichtbaar voor klant</>}
-              </Label>
-            </div>
+            <NotitieZichtbaarheidToggle intern={intern} onChange={setIntern} id="installatie-note-intern" />
             <Button onClick={toevoegen} disabled={busy || !nieuweInhoud.trim()}>
               {busy ? "Opslaan…" : "Toevoegen"}
             </Button>
@@ -98,9 +92,7 @@ export default function InstallatieNotitiesTab({ installatieId, partnerId }: Pro
           <CardContent className="py-4 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {n.intern ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
-                <span>{n.intern ? "Intern" : "Klant zichtbaar"}</span>
-                <span>•</span>
+                <NotitieZichtbaarheidBadge intern={n.intern} />
                 <span>{new Date(n.created_at).toLocaleString("nl-NL")}</span>
               </div>
               {n.auteur_id === user?.id && (
