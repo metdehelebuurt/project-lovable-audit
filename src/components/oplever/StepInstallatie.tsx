@@ -93,10 +93,21 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
           </div>
           <div>
             <Label>Gateway / ATS serienummer</Label>
-            <Input
-              value={extra.gateway_serienummer ?? ""}
-              onChange={(e) => onChange({ extra_velden: { ...extra, gateway_serienummer: e.target.value } })}
-              placeholder="Optioneel"
+            <SerienummerLijstInput
+              value={extra.gateway_serienummers ?? []}
+              legacySingle={extra.gateway_serienummer}
+              onChange={(next) =>
+                onChange({
+                  extra_velden: {
+                    ...extra,
+                    gateway_serienummers: next,
+                    // legacy veld leegmaken zodra lijst gevuld is, anders behouden
+                    gateway_serienummer: next.length > 0 ? undefined : extra.gateway_serienummer,
+                  },
+                })
+              }
+              placeholder="Optioneel — meerdere mogelijk"
+              ariaLabel="Gateway serienummer toevoegen"
             />
           </div>
         </div>
