@@ -314,7 +314,7 @@ const OpdrachtDetail = () => {
 
       {/* Offerteregels */}
       <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader><CardTitle className="text-lg">Offerteregels</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Orderregels</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -322,6 +322,8 @@ const OpdrachtDetail = () => {
                 <TableHead>Omschrijving</TableHead>
                 <TableHead className="text-right">Aantal</TableHead>
                 <TableHead className="text-right">Prijs</TableHead>
+                <TableHead className="text-right">Korting</TableHead>
+                <TableHead className="text-right">BTW</TableHead>
                 <TableHead className="text-right">Subtotaal</TableHead>
               </TableRow>
             </TableHeader>
@@ -334,12 +336,43 @@ const OpdrachtDetail = () => {
                   </TableCell>
                   <TableCell className="text-right">{r.aantal}</TableCell>
                   <TableCell className="text-right">{formatCurrency(r.prijs_per_stuk)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100))}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {r.korting_type === "bedrag"
+                      ? r.korting_bedrag
+                        ? `-${formatCurrency(r.korting_bedrag)}`
+                        : "—"
+                      : r.korting_percentage
+                        ? `${r.korting_percentage}%`
+                        : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">{r.btw_percentage ?? 21}%</TableCell>
+                  <TableCell className="text-right">{formatCurrency(regelSubtotaal(r))}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <div className="text-right mt-4 text-lg font-semibold">{formatCurrency(opdracht.totaal_bedrag || 0)}</div>
+          <div className="flex justify-end mt-4">
+            <div className="w-72 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotaal (bruto)</span>
+                <span>{formatCurrency(brutoTotaal)}</span>
+              </div>
+              {heeftKorting && (
+                <div className="flex justify-between text-success">
+                  <span>Korting</span>
+                  <span>-{formatCurrency(kortingTotaal)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">BTW</span>
+                <span>{formatCurrency(btwTotaal)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-base border-t pt-1">
+                <span>Totaal</span>
+                <span>{formatCurrency(opdracht.totaal_bedrag || subtotaalNaKorting + btwTotaal)}</span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
