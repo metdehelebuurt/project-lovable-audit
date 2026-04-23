@@ -21,6 +21,7 @@ export type ServiceBezoek = {
   notities: string | null;
   created_at: string;
   updated_at: string;
+  geschatte_duur_minuten?: number | null;
 };
 
 export function useServiceBezoeken(ticketId: string | undefined) {
@@ -50,6 +51,7 @@ export type CreateServiceBezoekInput = {
   klant_id?: string | null;
   titel?: string;
   locatie?: string | null;
+  geschatte_duur_minuten?: number | null;
 };
 
 export function useCreateServiceBezoek() {
@@ -89,6 +91,7 @@ export function useCreateServiceBezoek() {
           geplande_datum: input.geplande_datum ?? null,
           geplande_tijd: input.geplande_tijd ?? null,
           notities: input.notities ?? null,
+          geschatte_duur_minuten: input.geschatte_duur_minuten ?? null,
           afspraak_id,
         } as never)
         .select()

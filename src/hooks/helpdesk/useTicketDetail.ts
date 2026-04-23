@@ -12,6 +12,11 @@ export type TicketBericht = {
   inhoud: string;
   bijlagen: unknown;
   created_at: string;
+  kanaal_type?: string;
+  extern_naam?: string | null;
+  extern_email?: string | null;
+  extern_organisatie?: string | null;
+  extern_telefoon?: string | null;
 };
 
 export type TicketBijlage = {

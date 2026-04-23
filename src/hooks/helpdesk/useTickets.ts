@@ -27,6 +27,7 @@ export type HelpdeskTicket = {
   gemaakt_door: string;
   sla_deadline: string | null;
   is_geescaleerd: boolean;
+  geschatte_duur_minuten?: number | null;
   oplossing: string | null;
   opgelost_op: string | null;
   gesloten_op: string | null;
@@ -94,6 +95,7 @@ export type CreateTicketInput = {
   product_installatiejaar?: number | null;
   foutcode?: string | null;
   toegewezen_aan?: string | null;
+  geschatte_duur_minuten?: number | null;
 };
 
 export function useCreateTicket() {
