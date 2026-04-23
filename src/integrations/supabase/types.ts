@@ -2984,6 +2984,65 @@ export type Database = {
           },
         ]
       }
+      klant_notities: {
+        Row: {
+          created_at: string
+          id: string
+          inhoud: string
+          intern: boolean
+          klant_id: string
+          partner_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inhoud: string
+          intern?: boolean
+          klant_id: string
+          partner_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inhoud?: string
+          intern?: boolean
+          klant_id?: string
+          partner_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "klant_notities_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klant_notities_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klant_notities_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klant_notities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       klanten: {
         Row: {
           achternaam: string
@@ -3272,6 +3331,7 @@ export type Database = {
           created_at: string
           id: string
           inhoud: string
+          intern: boolean
           lead_id: string
           partner_id: string
           user_id: string
@@ -3280,6 +3340,7 @@ export type Database = {
           created_at?: string
           id?: string
           inhoud: string
+          intern?: boolean
           lead_id: string
           partner_id: string
           user_id: string
@@ -3288,6 +3349,7 @@ export type Database = {
           created_at?: string
           id?: string
           inhoud?: string
+          intern?: boolean
           lead_id?: string
           partner_id?: string
           user_id?: string
