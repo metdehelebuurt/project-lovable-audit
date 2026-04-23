@@ -32,6 +32,9 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const [productId, setProductId] = useState<string>("");
   const [serienr, setSerienr] = useState("");
   const [garantieMaanden, setGarantieMaanden] = useState<string>("60");
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const { data: producten = [] } = useQuery({
     queryKey: ["partner-producten", partnerId],
