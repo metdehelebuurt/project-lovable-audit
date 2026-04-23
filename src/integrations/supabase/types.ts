@@ -4020,7 +4020,7 @@ export type Database = {
           klant_telefoon: string | null
           lead_id: string | null
           notities: string | null
-          offerte_id: string
+          offerte_id: string | null
           partner_id: string
           regels: Json
           schouw_id: string | null
@@ -4043,7 +4043,7 @@ export type Database = {
           klant_telefoon?: string | null
           lead_id?: string | null
           notities?: string | null
-          offerte_id: string
+          offerte_id?: string | null
           partner_id: string
           regels?: Json
           schouw_id?: string | null
@@ -4066,7 +4066,7 @@ export type Database = {
           klant_telefoon?: string | null
           lead_id?: string | null
           notities?: string | null
-          offerte_id?: string
+          offerte_id?: string | null
           partner_id?: string
           regels?: Json
           schouw_id?: string | null

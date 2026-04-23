@@ -1,0 +1,1 @@
+ALTER TABLE public.opdrachten ALTER COLUMN offerte_id DROP NOT NULL;
