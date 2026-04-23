@@ -24,6 +24,7 @@ import OpdrachtVoorraadTab from "@/components/opdracht/OpdrachtVoorraadTab";
 import OpdrachtLeveringTab from "@/components/opdracht/OpdrachtLeveringTab";
 import RetourDialog from "@/components/retouren/RetourDialog";
 import { RotateCcw } from "lucide-react";
+import { OfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -37,15 +38,6 @@ const statusColors: Record<string, string> = {
   in_uitvoering: "bg-warning/10 text-warning-foreground", afgerond: "bg-success-light text-success",
   geannuleerd: "bg-error-light text-error",
 };
-
-interface OfferteRegel {
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-}
 
 const OpdrachtDetail = () => {
   const { id } = useParams();
@@ -174,11 +166,13 @@ const OpdrachtDetail = () => {
       _type: docType,
     });
 
-    const subtotaal = opdracht.totaal_bedrag || 0;
-    const btwBedrag = regels.reduce((s: number, r: any) => {
-      const regelSub = r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100);
-      return s + regelSub * ((r.btw_percentage || 21) / 100);
-    }, 0);
+    const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
+    const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+    const kortingTotaal = brutoTotaal - subtotaal;
+    const btwBedrag = regels.reduce(
+      (s, r) => s + regelSubtotaal(r) * ((r.btw_percentage || 21) / 100),
+      0,
+    );
 
     const doc: any = {
       partner_id: profile.partner_id,
@@ -187,19 +181,19 @@ const OpdrachtDetail = () => {
       status: "concept",
       opdracht_id: opdracht.id,
       offerte_id: opdracht.offerte_id || null,
-      regels: regels.map((r: any) => ({
+      regels: regels.map((r) => ({
         omschrijving: r.omschrijving,
         aantal: r.aantal,
         prijs_per_stuk: r.prijs_per_stuk,
         btw_percentage: r.btw_percentage || 21,
         korting_percentage: r.korting_percentage || 0,
-        korting_bedrag: 0,
-        korting_type: "percentage",
+        korting_bedrag: r.korting_bedrag || 0,
+        korting_type: r.korting_type || "percentage",
       })),
       subtotaal,
       btw_bedrag: btwBedrag,
       totaal_bedrag: subtotaal + btwBedrag,
-      korting_totaal: 0,
+      korting_totaal: kortingTotaal,
       betalingstermijn_dagen: 30,
       factuurdatum: new Date().toISOString().split("T")[0],
       vervaldatum: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
@@ -218,8 +212,15 @@ const OpdrachtDetail = () => {
   if (isLoading || !opdracht) return <div className="p-6 text-muted-foreground">Laden...</div>;
 
   const regels = (opdracht.regels || []) as OfferteRegel[];
-  const formatCurrency = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
   const isActive = !["afgerond", "geannuleerd"].includes(opdracht.status);
+  const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
+  const subtotaalNaKorting = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+  const kortingTotaal = brutoTotaal - subtotaalNaKorting;
+  const btwTotaal = regels.reduce(
+    (s, r) => s + regelSubtotaal(r) * ((r.btw_percentage || 21) / 100),
+    0,
+  );
+  const heeftKorting = kortingTotaal > 0.005;
 
   return (
     <div className="space-y-6">
@@ -313,7 +314,7 @@ const OpdrachtDetail = () => {
 
       {/* Offerteregels */}
       <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader><CardTitle className="text-lg">Offerteregels</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Orderregels</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -321,6 +322,8 @@ const OpdrachtDetail = () => {
                 <TableHead>Omschrijving</TableHead>
                 <TableHead className="text-right">Aantal</TableHead>
                 <TableHead className="text-right">Prijs</TableHead>
+                <TableHead className="text-right">Korting</TableHead>
+                <TableHead className="text-right">BTW</TableHead>
                 <TableHead className="text-right">Subtotaal</TableHead>
               </TableRow>
             </TableHeader>
@@ -333,12 +336,43 @@ const OpdrachtDetail = () => {
                   </TableCell>
                   <TableCell className="text-right">{r.aantal}</TableCell>
                   <TableCell className="text-right">{formatCurrency(r.prijs_per_stuk)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100))}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {r.korting_type === "bedrag"
+                      ? r.korting_bedrag
+                        ? `-${formatCurrency(r.korting_bedrag)}`
+                        : "—"
+                      : r.korting_percentage
+                        ? `${r.korting_percentage}%`
+                        : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">{r.btw_percentage ?? 21}%</TableCell>
+                  <TableCell className="text-right">{formatCurrency(regelSubtotaal(r))}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <div className="text-right mt-4 text-lg font-semibold">{formatCurrency(opdracht.totaal_bedrag || 0)}</div>
+          <div className="flex justify-end mt-4">
+            <div className="w-72 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotaal (bruto)</span>
+                <span>{formatCurrency(brutoTotaal)}</span>
+              </div>
+              {heeftKorting && (
+                <div className="flex justify-between text-success">
+                  <span>Korting</span>
+                  <span>-{formatCurrency(kortingTotaal)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">BTW</span>
+                <span>{formatCurrency(btwTotaal)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-base border-t pt-1">
+                <span>Totaal</span>
+                <span>{formatCurrency(opdracht.totaal_bedrag || subtotaalNaKorting + btwTotaal)}</span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
