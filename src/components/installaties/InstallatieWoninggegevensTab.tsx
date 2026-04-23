@@ -73,9 +73,9 @@ const InstallatieWoninggegevensTab = ({ installatie }: Props) => {
   const bron = data?.bron ?? "geen";
   const categorieen = useMemo(() => detecteerCategorieen(installatie), [installatie]);
 
-  const adres = installatie.adres ?? "";
-  const postcode = installatie.postcode ?? "";
-  const plaats = installatie.plaats ?? "";
+  const adres = installatie.werkadres ?? installatie.klant_adres ?? "";
+  const postcode = installatie.klant_postcode ?? "";
+  const plaats = installatie.klant_plaats ?? "";
 
   const gegevens = schouw ? getObj(schouw, "gegevens") : null;
   const woning = gegevens ? getObj(gegevens, "woning") : null;
