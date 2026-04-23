@@ -28,7 +28,9 @@ import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
 import { fetchLaatsteVersieVoorRapporten, getSignedUrlForVersie } from "@/components/oplever/api/opleverPdfVersies";
 import GeleverdeApparatuurLijst from "@/components/serienummers/GeleverdeApparatuurLijst";
 import RetourDialog from "@/components/retouren/RetourDialog";
-import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
+import GecombineerdeTijdlijn, { type ExtraEvent } from "@/components/historie/GecombineerdeTijdlijn";
+import WoningProductenTab from "@/components/klanten/WoningProductenTab";
+import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
 import { RotateCcw } from "lucide-react";
 
 const KlantDetail = () => {
@@ -42,6 +44,7 @@ const KlantDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [newNote, setNewNote] = useState("");
+  const [newNoteIntern, setNewNoteIntern] = useState(true);
 
   /* ─── Queries ─── */
   const { data: klant, isLoading } = useQuery({
@@ -210,6 +213,7 @@ const KlantDetail = () => {
 
   const tabs = [
     { key: "overzicht", label: "Overzicht" },
+    { key: "woning", label: "Woning & producten" },
     { key: "email", label: "E-mail" },
     { key: "offertes", label: "Offertes", count: offertes.length },
     { key: "opdrachten", label: "Verkooporders", count: opdrachten.length },
@@ -222,12 +226,12 @@ const KlantDetail = () => {
   ];
 
   // Timeline events
-  const timelineEvents = [
+  const timelineEvents: ExtraEvent[] = [
     ...offertes.map((o: any) => ({ type: "offerte", date: o.created_at, label: `Offerte ${o.offertenummer}`, detail: `${formatCurrency(o.totaal_bedrag)} • ${o.status}` })),
     ...opdrachten.map((o: any) => ({ type: "opdracht", date: o.created_at, label: `Opdracht ${o.klant_naam}`, detail: `${formatCurrency(o.totaal_bedrag)} • ${o.status}` })),
     ...schouwen.map((s: any) => ({ type: "schouw", date: s.geplande_datum, label: `Schouw ${s.schouw_nummer}`, detail: s.categorie })),
     ...afspraken.map((a: any) => ({ type: "afspraak", date: a.datum, label: a.titel, detail: a.type })),
-    ...installaties.map((inst: any) => ({ type: "opdracht", date: inst.created_at, label: `Installatie ${inst.consument_naam || ""}`, detail: inst.status })),
+    ...installaties.map((inst: any) => ({ type: "installatie" as const, date: inst.created_at, label: `Installatie ${inst.consument_naam || ""}`, detail: inst.status })),
     ...opleveringen.map((r: any) => ({
       type: "oplevering",
       date: r.created_at,
@@ -243,7 +247,7 @@ const KlantDetail = () => {
         detail: "Definitief afgerond",
       })),
     { type: "created", date: klant.created_at, label: "Klant aangemaakt", detail: `${klant.voornaam} ${klant.achternaam}` },
-  ];
+  ] as ExtraEvent[];
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -448,7 +452,14 @@ const KlantDetail = () => {
           )}
 
           {/* ACTIVITEIT */}
-          {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}
+          {activeTab === "activiteit" && (
+            <GecombineerdeTijdlijn entiteitType="klant" entiteitId={klant.id} extraEvents={timelineEvents} />
+          )}
+
+          {/* WONING & PRODUCTEN */}
+          {activeTab === "woning" && (
+            <WoningProductenTab klantId={klant.id} leadId={klant.lead_id} />
+          )}
         </div>
 
         {/* Sidebar */}
@@ -489,7 +500,6 @@ const KlantDetail = () => {
         defaultType="klant_retour"
         context={{ klant_id: klant.id }}
       />
-      {klant.id && <EntiteitHistorieTab entiteitType="klant" entiteitId={klant.id} />}
     </div>
   );
 };
