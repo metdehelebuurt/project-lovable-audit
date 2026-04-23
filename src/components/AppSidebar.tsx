@@ -1,263 +1,168 @@
-import {
-  LayoutDashboard, Inbox, Building2, Users, Package, ClipboardList,
-  FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
-  MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
-  MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck,
-  ChevronRight, LifeBuoy, BookOpen, ShieldCheck, RotateCcw
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { isAdminTier, isPartnerAdminOrHigher } from "@/lib/permissions";
-import type { AppRole } from "@/lib/permissions";
 import { useModuleNotificatieCounts, entityTypeForUrl, markeerModuleGelezen } from "@/hooks/useModuleNotificatieCounts";
+import { getNavigation, type NavigatieGroep, type NavigatieItem } from "@/lib/navigation/navigationModel";
 
-interface NavItem {
-  title: string;
-  url: string;
-  icon: React.ElementType;
-  children?: NavItem[];
+/**
+ * Sidebar v2 — rol-gestuurd navigatiemodel met drie vaste hoofdgroepen
+ * (Werk / Klant & Verkoop / Uitvoering) en een uitklapbaar "Meer"-blok.
+ */
+
+function NavItem({
+  item, collapsed, isMobile, badgeCount, onActivate,
+}: {
+  item: NavigatieItem; collapsed: boolean; isMobile: boolean;
+  badgeCount?: number; onActivate?: (url: string) => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild>
+        <NavLink
+          to={item.url}
+          end={item.url === "/dashboard"}
+          className="relative flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[40px]"
+          activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+          onClick={() => onActivate?.(item.url)}
+        >
+          <Icon className="h-4.5 w-4.5 shrink-0" />
+          {(!collapsed || isMobile) && <span className="text-sm flex-1 truncate">{item.label}</span>}
+          {(!collapsed || isMobile) && !!badgeCount && badgeCount > 0 && (
+            <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+              {badgeCount > 9 ? "9+" : badgeCount}
+            </span>
+          )}
+          {collapsed && !isMobile && !!badgeCount && badgeCount > 0 && (
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+          )}
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 }
 
-interface NavGroup {
-  label: string;
-  items: NavItem[];
+function HoofdGroep({
+  groep, collapsed, isMobile, counts, onActivate,
+}: {
+  groep: NavigatieGroep; collapsed: boolean; isMobile: boolean;
+  counts: Record<string, number>; onActivate: (url: string) => void;
+}) {
+  if (groep.items.length === 0) return null;
+  return (
+    <SidebarGroup>
+      {(!collapsed || isMobile) && groep.label && (
+        <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 mb-0.5">
+          {groep.label}
+        </SidebarGroupLabel>
+      )}
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {groep.items.map((item) => (
+            <NavItem
+              key={item.id}
+              item={item}
+              collapsed={collapsed}
+              isMobile={isMobile}
+              badgeCount={counts[item.badgeEntiteit ?? entityTypeForUrl(item.url) ?? ""] ?? 0}
+              onActivate={onActivate}
+            />
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 }
 
-const getNavGroups = (rol: string): NavGroup[] => {
-  const groups: NavGroup[] = [];
+function MeerGroep({
+  groep, collapsed, isMobile, counts, onActivate, pathname,
+}: {
+  groep: NavigatieGroep; collapsed: boolean; isMobile: boolean;
+  counts: Record<string, number>; onActivate: (url: string) => void; pathname: string;
+}) {
+  // Open standaard wanneer een item binnen "Meer" actief is
+  const subItems = (groep.subgroepen ?? []).flatMap((sg) => sg.items);
+  const heeftActief = subItems.some((it) => pathname === it.url || pathname.startsWith(it.url.split("?")[0] + "/"));
+  const [open, setOpen] = useState(heeftActief);
 
-  groups.push({
-    label: "Overzicht",
-    items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      ...(["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol)
-        ? [{ title: "Actiecentrum", url: "/actiecentrum", icon: Inbox }]
-        : []),
-    ],
-  });
-
-  const relatie: NavItem[] = [];
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"].includes(rol))
-    relatie.push({ title: rol === "adviseur" ? "Mijn Leads" : "Leads", url: "/leads", icon: Users });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"].includes(rol))
-    relatie.push({ title: "Klanten", url: "/klanten", icon: UserCheck2 });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
-    relatie.push({ title: "Berichten", url: "/berichten", icon: MessageSquare });
-  if (relatie.length) groups.push({ label: "Relatiebeheer", items: relatie });
-
-  const werk: NavItem[] = [];
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
-    werk.push({ title: rol === "consument" ? "Mijn Schouwen" : "Schouwen", url: "/schouwen", icon: ClipboardList });
-  
-  // Offertes with sub-items
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "consument", "affiliate"].includes(rol)) {
-    const offerteItem: NavItem = {
-      title: rol === "consument" ? "Mijn Offertes" : "Offertes",
-      url: "/offertes",
-      icon: FileText,
-    };
-    if (["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol)) {
-      offerteItem.children = [
-        { title: "Alle Offertes", url: "/offertes", icon: FileText },
-        { title: "Offerte Feedback", url: "/offertes/feedback", icon: MessageCircleWarning },
-      ];
-    }
-    werk.push(offerteItem);
-  }
-
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
-    werk.push({ title: "Verkooporders", url: "/opdrachten", icon: ClipboardCheck });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol)) {
-    werk.push({
-      title: rol === "installateur" ? "Mijn werk" : "Installaties",
-      url: "/installaties",
-      icon: Wrench,
-    });
-  }
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
-    werk.push({ title: "Opleveringen", url: "/opleveringen", icon: ShieldCheck });
-  if (werk.length) groups.push({ label: "Werkproces", items: werk });
-
-  // Helpdesk
-  const helpdesk: NavItem[] = [];
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol)) {
-    helpdesk.push({
-      title: "Helpdesk",
-      url: "/helpdesk",
-      icon: LifeBuoy,
-      children: [
-        { title: "Dashboard", url: "/helpdesk", icon: LayoutDashboard },
-        { title: "Tickets", url: "/helpdesk/tickets", icon: LifeBuoy },
-        ...(["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol)
-          ? [{ title: "Planning", url: "/helpdesk/planning", icon: Calendar }]
-          : []),
-        { title: "Kennisbank", url: "/helpdesk/kennisbank", icon: BookOpen },
-      ],
-    });
-  }
-  if (helpdesk.length) groups.push({ label: "Helpdesk & Service", items: helpdesk });
-
-  // Financieel with sub-items
-  const financieel: NavItem[] = [];
-  if (["superadmin", "partner_admin", "backoffice"].includes(rol)) {
-    financieel.push({
-      title: "Financieel",
-      url: "/financieel",
-      icon: Receipt,
-      children: [
-        { title: "Dashboard", url: "/financieel?tab=overzicht", icon: LayoutDashboard },
-        { title: "Verkoopfacturen", url: "/financieel?tab=verkoop", icon: FileText },
-        { title: "Inkoopfacturen", url: "/financieel?tab=inkoop", icon: Receipt },
-        { title: "Pakbonnen", url: "/financieel?tab=pakbonnen", icon: ClipboardList },
-        { title: "Openstaand", url: "/financieel?tab=openstaand", icon: Clock },
-        { title: "BTW", url: "/financieel?tab=btw", icon: BarChart3 },
-      ],
-    });
-  }
-  if (["superadmin", "partner_admin", "backoffice"].includes(rol))
-    financieel.push({ title: "Leveranciers", url: "/leveranciers", icon: Truck });
-  if (financieel.length) groups.push({ label: "Financieel", items: financieel });
-
-  // Logistiek (voorraad, retouren) — apart blok zodat het in plan/matrix beheerd kan worden
-  const logistiek: NavItem[] = [];
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"].includes(rol))
-    logistiek.push({ title: "Voorraad", url: "/voorraad", icon: Package });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol))
-    logistiek.push({ title: "Retouren", url: "/retouren", icon: RotateCcw });
-  if (logistiek.length) groups.push({ label: "Logistiek", items: logistiek });
-
-  const planning: NavItem[] = [];
-  if (["partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"].includes(rol))
-    planning.push({ title: rol === "adviseur" ? "Agenda" : rol === "consument" ? "Afspraken" : "Planning", url: "/planning", icon: Calendar });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
-    planning.push({ title: "Producten", url: "/producten", icon: Package });
-  if (["superadmin", "partner_admin", "adviseur"].includes(rol))
-    planning.push({ title: "Tools", url: "/tools", icon: PenTool });
-  if (["partner_admin", "backoffice"].includes(rol))
-    planning.push({ title: "Analytics", url: "/analytics", icon: BarChart3 });
-  if (planning.length) groups.push({ label: "Planning & Tools", items: planning });
-
-  const beheer: NavItem[] = [];
-  if (rol === "superadmin")
-    beheer.push({ title: "Partners", url: "/partners", icon: Building2 });
-  if (["superadmin", "partner_admin"].includes(rol))
-    beheer.push({ title: "Adviseurs", url: "/adviseurs", icon: UserCheck });
-  if (["superadmin", "partner_admin"].includes(rol))
-    beheer.push({ title: "Gebruikers", url: "/gebruikers", icon: Users });
-  if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol))
-    beheer.push({ title: "Documenten", url: "/documenten", icon: FolderOpen });
-  if (rol === "superadmin")
-    beheer.push({ title: "Affiliate Beheer", url: "/affiliate-beheer", icon: Handshake });
-  if (rol === "superadmin")
-    beheer.push({ title: "Abonnementen", url: "/admin/abonnementen", icon: CreditCard });
-  if (rol === "affiliate")
-    beheer.push({ title: "Affiliate Links", url: "/affiliates", icon: Link2 });
-  if (beheer.length) groups.push({ label: "Beheer", items: beheer });
-
-  const support: NavItem[] = [];
-  support.push({ title: "Feedback", url: "/feedback", icon: MessageSquareHeart });
-  support.push({ title: "Functieverzoek", url: "/feedback/nieuw?type=functieverzoek", icon: Lightbulb });
-  if (rol === "superadmin")
-    support.push({ title: "Feedback Beheer", url: "/feedback/admin", icon: MessageSquareHeart });
-  groups.push({ label: "Support", items: support });
-
-  if (rol !== "consument")
-    groups.push({ label: "Instellingen", items: [{ title: "Instellingen", url: "/instellingen", icon: Settings }] });
-
-  return groups;
-};
-
-// Need Clock icon for "Openstaand"
-import { Clock } from "lucide-react";
-
-function SidebarNavItem({ item, collapsed, isMobile, pathname, badgeCount, onActivate }: { item: NavItem; collapsed: boolean; isMobile: boolean; pathname: string; badgeCount?: number; onActivate?: (url: string) => void }) {
-  const hasChildren = item.children && item.children.length > 0;
-  const isChildActive = hasChildren && item.children!.some(c => {
-    const [path, query] = c.url.split("?");
-    return pathname === path || pathname.startsWith(path + "/");
-  });
-  const isActive = pathname === item.url || pathname.startsWith(item.url + "/") || isChildActive;
-
-  if (!hasChildren) {
+  // Wanneer collapsed: toon items als gewone navigatie zonder kop, anders is alles onbereikbaar in icon-mode.
+  if (collapsed && !isMobile) {
     return (
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <NavLink
-            to={item.url}
-            end={item.url === "/dashboard"}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[44px]"
-            activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-            onClick={() => onActivate?.(item.url)}
-          >
-            <item.icon className="h-4.5 w-4.5 shrink-0" />
-            {(!collapsed || isMobile) && <span className="text-sm">{item.title}</span>}
-            {(!collapsed || isMobile) && badgeCount && badgeCount > 0 ? (
-              <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
-                {badgeCount > 9 ? "9+" : badgeCount}
-              </span>
-            ) : null}
-            {(collapsed && !isMobile && badgeCount && badgeCount > 0) ? (
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-            ) : null}
-          </NavLink>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {subItems.map((item) => (
+              <NavItem
+                key={item.id}
+                item={item}
+                collapsed={collapsed}
+                isMobile={isMobile}
+                badgeCount={counts[item.badgeEntiteit ?? entityTypeForUrl(item.url) ?? ""] ?? 0}
+                onActivate={onActivate}
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
     );
   }
 
+  if (subItems.length === 0) return null;
+
   return (
-    <Collapsible defaultOpen={isActive} className="group/collapsible">
-      <SidebarMenuItem>
+    <SidebarGroup>
+      <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton className="flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[44px] w-full">
-            <item.icon className="h-4.5 w-4.5 shrink-0" />
-            {(!collapsed || isMobile) && (
-              <>
-                <span className="text-sm flex-1 text-left">{item.title}</span>
-                {badgeCount && badgeCount > 0 ? (
-                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
-                    {badgeCount > 9 ? "9+" : badgeCount}
-                  </span>
-                ) : null}
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-              </>
-            )}
-          </SidebarMenuButton>
+          <button
+            type="button"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[40px]"
+          >
+            <MoreHorizontal className="h-4.5 w-4.5 shrink-0" />
+            <span className="text-sm flex-1 text-left">{groep.label}</span>
+            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
+          </button>
         </CollapsibleTrigger>
-        {(!collapsed || isMobile) && (
-          <CollapsibleContent>
-            <SidebarMenuSub>
-              {item.children!.map(child => (
-                <SidebarMenuSubItem key={child.title}>
-                  <SidebarMenuSubButton asChild>
-                    <NavLink
-                      to={child.url}
-                      end
-                      className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-                      activeClassName="text-sidebar-primary font-medium"
-                    >
-                      <span className="text-sm">{child.title}</span>
-                    </NavLink>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              ))}
-            </SidebarMenuSub>
-          </CollapsibleContent>
-        )}
-      </SidebarMenuItem>
-    </Collapsible>
+        <CollapsibleContent>
+          <div className="pl-2 space-y-2 mt-1">
+            {(groep.subgroepen ?? []).map((sg, sgi) => {
+              if (sg.items.length === 0) return null;
+              return (
+                <div key={`${sg.label}-${sgi}`}>
+                  {sg.label && (
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold px-3 mb-0.5 mt-2">
+                      {sg.label}
+                    </p>
+                  )}
+                  <SidebarMenu>
+                    {sg.items.map((item) => (
+                      <NavItem
+                        key={item.id}
+                        item={item}
+                        collapsed={false}
+                        isMobile={isMobile}
+                        badgeCount={counts[item.badgeEntiteit ?? entityTypeForUrl(item.url) ?? ""] ?? 0}
+                        onActivate={onActivate}
+                      />
+                    ))}
+                  </SidebarMenu>
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </SidebarGroup>
   );
 }
 
@@ -266,9 +171,12 @@ export function AppSidebar() {
   const { state, setOpenMobile, openMobile } = useSidebar();
   const isMobile = useIsMobile();
   const collapsed = state === "collapsed";
-  const groups = getNavGroups(profile?.rol ?? "consument");
   const location = useLocation();
   const { data: counts = {} } = useModuleNotificatieCounts();
+
+  const groepen = getNavigation(profile?.rol);
+  const hoofdGroepen = groepen.filter((g) => g.id !== "meer");
+  const meerGroep = groepen.find((g) => g.id === "meer");
 
   const handleActivate = (url: string) => {
     if (!user) return;
@@ -276,11 +184,9 @@ export function AppSidebar() {
     if (et) void markeerModuleGelezen(user.id, et);
   };
 
-  // Auto-close sidebar on navigation on mobile
+  // Auto-close sidebar op mobiel bij navigatie
   useEffect(() => {
-    if (isMobile && openMobile) {
-      setOpenMobile(false);
-    }
+    if (isMobile && openMobile) setOpenMobile(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
@@ -293,33 +199,31 @@ export function AppSidebar() {
         <Logo showText={!collapsed || isMobile} />
       </div>
       <SidebarContent>
-        {groups.map((group, gi) => (
-          <div key={group.label}>
+        {hoofdGroepen.map((groep, gi) => (
+          <div key={groep.id}>
             {gi > 0 && <Separator className="mx-3 my-1" />}
-            <SidebarGroup>
-              {(!collapsed || isMobile) && (
-                <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 mb-0.5">
-                  {group.label}
-                </SidebarGroupLabel>
-              )}
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.items.map((item) => (
-                    <SidebarNavItem
-                      key={item.title}
-                      item={item}
-                      collapsed={collapsed}
-                      isMobile={isMobile}
-                      pathname={location.pathname}
-                      badgeCount={counts[entityTypeForUrl(item.url) ?? ""] ?? 0}
-                      onActivate={handleActivate}
-                    />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <HoofdGroep
+              groep={groep}
+              collapsed={collapsed}
+              isMobile={isMobile}
+              counts={counts}
+              onActivate={handleActivate}
+            />
           </div>
         ))}
+        {meerGroep && (
+          <>
+            <Separator className="mx-3 my-1" />
+            <MeerGroep
+              groep={meerGroep}
+              collapsed={collapsed}
+              isMobile={isMobile}
+              counts={counts}
+              onActivate={handleActivate}
+              pathname={location.pathname}
+            />
+          </>
+        )}
       </SidebarContent>
     </Sidebar>
   );
