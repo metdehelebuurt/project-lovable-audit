@@ -55,10 +55,24 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
   const slaWerkomschrijvingOp = async (tekst: string) => {
     try {
       await updateInstallatie(installatie.id, { werkomschrijving: tekst });
+      setWerkomschrijving(tekst);
       toast.success("Werkomschrijving bijgewerkt");
       qc.invalidateQueries({ queryKey: ["installatie", installatie.id] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
+    }
+  };
+
+  const slaWerkomschrijvingHandmatigOp = async () => {
+    setWerkBusy(true);
+    try {
+      await updateInstallatie(installatie.id, { werkomschrijving: werkomschrijving || null });
+      toast.success("Werkomschrijving opgeslagen");
+      qc.invalidateQueries({ queryKey: ["installatie", installatie.id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
+    } finally {
+      setWerkBusy(false);
     }
   };
 
