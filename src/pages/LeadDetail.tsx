@@ -28,7 +28,8 @@ import {
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
 import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
-import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
+import GecombineerdeTijdlijn, { type ExtraEvent } from "@/components/historie/GecombineerdeTijdlijn";
+import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -102,6 +103,7 @@ const LeadDetail = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [afspraakOpen, setAfspraakOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
+  const [newNoteIntern, setNewNoteIntern] = useState(true);
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
@@ -270,15 +272,16 @@ const LeadDetail = () => {
   });
 
   const addNoteMutation = useMutation({
-    mutationFn: async (inhoud: string) => {
+    mutationFn: async ({ inhoud, intern }: { inhoud: string; intern: boolean }) => {
       const { error } = await supabase.from("lead_notities" as any).insert({
-        lead_id: id!, user_id: profile!.id, partner_id: profile!.partner_id, inhoud,
+        lead_id: id!, user_id: profile!.id, partner_id: profile!.partner_id, inhoud, intern,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead-notities", id] });
       setNewNote("");
+      setNewNoteIntern(true);
       toast.success("Notitie toegevoegd");
     },
     onError: (err: Error) => toast.error(err.message),
