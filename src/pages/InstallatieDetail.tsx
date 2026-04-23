@@ -39,7 +39,7 @@ const InstallatieDetail = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <InstallatieHeader installatie={installatie} onMaakOplevering={naarOplevering} />
+      <InstallatieHeader installatie={installatie} onMaakOplevering={naarOplevering} onChanged={refetch} />
       {!isInstallateur && (
         <div className="flex justify-end">
           <Button variant="outline" size="sm" onClick={() => setRetourOpen(true)} className="gap-1.5">
