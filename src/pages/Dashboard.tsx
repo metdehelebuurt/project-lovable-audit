@@ -12,6 +12,9 @@ import { nl } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import MonteurDashboard from "@/components/dashboard/MonteurDashboard";
+import { AppsView } from "@/components/dashboard/apps-view";
+import { DashboardViewSwitcher } from "@/components/dashboard/DashboardViewSwitcher";
+import { useDashboardView } from "@/components/dashboard/apps-view/useDashboardView";
 
 /* ─── Mini Stat Card ─── */
 const StatCard = ({ label, value, icon: Icon, trend }: {
@@ -85,6 +88,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const rol = profile?.rol ?? "consument";
   const dash = rolDashboards[rol] ?? rolDashboards.consument;
+  const { view, setView } = useDashboardView();
+
+  if (view === "apps" && rol !== "consument") {
+    return <AppsView rightSlot={<DashboardViewSwitcher view={view} onChange={setView} />} />;
+  }
 
   /* ─── Stats ─── */
   const { data: stats } = useQuery({
@@ -299,9 +307,14 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">{dash.title}</h1>
-        <p className="text-muted-foreground mt-1">{dash.description}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">{dash.title}</h1>
+          <p className="text-muted-foreground mt-1">{dash.description}</p>
+        </div>
+        {rol !== "consument" && (
+          <DashboardViewSwitcher view={view} onChange={setView} />
+        )}
       </div>
 
       {rol === "installateur" ? (
