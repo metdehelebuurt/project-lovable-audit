@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Building2, Users, Package, ClipboardList,
+  LayoutDashboard, Inbox, Building2, Users, Package, ClipboardList,
   FileText, Wrench, Calendar, BarChart3, Settings, UserCheck,
   MessageSquare, FolderOpen, PenTool, Link2, Handshake, ClipboardCheck, UserCheck2,
   MessageCircleWarning, MessageSquareHeart, Lightbulb, CreditCard, Receipt, Truck,
@@ -38,7 +38,15 @@ interface NavGroup {
 const getNavGroups = (rol: string): NavGroup[] => {
   const groups: NavGroup[] = [];
 
-  groups.push({ label: "Overzicht", items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }] });
+  groups.push({
+    label: "Overzicht",
+    items: [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+      ...(["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"].includes(rol)
+        ? [{ title: "Actiecentrum", url: "/actiecentrum", icon: Inbox }]
+        : []),
+    ],
+  });
 
   const relatie: NavItem[] = [];
   if (["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"].includes(rol))
