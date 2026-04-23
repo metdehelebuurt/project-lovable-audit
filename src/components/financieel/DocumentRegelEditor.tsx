@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
+import { ProductSearchInput } from "./ProductSearchInput";
 
 interface Props {
   regels: OfferteRegel[];
@@ -16,6 +17,28 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }:
   const update = (idx: number, field: keyof OfferteRegel, value: any) => {
     const copy = [...regels];
     copy[idx] = { ...copy[idx], [field]: value };
+    onChange(copy);
+  };
+
+  const applyProduct = (idx: number, p: {
+    id: string;
+    naam: string;
+    merk: string | null;
+    model: string | null;
+    prijs_excl_btw: number | null;
+    btw_percentage: number | null;
+    offerte_tekst: string | null;
+  }) => {
+    const copy = [...regels];
+    const label = [p.merk, p.model].filter(Boolean).join(" ") || p.naam;
+    copy[idx] = {
+      ...copy[idx],
+      product_id: p.id,
+      omschrijving: label,
+      offerte_tekst: p.offerte_tekst ?? copy[idx].offerte_tekst,
+      prijs_per_stuk: p.prijs_excl_btw != null ? Number(p.prijs_excl_btw) : copy[idx].prijs_per_stuk,
+      btw_percentage: p.btw_percentage != null ? Number(p.btw_percentage) : copy[idx].btw_percentage,
+    };
     onChange(copy);
   };
 
@@ -53,7 +76,17 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }:
               <TableRow key={i}>
                 <TableCell>
                   {readOnly ? r.omschrijving : (
-                    <Input value={r.omschrijving} onChange={(e) => update(i, "omschrijving", e.target.value)} placeholder="Product of dienst" />
+                    <ProductSearchInput
+                      value={r.omschrijving}
+                      onChangeText={(v) => {
+                        // Bij vrije typen: ontkoppel eventuele product_id
+                        const copy = [...regels];
+                        copy[i] = { ...copy[i], omschrijving: v, product_id: undefined };
+                        onChange(copy);
+                      }}
+                      onPickProduct={(p) => applyProduct(i, p)}
+                      placeholder="Zoek product of typ vrij..."
+                    />
                   )}
                 </TableCell>
                 <TableCell>
