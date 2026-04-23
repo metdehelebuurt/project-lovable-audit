@@ -629,7 +629,7 @@ export type Database = {
       }
       afspraken: {
         Row: {
-          adviseur_id: string
+          adviseur_id: string | null
           created_at: string
           datum: string
           eind_tijd: string | null
@@ -646,7 +646,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          adviseur_id: string
+          adviseur_id?: string | null
           created_at?: string
           datum: string
           eind_tijd?: string | null
@@ -663,7 +663,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          adviseur_id?: string
+          adviseur_id?: string | null
           created_at?: string
           datum?: string
           eind_tijd?: string | null
@@ -3126,7 +3126,7 @@ export type Database = {
           id: string
           lead_status: Database["public"]["Enums"]["lead_status"]
           notities: string | null
-          owner_user_id: string
+          owner_user_id: string | null
           partner_id: string
           plaats: string | null
           postcode: string | null
@@ -3145,7 +3145,7 @@ export type Database = {
           id?: string
           lead_status?: Database["public"]["Enums"]["lead_status"]
           notities?: string | null
-          owner_user_id: string
+          owner_user_id?: string | null
           partner_id: string
           plaats?: string | null
           postcode?: string | null
@@ -3164,7 +3164,7 @@ export type Database = {
           id?: string
           lead_status?: Database["public"]["Enums"]["lead_status"]
           notities?: string | null
-          owner_user_id?: string
+          owner_user_id?: string | null
           partner_id?: string
           plaats?: string | null
           postcode?: string | null
@@ -3787,7 +3787,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           accepted_ip: string | null
-          adviseur_id: string
+          adviseur_id: string | null
           afwijzing_categorie: string | null
           afwijzing_reden: string | null
           annulering_reden: string | null
@@ -3829,7 +3829,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           accepted_ip?: string | null
-          adviseur_id: string
+          adviseur_id?: string | null
           afwijzing_categorie?: string | null
           afwijzing_reden?: string | null
           annulering_reden?: string | null
@@ -3871,7 +3871,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           accepted_ip?: string | null
-          adviseur_id?: string
+          adviseur_id?: string | null
           afwijzing_categorie?: string | null
           afwijzing_reden?: string | null
           annulering_reden?: string | null
@@ -5029,7 +5029,7 @@ export type Database = {
       schouwen: {
         Row: {
           aandachtspunten: string | null
-          adviseur_id: string
+          adviseur_id: string | null
           categorie: Database["public"]["Enums"]["schouw_categorie"]
           checklist: Json | null
           consument_naam: string | null
@@ -5051,7 +5051,7 @@ export type Database = {
         }
         Insert: {
           aandachtspunten?: string | null
-          adviseur_id: string
+          adviseur_id?: string | null
           categorie: Database["public"]["Enums"]["schouw_categorie"]
           checklist?: Json | null
           consument_naam?: string | null
@@ -5073,7 +5073,7 @@ export type Database = {
         }
         Update: {
           aandachtspunten?: string | null
-          adviseur_id?: string
+          adviseur_id?: string | null
           categorie?: Database["public"]["Enums"]["schouw_categorie"]
           checklist?: Json | null
           consument_naam?: string | null
