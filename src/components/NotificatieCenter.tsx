@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Bell, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,13 +9,46 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link, useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
+
+type NotifFilter = "alle" | "tickets" | "installaties" | "leads" | "financieel";
+
+function entityTypeMatchesFilter(entityType: string | null, filter: NotifFilter): boolean {
+  if (filter === "alle") return true;
+  if (!entityType) return false;
+  switch (filter) {
+    case "tickets": return entityType === "helpdesk_tickets" || entityType === "helpdesk_service_bezoeken";
+    case "installaties": return entityType === "installaties";
+    case "leads": return entityType === "leads";
+    case "financieel": return entityType === "financiele_documenten";
+  }
+}
+
+function routeForEntity(entityType: string | null, entityId: string | null): string | null {
+  if (!entityType || !entityId) return null;
+  switch (entityType) {
+    case "helpdesk_tickets": return `/helpdesk/tickets/${entityId}`;
+    case "helpdesk_service_bezoeken": return `/helpdesk/planning`;
+    case "installaties": return `/installaties/${entityId}`;
+    case "leads": return `/leads/${entityId}`;
+    case "offertes": return `/offertes/${entityId}`;
+    case "schouwen": return `/schouwen/${entityId}`;
+    case "opdrachten": return `/opdrachten/${entityId}`;
+    case "financiele_documenten": return `/financieel/${entityId}`;
+    case "email_berichten": return `/berichten`;
+    default: return null;
+  }
+}
 
 export function NotificatieCenter() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState<NotifFilter>("alle");
 
   const { data: notificaties = [] } = useQuery({
     queryKey: ["notificaties", user?.id],
@@ -35,6 +68,10 @@ export function NotificatieCenter() {
   });
 
   const ongelezen = notificaties.filter(n => !n.gelezen).length;
+  const gefilterd = useMemo(
+    () => notificaties.filter(n => entityTypeMatchesFilter((n as { entity_type: string | null }).entity_type, filter)),
+    [notificaties, filter],
+  );
 
   const markeerGelezen = useMutation({
     mutationFn: async (id: string) => {
@@ -87,22 +124,48 @@ export function NotificatieCenter() {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="font-semibold text-sm">Notificaties</h3>
-          {ongelezen > 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => markeerAlleGelezen.mutate()}>
-              Alles gelezen
+          <div className="flex items-center gap-1">
+            {ongelezen > 0 && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => markeerAlleGelezen.mutate()}>
+                Alles gelezen
+              </Button>
+            )}
+            <Button asChild variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
+              <Link to="/instellingen/notificaties" aria-label="Voorkeuren"><Settings className="h-4 w-4" /></Link>
             </Button>
-          )}
+          </div>
+        </div>
+        <div className="px-2 pt-2">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as NotifFilter)}>
+            <TabsList className="grid grid-cols-5 h-8">
+              <TabsTrigger value="alle" className="text-[11px]">Alle</TabsTrigger>
+              <TabsTrigger value="tickets" className="text-[11px]">Tickets</TabsTrigger>
+              <TabsTrigger value="installaties" className="text-[11px]">Inst.</TabsTrigger>
+              <TabsTrigger value="leads" className="text-[11px]">Leads</TabsTrigger>
+              <TabsTrigger value="financieel" className="text-[11px]">Fin.</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         <ScrollArea className="max-h-80">
-          {notificaties.length === 0 ? (
+          {gefilterd.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-8">Geen notificaties</p>
           ) : (
             <div className="divide-y">
-              {notificaties.map(n => (
+              {gefilterd.map(n => (
                 <button
                   key={n.id}
                   className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${!n.gelezen ? "bg-primary/5" : ""}`}
-                  onClick={() => { if (!n.gelezen) markeerGelezen.mutate(n.id); }}
+                  onClick={() => {
+                    if (!n.gelezen) markeerGelezen.mutate(n.id);
+                    const route = routeForEntity(
+                      (n as { entity_type: string | null }).entity_type,
+                      (n as { entity_id: string | null }).entity_id,
+                    );
+                    if (route) {
+                      setOpen(false);
+                      navigate(route);
+                    }
+                  }}
                 >
                   <div className="flex items-start gap-2">
                     {!n.gelezen && <span className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />}

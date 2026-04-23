@@ -74,6 +74,8 @@ import TicketNieuw from "@/pages/helpdesk/TicketNieuw";
 import TicketDetail from "@/pages/helpdesk/TicketDetail";
 import Kennisbank from "@/pages/helpdesk/Kennisbank";
 import KennisArtikel from "@/pages/helpdesk/KennisArtikel";
+import HelpdeskPlanning from "@/pages/helpdesk/Planning";
+import NotificatieVoorkeuren from "@/pages/instellingen/NotificatieVoorkeuren";
 import Opleveringen from "@/pages/Opleveringen";
 import OpleverNieuw from "@/pages/OpleverNieuw";
 import OpleverDetail from "@/pages/OpleverDetail";
@@ -300,12 +302,16 @@ const App = () => (
               <Route path="/helpdesk/tickets/:id" element={
                 <ProtectedRoute moduleKey="helpdesk" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><TicketDetail /></ProtectedRoute>
               } />
+              <Route path="/helpdesk/planning" element={
+                <ProtectedRoute moduleKey="helpdesk" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><HelpdeskPlanning /></ProtectedRoute>
+              } />
               <Route path="/helpdesk/kennisbank" element={
                 <ProtectedRoute moduleKey="helpdesk" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Kennisbank /></ProtectedRoute>
               } />
               <Route path="/helpdesk/kennisbank/:id" element={
                 <ProtectedRoute moduleKey="helpdesk" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><KennisArtikel /></ProtectedRoute>
               } />
+              <Route path="/instellingen/notificaties" element={<NotificatieVoorkeuren />} />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
               <Route path="/opleveringen" element={

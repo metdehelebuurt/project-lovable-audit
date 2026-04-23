@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type EventType = "nieuw_ticket" | "toewijzing" | "klant_reactie" | "escalatie" | "oplossing" | "storing";
+type EventType = "nieuw_ticket" | "toewijzing" | "klant_reactie" | "escalatie" | "oplossing" | "storing" | "monteur_ticket";
 
 type Payload = {
   event: EventType;
@@ -44,10 +44,33 @@ Deno.serve(async (req) => {
       escalatie: "email_bij_escalatie",
       oplossing: "email_bij_oplossing",
       storing: "email_bij_storing",
+      monteur_ticket: "email_bij_nieuw_ticket",
     };
     if (!cfg[fieldMap[body.event]]) return json({ skipped: "uitgeschakeld" }, 200);
 
-    const ontvangers = Array.isArray(cfg.ontvangers) ? (cfg.ontvangers as string[]) : [];
+    let ontvangers = Array.isArray(cfg.ontvangers) ? (cfg.ontvangers as string[]) : [];
+
+    // Bij monteur_ticket: stuur naar backoffice-eigenaar van gekoppelde installatie
+    if (body.event === "monteur_ticket") {
+      const { data: t } = await supa
+        .from("helpdesk_tickets")
+        .select("installatie_id")
+        .eq("id", body.ticket_id)
+        .maybeSingle();
+      if (t?.installatie_id) {
+        const { data: inst } = await supa
+          .from("installaties")
+          .select("backoffice_eigenaar_id, created_by")
+          .eq("id", t.installatie_id)
+          .maybeSingle();
+        const eigenaarId = inst?.backoffice_eigenaar_id ?? inst?.created_by;
+        if (eigenaarId) {
+          const { data: u } = await supa.from("users").select("email").eq("id", eigenaarId).maybeSingle();
+          if (u?.email) ontvangers = [u.email, ...ontvangers];
+        }
+      }
+    }
+
     if (ontvangers.length === 0) return json({ skipped: "geen ontvangers" }, 200);
 
     const { data: ticket } = await supa
@@ -136,6 +159,7 @@ function buildSubject(event: EventType, t: { ticketnummer: string; titel: string
     escalatie: "Ticket geëscaleerd",
     oplossing: "Ticket opgelost",
     storing: "STORING gemeld",
+    monteur_ticket: "Monteur heeft een ticket aangemaakt",
   };
   return `${emoji}${labels[event]}: ${t.ticketnummer} — ${t.titel}`;
 }
@@ -148,6 +172,7 @@ function buildHtml(event: EventType, t: { ticketnummer: string; titel: string; p
     escalatie: "Een ticket is geëscaleerd door SLA-overschrijding.",
     oplossing: "Een ticket is gemarkeerd als opgelost.",
     storing: "Er is een storing gemeld die direct aandacht vraagt.",
+    monteur_ticket: "Een monteur heeft een ticket aangemaakt op een installatie die jij beheert.",
   };
   const sla = t.sla_deadline ? new Date(t.sla_deadline).toLocaleString("nl-NL") : "—";
   return `
