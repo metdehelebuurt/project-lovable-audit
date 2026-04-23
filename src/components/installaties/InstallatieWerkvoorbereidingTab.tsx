@@ -7,8 +7,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, FileDown, Sparkles, Hash } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2, FileDown, Sparkles, Hash, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Installatie } from "./api/installatieApi";
 import { generateInstallatienummer, updateInstallatie } from "./api/installatieApi";
@@ -32,6 +34,9 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
   const [nieuw, setNieuw] = useState({ label: "", blokkerend: false });
   const [aiOpen, setAiOpen] = useState(false);
   const [nummerBusy, setNummerBusy] = useState(false);
+  const [werkomschrijving, setWerkomschrijving] = useState(installatie.werkomschrijving ?? "");
+  const [werkBusy, setWerkBusy] = useState(false);
+  const kanTemplatesBeheren = profile?.rol === "partner_admin" || profile?.rol === "superadmin";
 
   const kenNummerToe = async () => {
     setNummerBusy(true);
@@ -50,10 +55,24 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
   const slaWerkomschrijvingOp = async (tekst: string) => {
     try {
       await updateInstallatie(installatie.id, { werkomschrijving: tekst });
+      setWerkomschrijving(tekst);
       toast.success("Werkomschrijving bijgewerkt");
       qc.invalidateQueries({ queryKey: ["installatie", installatie.id] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
+    }
+  };
+
+  const slaWerkomschrijvingHandmatigOp = async () => {
+    setWerkBusy(true);
+    try {
+      await updateInstallatie(installatie.id, { werkomschrijving: werkomschrijving || null });
+      toast.success("Werkomschrijving opgeslagen");
+      qc.invalidateQueries({ queryKey: ["installatie", installatie.id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
+    } finally {
+      setWerkBusy(false);
     }
   };
 
@@ -114,14 +133,18 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
 
   const pasTemplate = useMutation({
     mutationFn: async () => {
-      const { data: tmpl } = await supabase
+      const { data: tmpl, error: tmplError } = await supabase
         .from("installatie_checklist_templates")
         .select("*")
         .eq("partner_id", installatie.partner_id)
         .eq("actief", true)
         .order("volgorde");
+      if (tmplError) throw tmplError;
+      if (!tmpl || tmpl.length === 0) {
+        return { added: 0, totalTemplate: 0 };
+      }
       const bestaande = new Set(items.map(i => i.item_key));
-      const nieuweRecords = (tmpl ?? [])
+      const nieuweRecords = tmpl
         .filter(t => !bestaande.has(t.item_key))
         .map(t => ({
           installatie_id: installatie.id,
@@ -130,13 +153,19 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
           label: t.label,
           blokkerend: t.blokkerend,
         }));
-      if (nieuweRecords.length === 0) return 0;
+      if (nieuweRecords.length === 0) return { added: 0, totalTemplate: tmpl.length };
       const { error } = await supabase.from("installatie_checklist_items").insert(nieuweRecords);
       if (error) throw error;
-      return nieuweRecords.length;
+      return { added: nieuweRecords.length, totalTemplate: tmpl.length };
     },
-    onSuccess: (n) => {
-      toast.success(n ? `${n} item(s) toegevoegd uit template` : "Alle template-items waren al aanwezig");
+    onSuccess: ({ added, totalTemplate }) => {
+      if (totalTemplate === 0) {
+        toast.info("Geen actieve standaard checklist gevonden. Maak eerst een template aan onder Instellingen.");
+      } else if (added === 0) {
+        toast.info(`Alle ${totalTemplate} standaard items zijn al aanwezig`);
+      } else {
+        toast.success(`${added} item(s) toegevoegd uit standaard checklist`);
+      }
       qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -147,12 +176,16 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Werkvoorbereiding</CardTitle>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setAiOpen(true)}>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary" /> AI-werkomschrijving
-          </Button>
           <Button size="sm" variant="outline" onClick={() => pasTemplate.mutate()} disabled={pasTemplate.isPending}>
-            <FileDown className="h-3.5 w-3.5 mr-1.5" /> Template toepassen
+            <FileDown className="h-3.5 w-3.5 mr-1.5" /> Standaard checklist toevoegen
           </Button>
+          {kanTemplatesBeheren && (
+            <Button size="sm" variant="ghost" asChild>
+              <Link to="/instellingen/checklist-templates">
+                <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Templates beheren
+              </Link>
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -164,6 +197,27 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
             </Button>
           </div>
         )}
+
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Werkomschrijving voor monteur</Label>
+            <Button size="sm" variant="ghost" className="h-7 gap-1.5 text-xs" onClick={() => setAiOpen(true)}>
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> AI genereren
+            </Button>
+          </div>
+          <Textarea
+            value={werkomschrijving}
+            onChange={(e) => setWerkomschrijving(e.target.value)}
+            rows={5}
+            placeholder="Beschrijving van de werkzaamheden voor de monteur. Klik op 'AI genereren' voor een voorstel op basis van schouw, producten en checklist."
+          />
+          <div className="flex justify-end">
+            <Button size="sm" onClick={slaWerkomschrijvingHandmatigOp} disabled={werkBusy} className="gap-1.5">
+              <Save className="h-3.5 w-3.5" /> {werkBusy ? "Opslaan…" : "Opslaan"}
+            </Button>
+          </div>
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Laden…</p>
         ) : items.length === 0 ? (

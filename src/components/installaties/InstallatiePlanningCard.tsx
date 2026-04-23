@@ -126,7 +126,16 @@ export default function InstallatiePlanningCard({ installatie, onChanged, readOn
           onOpenChange={setAiOpen}
           installatieId={installatie.id}
           huidigeTekst={form.werkomschrijving}
-          onAccept={(tekst) => setForm({ ...form, werkomschrijving: tekst })}
+          onAccept={async (tekst) => {
+            setForm((prev) => ({ ...prev, werkomschrijving: tekst }));
+            try {
+              await updateInstallatie(installatie.id, { werkomschrijving: tekst });
+              toast.success("AI-werkomschrijving opgeslagen");
+              onChanged();
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
+            }
+          }}
         />
       </CardContent>
     </Card>
