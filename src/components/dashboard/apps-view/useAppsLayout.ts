@@ -66,7 +66,8 @@ export function useAppsLayout() {
     debounceRef.current = window.setTimeout(() => {
       void supabase
         .from("users")
-        .update({ dashboard_apps_layout: next as unknown as Record<string, unknown> })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ dashboard_apps_layout: next as any })
         .eq("id", user.id);
     }, 500);
   }, [user]);

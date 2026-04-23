@@ -15,6 +15,8 @@ interface UserProfile {
   telefoon: string | null;
   status: Database["public"]["Enums"]["user_status"];
   berichten_zichtbaarheid: "alle" | "toegewezen" | "geen";
+  dashboard_view: "klassiek" | "apps";
+  dashboard_apps_layout: Record<string, unknown>;
 }
 
 interface AuthContextType {
