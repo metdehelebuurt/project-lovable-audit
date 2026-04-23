@@ -314,6 +314,12 @@ const App = () => (
                 <ProtectedRoute moduleKey="helpdesk" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><KennisArtikel /></ProtectedRoute>
               } />
               <Route path="/instellingen/notificaties" element={<NotificatieVoorkeuren />} />
+              <Route path="/instellingen/checklist-templates" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><ChecklistTemplates /></ProtectedRoute>
+              } />
+              <Route path="/actiecentrum" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Actiecentrum /></ProtectedRoute>
+              } />
               <Route path="/offertes/:id/pdf" element={<OffertePDF />} />
               <Route path="/producten/:id/datasheet" element={<ProductDatasheetPage />} />
               <Route path="/opleveringen" element={
