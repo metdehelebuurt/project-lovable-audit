@@ -109,6 +109,28 @@ const InstallatieMonteurView = () => {
         </CardContent>
       </Card>
 
+      {schouw && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <Collapsible open={schouwOpen} onOpenChange={setSchouwOpen}>
+            <CollapsibleTrigger asChild>
+              <button type="button" className="w-full text-left">
+                <CardHeader className="flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ClipboardCheck className="h-4 w-4 text-primary" /> Info uit schouw
+                  </CardTitle>
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${schouwOpen ? "rotate-180" : ""}`} />
+                </CardHeader>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <SchouwSamenvatting schouw={schouw} compact onFotoClick={(idx) => setFotoIdx(idx)} fotoLimit={6} />
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
+
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader><CardTitle className="text-base">Voortgang</CardTitle></CardHeader>
         <CardContent className="space-y-2">
