@@ -25,7 +25,7 @@ export function useInstallatiesGereedheidBulk(installatieIds: string[]) {
 
       const { data: installaties, error: instErr } = await supabase
         .from("installaties")
-        .select("id, opdracht_id, installateur_id, bevestiging_verzonden_op, monteur_geaccepteerd_op, werkadres, klant_postcode, klant_plaats, geplande_startdatum, werkomschrijving, producten")
+        .select("id, opdracht_id, schouw_id, installateur_id, bevestiging_verzonden_op, monteur_geaccepteerd_op, werkadres, klant_postcode, klant_plaats, geplande_startdatum, werkomschrijving, producten")
         .in("id", installatieIds);
       if (instErr) throw instErr;
 
@@ -42,7 +42,12 @@ export function useInstallatiesGereedheidBulk(installatieIds: string[]) {
         for (const o of opdrachten ?? []) opdrachtMap.set(o.id, o.schouw_id);
       }
 
-      const schouwIds = Array.from(opdrachtMap.values()).filter((x): x is string => !!x);
+      // Verzamel zowel directe schouw_id's als die via opdracht
+      const directSchouwIds = (installaties ?? [])
+        .map((i) => (i as unknown as { schouw_id?: string | null }).schouw_id)
+        .filter((x): x is string => !!x);
+      const opdrSchouwIds = Array.from(opdrachtMap.values()).filter((x): x is string => !!x);
+      const schouwIds = Array.from(new Set([...directSchouwIds, ...opdrSchouwIds]));
       const schouwStatusMap = new Map<string, string>();
       if (schouwIds.length > 0) {
         const { data: schouwen } = await supabase
@@ -71,8 +76,10 @@ export function useInstallatiesGereedheidBulk(installatieIds: string[]) {
         let ok = 0;
         let blokkades = 0;
 
-        // Schouw
-        const schouwId = inst.opdracht_id ? opdrachtMap.get(inst.opdracht_id) : null;
+        // Schouw — direct of via opdracht
+        const direct = (inst as unknown as { schouw_id?: string | null }).schouw_id ?? null;
+        const viaOpdracht = inst.opdracht_id ? opdrachtMap.get(inst.opdracht_id) ?? null : null;
+        const schouwId = direct ?? viaOpdracht;
         const schouwOk = !!schouwId && schouwStatusMap.get(schouwId) === "uitgevoerd";
         totaal += 1;
         if (schouwOk) ok += 1;
