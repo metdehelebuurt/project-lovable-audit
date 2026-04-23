@@ -300,6 +300,10 @@ const Dashboard = () => {
     color: "hsl(var(--foreground))",
   };
 
+  if (view === "apps" && rol !== "consument") {
+    return <AppsView rightSlot={<DashboardViewSwitcher view={view} onChange={setView} />} />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
