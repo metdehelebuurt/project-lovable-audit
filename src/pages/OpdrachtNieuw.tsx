@@ -12,7 +12,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal } from "@/types/offerte";
-import LeadSearchInput from "@/components/shared/LeadSearchInput";
+import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
 
 const OpdrachtNieuw = () => {
   const navigate = useNavigate();
@@ -25,8 +25,7 @@ const OpdrachtNieuw = () => {
     postcode: "",
     plaats: "",
   });
-  const [leadId, setLeadId] = useState<string | null>(null);
-  const [klantId, setKlantId] = useState<string | null>(null);
+  const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [notities, setNotities] = useState("");
   const [regels, setRegels] = useState<OfferteRegel[]>([{ ...emptyOfferteRegel }]);
 
@@ -45,8 +44,7 @@ const OpdrachtNieuw = () => {
       const payload = {
         partner_id: profile.partner_id,
         offerte_id: null,
-        lead_id: leadId,
-        klant_id: klantId,
+        lead_id: selectedLead?.id ?? null,
         klant_naam: klant.naam,
         klant_email: klant.email || null,
         klant_telefoon: klant.telefoon || null,
@@ -59,8 +57,8 @@ const OpdrachtNieuw = () => {
         status: "nieuw" as const,
       };
 
-      const { data, error } = await supabase
-        .from("opdrachten" as any)
+      const { data, error } = await (supabase as any)
+        .from("opdrachten")
         .insert(payload)
         .select("id")
         .single();
@@ -93,20 +91,19 @@ const OpdrachtNieuw = () => {
         <CardHeader><CardTitle className="text-lg">Klant koppelen (optioneel)</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <LeadSearchInput
-            onSelect={(lead) => {
-              setLeadId(lead?.id ?? null);
-              setKlantId((lead as any)?.klant_id ?? null);
-              if (lead) {
-                setKlant({
-                  naam: `${lead.voornaam ?? ""} ${lead.achternaam ?? ""}`.trim(),
-                  email: lead.email ?? "",
-                  telefoon: (lead as any).telefoon ?? "",
-                  adres: (lead as any).adres ?? "",
-                  postcode: (lead as any).postcode ?? "",
-                  plaats: (lead as any).plaats ?? "",
-                });
-              }
+            selectedLead={selectedLead}
+            onSelectLead={(lead) => {
+              setSelectedLead(lead);
+              setKlant({
+                naam: `${lead.voornaam ?? ""} ${lead.achternaam ?? ""}`.trim(),
+                email: lead.email ?? "",
+                telefoon: lead.telefoon ?? "",
+                adres: lead.adres ?? "",
+                postcode: lead.postcode ?? "",
+                plaats: lead.plaats ?? "",
+              });
             }}
+            onClearLead={() => setSelectedLead(null)}
           />
         </CardContent>
       </Card>
