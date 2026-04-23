@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import EmailCompose from "./EmailCompose";
+import { useBerichtenZichtbaarheid, fetchToegewezenEntiteiten, buildToegewezenFilter } from "@/hooks/useBerichtenZichtbaarheid";
 
 interface EmailBericht {
   id: string;
@@ -31,6 +32,7 @@ interface EmailBericht {
 
 const EmailInbox = () => {
   const { profile } = useAuth();
+  const zichtbaarheid = useBerichtenZichtbaarheid();
   const [emails, setEmails] = useState<EmailBericht[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -46,6 +48,11 @@ const EmailInbox = () => {
 
   const checkAndLoad = async () => {
     if (!profile?.partner_id) return;
+    if (zichtbaarheid === "geen") {
+      setHasAccount(true);
+      setLoading(false);
+      return;
+    }
     const { data: account } = await supabase
       .from("email_accounts" as any)
       .select("id")
@@ -60,11 +67,24 @@ const EmailInbox = () => {
 
   const loadEmails = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("email_berichten" as any)
       .select("id, richting, van, aan, onderwerp, body_html, body_text, datum, is_gelezen, lead_id, klant_id, offerte_id")
       .order("datum", { ascending: false })
       .limit(100);
+
+    if (zichtbaarheid === "toegewezen" && profile?.partner_id && profile?.id) {
+      const ids = await fetchToegewezenEntiteiten(supabase, profile.id, profile.partner_id);
+      const orFilter = buildToegewezenFilter(ids);
+      if (!orFilter) {
+        setEmails([]);
+        setLoading(false);
+        return;
+      }
+      query = query.or(orFilter);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error(error);
@@ -112,6 +132,23 @@ const EmailInbox = () => {
     }
     return true;
   });
+
+  if (zichtbaarheid === "geen") {
+    return (
+      <Card className="rounded-2xl border-0 shadow-sm">
+        <CardContent className="py-16 text-center space-y-4">
+          <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto">
+            <Inbox className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground">Inbox is uitgeschakeld</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            De inbox-toegang is voor jou uitgeschakeld door je organisatiebeheerder.
+            Neem contact op met je beheerder als je toegang nodig hebt.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (hasAccount === false) {
     return (
