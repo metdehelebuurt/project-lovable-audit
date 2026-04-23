@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Save } from "lucide-react";
+import { Calendar, Save, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Installatie } from "./api/installatieApi";
 import { updateInstallatie } from "./api/installatieApi";
+import AiWerkomschrijvingDialog from "./AiWerkomschrijvingDialog";
 
 interface Props {
   installatie: Installatie;
@@ -31,6 +32,7 @@ export default function InstallatiePlanningCard({ installatie, onChanged, readOn
     werkomschrijving: installatie.werkomschrijving ?? "",
   });
   const [busy, setBusy] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     void supabase.from("users").select("id, voornaam, achternaam").eq("rol", "installateur")
@@ -97,7 +99,20 @@ export default function InstallatiePlanningCard({ installatie, onChanged, readOn
           <Input value={form.werkadres} onChange={(e) => setForm({ ...form, werkadres: e.target.value })} placeholder="Adres van uitvoering" disabled={readOnly} />
         </div>
         <div>
-          <Label>Werkomschrijving</Label>
+          <div className="flex items-center justify-between mb-1">
+            <Label>Werkomschrijving</Label>
+            {!readOnly && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
+                onClick={() => setAiOpen(true)}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-primary" /> AI-werkomschrijving
+              </Button>
+            )}
+          </div>
           <Textarea value={form.werkomschrijving} onChange={(e) => setForm({ ...form, werkomschrijving: e.target.value })} rows={3} disabled={readOnly} />
         </div>
         {!readOnly && (
@@ -105,6 +120,14 @@ export default function InstallatiePlanningCard({ installatie, onChanged, readOn
             <Save className="h-4 w-4" /> {busy ? "Opslaan…" : "Planning opslaan"}
           </Button>
         )}
+
+        <AiWerkomschrijvingDialog
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          installatieId={installatie.id}
+          huidigeTekst={form.werkomschrijving}
+          onAccept={(tekst) => setForm({ ...form, werkomschrijving: tekst })}
+        />
       </CardContent>
     </Card>
   );

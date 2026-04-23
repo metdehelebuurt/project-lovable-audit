@@ -7,10 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, FileDown } from "lucide-react";
+import { Plus, Trash2, FileDown, Sparkles, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Installatie } from "./api/installatieApi";
+import { generateInstallatienummer, updateInstallatie } from "./api/installatieApi";
+import AiWerkomschrijvingDialog from "./AiWerkomschrijvingDialog";
 
 interface ChecklistItem {
   id: string;
@@ -28,6 +30,32 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
   const { profile } = useAuth();
   const qc = useQueryClient();
   const [nieuw, setNieuw] = useState({ label: "", blokkerend: false });
+  const [aiOpen, setAiOpen] = useState(false);
+  const [nummerBusy, setNummerBusy] = useState(false);
+
+  const kenNummerToe = async () => {
+    setNummerBusy(true);
+    try {
+      const nr = await generateInstallatienummer(installatie.partner_id);
+      await updateInstallatie(installatie.id, { installatienummer: nr });
+      toast.success(`Nummer ${nr} toegekend`);
+      qc.invalidateQueries({ queryKey: ["installatie", installatie.id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Toekennen mislukt");
+    } finally {
+      setNummerBusy(false);
+    }
+  };
+
+  const slaWerkomschrijvingOp = async (tekst: string) => {
+    try {
+      await updateInstallatie(installatie.id, { werkomschrijving: tekst });
+      toast.success("Werkomschrijving bijgewerkt");
+      qc.invalidateQueries({ queryKey: ["installatie", installatie.id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
+    }
+  };
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["installatie_checklist", installatie.id],
@@ -118,11 +146,24 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Werkvoorbereiding</CardTitle>
-        <Button size="sm" variant="outline" onClick={() => pasTemplate.mutate()} disabled={pasTemplate.isPending}>
-          <FileDown className="h-3.5 w-3.5 mr-1.5" /> Template toepassen
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAiOpen(true)}>
+            <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary" /> AI-werkomschrijving
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => pasTemplate.mutate()} disabled={pasTemplate.isPending}>
+            <FileDown className="h-3.5 w-3.5 mr-1.5" /> Template toepassen
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {!installatie.installatienummer && (
+          <div className="flex items-center justify-between rounded-lg border border-dashed p-3 text-sm">
+            <span className="text-muted-foreground">Geen installatienummer toegekend.</span>
+            <Button size="sm" variant="outline" onClick={kenNummerToe} disabled={nummerBusy}>
+              <Hash className="h-3.5 w-3.5 mr-1.5" /> {nummerBusy ? "Toekennen…" : "Nummer toekennen"}
+            </Button>
+          </div>
+        )}
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Laden…</p>
         ) : items.length === 0 ? (
@@ -171,6 +212,13 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
           </div>
         </div>
       </CardContent>
+      <AiWerkomschrijvingDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        installatieId={installatie.id}
+        huidigeTekst={installatie.werkomschrijving}
+        onAccept={slaWerkomschrijvingOp}
+      />
     </Card>
   );
 }

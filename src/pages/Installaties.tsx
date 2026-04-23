@@ -12,12 +12,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, LifeBuoy, Eye, Smartphone, UserPlus, UserCog } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, LifeBuoy, Eye, Smartphone, UserPlus, UserCog, Hash } from "lucide-react";
 import { toast } from "sonner";
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
 import { INSTALLATIE_STATUS_LABELS, type InstallatieStatus } from "@/components/installaties/status";
 import type { Installatie } from "@/components/installaties/api/installatieApi";
 import MonteurWijzigDialog from "@/components/installaties/MonteurWijzigDialog";
+import InstallatieGereedheidsBar from "@/components/installaties/InstallatieGereedheidsBar";
+import { useInstallatiesGereedheidBulk } from "@/hooks/installaties/useInstallatiesGereedheidBulk";
+import { generateInstallatienummer } from "@/components/installaties/api/installatieApi";
 
 const OPEN_STATUSSEN: InstallatieStatus[] = ["gepland", "bevestigd", "onderweg", "in_uitvoering", "gereed"];
 const AFGEROND_STATUSSEN: InstallatieStatus[] = ["afgerond", "geannuleerd"];
@@ -99,7 +103,8 @@ const Installaties = () => {
       return (
         (i.consument_naam ?? "").toLowerCase().includes(q) ||
         (i.installatienummer ?? "").toLowerCase().includes(q) ||
-        (i.werkadres ?? "").toLowerCase().includes(q)
+        (i.werkadres ?? "").toLowerCase().includes(q) ||
+        (i.klant_plaats ?? "").toLowerCase().includes(q)
       );
     });
   }, [installaties, search, statusFilter, monteurFilter, focusTab]);
@@ -121,6 +126,22 @@ const Installaties = () => {
     }
     return { vandaag, week, open, afgerond };
   }, [installaties]);
+
+  const filteredIds = useMemo(() => filtered.map((i) => i.id), [filtered]);
+  const { data: gereedheidMap, isLoading: gereedLoading } = useInstallatiesGereedheidBulk(filteredIds);
+
+  const kenNummerToe = async (inst: Installatie) => {
+    if (!inst.partner_id) return;
+    try {
+      const nr = await generateInstallatienummer(inst.partner_id);
+      const { error } = await supabase.from("installaties").update({ installatienummer: nr }).eq("id", inst.id);
+      if (error) throw error;
+      toast.success(`Nummer ${nr} toegekend`);
+      void fetchData();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Toekennen mislukt");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -184,6 +205,8 @@ const Installaties = () => {
                 <TableHead>Nummer</TableHead>
                 <TableHead>Klant</TableHead>
                 <TableHead>Adres</TableHead>
+                <TableHead>Plaats</TableHead>
+                <TableHead>Voorbereiding</TableHead>
                 <TableHead>Status</TableHead>
                 {!isInstallateur && <TableHead>Monteur</TableHead>}
                 <TableHead>Datum</TableHead>
@@ -192,14 +215,31 @@ const Installaties = () => {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={isInstallateur ? 6 : 7} className="text-center py-8 text-muted-foreground">Laden...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isInstallateur ? 8 : 9} className="text-center py-8 text-muted-foreground">Laden...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={isInstallateur ? 6 : 7} className="text-center py-8 text-muted-foreground">Geen installaties gevonden</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isInstallateur ? 8 : 9} className="text-center py-8 text-muted-foreground">Geen installaties gevonden</TableCell></TableRow>
               ) : filtered.map((inst) => (
                 <TableRow key={inst.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/installaties/${inst.id}`)}>
-                  <TableCell className="font-mono text-xs">{inst.installatienummer ?? "—"}</TableCell>
+                  <TableCell>
+                    {inst.installatienummer ? (
+                      <Badge variant="outline" className="font-mono text-[11px]">{inst.installatienummer}</Badge>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs gap-1"
+                        onClick={(e) => { e.stopPropagation(); void kenNummerToe(inst); }}
+                      >
+                        <Hash className="h-3 w-3" /> Nummer toekennen
+                      </Button>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{inst.consument_naam ?? "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{inst.werkadres ?? inst.klant_adres ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{inst.klant_plaats ?? "—"}</TableCell>
+                  <TableCell>
+                    <InstallatieGereedheidsBar data={gereedheidMap?.[inst.id]} loading={gereedLoading} />
+                  </TableCell>
                   <TableCell><InstallatieStatusBadge status={inst.status as InstallatieStatus} /></TableCell>
                   {!isInstallateur && (
                     <TableCell className="text-sm">
