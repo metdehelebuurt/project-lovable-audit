@@ -103,7 +103,8 @@ const Installaties = () => {
       return (
         (i.consument_naam ?? "").toLowerCase().includes(q) ||
         (i.installatienummer ?? "").toLowerCase().includes(q) ||
-        (i.werkadres ?? "").toLowerCase().includes(q)
+        (i.werkadres ?? "").toLowerCase().includes(q) ||
+        (i.klant_plaats ?? "").toLowerCase().includes(q)
       );
     });
   }, [installaties, search, statusFilter, monteurFilter, focusTab]);
