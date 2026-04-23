@@ -2812,6 +2812,7 @@ export type Database = {
           oplevering_id: string | null
           partner_id: string
           producten: Json
+          schouw_id: string | null
           start_tijd: string | null
           status: Database["public"]["Enums"]["installatie_status"]
           updated_at: string
@@ -2849,6 +2850,7 @@ export type Database = {
           oplevering_id?: string | null
           partner_id: string
           producten?: Json
+          schouw_id?: string | null
           start_tijd?: string | null
           status?: Database["public"]["Enums"]["installatie_status"]
           updated_at?: string
@@ -2886,6 +2888,7 @@ export type Database = {
           oplevering_id?: string | null
           partner_id?: string
           producten?: Json
+          schouw_id?: string | null
           start_tijd?: string | null
           status?: Database["public"]["Enums"]["installatie_status"]
           updated_at?: string
@@ -2970,6 +2973,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installaties_schouw_id_fkey"
+            columns: ["schouw_id"]
+            isOneToOne: false
+            referencedRelation: "schouwen"
             referencedColumns: ["id"]
           },
         ]
