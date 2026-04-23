@@ -101,9 +101,15 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
       <Section title="Installatie-omschrijving">
         <Row label="Type systeem" value={rapport.extra_velden?.systeem_type ? `${rapport.extra_velden.systeem_type}-gekoppeld` : "—"} />
         <Row label="Aansluitwaarde woning" value={rapport.extra_velden?.aansluitwaarde ?? "—"} />
-        <Row label="Batterij" value={`${rapport.batterij_spec?.merk ?? ""} ${rapport.batterij_spec?.type ?? ""} (${rapport.batterij_spec?.capaciteit_kwh ?? "?"} kWh) — sn: ${rapport.batterij_spec?.serienummer ?? "—"}`} />
-        <Row label="Omvormer" value={`${rapport.omvormer_spec?.merk ?? ""} ${rapport.omvormer_spec?.type ?? ""} (${rapport.omvormer_spec?.vermogen_kw ?? "?"} kW, ${rapport.omvormer_spec?.fasen ?? "?"}-fase) — sn: ${rapport.omvormer_spec?.serienummer ?? "—"}`} />
-        <Row label="Gateway / ATS sn" value={rapport.extra_velden?.gateway_serienummer ?? "—"} />
+        <Row
+          label="Batterij"
+          value={`${rapport.batterij_spec?.merk ?? ""} ${rapport.batterij_spec?.type ?? ""} (${rapport.batterij_spec?.capaciteit_kwh ?? "?"} kWh) — sn: ${formatSns(rapport.batterij_spec?.serienummers, rapport.batterij_spec?.serienummer)}`}
+        />
+        <Row
+          label="Omvormer"
+          value={`${rapport.omvormer_spec?.merk ?? ""} ${rapport.omvormer_spec?.type ?? ""} (${rapport.omvormer_spec?.vermogen_kw ?? "?"} kW, ${rapport.omvormer_spec?.fasen ?? "?"}-fase) — sn: ${formatSns(rapport.omvormer_spec?.serienummers, rapport.omvormer_spec?.serienummer)}`}
+        />
+        <Row label="Gateway / ATS sn" value={formatSns(rapport.extra_velden?.gateway_serienummers, rapport.extra_velden?.gateway_serienummer)} />
         <Row label="CE-markering" value={rapport.omvormer_spec?.ce_markering ? "Ja" : "Nee"} />
         <Row label="RfG-klasse" value={rapport.omvormer_spec?.rfg_klasse ?? "—"} />
       </Section>
