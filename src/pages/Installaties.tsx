@@ -19,7 +19,7 @@ import { INSTALLATIE_STATUS_LABELS, type InstallatieStatus } from "@/components/
 import type { Installatie } from "@/components/installaties/api/installatieApi";
 
 const OPEN_STATUSSEN: InstallatieStatus[] = ["gepland", "bevestigd", "onderweg", "in_uitvoering", "gereed"];
-const AFGEROND_STATUSSEN: InstallatieStatus[] = ["opgeleverd", "geannuleerd"];
+const AFGEROND_STATUSSEN: InstallatieStatus[] = ["afgerond", "geannuleerd"];
 
 type FocusTab = "vandaag" | "week" | "open" | "afgerond";
 
