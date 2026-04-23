@@ -1963,6 +1963,7 @@ export type Database = {
           created_at: string
           geplande_datum: string | null
           geplande_tijd: string | null
+          geschatte_duur_minuten: number | null
           handtekening_url: string | null
           id: string
           klant_naam_handtekening: string | null
@@ -1983,6 +1984,7 @@ export type Database = {
           created_at?: string
           geplande_datum?: string | null
           geplande_tijd?: string | null
+          geschatte_duur_minuten?: number | null
           handtekening_url?: string | null
           id?: string
           klant_naam_handtekening?: string | null
@@ -2003,6 +2005,7 @@ export type Database = {
           created_at?: string
           geplande_datum?: string | null
           geplande_tijd?: string | null
+          geschatte_duur_minuten?: number | null
           handtekening_url?: string | null
           id?: string
           klant_naam_handtekening?: string | null
@@ -2079,8 +2082,13 @@ export type Database = {
           auteur_id: string
           bijlagen: Json | null
           created_at: string
+          extern_email: string | null
+          extern_naam: string | null
+          extern_organisatie: string | null
+          extern_telefoon: string | null
           id: string
           inhoud: string
+          kanaal_type: string
           partner_id: string
           richting: string
           ticket_id: string
@@ -2089,8 +2097,13 @@ export type Database = {
           auteur_id: string
           bijlagen?: Json | null
           created_at?: string
+          extern_email?: string | null
+          extern_naam?: string | null
+          extern_organisatie?: string | null
+          extern_telefoon?: string | null
           id?: string
           inhoud: string
+          kanaal_type?: string
           partner_id: string
           richting?: string
           ticket_id: string
@@ -2099,8 +2112,13 @@ export type Database = {
           auteur_id?: string
           bijlagen?: Json | null
           created_at?: string
+          extern_email?: string | null
+          extern_naam?: string | null
+          extern_organisatie?: string | null
+          extern_telefoon?: string | null
           id?: string
           inhoud?: string
+          kanaal_type?: string
           partner_id?: string
           richting?: string
           ticket_id?: string
@@ -2273,6 +2291,7 @@ export type Database = {
           factuur_id: string | null
           foutcode: string | null
           gemaakt_door: string
+          geschatte_duur_minuten: number | null
           gesloten_op: string | null
           id: string
           installatie_id: string | null
@@ -2305,6 +2324,7 @@ export type Database = {
           factuur_id?: string | null
           foutcode?: string | null
           gemaakt_door: string
+          geschatte_duur_minuten?: number | null
           gesloten_op?: string | null
           id?: string
           installatie_id?: string | null
@@ -2337,6 +2357,7 @@ export type Database = {
           factuur_id?: string | null
           foutcode?: string | null
           gemaakt_door?: string
+          geschatte_duur_minuten?: number | null
           gesloten_op?: string | null
           id?: string
           installatie_id?: string | null
