@@ -81,8 +81,8 @@ serve(async (req) => {
         }
 
         // Role cap: partner_admin can only assign limited roles
-        const allowedRolesForPartnerAdmin = ["backoffice", "partner_staff", "adviseur", "installateur"];
-        const allowedRolesForSuperadmin = ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "affiliate"];
+        const allowedRolesForPartnerAdmin = ["backoffice", "partner_staff", "adviseur", "installateur", "consument", "affiliate"];
+        const allowedRolesForSuperadmin = ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "affiliate", "consument"];
 
         if (callerProfile.rol === "partner_admin" && !allowedRolesForPartnerAdmin.includes(rol)) {
           return new Response(JSON.stringify({ error: "Rol niet toegestaan" }), {
@@ -172,10 +172,51 @@ serve(async (req) => {
         }
 
         // Delete from users table first (cascade), then auth
-        await supabaseAdmin.from("users").delete().eq("id", user_id);
+        // Probeer eerst de profielrij in public.users te verwijderen.
+        // Door de SET NULL FK's blijft historie behouden.
+        const { error: profileDeleteError } = await supabaseAdmin
+          .from("users")
+          .delete()
+          .eq("id", user_id);
+
+        if (profileDeleteError) {
+          // 23503 = foreign_key_violation
+          const code = (profileDeleteError as { code?: string }).code;
+          if (code === "23503") {
+            return new Response(
+              JSON.stringify({
+                error:
+                  "Deze gebruiker is nog gekoppeld aan andere records. Wijs deze records eerst over aan een andere gebruiker of archiveer ze, en probeer het opnieuw.",
+              }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              },
+            );
+          }
+          return new Response(JSON.stringify({ error: profileDeleteError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         const { error } = await supabaseAdmin.auth.admin.deleteUser(user_id);
 
         if (error) {
+          // Auth-delete kan ook 500 geven met FK-bericht — vertaal dat netjes
+          const msg = error.message || "";
+          if (msg.includes("foreign key") || msg.includes("23503")) {
+            return new Response(
+              JSON.stringify({
+                error:
+                  "Deze gebruiker is nog gekoppeld aan andere records. Wijs deze records eerst over aan een andere gebruiker of archiveer ze, en probeer het opnieuw.",
+              }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              },
+            );
+          }
           return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
