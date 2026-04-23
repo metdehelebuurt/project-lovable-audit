@@ -18,7 +18,7 @@ export default function TakenKaart({ items, onChanged }: { items: Taak[]; onChan
   const navigate = useNavigate();
 
   const voltooi = async (id: string) => {
-    const { error } = await supabase.from("helpdesk_ticket_taken").update({ status: "voltooid", voltooid_op: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase.from("helpdesk_ticket_taken").update({ status: "klaar", voltooid_op: new Date().toISOString() }).eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Taak voltooid");
     onChanged();
