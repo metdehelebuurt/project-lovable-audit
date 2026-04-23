@@ -53,6 +53,7 @@ const OpdrachtDetail = () => {
   const [klantBevestigingOpen, setKlantBevestigingOpen] = useState(false);
   const [aangemaakteInstallatie, setAangemaakteInstallatie] = useState<any | null>(null);
   const [retourOpen, setRetourOpen] = useState(false);
+  const isInstallateur = profile?.rol === "installateur";
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
