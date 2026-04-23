@@ -29,6 +29,7 @@ export default function TicketNieuw() {
   const [productType, setProductType] = useState("");
   const [installatiejaar, setInstallatiejaar] = useState<string>("");
   const [foutcode, setFoutcode] = useState("");
+  const [geschatteDuur, setGeschatteDuur] = useState<string>("");
 
   const bron = (params.get("bron") as TicketBron | null) ?? "direct";
   const klantIdParam = params.get("klant_id");
@@ -73,6 +74,7 @@ export default function TicketNieuw() {
       product_type: productType || null,
       product_installatiejaar: installatiejaar ? parseInt(installatiejaar, 10) : null,
       foutcode: foutcode || null,
+      geschatte_duur_minuten: geschatteDuur ? parseInt(geschatteDuur, 10) : null,
     });
     nav(`/helpdesk/tickets/${t.id}`);
   };
@@ -164,6 +166,24 @@ export default function TicketNieuw() {
             <div className="space-y-2">
               <Label htmlFor="fc">Foutcode</Label>
               <Input id="fc" value={foutcode} onChange={(e) => setFoutcode(e.target.value)} placeholder="Optioneel" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Geschatte oplostijd</Label>
+              <Select value={geschatteDuur || "geen"} onValueChange={(v) => setGeschatteDuur(v === "geen" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Optioneel" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="geen">Geen schatting</SelectItem>
+                  <SelectItem value="15">15 minuten</SelectItem>
+                  <SelectItem value="30">30 minuten</SelectItem>
+                  <SelectItem value="60">1 uur</SelectItem>
+                  <SelectItem value="90">1,5 uur</SelectItem>
+                  <SelectItem value="120">2 uur</SelectItem>
+                  <SelectItem value="180">3 uur</SelectItem>
+                  <SelectItem value="240">4 uur</SelectItem>
+                  <SelectItem value="480">Hele dag</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="sm:col-span-2 space-y-2">

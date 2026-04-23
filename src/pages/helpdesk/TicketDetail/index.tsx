@@ -21,6 +21,7 @@ import OplossingTab from "./OplossingTab";
 import HistorieTab from "./HistorieTab";
 import AnalyzerTab from "./AnalyzerTab";
 import PlanningTab from "./PlanningTab";
+import KlantContactStrook from "@/components/helpdesk/KlantContactStrook";
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
@@ -116,6 +117,8 @@ export default function TicketDetail() {
           </div>
         </div>
       </Card>
+
+      <KlantContactStrook klantId={ticket.klant_id} />
 
       <Tabs defaultValue="overzicht" className="w-full">
         <TabsList className="flex flex-wrap h-auto">
