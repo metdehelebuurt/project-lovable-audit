@@ -51,7 +51,7 @@ export default function TicketDetail() {
       const { data } = await supabase.from("users")
         .select("id, voornaam, achternaam, rol")
         .eq("partner_id", profile!.partner_id)
-        .in("rol", ["partner_admin", "partner_staff", "adviseur", "installateur"])
+        .in("rol", ["partner_admin", "partner_staff", "adviseur", "installateur", "backoffice"])
         .order("voornaam");
       return (data ?? []) as Array<{ id: string; voornaam: string; achternaam: string; rol: string }>;
     },
