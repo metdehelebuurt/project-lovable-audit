@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ClipboardCheck, Eye, Wrench } from "lucide-react";
+import { Search, ClipboardCheck, Eye, Wrench, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MonteurToewijsDialog from "@/components/installaties/MonteurToewijsDialog";
 import { toast } from "sonner";
@@ -70,6 +70,9 @@ const Opdrachten = () => {
           <h1 className="text-2xl font-semibold text-foreground">Verkooporders</h1>
           <p className="text-muted-foreground mt-1">Geaccepteerde offertes verwerken en opvolgen</p>
         </div>
+        <Button onClick={() => navigate("/opdrachten/nieuw")} className="gap-2">
+          <Plus className="h-4 w-4" /> Nieuwe verkooporder
+        </Button>
       </div>
 
       <Card className="rounded-2xl border-0 shadow-sm">

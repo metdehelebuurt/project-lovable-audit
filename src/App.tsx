@@ -27,6 +27,7 @@ import Offertes from "@/pages/Offertes";
 import OfferteDetail from "@/pages/OfferteDetail";
 import Opdrachten from "@/pages/Opdrachten";
 import OpdrachtDetail from "@/pages/OpdrachtDetail";
+import OpdrachtNieuw from "@/pages/OpdrachtNieuw";
 import Installaties from "@/pages/Installaties";
 import InstallatieDetail from "@/pages/InstallatieDetail";
 import InstallatieNieuw from "@/pages/InstallatieNieuw";
@@ -201,6 +202,9 @@ const App = () => (
               } />
               <Route path="/opdrachten" element={
                 <ProtectedRoute moduleKey="opdrachten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Opdrachten /></ProtectedRoute>
+              } />
+              <Route path="/opdrachten/nieuw" element={
+                <ProtectedRoute moduleKey="opdrachten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><OpdrachtNieuw /></ProtectedRoute>
               } />
               <Route path="/opdrachten/:id" element={
                 <ProtectedRoute moduleKey="opdrachten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><OpdrachtDetail /></ProtectedRoute>
