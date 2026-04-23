@@ -21,6 +21,7 @@ import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { isAdminTier, isPartnerAdminOrHigher } from "@/lib/permissions";
 import type { AppRole } from "@/lib/permissions";
+import { useModuleNotificatieCounts, entityTypeForUrl, markeerModuleGelezen } from "@/hooks/useModuleNotificatieCounts";
 
 interface NavItem {
   title: string;
