@@ -1,89 +1,62 @@
 
 
-## Analyse — Installateur kan nog niet volwaardig werken
+## Plan — Edge function errors bij aanmaken en verwijderen van gebruikers oplossen
 
-Je vroeg een grondige analyse van de installateur-ervaring (toegewezen installaties, opdrachten, etc.). Hieronder de bevindingen en het verbeterplan.
+### Root cause
 
-### Gevonden knelpunten
+**1. Verwijderen faalt structureel**
+Auth-log toont:  
+`update or delete on table "users" violates foreign key constraint "schouwen_adviseur_id_fkey"`.  
+41 foreign keys verwijzen naar `public.users`. Veel staan op `NO ACTION` (ON DELETE blokkeert). Zodra de gebruiker ergens als `adviseur_id`, `installateur_id`, `toegewezen_aan`, `created_by`, etc. is gekoppeld, faalt de delete. De edge function vangt de error niet inhoudelijk af en geeft een generieke 500.
 
-**1. Routes & navigatie (gedeeltelijk geblokkeerd)**
-- `/opleveringen/nieuw` en `/opleveringen/:id` staan wel open voor `installateur`, maar voor de **monteursnelweg** ontbreekt de doorklik vanuit het mobiele werkscherm in sommige statussen.
-- `/installaties/:id` (kantoorweergave) is open voor installateur, maar tabs als "Communicatie" en "Documentatie" tonen knoppen die de installateur niet hoort/mag bedienen.
-- Sidebar: "Voorraad", "Producten" en "Documenten" staan wel in het menu, maar `OpdrachtDetail` toont retour-/factuur-/pakbon-knoppen die voor monteur falen door RLS — geen role-gating in de UI.
+**2. Aanmaken faalt voor sommige rollen**
+De UI biedt `consument` aan in de rol-dropdown, maar de edge function `user-management` heeft `consument` NIET in `allowedRolesForSuperadmin`. Resultaat: 400 "Ongeldige rol". Hetzelfde geldt voor `affiliate` als partner_admin de creatie doet.
 
-**2. Dashboard te leeg en niet werkbaar**
-- Installateur-dashboard toont enkel 2 kale telkaarten ("Verkooporders", "Gepland"). Geen agenda voor vandaag, geen lijst toegewezen installaties, geen openstaande opleverrapporten, geen knoppen naar werkscherm.
+### Oplossing
 
-**3. Lijstweergaven niet gefilterd op "mijn werk"**
-- `Installaties.tsx`: query haalt **alle** installaties van de partner; RLS geeft alleen die van de installateur door, maar de UI heeft géén "mijn open werk" / "vandaag" / "deze week" filters. Geen sortering op startdatum oplopend.
-- `Opdrachten.tsx`: zelfde verhaal — installateur ziet alle opdrachten via tabel zonder onderscheid welke aan hem zijn toegewezen (`toegewezen_monteur_id`). RLS filtert wel maar UX is verwarrend.
+**A. Database-migratie — FK's omzetten naar SET NULL**
+Eén migratie die voor alle FK's die naar `public.users` verwijzen en op `NO ACTION` staan, de `ON DELETE` regel wijzigt naar `SET NULL` (voor nullable kolommen) of `CASCADE` waar het record zonder de user betekenisloos is. Concreet:
 
-**4. Planning/agenda mist installateur-perspectief**
-- `Planning.tsx`: `isAdmin` is alleen `partner_admin`/`partner_staff`, dus installateur ziet `mijnAgenda=true` standaard, **maar** filter logica filtert op `adviseur_id`. Installaties worden niet gefilterd op `installateur_id` — installateur ziet dus alle installaties van het hele partnerteam i.p.v. enkel zijn eigen. Geen "morgen / komende 7 dagen" focus-view voor monteur.
+| Tabel.kolom | Nieuwe regel | Reden |
+|---|---|---|
+| `schouwen.adviseur_id`, `schouwen.installateur_id` | SET NULL | historie behouden |
+| `offertes.adviseur_id` | SET NULL | offertes blijven bestaan |
+| `installaties.installateur_id`, `installaties.created_by`, `installaties.consument_id` | SET NULL | installatie blijft bestaan |
+| `opdrachten.toegewezen_monteur_id` | SET NULL | |
+| `leads.toegewezen_aan`, `leads.owner_user_id` | SET NULL | |
+| `afspraken.adviseur_id` | SET NULL | |
+| `lead_contactmomenten.user_id`, `lead_notities.user_id` | SET NULL | |
+| `documenten.geupload_door_id`, `documenten.consument_id` | SET NULL | |
+| `consumenten.user_id` | SET NULL | |
+| `tickets.consument_id` | SET NULL | |
+| `installatie_historie.actor_id`, `installatie_notities.auteur_id` | SET NULL | |
+| `opleverrapporten.created_by` | SET NULL | |
+| `affiliate_commissies.affiliate_id` | SET NULL | |
+| `inkoop_ontvangsten.ontvangen_door` (al SET NULL) | ongewijzigd | |
+| Tabellen die al `CASCADE`/`SET NULL` zijn | ongewijzigd | |
 
-**5. RLS/permissie-inconsistenties**
-- `opdrachten.UPDATE` policy laat installateur **niet** updaten (alleen partner_admin/partner_staff/adviseur). Voor de monteur in OpdrachtDetail werkt geen enkele actie behalve lezen. Knoppen zoals "Annuleren", "Pakbon aanmaken", "Factuur aanmaken" falen stilzwijgend.
-- `voorraad_mutaties.INSERT` is open voor partner-leden, maar de `VoorraadCorrectieDialog` heeft geen role-gating; installateur-gebruik bij gereedmelding (verbruikt materiaal) is nu niet ondersteund.
-- `serienummers` (`product_serienummers`): installateur kan invullen, ✓.
+Voor kolommen die `NOT NULL` zijn maar wel een user vereisen wordt `CASCADE` gebruikt; dat zijn typisch persoonlijke records (notificaties, affiliate_links, feedback_verzoeken — die staan al op CASCADE).
 
-**6. Werkscherm `/installaties/:id/werk` mist functies**
-- Geen "pauzeren-> hervatten" met tijdregistratie zichtbaar voor monteur.
-- Geen knop om snel een **storingsticket / probleem** aan te maken vanaf de werkplek (wel in de kantoorweergave).
-- Notitie/foto-uploads ontbreken; monteur moet op desktop door tabs heen.
-- Geen offline-/zwak-netwerk-indicator; gereedmelding faalt zonder retry.
+**B. Edge function `user-management` robuuster maken**
 
-**7. Kleine UX-issues**
-- Dashboard-titel zegt "Mijn Verkooporders" — onlogisch voor installateur (zou "Mijn werk" moeten zijn, consistent met sidebar-label).
-- Opleveringen-knop in monteurview toont alleen bij status `gereed/in_uitvoering`; een deel van monteurs werkt direct met de bevestigde-status; te restrictief.
+- `create_user`: voeg `consument` en `affiliate` toe aan `allowedRolesForSuperadmin`. Sta `affiliate` ook toe voor `partner_admin` (huidige lijst uitbreiden).
+- `delete_user`: leg uit waarom het mislukt als er nog FK's klemzitten — vang Postgres-fout met code `23503` af en retourneer `400` met heldere boodschap "Gebruiker is nog gekoppeld aan X records. Wijs eerst over of archiveer.". Zo krijgt de gebruiker direct een leesbare melding i.p.v. een generieke 500.
+- Volgorde delete: eerst `auth.admin.deleteUser` proberen — als FK's naar `public.users` bestaan en op CASCADE staan ruimt Supabase mee op. Anders eerst `public.users` delete (na migratie werkt dit altijd).
 
----
+**C. UI consistentie**
+- In `Gebruikers.tsx`: de aanmaak-dropdown matcht nu wel met de toegestane rollen in de edge function.
 
-### Verbeterplan
+### Impact
+- Bestaande records met user-FK's krijgen `NULL` op die kolom als de user wordt verwijderd; historie blijft intact.
+- Geen schade aan data; geen RLS-wijzigingen.
 
-**Stap 1 — Rol-gefilterde lijstweergaven**
-- `Installaties.tsx`: voor `rol==='installateur'` standaard filter "Mijn open werk" (status ∈ gepland/bevestigd/onderweg/in_uitvoering/gereed), sorteer oplopend op `geplande_startdatum`. Tabs: "Vandaag" / "Deze week" / "Open" / "Afgerond".
-- `Opdrachten.tsx`: voor installateur enkel opdrachten met `toegewezen_monteur_id = profile.id` of waar `installatie_id` aan een eigen installatie hangt; verberg knoppen "Plannen / Factuur / Pakbon".
-
-**Stap 2 — Installateur-dashboard**
-- Vervang lege widgets door: "Vandaag" (tijdslijn van toegewezen installaties met kaart-link), "Komende 7 dagen", "Open opleverrapporten van mij", "Aan mij toegewezen tickets".
-- Quick-action knoppen: "Naar werkscherm vandaag", "Nieuw opleverrapport", "Ticket aanmaken".
-
-**Stap 3 — Planning**
-- Behandel `installateur` net als adviseur: `mijnAgenda` filter ook op `installateur_id` voor installatie-events. Default voor installateur: week-view met enkel eigen werk.
-
-**Stap 4 — RLS uitbreiden waar legitiem**
-- Migratie: `opdrachten.UPDATE` policy uitbreiden zodat installateur status mag wijzigen op **eigen** opdracht (`toegewezen_monteur_id = auth.uid()`) maar alleen statusvelden, geen prijs/regels (afdwingen via trigger of velden whitelist).
-- Geen verandering aan financiële tabellen (terecht alleen admin).
-
-**Stap 5 — Role-gating in UI**
-- `OpdrachtDetail`: verberg voor `installateur` de actieknoppen "Annuleren / Factuur / Pakbon / Schouw plannen / Installatie plannen". Toon alleen "Werkscherm openen", "Notitie toevoegen", "Ticket aanmaken", "Documentatie".
-- `InstallatieDetail`: voor installateur tab "Communicatie" en "Planning bewerken" verbergen; tabs "Notities", "Serienummers", "Producten (read-only)" en "Documentatie" prominent.
-
-**Stap 6 — Mobiel werkscherm uitbreiden**
-- Toevoegen aan `InstallatieMonteurView`: 
-  - **Foto/notitie-upload** (compact) per installatie, geschreven naar `installatie_notities` met `intern=true`.
-  - **Storingsticket-knop** die naar `/helpdesk/tickets/nieuw?bron=installatie&installatie_id=...` navigeert.
-  - **Tijdregistratie**: zichtbare timer tussen "starten" en "gereed melden" (lokaal + persisteert via `start_tijd/eind_tijd` velden).
-  - **Retry**-mechanisme bij gereedmelding (mutation met automatische herhaling bij netwerkfout, toast met "later opnieuw proberen").
-- Knop "Opleverrapport maken" altijd zichtbaar zodra status ≥ `in_uitvoering`.
-
-**Stap 7 — Kleine UI-correcties**
-- Dashboard-titel installateur → "Mijn werk".
-- Nieuwe sidebar-link "Vandaag" voor installateur naar `/installaties?focus=vandaag`.
-
-### Bestanden die geraakt worden
-- `src/pages/Dashboard.tsx` — installateur-blok uitbreiden
-- `src/pages/Installaties.tsx` — rol-gefilterde tabs + sortering
-- `src/pages/Opdrachten.tsx` — verberg admin-acties voor installateur
-- `src/pages/OpdrachtDetail.tsx` — actiebalk role-gaten
-- `src/pages/InstallatieDetail.tsx` — tabs role-gaten
-- `src/pages/InstallatieMonteurView.tsx` — foto/notitie upload, ticket-knop, timer, retry
-- `src/pages/Planning.tsx` — installateur-perspectief in `mijnAgenda` + filter
-- `src/components/AppSidebar.tsx` — kleine label-aanpassingen
-- 1 SQL-migratie: `opdrachten.UPDATE` policy voor installateur op eigen opdracht (statusvelden)
+### Bestanden
+- `supabase/migrations/<timestamp>_fk_users_set_null.sql` — alle ALTER TABLE / DROP CONSTRAINT / ADD CONSTRAINT statements.
+- `supabase/functions/user-management/index.ts` — rol-allowlists uitbreiden + 23503-foutafhandeling bij delete.
+- `src/pages/Gebruikers.tsx` — eventueel kleine validatie-melding toevoegen (optioneel).
 
 ### Niet-doelen
-- Geen wijziging aan factuur/pakbon/financiële RLS — terecht admin-only.
-- Geen offline-first PWA herinrichting — alleen lichte retry op gereedmelding.
-- Geen wijziging aan opleverrapport-wizard zelf (al toegankelijk voor installateur).
+- Geen herinrichting van rollen of permissies.
+- Geen wijziging aan RLS-policies.
+- Geen aanpak van consument-koppeling aan klant via e-mail (apart memory-onderwerp).
 
