@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSub, ensureHtml, type OfferteRegel } from "@/types/offerte";
+import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
