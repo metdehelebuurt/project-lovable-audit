@@ -82,6 +82,22 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }:
                     </TableCell>
                     <TableCell>
                       {readOnly ? (
+                        r.korting_type === "bedrag" ? "€ bedrag" : "% percentage"
+                      ) : (
+                        <Select
+                          value={r.korting_type}
+                          onValueChange={(v: "percentage" | "bedrag") => update(i, "korting_type", v)}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">% percentage</SelectItem>
+                            <SelectItem value="bedrag">€ bedrag</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {readOnly ? (
                         r.korting_type === "bedrag" ? formatCurrency(r.korting_bedrag || 0) : `${r.korting_percentage || 0}%`
                       ) : (
                         <Input
