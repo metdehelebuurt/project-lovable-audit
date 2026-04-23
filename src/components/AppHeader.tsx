@@ -1,4 +1,4 @@
-import { LogOut, User, MessageSquarePlus } from "lucide-react";
+import { LogOut, User, MessageSquarePlus, Inbox } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 import { NotificatieCenter } from "@/components/NotificatieCenter";
+import { useActiecentrumBadgeCount } from "@/hooks/useActiecentrum";
 
 const rolLabels: Record<string, string> = {
   superadmin: "Platformbeheerder",
@@ -22,6 +23,7 @@ const rolLabels: Record<string, string> = {
 export function AppHeader() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const { data: acCount = 0 } = useActiecentrumBadgeCount();
 
   const handleSignOut = async () => {
     await signOut();
@@ -36,6 +38,21 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/actiecentrum")}
+          className="relative gap-1.5"
+          aria-label="Actiecentrum openen"
+        >
+          <Inbox className="h-4.5 w-4.5" />
+          <span className="hidden md:inline text-sm">Actiecentrum</span>
+          {acCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+              {acCount > 99 ? "99+" : acCount}
+            </span>
+          )}
+        </Button>
         <NotificatieCenter />
 
         <DropdownMenu>

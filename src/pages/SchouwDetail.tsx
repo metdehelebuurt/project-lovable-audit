@@ -11,6 +11,7 @@ import PaneelClusterEditor from "@/components/schouwen/PaneelClusterEditor";
 import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
 import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 import type { Database } from "@/integrations/supabase/types";
+import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
@@ -229,6 +230,7 @@ const SchouwDetail = () => {
           </CardContent>
         </Card>
       )}
+      {id && <EntiteitHistorieTab entiteitType="schouw" entiteitId={id} />}
     </div>
   );
 };

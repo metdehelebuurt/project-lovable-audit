@@ -28,6 +28,7 @@ import {
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
 import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
+import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -998,6 +999,7 @@ const LeadDetail = () => {
         defaultTitle={`Afspraak ${lead.voornaam} ${lead.achternaam}`}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
       />
+      {id && <EntiteitHistorieTab entiteitType="lead" entiteitId={id} />}
     </div>
   );
 };
