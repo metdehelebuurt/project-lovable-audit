@@ -23,12 +23,12 @@ export default function InstallatieGereedheidsBar({ data, loading }: Props) {
 
   const barClass = cn(
     "h-full rounded-full transition-all",
-    compleet ? "bg-emerald-500" : heeftBlokkades ? "bg-destructive" : "bg-primary"
+    compleet ? "bg-success" : heeftBlokkades ? "bg-destructive" : "bg-primary"
   );
 
   const labelClass = cn(
     "text-[11px] font-medium tabular-nums",
-    compleet ? "text-emerald-600" : heeftBlokkades ? "text-destructive" : "text-muted-foreground"
+    compleet ? "text-success" : heeftBlokkades ? "text-destructive" : "text-muted-foreground"
   );
 
   return (
@@ -48,7 +48,7 @@ export default function InstallatieGereedheidsBar({ data, loading }: Props) {
             {heeftBlokkades && (
               <p className="text-destructive font-medium">{data.blokkades} blokkerend(e) item(s)</p>
             )}
-            {compleet && <p className="text-emerald-600 font-medium">Volledig voorbereid</p>}
+            {compleet && <p className="text-success font-medium">Volledig voorbereid</p>}
           </div>
         </TooltipContent>
       </Tooltip>
