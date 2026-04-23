@@ -4,13 +4,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Navigation, PlayCircle, Pause, CheckCircle2, ShieldCheck, MapPin, BookOpen, ExternalLink, Wrench, LifeBuoy, Timer } from "lucide-react";
+import { ArrowLeft, Navigation, PlayCircle, Pause, CheckCircle2, ShieldCheck, MapPin, BookOpen, ExternalLink, Wrench, LifeBuoy, Timer, ClipboardCheck, ChevronDown } from "lucide-react";
 import { useInstallatie } from "@/components/installaties/useInstallatie";
 import { useInstallatieActies } from "@/components/installaties/useInstallatieActies";
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
 import type { InstallatieStatus } from "@/components/installaties/status";
 import { fetchHandleidingenVoorInstallatie } from "@/lib/productHandleidingen";
 import SerienummerEditor from "@/components/serienummers/SerienummerEditor";
+import SchouwSamenvatting from "@/components/installaties/SchouwSamenvatting";
+import { useInstallatieSchouw } from "@/hooks/installaties/useInstallatieSchouw";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const InstallatieMonteurView = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +23,9 @@ const InstallatieMonteurView = () => {
   const acties = useInstallatieActies(id);
   const [gereedNotitie, setGereedNotitie] = useState("");
   const [now, setNow] = useState(Date.now());
+  const [schouwOpen, setSchouwOpen] = useState(false);
+  const [fotoIdx, setFotoIdx] = useState<number | null>(null);
+  const { data: schouwData } = useInstallatieSchouw(installatie ?? null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
@@ -34,6 +41,11 @@ const InstallatieMonteurView = () => {
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Laden...</div>;
   if (!installatie) return <div className="p-6 text-muted-foreground">Installatie niet gevonden</div>;
+
+  const schouw = schouwData?.schouw ?? null;
+  const schouwFotos = schouw && Array.isArray((schouw as { fotos?: unknown }).fotos)
+    ? (schouw as { fotos: Array<{ url?: string; type?: string; notitie?: string }> }).fotos
+    : [];
 
   const naarOplevering = () => {
     const params = new URLSearchParams({ installatie: installatie.id });
