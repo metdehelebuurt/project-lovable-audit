@@ -40,17 +40,23 @@ const Opdrachten = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
   const [planDialog, setPlanDialog] = useState<any | null>(null);
+  const isInstallateur = profile?.rol === "installateur";
 
   const { data: opdrachten = [], isLoading } = useQuery({
-    queryKey: ["opdrachten"],
+    queryKey: ["opdrachten", profile?.id, isInstallateur],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("opdrachten")
         .select("*")
         .order("created_at", { ascending: false });
+      if (isInstallateur && profile?.id) {
+        query = query.eq("toegewezen_monteur_id", profile.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
+    enabled: !!profile,
   });
 
   const filtered = opdrachten.filter((o: any) => {
@@ -67,12 +73,18 @@ const Opdrachten = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Verkooporders</h1>
-          <p className="text-muted-foreground mt-1">Geaccepteerde offertes verwerken en opvolgen</p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {isInstallateur ? "Mijn opdrachten" : "Verkooporders"}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {isInstallateur ? "Aan jou toegewezen werkopdrachten" : "Geaccepteerde offertes verwerken en opvolgen"}
+          </p>
         </div>
-        <Button onClick={() => navigate("/opdrachten/nieuw")} className="gap-2">
-          <Plus className="h-4 w-4" /> Nieuwe verkooporder
-        </Button>
+        {!isInstallateur && (
+          <Button onClick={() => navigate("/opdrachten/nieuw")} className="gap-2">
+            <Plus className="h-4 w-4" /> Nieuwe verkooporder
+          </Button>
+        )}
       </div>
 
       <Card className="rounded-2xl border-0 shadow-sm">
@@ -126,7 +138,7 @@ const Opdrachten = () => {
                       <TableCell>{new Date(o.created_at).toLocaleDateString("nl-NL")}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {planbareStatussen.has(o.status) && !o.installatie_id && (
+                          {!isInstallateur && planbareStatussen.has(o.status) && !o.installatie_id && (
                             <Button
                               variant="ghost"
                               size="icon"
