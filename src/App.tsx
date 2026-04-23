@@ -27,6 +27,7 @@ import Offertes from "@/pages/Offertes";
 import OfferteDetail from "@/pages/OfferteDetail";
 import Opdrachten from "@/pages/Opdrachten";
 import OpdrachtDetail from "@/pages/OpdrachtDetail";
+import OpdrachtNieuw from "@/pages/OpdrachtNieuw";
 import Installaties from "@/pages/Installaties";
 import InstallatieDetail from "@/pages/InstallatieDetail";
 import InstallatieNieuw from "@/pages/InstallatieNieuw";
