@@ -7,10 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, FileDown } from "lucide-react";
+import { Plus, Trash2, FileDown, Sparkles, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Installatie } from "./api/installatieApi";
+import { generateInstallatienummer, updateInstallatie } from "./api/installatieApi";
+import AiWerkomschrijvingDialog from "./AiWerkomschrijvingDialog";
 
 interface ChecklistItem {
   id: string;
