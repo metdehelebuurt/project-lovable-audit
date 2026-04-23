@@ -92,6 +92,9 @@ const getNavGroups = (rol: string): NavGroup[] => {
       children: [
         { title: "Dashboard", url: "/helpdesk", icon: LayoutDashboard },
         { title: "Tickets", url: "/helpdesk/tickets", icon: LifeBuoy },
+        ...(["superadmin", "partner_admin", "backoffice", "partner_staff"].includes(rol)
+          ? [{ title: "Planning", url: "/helpdesk/planning", icon: Calendar }]
+          : []),
         { title: "Kennisbank", url: "/helpdesk/kennisbank", icon: BookOpen },
       ],
     });
@@ -171,7 +174,7 @@ const getNavGroups = (rol: string): NavGroup[] => {
 // Need Clock icon for "Openstaand"
 import { Clock } from "lucide-react";
 
-function SidebarNavItem({ item, collapsed, isMobile, pathname }: { item: NavItem; collapsed: boolean; isMobile: boolean; pathname: string }) {
+function SidebarNavItem({ item, collapsed, isMobile, pathname, badgeCount, onActivate }: { item: NavItem; collapsed: boolean; isMobile: boolean; pathname: string; badgeCount?: number; onActivate?: (url: string) => void }) {
   const hasChildren = item.children && item.children.length > 0;
   const isChildActive = hasChildren && item.children!.some(c => {
     const [path, query] = c.url.split("?");
@@ -188,9 +191,18 @@ function SidebarNavItem({ item, collapsed, isMobile, pathname }: { item: NavItem
             end={item.url === "/dashboard"}
             className="flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[44px]"
             activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+            onClick={() => onActivate?.(item.url)}
           >
             <item.icon className="h-4.5 w-4.5 shrink-0" />
             {(!collapsed || isMobile) && <span className="text-sm">{item.title}</span>}
+            {(!collapsed || isMobile) && badgeCount && badgeCount > 0 ? (
+              <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                {badgeCount > 9 ? "9+" : badgeCount}
+              </span>
+            ) : null}
+            {(collapsed && !isMobile && badgeCount && badgeCount > 0) ? (
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+            ) : null}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -206,6 +218,11 @@ function SidebarNavItem({ item, collapsed, isMobile, pathname }: { item: NavItem
             {(!collapsed || isMobile) && (
               <>
                 <span className="text-sm flex-1 text-left">{item.title}</span>
+                {badgeCount && badgeCount > 0 ? (
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    {badgeCount > 9 ? "9+" : badgeCount}
+                  </span>
+                ) : null}
                 <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
               </>
             )}
@@ -237,12 +254,19 @@ function SidebarNavItem({ item, collapsed, isMobile, pathname }: { item: NavItem
 }
 
 export function AppSidebar() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { state, setOpenMobile, openMobile } = useSidebar();
   const isMobile = useIsMobile();
   const collapsed = state === "collapsed";
   const groups = getNavGroups(profile?.rol ?? "consument");
   const location = useLocation();
+  const { data: counts = {} } = useModuleNotificatieCounts();
+
+  const handleActivate = (url: string) => {
+    if (!user) return;
+    const et = entityTypeForUrl(url);
+    if (et) void markeerModuleGelezen(user.id, et);
+  };
 
   // Auto-close sidebar on navigation on mobile
   useEffect(() => {
@@ -279,6 +303,8 @@ export function AppSidebar() {
                       collapsed={collapsed}
                       isMobile={isMobile}
                       pathname={location.pathname}
+                      badgeCount={counts[entityTypeForUrl(item.url) ?? ""] ?? 0}
+                      onActivate={handleActivate}
                     />
                   ))}
                 </SidebarMenu>
