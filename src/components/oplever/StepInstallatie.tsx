@@ -7,6 +7,7 @@ import { useRef } from "react";
 import type { Opleverrapport } from "./types";
 import { uploadOpleverFile } from "./api/opleverApi";
 import { toast } from "@/hooks/use-toast";
+import SerienummerLijstInput from "./SerienummerLijstInput";
 
 interface Props {
   rapportId: string;
@@ -92,10 +93,21 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
           </div>
           <div>
             <Label>Gateway / ATS serienummer</Label>
-            <Input
-              value={extra.gateway_serienummer ?? ""}
-              onChange={(e) => onChange({ extra_velden: { ...extra, gateway_serienummer: e.target.value } })}
-              placeholder="Optioneel"
+            <SerienummerLijstInput
+              value={extra.gateway_serienummers ?? []}
+              legacySingle={extra.gateway_serienummer}
+              onChange={(next) =>
+                onChange({
+                  extra_velden: {
+                    ...extra,
+                    gateway_serienummers: next,
+                    // legacy veld leegmaken zodra lijst gevuld is, anders behouden
+                    gateway_serienummer: next.length > 0 ? undefined : extra.gateway_serienummer,
+                  },
+                })
+              }
+              placeholder="Optioneel — meerdere mogelijk"
+              ariaLabel="Gateway serienummer toevoegen"
             />
           </div>
         </div>
@@ -107,7 +119,23 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
           <div><Label>Merk</Label><Input value={bat.merk ?? ""} onChange={(e) => onChange({ batterij_spec: { ...bat, merk: e.target.value } })} /></div>
           <div><Label>Type</Label><Input value={bat.type ?? ""} onChange={(e) => onChange({ batterij_spec: { ...bat, type: e.target.value } })} /></div>
           <div><Label>Capaciteit (kWh)</Label><Input type="number" inputMode="decimal" step="0.1" value={bat.capaciteit_kwh ?? ""} onChange={(e) => onChange({ batterij_spec: { ...bat, capaciteit_kwh: e.target.value === "" ? undefined : Number(e.target.value) } })} /></div>
-          <div><Label>Serienummer</Label><Input value={bat.serienummer ?? ""} onChange={(e) => onChange({ batterij_spec: { ...bat, serienummer: e.target.value } })} /></div>
+          <div className="sm:col-span-2">
+            <Label>Serienummers (1 of meer modules)</Label>
+            <SerienummerLijstInput
+              value={bat.serienummers ?? []}
+              legacySingle={bat.serienummer}
+              onChange={(next) =>
+                onChange({
+                  batterij_spec: {
+                    ...bat,
+                    serienummers: next,
+                    serienummer: next.length > 0 ? undefined : bat.serienummer,
+                  },
+                })
+              }
+              ariaLabel="Batterij serienummer toevoegen"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <input ref={batterijRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], "batterij")} />
@@ -133,7 +161,23 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
               <option value={3}>3-fase</option>
             </select>
           </div>
-          <div><Label>Serienummer</Label><Input value={omv.serienummer ?? ""} onChange={(e) => onChange({ omvormer_spec: { ...omv, serienummer: e.target.value } })} /></div>
+          <div className="sm:col-span-2">
+            <Label>Serienummers (1 of meer omvormers)</Label>
+            <SerienummerLijstInput
+              value={omv.serienummers ?? []}
+              legacySingle={omv.serienummer}
+              onChange={(next) =>
+                onChange({
+                  omvormer_spec: {
+                    ...omv,
+                    serienummers: next,
+                    serienummer: next.length > 0 ? undefined : omv.serienummer,
+                  },
+                })
+              }
+              ariaLabel="Omvormer serienummer toevoegen"
+            />
+          </div>
           <div>
             <Label>RfG-klasse</Label>
             <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={omv.rfg_klasse ?? ""} onChange={(e) => onChange({ omvormer_spec: { ...omv, rfg_klasse: (e.target.value || undefined) as "A" | "B" | "C" | "D" | undefined } })}>

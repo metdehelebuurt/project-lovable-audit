@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, ScanBarcode } from "lucide-react";
+import { Trash2, Plus, ScanBarcode, Layers } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -13,6 +15,7 @@ import {
   useDeleteSerienummer,
 } from "@/hooks/logistiek/useSerienummers";
 import { matchProductOpRegel } from "@/lib/voorraad";
+import { toast } from "sonner";
 
 interface Props {
   installatieId: string;
@@ -29,6 +32,9 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const [productId, setProductId] = useState<string>("");
   const [serienr, setSerienr] = useState("");
   const [garantieMaanden, setGarantieMaanden] = useState<string>("60");
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const { data: producten = [] } = useQuery({
     queryKey: ["partner-producten", partnerId],
@@ -79,11 +85,98 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     setSerienr("");
   };
 
+  const handleBulkAdd = async () => {
+    if (!productId) {
+      toast.error("Kies eerst een product");
+      return;
+    }
+    const lijst = bulkText
+      .split(/[\n,;\t]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (lijst.length === 0) {
+      toast.error("Geen serienummers gevonden");
+      return;
+    }
+    const months = parseInt(garantieMaanden) || 0;
+    const garantieEind = months > 0
+      ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
+      : null;
+    setBulkBusy(true);
+    let ok = 0;
+    let fout = 0;
+    for (const sn of lijst) {
+      try {
+        await upsert.mutateAsync({
+          partner_id: partnerId,
+          product_id: productId,
+          serienummer: sn,
+          installatie_id: installatieId,
+          opdracht_id: opdrachtId ?? null,
+          klant_id: klantId ?? null,
+          levering_datum: new Date().toISOString().slice(0, 10),
+          garantie_maanden: months || null,
+          garantie_einddatum: garantieEind,
+          status: "geinstalleerd",
+        });
+        ok += 1;
+      } catch {
+        fout += 1;
+      }
+    }
+    setBulkBusy(false);
+    if (ok > 0) toast.success(`${ok} serienummer(s) toegevoegd${fout > 0 ? ` · ${fout} overgeslagen (duplicaat)` : ""}`);
+    else if (fout > 0) toast.error(`${fout} serienummer(s) konden niet worden toegevoegd`);
+    if (fout === 0) {
+      setBulkText("");
+      setBulkOpen(false);
+    }
+  };
+
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <ScanBarcode className="h-4 w-4 text-primary" /> Serienummers registreren
+          <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="ml-auto">
+                <Layers className="h-4 w-4" /> Meerdere tegelijk
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bulk serienummers toevoegen</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Eén serienummer per regel (komma of puntkomma mag ook). Het gekozen product en garantie hierboven worden gebruikt.
+                </p>
+                <div>
+                  <Label className="text-xs">Product</Label>
+                  <div className="text-sm font-medium">
+                    {producten.find((p: any) => p.id === productId)?.naam ?? "— Kies eerst een product hierboven —"}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Serienummers</Label>
+                  <Textarea
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    rows={8}
+                    placeholder={"SN001\nSN002\nSN003"}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setBulkOpen(false)}>Annuleren</Button>
+                <Button type="button" onClick={handleBulkAdd} disabled={!productId || !bulkText.trim() || bulkBusy}>
+                  {bulkBusy ? "Toevoegen…" : "Toevoegen"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
