@@ -7,8 +7,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, FileDown, Sparkles, Hash } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2, FileDown, Sparkles, Hash, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Installatie } from "./api/installatieApi";
 import { generateInstallatienummer, updateInstallatie } from "./api/installatieApi";
@@ -32,6 +34,9 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
   const [nieuw, setNieuw] = useState({ label: "", blokkerend: false });
   const [aiOpen, setAiOpen] = useState(false);
   const [nummerBusy, setNummerBusy] = useState(false);
+  const [werkomschrijving, setWerkomschrijving] = useState(installatie.werkomschrijving ?? "");
+  const [werkBusy, setWerkBusy] = useState(false);
+  const kanTemplatesBeheren = profile?.rol === "partner_admin" || profile?.rol === "superadmin";
 
   const kenNummerToe = async () => {
     setNummerBusy(true);
