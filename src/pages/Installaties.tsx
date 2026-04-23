@@ -12,12 +12,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, LifeBuoy, Eye, Smartphone, UserPlus, UserCog } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, LifeBuoy, Eye, Smartphone, UserPlus, UserCog, Hash } from "lucide-react";
 import { toast } from "sonner";
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
 import { INSTALLATIE_STATUS_LABELS, type InstallatieStatus } from "@/components/installaties/status";
 import type { Installatie } from "@/components/installaties/api/installatieApi";
 import MonteurWijzigDialog from "@/components/installaties/MonteurWijzigDialog";
+import InstallatieGereedheidsBar from "@/components/installaties/InstallatieGereedheidsBar";
+import { useInstallatiesGereedheidBulk } from "@/hooks/installaties/useInstallatiesGereedheidBulk";
+import { generateInstallatienummer } from "@/components/installaties/api/installatieApi";
 
 const OPEN_STATUSSEN: InstallatieStatus[] = ["gepland", "bevestigd", "onderweg", "in_uitvoering", "gereed"];
 const AFGEROND_STATUSSEN: InstallatieStatus[] = ["afgerond", "geannuleerd"];
