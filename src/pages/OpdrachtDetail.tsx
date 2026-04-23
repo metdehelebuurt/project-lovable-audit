@@ -212,8 +212,15 @@ const OpdrachtDetail = () => {
   if (isLoading || !opdracht) return <div className="p-6 text-muted-foreground">Laden...</div>;
 
   const regels = (opdracht.regels || []) as OfferteRegel[];
-  const formatCurrency = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
   const isActive = !["afgerond", "geannuleerd"].includes(opdracht.status);
+  const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
+  const subtotaalNaKorting = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+  const kortingTotaal = brutoTotaal - subtotaalNaKorting;
+  const btwTotaal = regels.reduce(
+    (s, r) => s + regelSubtotaal(r) * ((r.btw_percentage || 21) / 100),
+    0,
+  );
+  const heeftKorting = kortingTotaal > 0.005;
 
   return (
     <div className="space-y-6">
