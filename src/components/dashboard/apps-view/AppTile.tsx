@@ -3,6 +3,7 @@ import { Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppDefinition } from "@/lib/dashboard/apps";
 import { tegelStyle, glowStyle } from "@/lib/dashboard/appColors";
+import { ModuleNotificatiePopover } from "@/components/notificaties/ModuleNotificatiePopover";
 
 interface AppTileProps {
   app: AppDefinition;
@@ -63,13 +64,6 @@ export const AppTile = forwardRef<HTMLDivElement, AppTileProps>(function AppTile
           <Icon className="h-9 w-9 text-white drop-shadow-lg" strokeWidth={2.2} />
         </div>
 
-        {/* Badge */}
-        {badgeCount > 0 && !editMode && (
-          <div className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-background">
-            {badgeCount > 99 ? "99+" : badgeCount}
-          </div>
-        )}
-
         {/* Edit-modus knop: verbergen */}
         {editMode && onHide && (
           <button
@@ -100,6 +94,31 @@ export const AppTile = forwardRef<HTMLDivElement, AppTileProps>(function AppTile
           </button>
         )}
       </div>
+
+      {/* Badge — buiten de overflow-hidden tegel zodat de popover zichtbaar blijft */}
+      {badgeCount > 0 && !editMode && app.badgeEntiteit && (
+        <div className="absolute top-0 right-0 sm:right-2 z-20">
+          <ModuleNotificatiePopover
+            entityType={app.badgeEntiteit}
+            moduleLabel={app.label}
+            moduleUrl={app.url}
+          >
+            <button
+              type="button"
+              aria-label={`${badgeCount} ongelezen meldingen voor ${app.label}`}
+              onClick={(e) => e.stopPropagation()}
+              className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-background hover:scale-110 transition-transform"
+            >
+              {badgeCount > 99 ? "99+" : badgeCount}
+            </button>
+          </ModuleNotificatiePopover>
+        </div>
+      )}
+      {badgeCount > 0 && !editMode && !app.badgeEntiteit && (
+        <div className="absolute top-0 right-0 sm:right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-background z-20">
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </div>
+      )}
 
       <span className="text-xs font-medium text-foreground text-center line-clamp-2 max-w-[112px] leading-tight">
         {app.label}
