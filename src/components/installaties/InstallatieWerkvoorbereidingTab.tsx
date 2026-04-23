@@ -176,12 +176,16 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Werkvoorbereiding</CardTitle>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setAiOpen(true)}>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary" /> AI-werkomschrijving
-          </Button>
           <Button size="sm" variant="outline" onClick={() => pasTemplate.mutate()} disabled={pasTemplate.isPending}>
-            <FileDown className="h-3.5 w-3.5 mr-1.5" /> Template toepassen
+            <FileDown className="h-3.5 w-3.5 mr-1.5" /> Standaard checklist toevoegen
           </Button>
+          {kanTemplatesBeheren && (
+            <Button size="sm" variant="ghost" asChild>
+              <Link to="/instellingen/checklist-templates">
+                <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Templates beheren
+              </Link>
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -193,6 +197,27 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
             </Button>
           </div>
         )}
+
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Werkomschrijving voor monteur</Label>
+            <Button size="sm" variant="ghost" className="h-7 gap-1.5 text-xs" onClick={() => setAiOpen(true)}>
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> AI genereren
+            </Button>
+          </div>
+          <Textarea
+            value={werkomschrijving}
+            onChange={(e) => setWerkomschrijving(e.target.value)}
+            rows={5}
+            placeholder="Beschrijving van de werkzaamheden voor de monteur. Klik op 'AI genereren' voor een voorstel op basis van schouw, producten en checklist."
+          />
+          <div className="flex justify-end">
+            <Button size="sm" onClick={slaWerkomschrijvingHandmatigOp} disabled={werkBusy} className="gap-1.5">
+              <Save className="h-3.5 w-3.5" /> {werkBusy ? "Opslaan…" : "Opslaan"}
+            </Button>
+          </div>
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Laden…</p>
         ) : items.length === 0 ? (
