@@ -7,6 +7,7 @@ import InstallatieHeader from "@/components/installaties/InstallatieHeader";
 import InstallatiePlanningCard from "@/components/installaties/InstallatiePlanningCard";
 import InstallatieKlantCard from "@/components/installaties/InstallatieKlantCard";
 import InstallatieProductenCard from "@/components/installaties/InstallatieProductenCard";
+import InstallatieSchouwCard from "@/components/installaties/InstallatieSchouwCard";
 import InstallatieNotitiesTab from "@/components/installaties/InstallatieNotitiesTab";
 import InstallatieCommunicatieTab from "@/components/installaties/InstallatieCommunicatieTab";
 import InstallatieHistorieTab from "@/components/installaties/InstallatieHistorieTab";
@@ -80,6 +81,7 @@ const InstallatieDetail = () => {
             <InstallatieKlantCard installatie={installatie} />
             <InstallatiePlanningCard installatie={installatie} onChanged={refetch} readOnly />
           </div>
+          <InstallatieSchouwCard installatie={installatie} />
           <InstallatieProductenCard installatie={installatie} onChanged={refetch} />
           <InstallatieDocumentatieCard installatieId={installatie.id} />
         </TabsContent>
