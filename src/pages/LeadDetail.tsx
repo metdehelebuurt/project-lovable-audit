@@ -999,6 +999,7 @@ const LeadDetail = () => {
         defaultTitle={`Afspraak ${lead.voornaam} ${lead.achternaam}`}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
       />
+      {id && <EntiteitHistorieTab entiteitType="lead" entiteitId={id} />}
     </div>
   );
 };
