@@ -18,7 +18,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, User,
+  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, User, CheckSquare,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths,
@@ -34,7 +34,7 @@ interface CalendarEvent {
   id: string;
   date: string;
   title: string;
-  type: "schouw" | "installatie" | "afspraak";
+  type: "schouw" | "installatie" | "afspraak" | "taak";
   status: string;
   adviseur_naam?: string;
   adviseur_id?: string;
