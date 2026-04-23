@@ -85,6 +85,54 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     setSerienr("");
   };
 
+  const handleBulkAdd = async () => {
+    if (!productId) {
+      toast.error("Kies eerst een product");
+      return;
+    }
+    const lijst = bulkText
+      .split(/[\n,;\t]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (lijst.length === 0) {
+      toast.error("Geen serienummers gevonden");
+      return;
+    }
+    const months = parseInt(garantieMaanden) || 0;
+    const garantieEind = months > 0
+      ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
+      : null;
+    setBulkBusy(true);
+    let ok = 0;
+    let fout = 0;
+    for (const sn of lijst) {
+      try {
+        await upsert.mutateAsync({
+          partner_id: partnerId,
+          product_id: productId,
+          serienummer: sn,
+          installatie_id: installatieId,
+          opdracht_id: opdrachtId ?? null,
+          klant_id: klantId ?? null,
+          levering_datum: new Date().toISOString().slice(0, 10),
+          garantie_maanden: months || null,
+          garantie_einddatum: garantieEind,
+          status: "geinstalleerd",
+        });
+        ok += 1;
+      } catch {
+        fout += 1;
+      }
+    }
+    setBulkBusy(false);
+    if (ok > 0) toast.success(`${ok} serienummer(s) toegevoegd${fout > 0 ? ` · ${fout} overgeslagen (duplicaat)` : ""}`);
+    else if (fout > 0) toast.error(`${fout} serienummer(s) konden niet worden toegevoegd`);
+    if (fout === 0) {
+      setBulkText("");
+      setBulkOpen(false);
+    }
+  };
+
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader>
