@@ -35,20 +35,36 @@ Deno.serve(async (req) => {
     if (!inst) return jsonResp({ error: "Installatie niet gevonden" }, 404);
 
     let schouw: Record<string, unknown> | null = null;
-    if (inst.opdracht_id) {
+    // 1. Direct via installatie.schouw_id
+    if (inst.schouw_id) {
+      const { data: sch } = await supabase.from("schouwen").select("*").eq("id", inst.schouw_id).maybeSingle();
+      if (sch) schouw = sch;
+    }
+    // 2. Via opdracht.schouw_id
+    if (!schouw && inst.opdracht_id) {
       const { data: opd } = await supabase
         .from("opdrachten")
         .select("schouw_id")
         .eq("id", inst.opdracht_id)
         .maybeSingle();
       if (opd?.schouw_id) {
-        const { data: sch } = await supabase
-          .from("schouwen")
-          .select("*")
-          .eq("id", opd.schouw_id)
-          .maybeSingle();
-        schouw = sch;
+        const { data: sch } = await supabase.from("schouwen").select("*").eq("id", opd.schouw_id).maybeSingle();
+        if (sch) schouw = sch;
       }
+    }
+    // 3. Voorstel via lead_id (uitgevoerd)
+    if (!schouw && inst.lead_id && inst.partner_id) {
+      const { data: sch } = await supabase
+        .from("schouwen")
+        .select("*")
+        .eq("lead_id", inst.lead_id)
+        .eq("partner_id", inst.partner_id)
+        .eq("status", "uitgevoerd")
+        .order("geplande_datum", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sch) schouw = sch;
     }
 
     const productenArr = Array.isArray(inst.producten) ? inst.producten as Array<Record<string, unknown>> : [];
