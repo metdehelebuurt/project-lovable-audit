@@ -32,6 +32,7 @@ export function ServiceBezoekDialog({ ticket, type, trigger }: { ticket: Helpdes
   const [datum, setDatum] = useState<string>(type === "storing" ? new Date().toISOString().slice(0, 10) : "");
   const [tijd, setTijd] = useState<string>("");
   const [notities, setNotities] = useState("");
+  const [duur, setDuur] = useState<string>(ticket.geschatte_duur_minuten ? String(ticket.geschatte_duur_minuten) : "");
   const create = useCreateServiceBezoek();
   const { data: monteurs = [] } = useMonteurs(ticket.partner_id);
 
@@ -46,6 +47,7 @@ export function ServiceBezoekDialog({ ticket, type, trigger }: { ticket: Helpdes
       geplande_tijd: tijd || null,
       notities: notities || null,
       klant_id: ticket.klant_id,
+      geschatte_duur_minuten: duur ? parseInt(duur, 10) : null,
     });
     setOpen(false);
     setNotities("");
@@ -70,9 +72,25 @@ export function ServiceBezoekDialog({ ticket, type, trigger }: { ticket: Helpdes
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div><Label>Datum</Label><Input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></div>
             <div><Label>Tijd</Label><Input type="time" value={tijd} onChange={(e) => setTijd(e.target.value)} /></div>
+            <div>
+              <Label>Duur</Label>
+              <Select value={duur} onValueChange={setDuur}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 min</SelectItem>
+                  <SelectItem value="30">30 min</SelectItem>
+                  <SelectItem value="60">1 uur</SelectItem>
+                  <SelectItem value="90">1,5 uur</SelectItem>
+                  <SelectItem value="120">2 uur</SelectItem>
+                  <SelectItem value="180">3 uur</SelectItem>
+                  <SelectItem value="240">4 uur</SelectItem>
+                  <SelectItem value="480">Hele dag</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div>
             <Label>Notities</Label>
