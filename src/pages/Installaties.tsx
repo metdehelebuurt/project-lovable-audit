@@ -12,14 +12,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, LifeBuoy, Eye, Smartphone } from "lucide-react";
+import { Plus, Search, LifeBuoy, Eye, Smartphone, UserPlus, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
 import { INSTALLATIE_STATUS_LABELS, type InstallatieStatus } from "@/components/installaties/status";
 import type { Installatie } from "@/components/installaties/api/installatieApi";
+import MonteurWijzigDialog from "@/components/installaties/MonteurWijzigDialog";
 
 const OPEN_STATUSSEN: InstallatieStatus[] = ["gepland", "bevestigd", "onderweg", "in_uitvoering", "gereed"];
 const AFGEROND_STATUSSEN: InstallatieStatus[] = ["afgerond", "geannuleerd"];
+const TOEWIJS_STATUSSEN: InstallatieStatus[] = ["concept", "gepland", "bevestigd", "onderweg"];
 
 type FocusTab = "vandaag" | "week" | "open" | "afgerond";
 
@@ -36,8 +38,14 @@ const Installaties = () => {
   const [statusFilter, setStatusFilter] = useState<string>("alles");
   const [monteurFilter, setMonteurFilter] = useState<string>("alles");
   const [focusTab, setFocusTab] = useState<FocusTab>("open");
+  const [monteurDialogVoor, setMonteurDialogVoor] = useState<Installatie | null>(null);
 
   const isInstallateur = profile?.rol === "installateur";
+  const monteurNaam = (id: string | null | undefined) => {
+    if (!id) return null;
+    const m = monteurs.find((x) => x.id === id);
+    return m ? `${m.voornaam} ${m.achternaam}` : null;
+  };
 
   useEffect(() => {
     if (isInstallateur) setFocusTab("vandaag");
@@ -177,27 +185,43 @@ const Installaties = () => {
                 <TableHead>Klant</TableHead>
                 <TableHead>Adres</TableHead>
                 <TableHead>Status</TableHead>
+                {!isInstallateur && <TableHead>Monteur</TableHead>}
                 <TableHead>Datum</TableHead>
                 <TableHead className="text-right">Acties</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Laden...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isInstallateur ? 6 : 7} className="text-center py-8 text-muted-foreground">Laden...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Geen installaties gevonden</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isInstallateur ? 6 : 7} className="text-center py-8 text-muted-foreground">Geen installaties gevonden</TableCell></TableRow>
               ) : filtered.map((inst) => (
                 <TableRow key={inst.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/installaties/${inst.id}`)}>
                   <TableCell className="font-mono text-xs">{inst.installatienummer ?? "—"}</TableCell>
                   <TableCell className="font-medium">{inst.consument_naam ?? "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{inst.werkadres ?? inst.klant_adres ?? "—"}</TableCell>
                   <TableCell><InstallatieStatusBadge status={inst.status as InstallatieStatus} /></TableCell>
+                  {!isInstallateur && (
+                    <TableCell className="text-sm">
+                      {monteurNaam(inst.installateur_id) ?? <span className="text-muted-foreground italic">Niet toegewezen</span>}
+                    </TableCell>
+                  )}
                   <TableCell className="text-sm">
                     {inst.geplande_startdatum
                       ? new Date(inst.geplande_startdatum).toLocaleDateString("nl-NL")
                       : "—"}
                   </TableCell>
                   <TableCell className="text-right">
+                    {!isInstallateur && TOEWIJS_STATUSSEN.includes(inst.status as InstallatieStatus) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); setMonteurDialogVoor(inst); }}
+                        title={inst.installateur_id ? "Monteur wijzigen" : "Monteur toewijzen"}
+                      >
+                        {inst.installateur_id ? <UserCog className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                      </Button>
+                    )}
                     {isInstallateur && (
                       <Button variant="ghost" size="icon" asChild title="Werkscherm">
                         <Link to={`/installaties/${inst.id}/werk`} onClick={(e) => e.stopPropagation()}>
@@ -224,6 +248,15 @@ const Installaties = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {monteurDialogVoor && (
+        <MonteurWijzigDialog
+          open={!!monteurDialogVoor}
+          onOpenChange={(o) => { if (!o) setMonteurDialogVoor(null); }}
+          installatie={monteurDialogVoor}
+          onSaved={() => { setMonteurDialogVoor(null); void fetchData(); }}
+        />
+      )}
     </div>
   );
 };
