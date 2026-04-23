@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   const startStr = now.toISOString().slice(0, 10);
   const endStr = sixMonthsLater.toISOString().slice(0, 10);
 
-  const [schouwen, installaties, afspraken] = await Promise.all([
+  const [schouwen, installaties, afspraken, taken] = await Promise.all([
     supabase.from("schouwen")
       .select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie")
       .eq("partner_id", user.partner_id)
@@ -58,6 +58,12 @@ Deno.serve(async (req) => {
       .eq("partner_id", user.partner_id)
       .gte("datum", startStr)
       .lte("datum", endStr),
+    supabase.from("helpdesk_ticket_taken")
+      .select("id, titel, geplande_datum, geplande_starttijd, geplande_eindtijd, status, ticket_id, agenda_user_id")
+      .eq("partner_id", user.partner_id)
+      .eq("inplannen_in_agenda", true)
+      .gte("geplande_datum", startStr)
+      .lte("geplande_datum", endStr),
   ]);
 
   const stamp = now.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -114,6 +120,28 @@ Deno.serve(async (req) => {
       `SUMMARY:${a.type === "op_afstand" ? "📹" : a.type === "belafspraak" ? "📞" : "🏠"} ${a.titel}`,
       `DESCRIPTION:Type: ${a.type}\\nStatus: ${a.status}${a.locatie ? "\\nLocatie: " + a.locatie : ""}`,
       ...(a.locatie ? [`LOCATION:${a.locatie}`] : []),
+      "END:VEVENT",
+    );
+  }
+
+  for (const t of taken.data ?? []) {
+    if (!t.geplande_datum) continue;
+    const dtStart = t.geplande_starttijd
+      ? `${formatDate(t.geplande_datum)}T${(t.geplande_starttijd as string).replace(/:/g, "").slice(0, 6)}`
+      : formatDate(t.geplande_datum);
+    const dtEnd = t.geplande_eindtijd
+      ? `${formatDate(t.geplande_datum)}T${(t.geplande_eindtijd as string).replace(/:/g, "").slice(0, 6)}`
+      : null;
+    const isAllDay = !t.geplande_starttijd;
+
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:taak-${t.id}@planning`,
+      `DTSTAMP:${stamp}`,
+      isAllDay ? `DTSTART;VALUE=DATE:${dtStart}` : `DTSTART:${dtStart}`,
+      ...(dtEnd && !isAllDay ? [`DTEND:${dtEnd}`] : []),
+      `SUMMARY:✔ Taak - ${t.titel}`,
+      `DESCRIPTION:Status: ${t.status}${t.ticket_id ? "\\nTicket: " + t.ticket_id : ""}`,
       "END:VEVENT",
     );
   }

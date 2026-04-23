@@ -18,7 +18,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, User,
+  ChevronLeft, ChevronRight, ClipboardList, Wrench, Download, Link2, Calendar as CalendarIcon, Video, MapPin, Phone, Plus, User, CheckSquare,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths,
@@ -34,7 +34,7 @@ interface CalendarEvent {
   id: string;
   date: string;
   title: string;
-  type: "schouw" | "installatie" | "afspraak";
+  type: "schouw" | "installatie" | "afspraak" | "taak";
   status: string;
   adviseur_naam?: string;
   adviseur_id?: string;
@@ -104,7 +104,7 @@ const Planning = () => {
         .from("users")
         .select("id, voornaam, achternaam, rol")
         .eq("partner_id", profile.partner_id!)
-        .in("rol", ["adviseur", "partner_staff", "partner_admin"])
+        .in("rol", ["adviseur", "partner_staff", "partner_admin", "backoffice"])
         .eq("status", "actief");
       if (data) setTeamUsers(data as TeamUser[]);
     };
@@ -140,6 +140,13 @@ const Planning = () => {
           .gte("datum", rangeStart).lte("datum", rangeEnd),
       ]);
 
+      const takenRes = await supabase
+        .from("helpdesk_ticket_taken")
+        .select("id, titel, geplande_datum, geplande_starttijd, geplande_eindtijd, agenda_user_id, status, ticket_id")
+        .eq("inplannen_in_agenda", true)
+        .gte("geplande_datum", rangeStart)
+        .lte("geplande_datum", rangeEnd);
+
       // Build user name map from teamUsers
       const userMap = new Map(teamUsers.map(u => [u.id, `${u.voornaam} ${u.achternaam}`]));
 
@@ -161,6 +168,13 @@ const Planning = () => {
           title: a.titel, type: "afspraak" as const, status: a.status,
           adviseur_id: a.adviseur_id, adviseur_naam: userMap.get(a.adviseur_id),
           extra: { type: a.type, start_tijd: a.start_tijd, eind_tijd: a.eind_tijd, locatie: a.locatie },
+        })),
+        ...((takenRes.data as any[]) ?? []).map((t: any) => ({
+          id: t.id, date: t.geplande_datum,
+          title: t.titel, type: "taak" as const, status: t.status,
+          adviseur_id: t.agenda_user_id ?? undefined,
+          adviseur_naam: t.agenda_user_id ? userMap.get(t.agenda_user_id) : undefined,
+          extra: { start_tijd: t.geplande_starttijd, eind_tijd: t.geplande_eindtijd, ticket_id: t.ticket_id },
         })),
       ];
       setEvents(mapped);
@@ -250,12 +264,14 @@ const Planning = () => {
       className={`w-full text-left text-[10px] leading-tight px-1.5 py-0.5 rounded truncate flex items-center gap-1 hover:opacity-80 transition-opacity ${
         ev.type === "schouw" ? "bg-primary/10 text-primary" :
         ev.type === "installatie" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" :
+        ev.type === "taak" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" :
         ev.extra?.type === "belafspraak" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
         "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
       }`}
     >
       {ev.type === "schouw" ? <ClipboardList className="h-2.5 w-2.5 shrink-0" /> :
        ev.type === "installatie" ? <Wrench className="h-2.5 w-2.5 shrink-0" /> :
+       ev.type === "taak" ? <CheckSquare className="h-2.5 w-2.5 shrink-0" /> :
        ev.extra?.type === "belafspraak" ? <Phone className="h-2.5 w-2.5 shrink-0" /> :
        ev.extra?.type === "op_afstand" ? <Video className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
       <span className="truncate">{ev.title}</span>
@@ -476,6 +492,7 @@ const Planning = () => {
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/30" /> Installatie</div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-violet-100 dark:bg-violet-900/30" /> Afspraak</div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-emerald-100 dark:bg-emerald-900/30" /> Belafspraak</div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><div className="w-3 h-3 rounded bg-purple-100 dark:bg-purple-900/30" /> Taak</div>
           </div>
         </CardContent>
       </Card>
@@ -503,8 +520,9 @@ const Planning = () => {
             <DialogTitle className="flex items-center gap-2">
               {selectedEvent?.type === "schouw" ? <ClipboardList className="h-5 w-5 text-primary" /> :
                selectedEvent?.type === "installatie" ? <Wrench className="h-5 w-5 text-orange-500" /> :
+               selectedEvent?.type === "taak" ? <CheckSquare className="h-5 w-5 text-purple-500" /> :
                <CalendarIcon className="h-5 w-5 text-violet-500" />}
-              {selectedEvent?.type === "schouw" ? "Schouw" : selectedEvent?.type === "installatie" ? "Installatie" : "Afspraak"} Details
+              {selectedEvent?.type === "schouw" ? "Schouw" : selectedEvent?.type === "installatie" ? "Installatie" : selectedEvent?.type === "taak" ? "Taak" : "Afspraak"} Details
             </DialogTitle>
           </DialogHeader>
           {selectedEvent && (
@@ -564,17 +582,28 @@ const Planning = () => {
                   </div>
                 )}
               </div>
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">Status</p>
-                <Select value={selectedEvent.status} onValueChange={(v) => handleStatusUpdate(selectedEvent, v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(selectedEvent.type === "schouw" ? schouwStatuses : selectedEvent.type === "installatie" ? installatieStatuses : afspraakStatuses).map((s) => (
-                      <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {selectedEvent.type === "taak" ? (
+                <div className="text-sm">
+                  <Badge variant="secondary" className="capitalize">{selectedEvent.status.replace(/_/g, " ")}</Badge>
+                  {selectedEvent.extra?.ticket_id && (
+                    <Button variant="link" size="sm" className="px-0 ml-2" onClick={() => planningNavigate(`/helpdesk/tickets/${selectedEvent.extra!.ticket_id}`)}>
+                      Open ticket →
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-muted-foreground text-sm mb-1">Status</p>
+                  <Select value={selectedEvent.status} onValueChange={(v) => handleStatusUpdate(selectedEvent, v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(selectedEvent.type === "schouw" ? schouwStatuses : selectedEvent.type === "installatie" ? installatieStatuses : afspraakStatuses).map((s) => (
+                        <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

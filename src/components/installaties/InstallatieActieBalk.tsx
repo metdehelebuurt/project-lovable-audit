@@ -5,6 +5,7 @@ import { Navigation, PlayCircle, Pause, CheckCircle2, ShieldCheck, Lock, Flag } 
 import { useAuth } from "@/contexts/AuthContext";
 import { useInstallatieActies } from "./useInstallatieActies";
 import GereedMeldenDialog from "./GereedMeldenDialog";
+import StatusOvergangDialog from "./StatusOvergangDialog";
 import type { Installatie } from "./api/installatieApi";
 import type { InstallatieStatus } from "./status";
 
@@ -19,6 +20,15 @@ export default function InstallatieActieBalk({ installatie, onMaakOplevering }: 
   const { profile } = useAuth();
   const acties = useInstallatieActies(installatie.id);
   const [gereedOpen, setGereedOpen] = useState(false);
+  const [overgangOpen, setOvergangOpen] = useState(false);
+  const [doelStatus, setDoelStatus] = useState<InstallatieStatus>("in_uitvoering");
+  const [pendingActie, setPendingActie] = useState<(() => void) | null>(null);
+
+  const vraagOvergang = (target: InstallatieStatus, fn: () => void) => {
+    setDoelStatus(target);
+    setPendingActie(() => fn);
+    setOvergangOpen(true);
+  };
 
   const isBeheerder = profile && BEHEER_ROLLEN.includes(profile.rol);
   const isToegewezenMonteur = profile?.id === installatie.installateur_id;
@@ -61,7 +71,7 @@ export default function InstallatieActieBalk({ installatie, onMaakOplevering }: 
               <Button size="sm" variant="outline" className="rounded-xl gap-1.5" disabled={disabled} onClick={acties.markeerOnderweg}>
                 <Navigation className="h-4 w-4" /> Onderweg
               </Button>
-              <Button size="sm" className="rounded-xl gap-1.5" disabled={disabled} onClick={acties.markeerGestart}>
+              <Button size="sm" className="rounded-xl gap-1.5" disabled={disabled} onClick={() => vraagOvergang("in_uitvoering", acties.markeerGestart)}>
                 <PlayCircle className="h-4 w-4" /> Direct starten
               </Button>
             </>
@@ -69,10 +79,10 @@ export default function InstallatieActieBalk({ installatie, onMaakOplevering }: 
 
           {status === "onderweg" && (
             <>
-              <Button size="sm" className="rounded-xl gap-1.5" disabled={disabled} onClick={acties.markeerGestart}>
+              <Button size="sm" className="rounded-xl gap-1.5" disabled={disabled} onClick={() => vraagOvergang("in_uitvoering", acties.markeerGestart)}>
                 <PlayCircle className="h-4 w-4" /> Aangekomen / starten
               </Button>
-              <Button size="sm" variant="outline" className="rounded-xl gap-1.5" disabled={disabled} onClick={acties.markeerPauze}>
+              <Button size="sm" variant="outline" className="rounded-xl gap-1.5" disabled={disabled} onClick={() => vraagOvergang("bevestigd", acties.markeerPauze)}>
                 <Pause className="h-4 w-4" /> Pauzeren
               </Button>
             </>
@@ -80,7 +90,7 @@ export default function InstallatieActieBalk({ installatie, onMaakOplevering }: 
 
           {status === "in_uitvoering" && (
             <>
-              <Button size="sm" variant="outline" className="rounded-xl gap-1.5" disabled={disabled} onClick={acties.markeerPauze}>
+              <Button size="sm" variant="outline" className="rounded-xl gap-1.5" disabled={disabled} onClick={() => vraagOvergang("bevestigd", acties.markeerPauze)}>
                 <Pause className="h-4 w-4" /> Pauzeren
               </Button>
               <Button size="sm" className="rounded-xl gap-1.5" disabled={disabled} onClick={() => setGereedOpen(true)}>
@@ -107,6 +117,19 @@ export default function InstallatieActieBalk({ installatie, onMaakOplevering }: 
         onOpenChange={setGereedOpen}
         onConfirm={(notitie) => acties.gereedMelden(notitie)}
         isPending={acties.isPending}
+      />
+
+      <StatusOvergangDialog
+        open={overgangOpen}
+        onOpenChange={setOvergangOpen}
+        installatie={installatie}
+        doelStatus={doelStatus}
+        isPending={acties.isPending}
+        onConfirm={() => {
+          if (pendingActie) pendingActie();
+          setOvergangOpen(false);
+          setPendingActie(null);
+        }}
       />
     </>
   );
