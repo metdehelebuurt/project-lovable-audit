@@ -1258,6 +1258,60 @@ export type Database = {
         }
         Relationships: []
       }
+      entiteit_historie: {
+        Row: {
+          actie: string
+          actor_id: string | null
+          actor_naam: string | null
+          actor_rol: string | null
+          created_at: string
+          details: Json | null
+          entiteit_id: string
+          entiteit_type: string
+          id: string
+          ip: unknown
+          nieuwe_waarde: string | null
+          oude_waarde: string | null
+          partner_id: string | null
+          user_agent: string | null
+          veld: string | null
+        }
+        Insert: {
+          actie: string
+          actor_id?: string | null
+          actor_naam?: string | null
+          actor_rol?: string | null
+          created_at?: string
+          details?: Json | null
+          entiteit_id: string
+          entiteit_type: string
+          id?: string
+          ip?: unknown
+          nieuwe_waarde?: string | null
+          oude_waarde?: string | null
+          partner_id?: string | null
+          user_agent?: string | null
+          veld?: string | null
+        }
+        Update: {
+          actie?: string
+          actor_id?: string | null
+          actor_naam?: string | null
+          actor_rol?: string | null
+          created_at?: string
+          details?: Json | null
+          entiteit_id?: string
+          entiteit_type?: string
+          id?: string
+          ip?: unknown
+          nieuwe_waarde?: string | null
+          oude_waarde?: string | null
+          partner_id?: string | null
+          user_agent?: string | null
+          veld?: string | null
+        }
+        Relationships: []
+      }
       facturen: {
         Row: {
           abonnement_id: string | null
@@ -2229,45 +2283,66 @@ export type Database = {
       }
       helpdesk_ticket_taken: {
         Row: {
+          agenda_user_id: string | null
           created_at: string
           deadline: string | null
           gemaakt_door: string
+          geplande_datum: string | null
+          geplande_eindtijd: string | null
+          geplande_starttijd: string | null
+          geschatte_duur_minuten: number | null
+          herinnering_dag_voor: boolean
           id: string
+          inplannen_in_agenda: boolean
           omschrijving: string | null
           partner_id: string
           prioriteit: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
           status: Database["public"]["Enums"]["helpdesk_taak_status"]
-          ticket_id: string
+          ticket_id: string | null
           titel: string
           toegewezen_aan: string | null
           updated_at: string
           voltooid_op: string | null
         }
         Insert: {
+          agenda_user_id?: string | null
           created_at?: string
           deadline?: string | null
           gemaakt_door: string
+          geplande_datum?: string | null
+          geplande_eindtijd?: string | null
+          geplande_starttijd?: string | null
+          geschatte_duur_minuten?: number | null
+          herinnering_dag_voor?: boolean
           id?: string
+          inplannen_in_agenda?: boolean
           omschrijving?: string | null
           partner_id: string
           prioriteit?: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
           status?: Database["public"]["Enums"]["helpdesk_taak_status"]
-          ticket_id: string
+          ticket_id?: string | null
           titel: string
           toegewezen_aan?: string | null
           updated_at?: string
           voltooid_op?: string | null
         }
         Update: {
+          agenda_user_id?: string | null
           created_at?: string
           deadline?: string | null
           gemaakt_door?: string
+          geplande_datum?: string | null
+          geplande_eindtijd?: string | null
+          geplande_starttijd?: string | null
+          geschatte_duur_minuten?: number | null
+          herinnering_dag_voor?: boolean
           id?: string
+          inplannen_in_agenda?: boolean
           omschrijving?: string | null
           partner_id?: string
           prioriteit?: Database["public"]["Enums"]["helpdesk_ticket_prioriteit"]
           status?: Database["public"]["Enums"]["helpdesk_taak_status"]
-          ticket_id?: string
+          ticket_id?: string | null
           titel?: string
           toegewezen_aan?: string | null
           updated_at?: string
@@ -2490,6 +2565,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      installatie_checklist_items: {
+        Row: {
+          blokkerend: boolean
+          created_at: string
+          id: string
+          installatie_id: string
+          item_key: string
+          label: string
+          notitie: string | null
+          partner_id: string
+          updated_at: string
+          voltooid_door: string | null
+          voltooid_op: string | null
+        }
+        Insert: {
+          blokkerend?: boolean
+          created_at?: string
+          id?: string
+          installatie_id: string
+          item_key: string
+          label: string
+          notitie?: string | null
+          partner_id: string
+          updated_at?: string
+          voltooid_door?: string | null
+          voltooid_op?: string | null
+        }
+        Update: {
+          blokkerend?: boolean
+          created_at?: string
+          id?: string
+          installatie_id?: string
+          item_key?: string
+          label?: string
+          notitie?: string | null
+          partner_id?: string
+          updated_at?: string
+          voltooid_door?: string | null
+          voltooid_op?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installatie_checklist_items_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installatie_checklist_templates: {
+        Row: {
+          actief: boolean
+          beschrijving: string | null
+          blokkerend: boolean
+          created_at: string
+          id: string
+          item_key: string
+          label: string
+          partner_id: string
+          updated_at: string
+          vereist_voor_status: string
+          volgorde: number
+        }
+        Insert: {
+          actief?: boolean
+          beschrijving?: string | null
+          blokkerend?: boolean
+          created_at?: string
+          id?: string
+          item_key: string
+          label: string
+          partner_id: string
+          updated_at?: string
+          vereist_voor_status?: string
+          volgorde?: number
+        }
+        Update: {
+          actief?: boolean
+          beschrijving?: string | null
+          blokkerend?: boolean
+          created_at?: string
+          id?: string
+          item_key?: string
+          label?: string
+          partner_id?: string
+          updated_at?: string
+          vereist_voor_status?: string
+          volgorde?: number
+        }
+        Relationships: []
       }
       installatie_historie: {
         Row: {
@@ -5817,6 +5984,13 @@ export type Database = {
       }
     }
     Functions: {
+      current_actor_meta: {
+        Args: { _user_id: string }
+        Returns: {
+          naam: string
+          rol: string
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -5893,6 +6067,19 @@ export type Database = {
           _target_user_id: string
         }
         Returns: string
+      }
+      log_entity_change: {
+        Args: {
+          _actie: string
+          _details?: Json
+          _entiteit_id: string
+          _entiteit_type: string
+          _nieuwe?: string
+          _oude?: string
+          _partner_id: string
+          _veld?: string
+        }
+        Returns: undefined
       }
       mark_helpdesk_escalations: {
         Args: { _partner_id: string }
