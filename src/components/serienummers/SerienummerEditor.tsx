@@ -138,6 +138,45 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <ScanBarcode className="h-4 w-4 text-primary" /> Serienummers registreren
+          <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="ml-auto">
+                <Layers className="h-4 w-4" /> Meerdere tegelijk
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bulk serienummers toevoegen</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Eén serienummer per regel (komma of puntkomma mag ook). Het gekozen product en garantie hierboven worden gebruikt.
+                </p>
+                <div>
+                  <Label className="text-xs">Product</Label>
+                  <div className="text-sm font-medium">
+                    {producten.find((p: any) => p.id === productId)?.naam ?? "— Kies eerst een product hierboven —"}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Serienummers</Label>
+                  <Textarea
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    rows={8}
+                    placeholder={"SN001\nSN002\nSN003"}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setBulkOpen(false)}>Annuleren</Button>
+                <Button type="button" onClick={handleBulkAdd} disabled={!productId || !bulkText.trim() || bulkBusy}>
+                  {bulkBusy ? "Toevoegen…" : "Toevoegen"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
