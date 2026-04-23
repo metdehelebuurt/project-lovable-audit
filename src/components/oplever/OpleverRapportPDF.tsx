@@ -13,6 +13,17 @@ const VERDICT_LABEL: Record<string, string> = {
   afgekeurd: "AFGEKEURD",
 };
 
+function formatSns(lijst?: string[], legacy?: string): string {
+  const set = new Set<string>();
+  (lijst ?? []).forEach((s) => {
+    const v = (s ?? "").trim();
+    if (v) set.add(v);
+  });
+  if (legacy && legacy.trim()) set.add(legacy.trim());
+  if (set.size === 0) return "—";
+  return Array.from(set).join(", ");
+}
+
 interface Props {
   rapport: Opleverrapport;
   partnerNaam?: string;
