@@ -91,6 +91,7 @@ const Planning = () => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const isInstallateur = profile?.rol === "installateur";
   const [mijnAgenda, setMijnAgenda] = useState(!isAdmin);
   const [selectedAdviseur, setSelectedAdviseur] = useState<string>("alle");
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
@@ -133,7 +134,7 @@ const Planning = () => {
       const [schouwen, installaties, afsprakenRes] = await Promise.all([
         supabase.from("schouwen").select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie, adviseur_id")
           .gte("geplande_datum", rangeStart).lte("geplande_datum", rangeEnd),
-        supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status")
+        supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status, installateur_id")
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
         supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities, adviseur_id")
           .gte("datum", rangeStart).lte("datum", rangeEnd),
@@ -152,6 +153,7 @@ const Planning = () => {
         ...(installaties.data ?? []).map((i) => ({
           id: i.id, date: i.geplande_startdatum!,
           title: i.consument_naam ?? "Installatie", type: "installatie" as const, status: i.status,
+          adviseur_id: i.installateur_id ?? undefined,
           extra: { einddatum: i.geplande_einddatum },
         })),
         ...((afsprakenRes.data as any[]) ?? []).map((a: any) => ({
@@ -171,7 +173,10 @@ const Planning = () => {
   const filteredEvents = useMemo(() => {
     if (mijnAgenda && profile?.id) {
       return events.filter(e => {
-        if (e.type === "installatie") return true;
+        if (e.type === "installatie") {
+          if (isInstallateur) return e.adviseur_id === profile.id;
+          return true;
+        }
         return e.adviseur_id === profile.id;
       });
     }
@@ -182,7 +187,7 @@ const Planning = () => {
       });
     }
     return events;
-  }, [events, mijnAgenda, selectedAdviseur, profile?.id]);
+  }, [events, mijnAgenda, selectedAdviseur, profile?.id, isInstallateur]);
 
   const getEventsForDay = useCallback(
     (day: Date) => filteredEvents.filter((e) => isSameDay(parseISO(e.date), day)),

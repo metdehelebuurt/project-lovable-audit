@@ -11,6 +11,7 @@ import { formatDistanceToNow, format, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import MonteurDashboard from "@/components/dashboard/MonteurDashboard";
 
 /* ─── Mini Stat Card ─── */
 const StatCard = ({ label, value, icon: Icon, trend }: {
@@ -66,7 +67,7 @@ const rolDashboards: Record<string, { title: string; description: string }> = {
   partner_admin: { title: "Organisatie Overzicht", description: "Beheer uw organisatie, medewerkers en leads." },
   partner_staff: { title: "Overzicht", description: "Bekijk uw taken en activiteiten." },
   adviseur: { title: "Mijn Overzicht", description: "Uw leads, schouwen en offertes op een rij." },
-  installateur: { title: "Mijn Verkooporders", description: "Uw geplande en lopende installaties." },
+  installateur: { title: "Mijn werk", description: "Vandaag, komende dagen en open rapporten." },
   consument: { title: "Mijn Woning", description: "Volg de status van uw woningverbeteringen." },
 };
 
@@ -303,6 +304,10 @@ const Dashboard = () => {
         <p className="text-muted-foreground mt-1">{dash.description}</p>
       </div>
 
+      {rol === "installateur" ? (
+        <MonteurDashboard />
+      ) : (
+      <>
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
         {getStatCards().map((card) => (
@@ -443,6 +448,8 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 };

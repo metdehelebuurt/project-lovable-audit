@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useInstallatie } from "@/components/installaties/useInstallatie";
+import { useAuth } from "@/contexts/AuthContext";
 import InstallatieHeader from "@/components/installaties/InstallatieHeader";
 import InstallatiePlanningCard from "@/components/installaties/InstallatiePlanningCard";
 import InstallatieKlantCard from "@/components/installaties/InstallatieKlantCard";
@@ -20,9 +21,11 @@ import RetourDialog from "@/components/retouren/RetourDialog";
 const InstallatieDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const { data: installatie, isLoading, refetch } = useInstallatie(id);
   const [tab, setTab] = useState("overzicht");
   const [retourOpen, setRetourOpen] = useState(false);
+  const isInstallateur = profile?.rol === "installateur";
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Laden...</div>;
   if (!installatie) return <div className="p-6 text-muted-foreground">Installatie niet gevonden</div>;
@@ -37,20 +40,29 @@ const InstallatieDetail = () => {
   return (
     <div className="space-y-6 max-w-6xl">
       <InstallatieHeader installatie={installatie} onMaakOplevering={naarOplevering} />
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={() => setRetourOpen(true)} className="gap-1.5">
-          <RotateCcw className="h-4 w-4" /> Retour aanmelden
-        </Button>
-      </div>
+      {!isInstallateur && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => setRetourOpen(true)} className="gap-1.5">
+            <RotateCcw className="h-4 w-4" /> Retour aanmelden
+          </Button>
+        </div>
+      )}
+      {isInstallateur && (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => navigate(`/installaties/${installatie.id}/werk`)} className="gap-1.5">
+            Werkscherm openen
+          </Button>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overzicht">Overzicht</TabsTrigger>
-          <TabsTrigger value="planning">Planning</TabsTrigger>
+          {!isInstallateur && <TabsTrigger value="planning">Planning</TabsTrigger>}
           <TabsTrigger value="producten">Producten</TabsTrigger>
           <TabsTrigger value="serienummers">Serienummers</TabsTrigger>
           <TabsTrigger value="notities">Notities</TabsTrigger>
-          <TabsTrigger value="communicatie">Communicatie</TabsTrigger>
+          {!isInstallateur && <TabsTrigger value="communicatie">Communicatie</TabsTrigger>}
           <TabsTrigger value="historie">Historie</TabsTrigger>
         </TabsList>
 
@@ -65,9 +77,11 @@ const InstallatieDetail = () => {
           <InstallatieDocumentatieCard installatieId={installatie.id} />
         </TabsContent>
 
-        <TabsContent value="planning">
-          <InstallatiePlanningCard installatie={installatie} onChanged={refetch} />
-        </TabsContent>
+        {!isInstallateur && (
+          <TabsContent value="planning">
+            <InstallatiePlanningCard installatie={installatie} onChanged={refetch} />
+          </TabsContent>
+        )}
 
         <TabsContent value="producten">
           <InstallatieProductenCard installatie={installatie} onChanged={refetch} />
@@ -90,9 +104,11 @@ const InstallatieDetail = () => {
           <InstallatieNotitiesTab installatieId={installatie.id} partnerId={installatie.partner_id} />
         </TabsContent>
 
-        <TabsContent value="communicatie">
-          <InstallatieCommunicatieTab installatie={installatie} onChanged={refetch} />
-        </TabsContent>
+        {!isInstallateur && (
+          <TabsContent value="communicatie">
+            <InstallatieCommunicatieTab installatie={installatie} onChanged={refetch} />
+          </TabsContent>
+        )}
 
         <TabsContent value="historie">
           <InstallatieHistorieTab installatieId={installatie.id} />

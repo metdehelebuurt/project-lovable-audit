@@ -53,6 +53,7 @@ const OpdrachtDetail = () => {
   const [klantBevestigingOpen, setKlantBevestigingOpen] = useState(false);
   const [aangemaakteInstallatie, setAangemaakteInstallatie] = useState<any | null>(null);
   const [retourOpen, setRetourOpen] = useState(false);
+  const isInstallateur = profile?.rol === "installateur";
 
   const { data: opdracht, isLoading } = useQuery({
     queryKey: ["opdracht", id],
@@ -236,7 +237,7 @@ const OpdrachtDetail = () => {
       </div>
 
       {/* Actions */}
-      {isActive && (
+      {isActive && !isInstallateur && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardContent className="py-4 flex flex-wrap gap-3">
             {opdracht.status === "nieuw" && (
@@ -278,6 +279,24 @@ const OpdrachtDetail = () => {
               <LifeBuoy className="h-4 w-4" /> Ticket aanmaken
             </Button>
             <Button variant="destructive" onClick={() => setCancelDialog(true)} className="gap-2 ml-auto"><XCircle className="h-4 w-4" /> Annuleren</Button>
+          </CardContent>
+        </Card>
+      )}
+      {isActive && isInstallateur && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="py-4 flex flex-wrap gap-3">
+            {opdracht.installatie_id && (
+              <Button onClick={() => navigate(`/installaties/${opdracht.installatie_id}/werk`)} className="gap-2">
+                <Wrench className="h-4 w-4" /> Werkscherm openen
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => {
+              const params = new URLSearchParams({ bron: "order", opdracht_id: opdracht.id });
+              if (opdracht.installatie_id) params.set("installatie_id", opdracht.installatie_id);
+              navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+            }} className="gap-2">
+              <LifeBuoy className="h-4 w-4" /> Ticket aanmaken
+            </Button>
           </CardContent>
         </Card>
       )}

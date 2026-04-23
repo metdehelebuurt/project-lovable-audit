@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Navigation, PlayCircle, Pause, CheckCircle2, ShieldCheck, MapPin, BookOpen, ExternalLink, Wrench } from "lucide-react";
+import { ArrowLeft, Navigation, PlayCircle, Pause, CheckCircle2, ShieldCheck, MapPin, BookOpen, ExternalLink, Wrench, LifeBuoy, Timer } from "lucide-react";
 import { useInstallatie } from "@/components/installaties/useInstallatie";
 import { useInstallatieActies } from "@/components/installaties/useInstallatieActies";
 import InstallatieStatusBadge from "@/components/installaties/InstallatieStatusBadge";
@@ -18,6 +18,12 @@ const InstallatieMonteurView = () => {
   const { data: installatie, isLoading } = useInstallatie(id);
   const acties = useInstallatieActies(id);
   const [gereedNotitie, setGereedNotitie] = useState("");
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const { data: handleidingen = [] } = useQuery({
     queryKey: ["monteur-handleidingen", id],
@@ -37,6 +43,32 @@ const InstallatieMonteurView = () => {
 
   const adres = installatie.werkadres ?? installatie.klant_adres ?? "";
   const mapsUrl = adres ? `https://maps.google.com/?q=${encodeURIComponent(adres)}` : null;
+  const startTijd = installatie.werkelijke_starttijd
+    ? new Date(installatie.werkelijke_starttijd).getTime()
+    : null;
+  const eindTijd = installatie.werkelijke_eindtijd
+    ? new Date(installatie.werkelijke_eindtijd).getTime()
+    : null;
+  const lopendeTijdMs = startTijd ? (eindTijd ?? now) - startTijd : 0;
+  const formatDuur = (ms: number) => {
+    const totMin = Math.max(0, Math.floor(ms / 60000));
+    const u = Math.floor(totMin / 60);
+    const m = totMin % 60;
+    return `${u}u ${m.toString().padStart(2, "0")}m`;
+  };
+  const opentTicket = () => {
+    const params = new URLSearchParams({
+      bron: "installatie",
+      installatie_id: installatie.id,
+    });
+    if (installatie.klant_id) params.set("klant_id", installatie.klant_id);
+    navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+  };
+  const opleveringMogelijk =
+    installatie.status === "in_uitvoering" ||
+    installatie.status === "gereed" ||
+    installatie.status === "afgerond" ||
+    installatie.status === "bevestigd";
 
   return (
     <div className="space-y-4 max-w-md mx-auto">
@@ -76,6 +108,17 @@ const InstallatieMonteurView = () => {
           </Button>
           <Button onClick={acties.markeerPauze} disabled={acties.isPending} className="w-full gap-2" variant="outline">
             <Pause className="h-4 w-4" /> Pauzeren
+          </Button>
+          {startTijd && (
+            <div className="flex items-center gap-2 justify-center pt-1 text-xs text-muted-foreground">
+              <Timer className="h-3.5 w-3.5" />
+              <span>
+                {eindTijd ? "Werktijd" : "Loopt"}: <strong className="text-foreground">{formatDuur(lopendeTijdMs)}</strong>
+              </span>
+            </div>
+          )}
+          <Button onClick={opentTicket} className="w-full gap-2" variant="outline">
+            <LifeBuoy className="h-4 w-4" /> Storing / probleem melden
           </Button>
         </CardContent>
       </Card>
@@ -129,7 +172,7 @@ const InstallatieMonteurView = () => {
           <Button onClick={() => acties.gereedMelden(gereedNotitie)} disabled={acties.isPending} className="w-full gap-2">
             <CheckCircle2 className="h-4 w-4" /> Gereed melden
           </Button>
-          {(installatie.status === "gereed" || installatie.status === "in_uitvoering") && (
+          {opleveringMogelijk && (
             <Button onClick={naarOplevering} className="w-full gap-2" variant="default">
               <ShieldCheck className="h-4 w-4" /> Opleverrapport maken
             </Button>
