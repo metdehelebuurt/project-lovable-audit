@@ -134,7 +134,7 @@ const Planning = () => {
       const [schouwen, installaties, afsprakenRes] = await Promise.all([
         supabase.from("schouwen").select("id, geplande_datum, consument_naam, schouw_nummer, status, categorie, adviseur_id")
           .gte("geplande_datum", rangeStart).lte("geplande_datum", rangeEnd),
-        supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status")
+        supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status, installateur_id")
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
         supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities, adviseur_id")
           .gte("datum", rangeStart).lte("datum", rangeEnd),
@@ -153,6 +153,7 @@ const Planning = () => {
         ...(installaties.data ?? []).map((i) => ({
           id: i.id, date: i.geplande_startdatum!,
           title: i.consument_naam ?? "Installatie", type: "installatie" as const, status: i.status,
+          adviseur_id: i.installateur_id ?? undefined,
           extra: { einddatum: i.geplande_einddatum },
         })),
         ...((afsprakenRes.data as any[]) ?? []).map((a: any) => ({
