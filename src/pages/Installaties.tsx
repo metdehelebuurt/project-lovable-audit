@@ -205,6 +205,8 @@ const Installaties = () => {
                 <TableHead>Nummer</TableHead>
                 <TableHead>Klant</TableHead>
                 <TableHead>Adres</TableHead>
+                <TableHead>Plaats</TableHead>
+                <TableHead>Voorbereiding</TableHead>
                 <TableHead>Status</TableHead>
                 {!isInstallateur && <TableHead>Monteur</TableHead>}
                 <TableHead>Datum</TableHead>
@@ -213,14 +215,31 @@ const Installaties = () => {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={isInstallateur ? 6 : 7} className="text-center py-8 text-muted-foreground">Laden...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isInstallateur ? 8 : 9} className="text-center py-8 text-muted-foreground">Laden...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={isInstallateur ? 6 : 7} className="text-center py-8 text-muted-foreground">Geen installaties gevonden</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isInstallateur ? 8 : 9} className="text-center py-8 text-muted-foreground">Geen installaties gevonden</TableCell></TableRow>
               ) : filtered.map((inst) => (
                 <TableRow key={inst.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/installaties/${inst.id}`)}>
-                  <TableCell className="font-mono text-xs">{inst.installatienummer ?? "—"}</TableCell>
+                  <TableCell>
+                    {inst.installatienummer ? (
+                      <Badge variant="outline" className="font-mono text-[11px]">{inst.installatienummer}</Badge>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs gap-1"
+                        onClick={(e) => { e.stopPropagation(); void kenNummerToe(inst); }}
+                      >
+                        <Hash className="h-3 w-3" /> Nummer toekennen
+                      </Button>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{inst.consument_naam ?? "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{inst.werkadres ?? inst.klant_adres ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{inst.klant_plaats ?? "—"}</TableCell>
+                  <TableCell>
+                    <InstallatieGereedheidsBar data={gereedheidMap?.[inst.id]} loading={gereedLoading} />
+                  </TableCell>
                   <TableCell><InstallatieStatusBadge status={inst.status as InstallatieStatus} /></TableCell>
                   {!isInstallateur && (
                     <TableCell className="text-sm">
