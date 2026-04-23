@@ -166,11 +166,13 @@ const OpdrachtDetail = () => {
       _type: docType,
     });
 
-    const subtotaal = opdracht.totaal_bedrag || 0;
-    const btwBedrag = regels.reduce((s: number, r: any) => {
-      const regelSub = r.aantal * r.prijs_per_stuk * (1 - (r.korting_percentage || 0) / 100);
-      return s + regelSub * ((r.btw_percentage || 21) / 100);
-    }, 0);
+    const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
+    const subtotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
+    const kortingTotaal = brutoTotaal - subtotaal;
+    const btwBedrag = regels.reduce(
+      (s, r) => s + regelSubtotaal(r) * ((r.btw_percentage || 21) / 100),
+      0,
+    );
 
     const doc: any = {
       partner_id: profile.partner_id,
@@ -179,19 +181,19 @@ const OpdrachtDetail = () => {
       status: "concept",
       opdracht_id: opdracht.id,
       offerte_id: opdracht.offerte_id || null,
-      regels: regels.map((r: any) => ({
+      regels: regels.map((r) => ({
         omschrijving: r.omschrijving,
         aantal: r.aantal,
         prijs_per_stuk: r.prijs_per_stuk,
         btw_percentage: r.btw_percentage || 21,
         korting_percentage: r.korting_percentage || 0,
-        korting_bedrag: 0,
-        korting_type: "percentage",
+        korting_bedrag: r.korting_bedrag || 0,
+        korting_type: r.korting_type || "percentage",
       })),
       subtotaal,
       btw_bedrag: btwBedrag,
       totaal_bedrag: subtotaal + btwBedrag,
-      korting_totaal: 0,
+      korting_totaal: kortingTotaal,
       betalingstermijn_dagen: 30,
       factuurdatum: new Date().toISOString().split("T")[0],
       vervaldatum: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
