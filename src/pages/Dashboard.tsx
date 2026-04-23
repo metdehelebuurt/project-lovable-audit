@@ -90,10 +90,6 @@ const Dashboard = () => {
   const dash = rolDashboards[rol] ?? rolDashboards.consument;
   const { view, setView } = useDashboardView();
 
-  if (view === "apps" && rol !== "consument") {
-    return <AppsView rightSlot={<DashboardViewSwitcher view={view} onChange={setView} />} />;
-  }
-
   /* ─── Stats ─── */
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats", rol, profile?.id],
@@ -303,6 +299,10 @@ const Dashboard = () => {
     fontSize: "12px",
     color: "hsl(var(--foreground))",
   };
+
+  if (view === "apps" && rol !== "consument") {
+    return <AppsView rightSlot={<DashboardViewSwitcher view={view} onChange={setView} />} />;
+  }
 
   return (
     <div className="space-y-6">
