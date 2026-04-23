@@ -582,17 +582,28 @@ const Planning = () => {
                   </div>
                 )}
               </div>
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">Status</p>
-                <Select value={selectedEvent.status} onValueChange={(v) => handleStatusUpdate(selectedEvent, v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(selectedEvent.type === "schouw" ? schouwStatuses : selectedEvent.type === "installatie" ? installatieStatuses : afspraakStatuses).map((s) => (
-                      <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {selectedEvent.type === "taak" ? (
+                <div className="text-sm">
+                  <Badge variant="secondary" className="capitalize">{selectedEvent.status.replace(/_/g, " ")}</Badge>
+                  {selectedEvent.extra?.ticket_id && (
+                    <Button variant="link" size="sm" className="px-0 ml-2" onClick={() => planningNavigate(`/helpdesk/tickets/${selectedEvent.extra!.ticket_id}`)}>
+                      Open ticket →
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-muted-foreground text-sm mb-1">Status</p>
+                  <Select value={selectedEvent.status} onValueChange={(v) => handleStatusUpdate(selectedEvent, v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(selectedEvent.type === "schouw" ? schouwStatuses : selectedEvent.type === "installatie" ? installatieStatuses : afspraakStatuses).map((s) => (
+                        <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
