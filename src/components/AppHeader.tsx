@@ -10,6 +10,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 import { NotificatieCenter } from "@/components/NotificatieCenter";
 import { useActiecentrumBadgeCount } from "@/hooks/useActiecentrum";
+import { CommandPaletteTrigger } from "@/components/command/CommandPalette";
+import { QuickCreateMenu } from "@/components/command/QuickCreateMenu";
 
 const rolLabels: Record<string, string> = {
   superadmin: "Platformbeheerder",
@@ -33,11 +35,13 @@ export function AppHeader() {
 
   return (
     <header className="h-[72px] bg-card border-b border-border flex items-center justify-between px-4 md:px-8">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <SidebarTrigger className="text-foreground" />
+        <CommandPaletteTrigger />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <QuickCreateMenu />
         <Button
           variant="ghost"
           size="sm"
@@ -46,7 +50,7 @@ export function AppHeader() {
           aria-label="Actiecentrum openen"
         >
           <Inbox className="h-4.5 w-4.5" />
-          <span className="hidden md:inline text-sm">Actiecentrum</span>
+          <span className="hidden lg:inline text-sm">Actiecentrum</span>
           {acCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
               {acCount > 99 ? "99+" : acCount}
