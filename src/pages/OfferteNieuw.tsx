@@ -319,6 +319,10 @@ const OfferteNieuw = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const handmatigeTekst = handmatigeBetaling === "__custom__"
+        ? handmatigeBetalingCustom.trim()
+        : handmatigeBetaling.trim();
+      const gebruikTermijn = betalingsModus === "termijn";
       const record: any = {
         klant_naam: klantNaam,
         klant_email: klantEmail,
@@ -327,9 +331,11 @@ const OfferteNieuw = () => {
         klant_postcode: klantPostcode || null,
         klant_plaats: klantPlaats || null,
         geldig_tot: geldigTot,
-        betalingsvoorwaarden: termijnSchemaSlug && termijnSchemaSlug !== "later"
-          ? (TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug)?.beschrijving || null)
-          : null,
+        betalingsvoorwaarden: gebruikTermijn
+          ? (termijnSchemaSlug && termijnSchemaSlug !== "later"
+              ? (TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug)?.beschrijving || null)
+              : null)
+          : (handmatigeTekst || null),
         notities: notities || null,
         introductie_tekst: introductieTekst || null,
         garantie_voorwaarden: garantieVoorwaarden || null,
@@ -362,7 +368,7 @@ const OfferteNieuw = () => {
         const { data, error } = await supabase.from("offertes").insert(record).select("id").single();
         if (error) throw error;
         // Sla direct het gekozen termijnschema op (tenzij "later")
-        if (termijnSchemaSlug && termijnSchemaSlug !== "later" && profile?.partner_id) {
+        if (gebruikTermijn && termijnSchemaSlug && termijnSchemaSlug !== "later" && profile?.partner_id) {
           const tpl = TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug);
           if (tpl) {
             try {
@@ -461,25 +467,60 @@ const OfferteNieuw = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div><Label>Plaats</Label><Input value={klantPlaats} onChange={e => setKlantPlaats(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Geldig tot *</Label><Input type="date" value={geldigTot} onChange={e => setGeldigTot(e.target.value)} required className="rounded-xl" /></div>
-              <div>
-                <Label>Betaling / termijnschema</Label>
-                <Select value={termijnSchemaSlug} onValueChange={setTermijnSchemaSlug}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Kies betaalverdeling" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TERMIJN_TEMPLATES.map((tpl) => (
-                      <SelectItem key={tpl.slug} value={tpl.slug}>
-                        {tpl.naam} — {tpl.beschrijving}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="later">Later instellen</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Het gekozen schema wordt automatisch aangemaakt en kan na opslaan worden aangepast.
-                </p>
-              </div>
+              <div />
+            </div>
+            <Separator />
+            <div className="space-y-3">
+              <Label>Betaling</Label>
+              <RadioGroup
+                value={betalingsModus}
+                onValueChange={(v) => setBetalingsModus(v as "termijn" | "handmatig")}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <label className="flex items-center gap-2 border rounded-xl px-3 py-2 cursor-pointer flex-1">
+                  <RadioGroupItem value="termijn" id="betaling-termijn" />
+                  <span className="text-sm">Termijnschema (verdeeld over fases)</span>
+                </label>
+                <label className="flex items-center gap-2 border rounded-xl px-3 py-2 cursor-pointer flex-1">
+                  <RadioGroupItem value="handmatig" id="betaling-handmatig" />
+                  <span className="text-sm">Eén betaaltermijn (handmatig)</span>
+                </label>
+              </RadioGroup>
+              {betalingsModus === "termijn" ? (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Termijnschema</Label>
+                  <Select value={termijnSchemaSlug} onValueChange={setTermijnSchemaSlug}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Kies betaalverdeling" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TERMIJN_TEMPLATES.map((tpl) => (
+                        <SelectItem key={tpl.slug} value={tpl.slug}>
+                          {tpl.naam} — {tpl.beschrijving}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="later">Later instellen</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Het schema wordt direct aangemaakt en kan na opslaan worden bijgewerkt.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Betaaltermijn</Label>
+                  <BetalingsvoorwaardenSelect
+                    partnerId={profile?.partner_id}
+                    value={handmatigeBetaling}
+                    onChange={setHandmatigeBetaling}
+                    customValue={handmatigeBetalingCustom}
+                    onCustomChange={setHandmatigeBetalingCustom}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Eén betaaltermijn voor de hele offerte (geen termijnschema).
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
