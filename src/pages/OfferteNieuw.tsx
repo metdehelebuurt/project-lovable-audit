@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import RichTextEditor from "@/components/shared/RichTextEditor";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
@@ -88,6 +90,10 @@ const OfferteNieuw = () => {
   // Termijnschema-keuze tijdens aanmaken (vervangt vrij-tekst betalingsvoorwaarden)
   // "100" = 100% bij oplevering (default), of een van de TERMIJN_TEMPLATES slugs, of "later" om over te slaan
   const [termijnSchemaSlug, setTermijnSchemaSlug] = useState<string>("100");
+  // Modus: "termijn" = template-schema, "handmatig" = één betaaltermijn (vrij/partner-config)
+  const [betalingsModus, setBetalingsModus] = useState<"termijn" | "handmatig">("termijn");
+  const [handmatigeBetaling, setHandmatigeBetaling] = useState<string>("");
+  const [handmatigeBetalingCustom, setHandmatigeBetalingCustom] = useState<string>("");
   const [notities, setNotities] = useState("");
   const [introductieTekst, setIntroductieTekst] = useState("");
   const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
@@ -165,6 +171,17 @@ const OfferteNieuw = () => {
     setKlantPlaats(editOfferte.klant_plaats || "");
     setGeldigTot(editOfferte.geldig_tot);
     setNotities(editOfferte.notities || "");
+    // Bestaande offerte: als er een betalingsvoorwaarden-tekst is en die staat NIET in een template-beschrijving,
+    // toon dan de handmatige modus zodat de gebruiker dezelfde tekst ziet.
+    if (editOfferte.betalingsvoorwaarden) {
+      const matchTpl = TERMIJN_TEMPLATES.find(
+        (t) => t.beschrijving === editOfferte.betalingsvoorwaarden,
+      );
+      if (!matchTpl) {
+        setBetalingsModus("handmatig");
+        setHandmatigeBetaling(editOfferte.betalingsvoorwaarden);
+      }
+    }
     setIntroductieTekst(editOfferte.introductie_tekst || "");
     setGarantieVoorwaarden(editOfferte.garantie_voorwaarden || "");
     setInstallatieTermijn(editOfferte.installatie_termijn || "");
