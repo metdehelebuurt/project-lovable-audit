@@ -230,6 +230,7 @@ const SchouwDetail = () => {
           </CardContent>
         </Card>
       )}
+      {id && <EntiteitHistorieTab entiteitType="schouw" entiteitId={id} />}
     </div>
   );
 };
