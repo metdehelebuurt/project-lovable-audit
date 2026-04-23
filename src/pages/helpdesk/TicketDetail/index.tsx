@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, UserPlus } from "lucide-react";
+import { ArrowLeft, Pencil, UserPlus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ import HistorieTab from "./HistorieTab";
 import AnalyzerTab from "./AnalyzerTab";
 import PlanningTab from "./PlanningTab";
 import KlantContactStrook from "@/components/helpdesk/KlantContactStrook";
+import EditTicketDialog from "@/components/helpdesk/EditTicketDialog";
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,7 @@ export default function TicketDetail() {
   const update = useUpdateTicket();
   const { profile } = useAuth();
   const [csatOpen, setCsatOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   // Open CSAT-dialog na sluiten als er nog geen CSAT-record bestaat voor dit ticket
   useEffect(() => {
@@ -74,6 +76,9 @@ export default function TicketDetail() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Bewerken
+            </Button>
             <div className="flex items-center gap-2">
               <UserPlus className="h-4 w-4 text-muted-foreground" />
               <Select
@@ -148,6 +153,8 @@ export default function TicketDetail() {
         partnerId={ticket.partner_id}
         ticketnummer={ticket.ticketnummer}
       />
+
+      <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 }
