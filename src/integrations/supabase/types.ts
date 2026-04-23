@@ -5474,6 +5474,8 @@ export type Database = {
           avatar_url: string | null
           berichten_zichtbaarheid: string
           created_at: string
+          dashboard_apps_layout: Json
+          dashboard_view: string
           email: string
           functie: string | null
           handtekening_html: string | null
@@ -5505,6 +5507,8 @@ export type Database = {
           avatar_url?: string | null
           berichten_zichtbaarheid?: string
           created_at?: string
+          dashboard_apps_layout?: Json
+          dashboard_view?: string
           email: string
           functie?: string | null
           handtekening_html?: string | null
@@ -5536,6 +5540,8 @@ export type Database = {
           avatar_url?: string | null
           berichten_zichtbaarheid?: string
           created_at?: string
+          dashboard_apps_layout?: Json
+          dashboard_view?: string
           email?: string
           functie?: string | null
           handtekening_html?: string | null
