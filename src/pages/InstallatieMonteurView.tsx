@@ -213,6 +213,14 @@ const InstallatieMonteurView = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={fotoIdx !== null} onOpenChange={(o) => !o && setFotoIdx(null)}>
+        <DialogContent className="max-w-3xl p-2">
+          {fotoIdx !== null && schouwFotos[fotoIdx]?.url && (
+            <img src={schouwFotos[fotoIdx]!.url} alt={schouwFotos[fotoIdx]!.notitie ?? "Schouwfoto"} className="w-full h-auto rounded" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
