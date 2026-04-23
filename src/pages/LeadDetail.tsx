@@ -393,6 +393,9 @@ const LeadDetail = () => {
         batterij_interesse: eigenschappen.batterij_interesse || false,
         laadpaal_interesse: eigenschappen.laadpaal_interesse || false,
         isolatie_interesse: eigenschappen.isolatie_interesse || false,
+        productgroepen: Array.isArray(eigenschappen.extra_json?.productgroepen)
+          ? eigenschappen.extra_json.productgroepen
+          : [],
       });
     }
   }, [eigenschappen]);
@@ -405,6 +408,10 @@ const LeadDetail = () => {
     for (const k of ["woningtype", "daktype", "dakrichting", "huidige_energielabel", "gewenst_energielabel"]) {
       if (!data[k]) data[k] = null;
     }
+    const pg: string[] = Array.isArray(data.productgroepen) ? data.productgroepen : [];
+    delete data.productgroepen;
+    const bestaandExtra = (eigenschappen?.extra_json && typeof eigenschappen.extra_json === "object") ? eigenschappen.extra_json : {};
+    data.extra_json = { ...bestaandExtra, productgroepen: pg };
     saveEigenschappenMutation.mutate(data);
   };
 
