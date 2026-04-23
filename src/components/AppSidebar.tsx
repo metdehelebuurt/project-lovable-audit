@@ -173,7 +173,7 @@ const getNavGroups = (rol: string): NavGroup[] => {
     support.push({ title: "Feedback Beheer", url: "/feedback/admin", icon: MessageSquareHeart });
   groups.push({ label: "Support", items: support });
 
-  if (["superadmin", "partner_admin", "partner_staff", "affiliate"].includes(rol))
+  if (rol !== "consument")
     groups.push({ label: "Instellingen", items: [{ title: "Instellingen", url: "/instellingen", icon: Settings }] });
 
   return groups;

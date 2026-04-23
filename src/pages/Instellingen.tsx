@@ -9,6 +9,9 @@ import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotific
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
 import NummerreeksConfig from "@/components/instellingen/NummerreeksConfig";
 import InstallateurVoorkeurenForm from "@/components/oplever/InstallateurVoorkeurenForm";
+import MijnEmailKoppeling from "@/components/instellingen/MijnEmailKoppeling";
+import InboxZichtbaarheidBeheer from "@/components/instellingen/InboxZichtbaarheidBeheer";
+import NotificatieVoorkeuren from "@/pages/instellingen/NotificatieVoorkeuren";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,11 +22,14 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   User, Lock, Shield, Download, Trash2, Sparkles, Palette, FileText,
-  Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy, KeyRound, Wrench
+  Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy, KeyRound, Wrench, Bell
   , Hash
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import type { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database["public"]["Enums"]["app_role"];
 
 const rolLabels: Record<string, string> = {
   superadmin: "Platformbeheerder", partner_admin: "Organisatiebeheerder",
@@ -35,8 +41,12 @@ interface SettingsTab {
   id: string;
   label: string;
   icon: React.ElementType;
-  adminOnly?: boolean;
+  roles?: AppRole[];
 }
+
+const ALLE_ROLLEN: AppRole[] = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur", "installateur"];
+const ADMIN_ROLLEN: AppRole[] = ["superadmin", "partner_admin"];
+const UITVOEREND_PLUS_ADMIN: AppRole[] = [...ALLE_ROLLEN];
 
 const Instellingen = () => {
   const { profile, user, signOut } = useAuth();
@@ -44,24 +54,27 @@ const Instellingen = () => {
   const isSuperOrPartner = profile?.rol === "partner_admin" || profile?.rol === "superadmin";
 
   const tabs: SettingsTab[] = [
-    { id: "profiel", label: "Profiel", icon: User },
-    { id: "beveiliging", label: "Beveiliging", icon: Lock },
-    { id: "oplever", label: "Opleverrapport", icon: Wrench },
-    { id: "bedrijf", label: "Bedrijfsgegevens", icon: Building2, adminOnly: true },
-    { id: "huisstijl", label: "Huisstijl", icon: Palette, adminOnly: true },
-    { id: "email", label: "E-mail", icon: Mail, adminOnly: true },
-    { id: "producten", label: "Producten", icon: Package, adminOnly: true },
-    { id: "offertes", label: "Offertes", icon: FileText, adminOnly: true },
-    { id: "leads", label: "Leads", icon: Users, adminOnly: true },
-    { id: "schouwen", label: "Schouwen", icon: ClipboardList, adminOnly: true },
-    { id: "nummerreeksen", label: "Nummerreeksen", icon: Hash, adminOnly: true },
-    { id: "helpdesk", label: "Helpdesk notificaties", icon: LifeBuoy, adminOnly: true },
-    { id: "modules", label: "Modules & rollen", icon: KeyRound, adminOnly: true },
-    { id: "abonnement", label: "Abonnement", icon: CreditCard, adminOnly: true },
-    { id: "privacy", label: "Privacy & Data", icon: Shield },
+    { id: "profiel", label: "Profiel", icon: User, roles: ALLE_ROLLEN },
+    { id: "beveiliging", label: "Beveiliging", icon: Lock, roles: ALLE_ROLLEN },
+    { id: "notificaties", label: "Notificaties", icon: Bell, roles: ALLE_ROLLEN },
+    { id: "mijn-email", label: "E-mailkoppeling", icon: Mail, roles: ALLE_ROLLEN },
+    { id: "oplever", label: "Opleverrapport", icon: Wrench, roles: ["superadmin", "partner_admin", "installateur"] },
+    { id: "bedrijf", label: "Bedrijfsgegevens", icon: Building2, roles: ADMIN_ROLLEN },
+    { id: "huisstijl", label: "Huisstijl", icon: Palette, roles: ADMIN_ROLLEN },
+    { id: "email", label: "E-mail (organisatie)", icon: Mail, roles: ADMIN_ROLLEN },
+    { id: "producten", label: "Producten", icon: Package, roles: ADMIN_ROLLEN },
+    { id: "offertes", label: "Offertes", icon: FileText, roles: ADMIN_ROLLEN },
+    { id: "leads", label: "Leads", icon: Users, roles: ADMIN_ROLLEN },
+    { id: "schouwen", label: "Schouwen", icon: ClipboardList, roles: ADMIN_ROLLEN },
+    { id: "nummerreeksen", label: "Nummerreeksen", icon: Hash, roles: ADMIN_ROLLEN },
+    { id: "helpdesk", label: "Helpdesk notificaties", icon: LifeBuoy, roles: ADMIN_ROLLEN },
+    { id: "modules", label: "Modules & rollen", icon: KeyRound, roles: ADMIN_ROLLEN },
+    { id: "abonnement", label: "Abonnement", icon: CreditCard, roles: ADMIN_ROLLEN },
+    { id: "privacy", label: "Privacy & Data", icon: Shield, roles: ALLE_ROLLEN },
   ];
 
-  const visibleTabs = tabs.filter(t => !t.adminOnly || isPartnerAdmin);
+  const currentRol = (profile?.rol ?? "consument") as AppRole;
+  const visibleTabs = tabs.filter(t => !t.roles || t.roles.includes(currentRol));
   const [activeTab, setActiveTab] = useState("profiel");
 
   return (
@@ -95,6 +108,8 @@ const Instellingen = () => {
         <div className="flex-1 min-w-0 max-w-2xl">
           {activeTab === "profiel" && <ProfielTab />}
           {activeTab === "beveiliging" && <BeveiligingTab />}
+          {activeTab === "notificaties" && <NotificatieVoorkeuren />}
+          {activeTab === "mijn-email" && <MijnEmailKoppeling />}
           {activeTab === "oplever" && <InstallateurVoorkeurenForm />}
           {activeTab === "bedrijf" && isPartnerAdmin && profile?.partner_id && <BedrijfsgegevensTab partnerId={profile.partner_id} />}
           {activeTab === "huisstijl" && isPartnerAdmin && profile?.partner_id && <HuisstijlTab partnerId={profile.partner_id} />}
@@ -110,7 +125,12 @@ const Instellingen = () => {
           {activeTab === "schouwen" && isPartnerAdmin && profile?.partner_id && <SchouwInstellingen partnerId={profile.partner_id} />}
           {activeTab === "nummerreeksen" && isPartnerAdmin && profile?.partner_id && <NummerreeksConfig partnerId={profile.partner_id} />}
           {activeTab === "helpdesk" && isPartnerAdmin && profile?.partner_id && <HelpdeskNotificatieConfig partnerId={profile.partner_id} />}
-          {activeTab === "modules" && isPartnerAdmin && profile?.partner_id && <ModuleRolMatrix partnerId={profile.partner_id} />}
+          {activeTab === "modules" && isPartnerAdmin && profile?.partner_id && (
+            <div className="space-y-6">
+              <ModuleRolMatrix partnerId={profile.partner_id} />
+              <InboxZichtbaarheidBeheer partnerId={profile.partner_id} />
+            </div>
+          )}
           {activeTab === "abonnement" && isPartnerAdmin && profile?.partner_id && <PartnerAbonnement />}
           {activeTab === "privacy" && <PrivacyTab isSuperOrPartner={isSuperOrPartner} />}
         </div>
