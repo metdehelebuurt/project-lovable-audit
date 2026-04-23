@@ -25,6 +25,7 @@ import OpdrachtLeveringTab from "@/components/opdracht/OpdrachtLeveringTab";
 import RetourDialog from "@/components/retouren/RetourDialog";
 import { RotateCcw } from "lucide-react";
 import { OfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
+import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -543,6 +544,7 @@ const OpdrachtDetail = () => {
           suggestRegels: regels.map((r) => ({ omschrijving: r.omschrijving, aantal: r.aantal })),
         }}
       />
+      {opdracht.id && <EntiteitHistorieTab entiteitType="opdracht" entiteitId={opdracht.id} />}
     </div>
   );
 };

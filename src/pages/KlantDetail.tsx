@@ -28,6 +28,7 @@ import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
 import { fetchLaatsteVersieVoorRapporten, getSignedUrlForVersie } from "@/components/oplever/api/opleverPdfVersies";
 import GeleverdeApparatuurLijst from "@/components/serienummers/GeleverdeApparatuurLijst";
 import RetourDialog from "@/components/retouren/RetourDialog";
+import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 import { RotateCcw } from "lucide-react";
 
 const KlantDetail = () => {
@@ -488,6 +489,7 @@ const KlantDetail = () => {
         defaultType="klant_retour"
         context={{ klant_id: klant.id }}
       />
+      {klant.id && <EntiteitHistorieTab entiteitType="klant" entiteitId={klant.id} />}
     </div>
   );
 };
