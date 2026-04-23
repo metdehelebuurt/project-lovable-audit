@@ -2617,6 +2617,7 @@ export type Database = {
       }
       installaties: {
         Row: {
+          backoffice_eigenaar_id: string | null
           bevestiging_verzonden_op: string | null
           consument_id: string | null
           consument_naam: string | null
@@ -2653,6 +2654,7 @@ export type Database = {
           werkomschrijving: string | null
         }
         Insert: {
+          backoffice_eigenaar_id?: string | null
           bevestiging_verzonden_op?: string | null
           consument_id?: string | null
           consument_naam?: string | null
@@ -2689,6 +2691,7 @@ export type Database = {
           werkomschrijving?: string | null
         }
         Update: {
+          backoffice_eigenaar_id?: string | null
           bevestiging_verzonden_op?: string | null
           consument_id?: string | null
           consument_naam?: string | null
@@ -2725,6 +2728,13 @@ export type Database = {
           werkomschrijving?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "installaties_backoffice_eigenaar_id_fkey"
+            columns: ["backoffice_eigenaar_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "installaties_consument_id_fkey"
             columns: ["consument_id"]
