@@ -24,6 +24,7 @@ import OpdrachtVoorraadTab from "@/components/opdracht/OpdrachtVoorraadTab";
 import OpdrachtLeveringTab from "@/components/opdracht/OpdrachtLeveringTab";
 import RetourDialog from "@/components/retouren/RetourDialog";
 import { RotateCcw } from "lucide-react";
+import { OfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -37,15 +38,6 @@ const statusColors: Record<string, string> = {
   in_uitvoering: "bg-warning/10 text-warning-foreground", afgerond: "bg-success-light text-success",
   geannuleerd: "bg-error-light text-error",
 };
-
-interface OfferteRegel {
-  omschrijving: string;
-  offerte_tekst?: string;
-  aantal: number;
-  prijs_per_stuk: number;
-  btw_percentage: number;
-  korting_percentage: number;
-}
 
 const OpdrachtDetail = () => {
   const { id } = useParams();
