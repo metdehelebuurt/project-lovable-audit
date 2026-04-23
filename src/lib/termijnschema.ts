@@ -16,6 +16,7 @@ export type TriggerStatus =
   | "schouw_uitgevoerd"
   | "installatie_gepland"
   | "installatie_gestart"
+  | "installatie_uitgevoerd"
   | "opgeleverd";
 
 export const TRIGGER_LABELS: Record<TriggerStatus, string> = {
@@ -23,6 +24,7 @@ export const TRIGGER_LABELS: Record<TriggerStatus, string> = {
   schouw_uitgevoerd: "Na schouw",
   installatie_gepland: "Bij inplanning installatie",
   installatie_gestart: "Bij start installatie",
+  installatie_uitgevoerd: "Na uitvoering installatie",
   opgeleverd: "Bij oplevering",
 };
 

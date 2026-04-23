@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import RichTextEditor from "@/components/shared/RichTextEditor";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X, Save, Loader2, Sparkles, Palette } from "lucide-react";
@@ -88,6 +90,10 @@ const OfferteNieuw = () => {
   // Termijnschema-keuze tijdens aanmaken (vervangt vrij-tekst betalingsvoorwaarden)
   // "100" = 100% bij oplevering (default), of een van de TERMIJN_TEMPLATES slugs, of "later" om over te slaan
   const [termijnSchemaSlug, setTermijnSchemaSlug] = useState<string>("100");
+  // Modus: "termijn" = template-schema, "handmatig" = één betaaltermijn (vrij/partner-config)
+  const [betalingsModus, setBetalingsModus] = useState<"termijn" | "handmatig">("termijn");
+  const [handmatigeBetaling, setHandmatigeBetaling] = useState<string>("");
+  const [handmatigeBetalingCustom, setHandmatigeBetalingCustom] = useState<string>("");
   const [notities, setNotities] = useState("");
   const [introductieTekst, setIntroductieTekst] = useState("");
   const [garantieVoorwaarden, setGarantieVoorwaarden] = useState("Productgarantie conform fabrikant. Installatiegarantie: 2 jaar.");
@@ -165,6 +171,17 @@ const OfferteNieuw = () => {
     setKlantPlaats(editOfferte.klant_plaats || "");
     setGeldigTot(editOfferte.geldig_tot);
     setNotities(editOfferte.notities || "");
+    // Bestaande offerte: als er een betalingsvoorwaarden-tekst is en die staat NIET in een template-beschrijving,
+    // toon dan de handmatige modus zodat de gebruiker dezelfde tekst ziet.
+    if (editOfferte.betalingsvoorwaarden) {
+      const matchTpl = TERMIJN_TEMPLATES.find(
+        (t) => t.beschrijving === editOfferte.betalingsvoorwaarden,
+      );
+      if (!matchTpl) {
+        setBetalingsModus("handmatig");
+        setHandmatigeBetaling(editOfferte.betalingsvoorwaarden);
+      }
+    }
     setIntroductieTekst(editOfferte.introductie_tekst || "");
     setGarantieVoorwaarden(editOfferte.garantie_voorwaarden || "");
     setInstallatieTermijn(editOfferte.installatie_termijn || "");
@@ -302,6 +319,10 @@ const OfferteNieuw = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const handmatigeTekst = handmatigeBetaling === "__custom__"
+        ? handmatigeBetalingCustom.trim()
+        : handmatigeBetaling.trim();
+      const gebruikTermijn = betalingsModus === "termijn";
       const record: any = {
         klant_naam: klantNaam,
         klant_email: klantEmail,
@@ -310,9 +331,11 @@ const OfferteNieuw = () => {
         klant_postcode: klantPostcode || null,
         klant_plaats: klantPlaats || null,
         geldig_tot: geldigTot,
-        betalingsvoorwaarden: termijnSchemaSlug && termijnSchemaSlug !== "later"
-          ? (TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug)?.beschrijving || null)
-          : null,
+        betalingsvoorwaarden: gebruikTermijn
+          ? (termijnSchemaSlug && termijnSchemaSlug !== "later"
+              ? (TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug)?.beschrijving || null)
+              : null)
+          : (handmatigeTekst || null),
         notities: notities || null,
         introductie_tekst: introductieTekst || null,
         garantie_voorwaarden: garantieVoorwaarden || null,
@@ -345,7 +368,7 @@ const OfferteNieuw = () => {
         const { data, error } = await supabase.from("offertes").insert(record).select("id").single();
         if (error) throw error;
         // Sla direct het gekozen termijnschema op (tenzij "later")
-        if (termijnSchemaSlug && termijnSchemaSlug !== "later" && profile?.partner_id) {
+        if (gebruikTermijn && termijnSchemaSlug && termijnSchemaSlug !== "later" && profile?.partner_id) {
           const tpl = TERMIJN_TEMPLATES.find((t) => t.slug === termijnSchemaSlug);
           if (tpl) {
             try {
@@ -444,25 +467,60 @@ const OfferteNieuw = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div><Label>Plaats</Label><Input value={klantPlaats} onChange={e => setKlantPlaats(e.target.value)} className="rounded-xl" /></div>
               <div><Label>Geldig tot *</Label><Input type="date" value={geldigTot} onChange={e => setGeldigTot(e.target.value)} required className="rounded-xl" /></div>
-              <div>
-                <Label>Betaling / termijnschema</Label>
-                <Select value={termijnSchemaSlug} onValueChange={setTermijnSchemaSlug}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Kies betaalverdeling" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TERMIJN_TEMPLATES.map((tpl) => (
-                      <SelectItem key={tpl.slug} value={tpl.slug}>
-                        {tpl.naam} — {tpl.beschrijving}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="later">Later instellen</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Het gekozen schema wordt automatisch aangemaakt en kan na opslaan worden aangepast.
-                </p>
-              </div>
+              <div />
+            </div>
+            <Separator />
+            <div className="space-y-3">
+              <Label>Betaling</Label>
+              <RadioGroup
+                value={betalingsModus}
+                onValueChange={(v) => setBetalingsModus(v as "termijn" | "handmatig")}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <label className="flex items-center gap-2 border rounded-xl px-3 py-2 cursor-pointer flex-1">
+                  <RadioGroupItem value="termijn" id="betaling-termijn" />
+                  <span className="text-sm">Termijnschema (verdeeld over fases)</span>
+                </label>
+                <label className="flex items-center gap-2 border rounded-xl px-3 py-2 cursor-pointer flex-1">
+                  <RadioGroupItem value="handmatig" id="betaling-handmatig" />
+                  <span className="text-sm">Eén betaaltermijn (handmatig)</span>
+                </label>
+              </RadioGroup>
+              {betalingsModus === "termijn" ? (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Termijnschema</Label>
+                  <Select value={termijnSchemaSlug} onValueChange={setTermijnSchemaSlug}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Kies betaalverdeling" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TERMIJN_TEMPLATES.map((tpl) => (
+                        <SelectItem key={tpl.slug} value={tpl.slug}>
+                          {tpl.naam} — {tpl.beschrijving}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="later">Later instellen</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Het schema wordt direct aangemaakt en kan na opslaan worden bijgewerkt.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Betaaltermijn</Label>
+                  <BetalingsvoorwaardenSelect
+                    partnerId={profile?.partner_id}
+                    value={handmatigeBetaling}
+                    onChange={setHandmatigeBetaling}
+                    customValue={handmatigeBetalingCustom}
+                    onCustomChange={setHandmatigeBetalingCustom}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Eén betaaltermijn voor de hele offerte (geen termijnschema).
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
