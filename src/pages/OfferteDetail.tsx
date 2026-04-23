@@ -900,6 +900,7 @@ const OfferteDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {id && <EntiteitHistorieTab entiteitType="offerte" entiteitId={id} />}
     </div>
   );
 };
