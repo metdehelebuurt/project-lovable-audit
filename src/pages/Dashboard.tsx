@@ -304,6 +304,10 @@ const Dashboard = () => {
         <p className="text-muted-foreground mt-1">{dash.description}</p>
       </div>
 
+      {rol === "installateur" ? (
+        <MonteurDashboard />
+      ) : (
+      <>
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
         {getStatCards().map((card) => (
