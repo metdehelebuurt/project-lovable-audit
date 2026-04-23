@@ -6,6 +6,7 @@ export interface BatterijSpec {
   type?: string;
   capaciteit_kwh?: number;
   serienummer?: string;
+  serienummers?: string[];
   typeplaatje_url?: string;
   ce_markering?: boolean;
 }
@@ -16,6 +17,7 @@ export interface OmvormerSpec {
   vermogen_kw?: number;
   fasen?: 1 | 3;
   serienummer?: string;
+  serienummers?: string[];
   typeplaatje_url?: string;
   ce_markering?: boolean;
   rfg_klasse?: "A" | "B" | "C" | "D";
@@ -144,6 +146,7 @@ export interface ExtraVelden {
   aansluitwaarde?: string;
   systeem_type?: "AC" | "DC";
   gateway_serienummer?: string;
+  gateway_serienummers?: string[];
   aardweerstand_ohm?: number;
   heeft_backup?: boolean;
   scope_normen?: ScopeNormen;
