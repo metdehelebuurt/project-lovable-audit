@@ -40,6 +40,7 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }:
                 <>
                   <TableHead className="w-28">Prijs</TableHead>
                   <TableHead className="w-20">BTW %</TableHead>
+                  <TableHead className="w-28">Kortingstype</TableHead>
                   <TableHead className="w-24">Korting</TableHead>
                   <TableHead className="w-28 text-right">Subtotaal</TableHead>
                 </>
@@ -75,6 +76,22 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }:
                             <SelectItem value="21">21%</SelectItem>
                             <SelectItem value="9">9%</SelectItem>
                             <SelectItem value="0">0%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {readOnly ? (
+                        r.korting_type === "bedrag" ? "€ bedrag" : "% percentage"
+                      ) : (
+                        <Select
+                          value={r.korting_type}
+                          onValueChange={(v: "percentage" | "bedrag") => update(i, "korting_type", v)}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">% percentage</SelectItem>
+                            <SelectItem value="bedrag">€ bedrag</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
