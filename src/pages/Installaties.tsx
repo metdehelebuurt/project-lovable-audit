@@ -127,6 +127,22 @@ const Installaties = () => {
     return { vandaag, week, open, afgerond };
   }, [installaties]);
 
+  const filteredIds = useMemo(() => filtered.map((i) => i.id), [filtered]);
+  const { data: gereedheidMap, isLoading: gereedLoading } = useInstallatiesGereedheidBulk(filteredIds);
+
+  const kenNummerToe = async (inst: Installatie) => {
+    if (!inst.partner_id) return;
+    try {
+      const nr = await generateInstallatienummer(inst.partner_id);
+      const { error } = await supabase.from("installaties").update({ installatienummer: nr }).eq("id", inst.id);
+      if (error) throw error;
+      toast.success(`Nummer ${nr} toegekend`);
+      void fetchData();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Toekennen mislukt");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
