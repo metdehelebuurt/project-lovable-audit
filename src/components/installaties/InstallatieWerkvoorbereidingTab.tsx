@@ -212,6 +212,13 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
           </div>
         </div>
       </CardContent>
+      <AiWerkomschrijvingDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        installatieId={installatie.id}
+        huidigeTekst={installatie.werkomschrijving}
+        onAccept={slaWerkomschrijvingOp}
+      />
     </Card>
   );
 }
