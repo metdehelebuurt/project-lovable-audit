@@ -748,6 +748,42 @@ const LeadDetail = () => {
                     ))}
                   </div>
                 </div>
+                <Separator />
+                <div className="space-y-4">
+                  <p className="text-sm font-medium">Productgroepen</p>
+                  {[
+                    { titel: "Energieopwekking & opslag", items: ["Zonnepanelen", "Omvormer", "Thuisbatterij", "EV laadpaal"] },
+                    { titel: "Verwarming & ventilatie", items: ["Warmtepomp", "HR-ketel / cv-ketel", "Airco", "Mechanische ventilatie / WTW", "Vloerverwarming"] },
+                    { titel: "Isolatie", items: ["Glasisolatie / HR++ glas", "Spouwmuurisolatie", "Dakisolatie", "Vloerisolatie"] },
+                  ].map(groep => (
+                    <div key={groep.titel}>
+                      <p className="text-xs font-medium uppercase text-muted-foreground mb-2">{groep.titel}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {groep.items.map(p => {
+                          const huidige: string[] = eigForm.productgroepen || [];
+                          const aan = huidige.includes(p);
+                          return (
+                            <div key={p} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
+                              <Switch
+                                checked={aan}
+                                onCheckedChange={v => setEigForm((prev: any) => {
+                                  const arr: string[] = Array.isArray(prev.productgroepen) ? [...prev.productgroepen] : [];
+                                  if (v && !arr.includes(p)) arr.push(p);
+                                  if (!v) {
+                                    const i = arr.indexOf(p);
+                                    if (i >= 0) arr.splice(i, 1);
+                                  }
+                                  return { ...prev, productgroepen: arr };
+                                })}
+                              />
+                              <Label className="text-sm cursor-pointer">{p}</Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 <div className="flex justify-end pt-2">
                   <Button onClick={saveEigenschappen} disabled={saveEigenschappenMutation.isPending} className="rounded-xl gap-1.5">
                     {saveEigenschappenMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -765,12 +801,15 @@ const LeadDetail = () => {
                 <CardTitle className="text-base flex items-center gap-2"><StickyNote className="h-4 w-4 text-primary" /> Notities</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Schrijf een notitie..." className="rounded-xl flex-1 min-h-[60px]" rows={2} />
-                  <Button size="icon" className="rounded-xl h-auto self-end" disabled={!newNote.trim() || addNoteMutation.isPending}
-                    onClick={() => newNote.trim() && addNoteMutation.mutate(newNote.trim())}>
-                    {addNoteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
+                <div className="space-y-2">
+                  <Textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Schrijf een notitie..." className="rounded-xl min-h-[60px]" rows={2} />
+                  <div className="flex items-center justify-between">
+                    <NotitieZichtbaarheidToggle intern={newNoteIntern} onChange={setNewNoteIntern} id="lead-note-intern" />
+                    <Button size="sm" className="rounded-xl gap-1.5" disabled={!newNote.trim() || addNoteMutation.isPending}
+                      onClick={() => newNote.trim() && addNoteMutation.mutate({ inhoud: newNote.trim(), intern: newNoteIntern })}>
+                      {addNoteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Toevoegen
+                    </Button>
+                  </div>
                 </div>
                 {notities.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Nog geen notities.</p>
@@ -782,6 +821,7 @@ const LeadDetail = () => {
                           <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center"><User className="h-3 w-3 text-primary" /></div>
                           <span className="text-xs font-medium text-foreground">{n.user?.voornaam} {n.user?.achternaam}</span>
                           <span className="text-[10px] text-muted-foreground">{formatDateTime(n.created_at)}</span>
+                          <NotitieZichtbaarheidBadge intern={n.intern !== false} />
                           {(n.user_id === profile?.id) && (
                             <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteNoteMutation.mutate(n.id)}>
                               <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
@@ -888,7 +928,9 @@ const LeadDetail = () => {
           {activeTab === "email" && <EmailTab leadId={id} email={lead.email} />}
 
           {/* ACTIVITEIT */}
-          {activeTab === "activiteit" && <ActiviteitTijdlijn events={timelineEvents} />}
+          {activeTab === "activiteit" && (
+            <GecombineerdeTijdlijn entiteitType="lead" entiteitId={id} extraEvents={timelineEvents as ExtraEvent[]} />
+          )}
         </div>
 
         {/* Sidebar */}
@@ -1009,7 +1051,6 @@ const LeadDetail = () => {
         defaultTitle={`Afspraak ${lead.voornaam} ${lead.achternaam}`}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
       />
-      {id && <EntiteitHistorieTab entiteitType="lead" entiteitId={id} />}
     </div>
   );
 };
