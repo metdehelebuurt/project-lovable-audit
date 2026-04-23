@@ -5472,6 +5472,7 @@ export type Database = {
         Row: {
           achternaam: string
           avatar_url: string | null
+          berichten_zichtbaarheid: string
           created_at: string
           email: string
           functie: string | null
@@ -5502,6 +5503,7 @@ export type Database = {
         Insert: {
           achternaam: string
           avatar_url?: string | null
+          berichten_zichtbaarheid?: string
           created_at?: string
           email: string
           functie?: string | null
@@ -5532,6 +5534,7 @@ export type Database = {
         Update: {
           achternaam?: string
           avatar_url?: string | null
+          berichten_zichtbaarheid?: string
           created_at?: string
           email?: string
           functie?: string | null
