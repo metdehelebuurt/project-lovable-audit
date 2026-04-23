@@ -76,6 +76,8 @@ import Kennisbank from "@/pages/helpdesk/Kennisbank";
 import KennisArtikel from "@/pages/helpdesk/KennisArtikel";
 import HelpdeskPlanning from "@/pages/helpdesk/Planning";
 import NotificatieVoorkeuren from "@/pages/instellingen/NotificatieVoorkeuren";
+import ChecklistTemplates from "@/pages/instellingen/ChecklistTemplates";
+import Actiecentrum from "@/pages/Actiecentrum";
 import Opleveringen from "@/pages/Opleveringen";
 import OpleverNieuw from "@/pages/OpleverNieuw";
 import OpleverDetail from "@/pages/OpleverDetail";
