@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Save } from "lucide-react";
+import { Calendar, Save, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Installatie } from "./api/installatieApi";
 import { updateInstallatie } from "./api/installatieApi";
+import AiWerkomschrijvingDialog from "./AiWerkomschrijvingDialog";
 
 interface Props {
   installatie: Installatie;
