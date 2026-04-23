@@ -35,20 +35,36 @@ Deno.serve(async (req) => {
     if (!inst) return jsonResp({ error: "Installatie niet gevonden" }, 404);
 
     let schouw: Record<string, unknown> | null = null;
-    if (inst.opdracht_id) {
+    // 1. Direct via installatie.schouw_id
+    if (inst.schouw_id) {
+      const { data: sch } = await supabase.from("schouwen").select("*").eq("id", inst.schouw_id).maybeSingle();
+      if (sch) schouw = sch;
+    }
+    // 2. Via opdracht.schouw_id
+    if (!schouw && inst.opdracht_id) {
       const { data: opd } = await supabase
         .from("opdrachten")
         .select("schouw_id")
         .eq("id", inst.opdracht_id)
         .maybeSingle();
       if (opd?.schouw_id) {
-        const { data: sch } = await supabase
-          .from("schouwen")
-          .select("*")
-          .eq("id", opd.schouw_id)
-          .maybeSingle();
-        schouw = sch;
+        const { data: sch } = await supabase.from("schouwen").select("*").eq("id", opd.schouw_id).maybeSingle();
+        if (sch) schouw = sch;
       }
+    }
+    // 3. Voorstel via lead_id (uitgevoerd)
+    if (!schouw && inst.lead_id && inst.partner_id) {
+      const { data: sch } = await supabase
+        .from("schouwen")
+        .select("*")
+        .eq("lead_id", inst.lead_id)
+        .eq("partner_id", inst.partner_id)
+        .eq("status", "uitgevoerd")
+        .order("geplande_datum", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sch) schouw = sch;
     }
 
     const productenArr = Array.isArray(inst.producten) ? inst.producten as Array<Record<string, unknown>> : [];
@@ -98,11 +114,17 @@ Deno.serve(async (req) => {
       }),
       schouw: schouw
         ? {
-            dakvlakken: schouw.dakvlakken ?? schouw.clusters ?? null,
-            meterkast: schouw.meterkast_type ?? schouw.meterkast ?? null,
-            zekeringen: schouw.zekeringen ?? null,
-            kabelroute: schouw.kabelroute ?? null,
-            bijzonderheden: schouw.bijzonderheden ?? schouw.notities ?? null,
+            schouw_nummer: schouw.schouw_nummer ?? null,
+            categorie: schouw.categorie ?? null,
+            geplande_datum: schouw.geplande_datum ?? null,
+            status: schouw.status ?? null,
+            zonnepanelen_clusters: ((schouw.gegevens as Record<string, unknown> | null)?.zonnepanelen as Record<string, unknown> | undefined)?.clusters ?? null,
+            batterij: (schouw.gegevens as Record<string, unknown> | null)?.batterij ?? (schouw.gegevens as Record<string, unknown> | null)?.thuisbatterij ?? null,
+            laadpaal: (schouw.gegevens as Record<string, unknown> | null)?.laadpaal ?? null,
+            warmtepomp: (schouw.gegevens as Record<string, unknown> | null)?.warmtepomp ?? null,
+            meterkast: (schouw.gegevens as Record<string, unknown> | null)?.meterkast ?? (schouw.gegevens as Record<string, unknown> | null)?.elektra ?? null,
+            aandachtspunten: schouw.aandachtspunten ?? schouw.notities ?? null,
+            aantal_fotos: Array.isArray(schouw.fotos) ? (schouw.fotos as unknown[]).length : 0,
           }
         : null,
       open_checklist: openItems.map((c) => ({
@@ -121,7 +143,9 @@ Structureer in bullets onder deze 5 kopjes:
 • Aandachtspunten uit schouw
 • Oplevering
 
-Gebruik alleen informatie die je in de context vindt. Verzin niets. Als data ontbreekt, schrijf "—" of laat het kopje kort.`;
+Gebruik alleen informatie die je in de context vindt. Verzin niets. Als data ontbreekt, schrijf "—" of laat het kopje kort.
+Bij dakvlakken: noem aantal panelen, oriëntatie en hellingshoek concreet (bv. "ZW-dak, 12 panelen, 35°").
+Herhaal aandachtspunten uit de schouw één-op-één onder het kopje "Aandachtspunten uit schouw".`;
 
     const userPrompt = `Context (JSON):\n${JSON.stringify(context, null, 2)}\n\nGenereer de werkomschrijving.`;
 

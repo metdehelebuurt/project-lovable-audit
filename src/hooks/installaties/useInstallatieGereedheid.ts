@@ -39,24 +39,27 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
       const items: GereedheidsItem[] = [];
       if (!installatie) return { items, open_blokkades: [], totaal: 0, ok: 0, klaar: true };
 
-      // Schouw — via opdracht.schouw_id
+      // Schouw — direct via installatie.schouw_id, anders via opdracht.schouw_id
       let schouwOk = false;
       let schouwDetail = "Geen gekoppelde schouw";
-      if (installatie.opdracht_id) {
+      const directSchouwId = (installatie as unknown as { schouw_id?: string | null }).schouw_id ?? null;
+      let resolvedSchouwId: string | null = directSchouwId;
+      if (!resolvedSchouwId && installatie.opdracht_id) {
         const { data: opd } = await supabase
           .from("opdrachten")
           .select("schouw_id")
           .eq("id", installatie.opdracht_id)
           .maybeSingle();
-        if (opd?.schouw_id) {
-          const { data: sch } = await supabase
-            .from("schouwen")
-            .select("id,status")
-            .eq("id", opd.schouw_id)
-            .maybeSingle();
-          if (sch?.status === "uitgevoerd") { schouwOk = true; schouwDetail = "Uitgevoerd"; }
-          else if (sch) schouwDetail = `Status: ${sch.status}`;
-        }
+        resolvedSchouwId = opd?.schouw_id ?? null;
+      }
+      if (resolvedSchouwId) {
+        const { data: sch } = await supabase
+          .from("schouwen")
+          .select("id,status")
+          .eq("id", resolvedSchouwId)
+          .maybeSingle();
+        if (sch?.status === "uitgevoerd") { schouwOk = true; schouwDetail = "Uitgevoerd"; }
+        else if (sch) schouwDetail = `Status: ${sch.status}`;
       }
       items.push({
         key: "schouw", label: "Schouw uitgevoerd",
