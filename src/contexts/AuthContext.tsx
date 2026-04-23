@@ -14,6 +14,7 @@ interface UserProfile {
   partner_id: string | null;
   telefoon: string | null;
   status: Database["public"]["Enums"]["user_status"];
+  berichten_zichtbaarheid: "alle" | "toegewezen" | "geen";
 }
 
 interface AuthContextType {
