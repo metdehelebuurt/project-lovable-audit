@@ -10,6 +10,10 @@ import InstallatieProductenCard from "@/components/installaties/InstallatieProdu
 import InstallatieNotitiesTab from "@/components/installaties/InstallatieNotitiesTab";
 import InstallatieCommunicatieTab from "@/components/installaties/InstallatieCommunicatieTab";
 import InstallatieHistorieTab from "@/components/installaties/InstallatieHistorieTab";
+import InstallatieGereedheidsCard from "@/components/installaties/InstallatieGereedheidsCard";
+import InstallatieWerkvoorbereidingTab from "@/components/installaties/InstallatieWerkvoorbereidingTab";
+import WaarschuwingBalk from "@/components/installaties/WaarschuwingBalk";
+import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 import InstallatieActieBalk from "@/components/installaties/InstallatieActieBalk";
 import InstallatieTijdlijn from "@/components/installaties/InstallatieTijdlijn";
 import InstallatieDocumentatieCard from "@/components/installaties/InstallatieDocumentatieCard";
@@ -40,6 +44,7 @@ const InstallatieDetail = () => {
   return (
     <div className="space-y-6 max-w-6xl">
       <InstallatieHeader installatie={installatie} onMaakOplevering={naarOplevering} onChanged={refetch} />
+      <WaarschuwingBalk installatie={installatie} />
       {!isInstallateur && (
         <div className="flex justify-end">
           <Button variant="outline" size="sm" onClick={() => setRetourOpen(true)} className="gap-1.5">
@@ -59,6 +64,7 @@ const InstallatieDetail = () => {
         <TabsList>
           <TabsTrigger value="overzicht">Overzicht</TabsTrigger>
           {!isInstallateur && <TabsTrigger value="planning">Planning</TabsTrigger>}
+          {!isInstallateur && <TabsTrigger value="werkvoorbereiding">Werkvoorbereiding</TabsTrigger>}
           <TabsTrigger value="producten">Producten</TabsTrigger>
           <TabsTrigger value="serienummers">Serienummers</TabsTrigger>
           <TabsTrigger value="notities">Notities</TabsTrigger>
@@ -68,6 +74,7 @@ const InstallatieDetail = () => {
 
         <TabsContent value="overzicht" className="space-y-4">
           <InstallatieActieBalk installatie={installatie} onMaakOplevering={naarOplevering} />
+          <InstallatieGereedheidsCard installatie={installatie} />
           <InstallatieTijdlijn installatie={installatie} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <InstallatieKlantCard installatie={installatie} />
@@ -80,6 +87,12 @@ const InstallatieDetail = () => {
         {!isInstallateur && (
           <TabsContent value="planning">
             <InstallatiePlanningCard installatie={installatie} onChanged={refetch} />
+          </TabsContent>
+        )}
+
+        {!isInstallateur && (
+          <TabsContent value="werkvoorbereiding">
+            <InstallatieWerkvoorbereidingTab installatie={installatie} />
           </TabsContent>
         )}
 
@@ -110,8 +123,9 @@ const InstallatieDetail = () => {
           </TabsContent>
         )}
 
-        <TabsContent value="historie">
+        <TabsContent value="historie" className="space-y-4">
           <InstallatieHistorieTab installatieId={installatie.id} />
+          <EntiteitHistorieTab entiteitType="installatie" entiteitId={installatie.id} titel="Volledige tijdlijn" />
         </TabsContent>
       </Tabs>
 
