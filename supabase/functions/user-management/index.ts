@@ -171,40 +171,23 @@ serve(async (req) => {
           }
         }
 
-        // Delete from users table first (cascade), then auth
-        // Probeer eerst de profielrij in public.users te verwijderen.
-        // Door de SET NULL FK's blijft historie behouden.
-        const { error: profileDeleteError } = await supabaseAdmin
-          .from("users")
-          .delete()
-          .eq("id", user_id);
-
-        if (profileDeleteError) {
-          // 23503 = foreign_key_violation
-          const code = (profileDeleteError as { code?: string }).code;
-          if (code === "23503") {
-            return new Response(
-              JSON.stringify({
-                error:
-                  "Deze gebruiker is nog gekoppeld aan andere records. Wijs deze records eerst over aan een andere gebruiker of archiveer ze, en probeer het opnieuw.",
-              }),
-              {
-                status: 400,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-              },
-            );
-          }
-          return new Response(JSON.stringify({ error: profileDeleteError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
+        // Verwijder direct via auth.admin.deleteUser.
+        // public.users.id heeft ON DELETE CASCADE naar auth.users(id),
+        // dus de profielrij + alle CASCADE-tabellen worden automatisch opgeruimd.
+        // SET NULL-tabellen behouden hun historie.
         const { error } = await supabaseAdmin.auth.admin.deleteUser(user_id);
 
         if (error) {
-          // Auth-delete kan ook 500 geven met FK-bericht — vertaal dat netjes
           const msg = error.message || "";
+
+          // Idempotent: user bestond al niet meer → succes
+          if (msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("not_found")) {
+            return new Response(JSON.stringify({ success: true, already_deleted: true }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          // FK violation → vriendelijke melding
           if (msg.includes("foreign key") || msg.includes("23503")) {
             return new Response(
               JSON.stringify({
@@ -217,8 +200,9 @@ serve(async (req) => {
               },
             );
           }
+
           return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
+            status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
