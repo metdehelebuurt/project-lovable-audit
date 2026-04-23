@@ -7,6 +7,7 @@ import { useRef } from "react";
 import type { Opleverrapport } from "./types";
 import { uploadOpleverFile } from "./api/opleverApi";
 import { toast } from "@/hooks/use-toast";
+import SerienummerLijstInput from "./SerienummerLijstInput";
 
 interface Props {
   rapportId: string;
