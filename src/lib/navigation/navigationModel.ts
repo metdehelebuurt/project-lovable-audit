@@ -3,7 +3,7 @@ import {
   FileText, ClipboardCheck, Wrench, ShieldCheck, Calendar, Package, Truck,
   RotateCcw, Receipt, Building2, UserCheck, FolderOpen, BarChart3, PenTool,
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
-  Lightbulb, Link2, Home, ShieldAlert, type LucideIcon,
+  Lightbulb, Link2, Home, ShieldAlert, ShoppingCart, type LucideIcon,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
@@ -59,6 +59,8 @@ const ITEMS = {
   planning: { id: "planning", label: "Planning", icon: Calendar, url: "/planning",
     badgeEntiteit: "afspraken", synoniemen: ["agenda", "kalender"] } as NavigatieItem,
   voorraad: { id: "voorraad", label: "Voorraad", icon: Package, url: "/voorraad" } as NavigatieItem,
+  inkoop: { id: "inkoop", label: "Inkoop", icon: ShoppingCart, url: "/inkoop",
+    moduleKey: "inkoop", synoniemen: ["inkooporder", "bestelling", "leverancier order"] } as NavigatieItem,
   retouren: { id: "retouren", label: "Retouren", icon: RotateCcw, url: "/retouren",
     synoniemen: ["rma"] } as NavigatieItem,
   leveranciers: { id: "leveranciers", label: "Leveranciers", icon: Truck, url: "/leveranciers" } as NavigatieItem,
@@ -107,7 +109,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
     },
     {
       id: "uitvoering", label: "Uitvoering",
-      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren],
+      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.inkoop, ITEMS.retouren],
     },
     { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
     { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
@@ -128,7 +130,7 @@ function backofficeNav(): NavigatieGroep[] {
     { id: "verkoop", label: "Klant & Verkoop",
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
-      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren] },
+      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.inkoop, ITEMS.retouren] },
     { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
     { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
     { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
