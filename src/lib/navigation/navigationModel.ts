@@ -34,7 +34,8 @@ export interface NavigatieGroep {
 /* ─── Item-defs (één bron, hergebruikt per rol) ─── */
 
 const ITEMS = {
-  vandaag: { id: "vandaag", label: "Vandaag", icon: LayoutDashboard, url: "/dashboard" } as NavigatieItem,
+  vandaag: { id: "vandaag", label: "Vandaag", icon: LayoutDashboard, url: "/vandaag",
+    synoniemen: ["dashboard", "overzicht", "home"] } as NavigatieItem,
   actiecentrum: { id: "actiecentrum", label: "Actiecentrum", icon: Inbox, url: "/actiecentrum",
     synoniemen: ["taken", "todo"] } as NavigatieItem,
   berichten: { id: "berichten", label: "Berichten", icon: MessageSquare, url: "/berichten",
