@@ -59,6 +59,8 @@ const ITEMS = {
   planning: { id: "planning", label: "Planning", icon: Calendar, url: "/planning",
     badgeEntiteit: "afspraken", synoniemen: ["agenda", "kalender"] } as NavigatieItem,
   voorraad: { id: "voorraad", label: "Voorraad", icon: Package, url: "/voorraad" } as NavigatieItem,
+  inkoop: { id: "inkoop", label: "Inkoop", icon: ShoppingCart, url: "/inkoop",
+    moduleKey: "inkoop", synoniemen: ["inkooporder", "bestelling", "leverancier order"] } as NavigatieItem,
   retouren: { id: "retouren", label: "Retouren", icon: RotateCcw, url: "/retouren",
     synoniemen: ["rma"] } as NavigatieItem,
   leveranciers: { id: "leveranciers", label: "Leveranciers", icon: Truck, url: "/leveranciers" } as NavigatieItem,

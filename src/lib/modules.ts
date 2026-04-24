@@ -30,6 +30,7 @@ export const MODULES: ModuleDefinition[] = [
   { key: "planning", label: "Planning", groep: "Planning", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"], configurable: true },
   { key: "producten", label: "Producten", groep: "Catalogus", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"], configurable: true },
   { key: "voorraad", label: "Voorraad", groep: "Logistiek", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"], configurable: true },
+  { key: "inkoop", label: "Inkoop", groep: "Logistiek", defaultRoles: ["superadmin", "partner_admin", "backoffice"], configurable: true },
   { key: "inkoop_ontvangsten", label: "Inkoopontvangsten", groep: "Logistiek", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff"], configurable: true },
   { key: "retouren", label: "Retouren (RMA)", groep: "Logistiek", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff"], configurable: true },
   { key: "tools", label: "Tools", groep: "Tools", defaultRoles: ["superadmin", "partner_admin", "partner_staff", "adviseur"], configurable: true },
