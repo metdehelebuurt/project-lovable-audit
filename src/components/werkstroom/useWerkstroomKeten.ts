@@ -23,100 +23,119 @@ interface KetenInput {
   id: string;
 }
 
+function naamVanLead(voornaam?: string | null, achternaam?: string | null): string {
+  return [voornaam, achternaam].filter(Boolean).join(" ").trim() || "Lead";
+}
+
+async function laadInstallatie(id: string) {
+  const { data } = await supabase
+    .from("installaties")
+    .select("id, status, lead_id, schouw_id, offerte_id, opdracht_id, consument_naam, installatienummer")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}
+
+async function laadOpdracht(id: string) {
+  const { data } = await supabase
+    .from("opdrachten")
+    .select("id, status, klant_naam, lead_id, schouw_id, offerte_id, installatie_id")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}
+
+async function laadOfferte(id: string) {
+  const { data } = await supabase
+    .from("offertes")
+    .select("id, status, offertenummer, lead_id, schouw_id")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}
+
+async function laadSchouw(id: string) {
+  const { data } = await supabase
+    .from("schouwen")
+    .select("id, status, schouw_nummer, lead_id")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}
+
+async function laadLead(id: string) {
+  const { data } = await supabase
+    .from("leads")
+    .select("id, lead_status, voornaam, achternaam")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}
+
 async function fetchKeten({ vanaf, id }: KetenInput): Promise<WerkstroomKeten> {
   const keten: WerkstroomKeten = {};
+  let leadId: string | null = vanaf === "lead" ? id : null;
+  let schouwId: string | null = vanaf === "schouw" ? id : null;
+  let offerteId: string | null = vanaf === "offerte" ? id : null;
+  let opdrachtId: string | null = vanaf === "opdracht" ? id : null;
+  let installatieId: string | null = vanaf === "installatie" ? id : null;
 
-  // Bepaal lead_id als startpunt
-  let leadId: string | null = null;
-  let schouwId: string | null = null;
-  let offerteId: string | null = null;
-  let opdrachtId: string | null = null;
-  let installatieId: string | null = null;
-
-  if (vanaf === "lead") leadId = id;
-  if (vanaf === "schouw") schouwId = id;
-  if (vanaf === "offerte") offerteId = id;
-  if (vanaf === "opdracht") opdrachtId = id;
-  if (vanaf === "installatie") installatieId = id;
-
-  // Als we starten verderop in de keten: haal terug-referenties op
   if (installatieId) {
-    const { data } = await supabase
-      .from("installaties")
-      .select("id, status, lead_id, schouw_id, offerte_id, opdracht_id, klant_naam")
-      .eq("id", installatieId)
-      .maybeSingle();
+    const data = await laadInstallatie(installatieId);
     if (data) {
-      keten.installatie = { id: data.id, label: data.klant_naam ?? "Installatie", status: data.status };
-      leadId = leadId ?? data.lead_id;
-      schouwId = schouwId ?? data.schouw_id;
-      offerteId = offerteId ?? data.offerte_id;
-      opdrachtId = opdrachtId ?? data.opdracht_id;
+      keten.installatie = { id: data.id, label: data.installatienummer ?? data.consument_naam ?? "Installatie", status: data.status };
+      leadId ??= data.lead_id;
+      schouwId ??= data.schouw_id;
+      offerteId ??= data.offerte_id;
+      opdrachtId ??= data.opdracht_id;
     }
   }
 
   if (opdrachtId && !keten.opdracht) {
-    const { data } = await supabase
-      .from("opdrachten")
-      .select("id, status, ordernummer, lead_id, schouw_id, offerte_id, installatie_id")
-      .eq("id", opdrachtId)
-      .maybeSingle();
+    const data = await laadOpdracht(opdrachtId);
     if (data) {
-      keten.opdracht = { id: data.id, label: data.ordernummer ?? "Opdracht", status: data.status };
-      leadId = leadId ?? data.lead_id;
-      schouwId = schouwId ?? data.schouw_id;
-      offerteId = offerteId ?? data.offerte_id;
-      installatieId = installatieId ?? data.installatie_id;
+      keten.opdracht = { id: data.id, label: data.klant_naam ?? "Opdracht", status: data.status };
+      leadId ??= data.lead_id;
+      schouwId ??= data.schouw_id;
+      offerteId ??= data.offerte_id;
+      installatieId ??= data.installatie_id;
     }
   }
 
   if (offerteId && !keten.offerte) {
-    const { data } = await supabase
-      .from("offertes")
-      .select("id, status, offertenummer, lead_id, schouw_id")
-      .eq("id", offerteId)
-      .maybeSingle();
+    const data = await laadOfferte(offerteId);
     if (data) {
       keten.offerte = { id: data.id, label: data.offertenummer ?? "Offerte", status: data.status };
-      leadId = leadId ?? data.lead_id;
-      schouwId = schouwId ?? data.schouw_id;
+      leadId ??= data.lead_id;
+      schouwId ??= data.schouw_id;
     }
   }
 
   if (schouwId && !keten.schouw) {
-    const { data } = await supabase
-      .from("schouwen")
-      .select("id, status, schouwnummer, lead_id")
-      .eq("id", schouwId)
-      .maybeSingle();
+    const data = await laadSchouw(schouwId);
     if (data) {
-      keten.schouw = { id: data.id, label: data.schouwnummer ?? "Schouw", status: data.status };
-      leadId = leadId ?? data.lead_id;
+      keten.schouw = { id: data.id, label: data.schouw_nummer ?? "Schouw", status: data.status };
+      leadId ??= data.lead_id;
     }
   }
 
   if (leadId && !keten.lead) {
-    const { data } = await supabase
-      .from("leads")
-      .select("id, status, voornaam, achternaam")
-      .eq("id", leadId)
-      .maybeSingle();
+    const data = await laadLead(leadId);
     if (data) {
-      const naam = [data.voornaam, data.achternaam].filter(Boolean).join(" ").trim();
-      keten.lead = { id: data.id, label: naam || "Lead", status: data.status };
+      keten.lead = { id: data.id, label: naamVanLead(data.voornaam, data.achternaam), status: data.lead_status };
     }
   }
 
-  // Vooruit kijken: haal latere stappen op vanaf het laagste bekende punt
+  // Vooruit: zoek vervolg-stappen vanaf bekend startpunt
   if (leadId && !keten.schouw) {
     const { data } = await supabase
       .from("schouwen")
-      .select("id, status, schouwnummer")
+      .select("id, status, schouw_nummer")
       .eq("lead_id", leadId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (data) keten.schouw = { id: data.id, label: data.schouwnummer ?? "Schouw", status: data.status };
+    if (data) keten.schouw = { id: data.id, label: data.schouw_nummer ?? "Schouw", status: data.status };
   }
 
   if (leadId && !keten.offerte) {
@@ -130,36 +149,36 @@ async function fetchKeten({ vanaf, id }: KetenInput): Promise<WerkstroomKeten> {
     if (data) keten.offerte = { id: data.id, label: data.offertenummer ?? "Offerte", status: data.status };
   }
 
-  const refOfferteId = keten.offerte?.id ?? offerteId;
-  if (refOfferteId && !keten.opdracht) {
+  const refOfferte = keten.offerte?.id ?? offerteId;
+  if (refOfferte && !keten.opdracht) {
     const { data } = await supabase
       .from("opdrachten")
-      .select("id, status, ordernummer")
-      .eq("offerte_id", refOfferteId)
+      .select("id, status, klant_naam")
+      .eq("offerte_id", refOfferte)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (data) keten.opdracht = { id: data.id, label: data.ordernummer ?? "Opdracht", status: data.status };
+    if (data) keten.opdracht = { id: data.id, label: data.klant_naam ?? "Opdracht", status: data.status };
   }
 
-  const refOpdrachtId = keten.opdracht?.id ?? opdrachtId;
-  if (refOpdrachtId && !keten.installatie) {
+  const refOpdracht = keten.opdracht?.id ?? opdrachtId;
+  if (refOpdracht && !keten.installatie) {
     const { data } = await supabase
       .from("installaties")
-      .select("id, status, klant_naam")
-      .eq("opdracht_id", refOpdrachtId)
+      .select("id, status, installatienummer, consument_naam")
+      .eq("opdracht_id", refOpdracht)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (data) keten.installatie = { id: data.id, label: data.klant_naam ?? "Installatie", status: data.status };
+    if (data) keten.installatie = { id: data.id, label: data.installatienummer ?? data.consument_naam ?? "Installatie", status: data.status };
   }
 
-  const refInstallatieId = keten.installatie?.id ?? installatieId;
-  if (refInstallatieId) {
+  const refInstallatie = keten.installatie?.id ?? installatieId;
+  if (refInstallatie) {
     const { data } = await supabase
       .from("opleverrapporten")
       .select("id, status, rapportnummer")
-      .eq("installatie_id", refInstallatieId)
+      .eq("installatie_id", refInstallatie)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
