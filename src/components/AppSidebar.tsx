@@ -10,7 +10,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
-import { useModuleNotificatieCounts, entityTypeForUrl, markeerModuleGelezen } from "@/hooks/useModuleNotificatieCounts";
+import { useModuleNotificatieCounts, entityTypeForUrl } from "@/hooks/useModuleNotificatieCounts";
 import { getNavigation, type NavigatieGroep, type NavigatieItem } from "@/lib/navigation/navigationModel";
 import { ModuleNotificatiePopover } from "@/components/notificaties/ModuleNotificatiePopover";
 
@@ -109,7 +109,7 @@ function NavGroep({
 }
 
 export function AppSidebar() {
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   const { state, setOpenMobile, openMobile } = useSidebar();
   const isMobile = useIsMobile();
   const collapsed = state === "collapsed";
@@ -118,11 +118,9 @@ export function AppSidebar() {
 
   const groepen = getNavigation(profile?.rol).filter((g) => g.items.length > 0);
 
-  const handleActivate = (url: string) => {
-    if (!user) return;
-    const et = entityTypeForUrl(url);
-    if (et) void markeerModuleGelezen(user.id, et);
-  };
+  // Notificaties worden niet langer automatisch op gelezen gezet bij navigatie:
+  // dat gebeurt nu via de popover op de badge of bij het openen van het detail.
+  const handleActivate = (_url: string) => {};
 
   // Auto-close sidebar op mobiel bij navigatie
   useEffect(() => {
