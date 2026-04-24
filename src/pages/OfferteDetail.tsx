@@ -28,6 +28,7 @@ import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
 import SignaturePad from "@/components/schouwen/SignaturePad";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];
@@ -317,6 +318,7 @@ const OfferteDetail = () => {
 
   return (
     <div className="space-y-6">
+      <WerkstroomStepper vanaf="offerte" id={offerte.id} huidig="offerte" />
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/offertes")}>

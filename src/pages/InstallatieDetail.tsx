@@ -23,6 +23,7 @@ import SerienummerEditor from "@/components/serienummers/SerienummerEditor";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import RetourDialog from "@/components/retouren/RetourDialog";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 const InstallatieDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +46,7 @@ const InstallatieDetail = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <WerkstroomStepper vanaf="installatie" id={installatie.id} huidig="installatie" />
       <InstallatieHeader installatie={installatie} onMaakOplevering={naarOplevering} onChanged={refetch} />
       <WaarschuwingBalk installatie={installatie} />
       {!isInstallateur && (

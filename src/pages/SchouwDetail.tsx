@@ -12,6 +12,7 @@ import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
 import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 import type { Database } from "@/integrations/supabase/types";
 import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
@@ -102,6 +103,7 @@ const SchouwDetail = () => {
 
   return (
     <div className="space-y-6">
+      <WerkstroomStepper vanaf="schouw" id={schouw.id} huidig="schouw" />
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/schouwen")}>
           <ArrowLeft className="h-5 w-5" />
