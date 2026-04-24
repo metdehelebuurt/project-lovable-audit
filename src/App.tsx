@@ -71,6 +71,7 @@ import Leveranciers from "@/pages/Leveranciers";
 import Retouren from "@/pages/Retouren";
 import RetourDetail from "@/pages/RetourDetail";
 import Inkoop from "@/pages/Inkoop";
+import InkoopNieuw from "@/pages/InkoopNieuw";
 import HelpdeskDashboard from "@/pages/helpdesk/Dashboard";
 import TicketsOverzicht from "@/pages/helpdesk/TicketsOverzicht";
 import TicketNieuw from "@/pages/helpdesk/TicketNieuw";
@@ -301,6 +302,9 @@ const App = () => (
               } />
               <Route path="/inkoop" element={
                 <ProtectedRoute moduleKey="inkoop" allowedRoles={["superadmin", "partner_admin", "backoffice"]}><Inkoop /></ProtectedRoute>
+              } />
+              <Route path="/inkoop/nieuw" element={
+                <ProtectedRoute moduleKey="inkoop" allowedRoles={["superadmin", "partner_admin", "backoffice"]}><InkoopNieuw /></ProtectedRoute>
               } />
               <Route path="/helpdesk" element={
                 <ProtectedRoute moduleKey="helpdesk" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><HelpdeskDashboard /></ProtectedRoute>
