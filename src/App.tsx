@@ -13,6 +13,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Vandaag from "@/pages/Vandaag";
 import Partners from "@/pages/Partners";
+import AccessGrants from "@/pages/Superadmin/AccessGrants";
 import Gebruikers from "@/pages/Gebruikers";
 import GebruikerDetail from "@/pages/GebruikerDetail";
 import Adviseurs from "@/pages/Adviseurs";
@@ -154,6 +155,9 @@ const App = () => (
               <Route path="/vandaag" element={<Vandaag />} />
               <Route path="/partners" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><Partners /></ProtectedRoute>
+              } />
+              <Route path="/superadmin/access-grants" element={
+                <ProtectedRoute allowedRoles={["superadmin"]}><AccessGrants /></ProtectedRoute>
               } />
               <Route path="/adviseurs" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><Adviseurs /></ProtectedRoute>
