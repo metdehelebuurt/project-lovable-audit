@@ -82,6 +82,8 @@ const ITEMS = {
   partners: { id: "partners", label: "Partners", icon: Building2, url: "/partners" } as NavigatieItem,
   platformToegang: { id: "platform-toegang", label: "Platformtoegang", icon: ShieldAlert,
     url: "/superadmin/access-grants", synoniemen: ["break-glass", "access grants"] } as NavigatieItem,
+  systeemlogs: { id: "systeemlogs", label: "Systeemlogs", icon: ScrollText,
+    url: "/superadmin/logs", synoniemen: ["errors", "fouten", "logs", "edge logs", "auth logs"] } as NavigatieItem,
   adviseurs: { id: "adviseurs", label: "Adviseurs", icon: UserCheck, url: "/adviseurs" } as NavigatieItem,
   gebruikers: { id: "gebruikers", label: "Gebruikers", icon: Users, url: "/gebruikers" } as NavigatieItem,
   affiliateBeheer: { id: "affiliate-beheer", label: "Affiliate beheer", icon: Handshake, url: "/affiliate-beheer" } as NavigatieItem,
