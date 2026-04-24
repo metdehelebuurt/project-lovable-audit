@@ -109,7 +109,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
     },
     {
       id: "uitvoering", label: "Uitvoering",
-      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren],
+      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.inkoop, ITEMS.retouren],
     },
     { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
     { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
@@ -130,7 +130,7 @@ function backofficeNav(): NavigatieGroep[] {
     { id: "verkoop", label: "Klant & Verkoop",
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
-      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren] },
+      items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.inkoop, ITEMS.retouren] },
     { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
     { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
     { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
