@@ -102,15 +102,17 @@ export default function WerkstroomStepper({ vanaf, id, huidig }: Props) {
                 )}
               >
                 <Icon className={cn("h-4 w-4 shrink-0", isVoltooid && !isHuidig && "text-success")} />
-                <span className="flex flex-col items-start min-w-0">
-                  <span className="text-xs uppercase tracking-wide opacity-70">{STAP_LABELS[stap]}</span>
-                  <span className="text-xs truncate max-w-[120px]">
+                <span className="flex flex-col items-start min-w-0 leading-tight">
+                  <span className="text-[10px] sm:text-xs uppercase tracking-wide opacity-70">
+                    {STAP_LABELS[stap]}
+                  </span>
+                  <span className="hidden sm:inline text-xs truncate max-w-[140px]">
                     {item?.label ?? "—"}
                   </span>
                 </span>
               </button>
               {i < STAP_VOLGORDE.length - 1 && (
-                <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
               )}
             </li>
           );
