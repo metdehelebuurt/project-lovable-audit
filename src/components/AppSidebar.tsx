@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
 import { useModuleNotificatieCounts, entityTypeForUrl, markeerModuleGelezen } from "@/hooks/useModuleNotificatieCounts";
 import { getNavigation, type NavigatieGroep, type NavigatieItem } from "@/lib/navigation/navigationModel";
+import { ModuleNotificatiePopover } from "@/components/notificaties/ModuleNotificatiePopover";
 
 /**
  * Sidebar v2.1 — alle rol-relevante groepen plat zichtbaar, sidebar scrollt.
@@ -19,34 +20,57 @@ import { getNavigation, type NavigatieGroep, type NavigatieItem } from "@/lib/na
  */
 
 function NavItem({
-  item, collapsed, isMobile, badgeCount, onActivate,
+  item, collapsed, isMobile, badgeCount, entityType, onActivate,
 }: {
   item: NavigatieItem; collapsed: boolean; isMobile: boolean;
-  badgeCount?: number; onActivate?: (url: string) => void;
+  badgeCount?: number; entityType?: string | null; onActivate?: (url: string) => void;
 }) {
   const Icon = item.icon;
+  const showBadge = !!badgeCount && badgeCount > 0;
+  const badgeNode = showBadge && (!collapsed || isMobile) ? (
+    <span
+      role={entityType ? "button" : undefined}
+      tabIndex={entityType ? 0 : undefined}
+      onClick={(e) => { if (entityType) { e.preventDefault(); e.stopPropagation(); } }}
+      className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold hover:scale-110 transition-transform cursor-pointer"
+      aria-label={`${badgeCount} ongelezen`}
+    >
+      {badgeCount > 9 ? "9+" : badgeCount}
+    </span>
+  ) : null;
+
+  const link = (
+    <SidebarMenuButton asChild>
+      <NavLink
+        to={item.url}
+        end={item.url === "/dashboard"}
+        className="relative flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[40px]"
+        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+        onClick={() => onActivate?.(item.url)}
+      >
+        <Icon className="h-4.5 w-4.5 shrink-0" />
+        {(!collapsed || isMobile) && <span className="text-sm flex-1 truncate">{item.label}</span>}
+        {entityType && showBadge && (!collapsed || isMobile) ? (
+          <ModuleNotificatiePopover
+            entityType={entityType}
+            moduleLabel={item.label}
+            moduleUrl={item.url}
+            side="right"
+            align="start"
+          >
+            {badgeNode!}
+          </ModuleNotificatiePopover>
+        ) : badgeNode}
+        {collapsed && !isMobile && showBadge && (
+          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+        )}
+      </NavLink>
+    </SidebarMenuButton>
+  );
+
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild>
-        <NavLink
-          to={item.url}
-          end={item.url === "/dashboard"}
-          className="relative flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[40px]"
-          activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-          onClick={() => onActivate?.(item.url)}
-        >
-          <Icon className="h-4.5 w-4.5 shrink-0" />
-          {(!collapsed || isMobile) && <span className="text-sm flex-1 truncate">{item.label}</span>}
-          {(!collapsed || isMobile) && !!badgeCount && badgeCount > 0 && (
-            <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
-              {badgeCount > 9 ? "9+" : badgeCount}
-            </span>
-          )}
-          {collapsed && !isMobile && !!badgeCount && badgeCount > 0 && (
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-          )}
-        </NavLink>
-      </SidebarMenuButton>
+      {link}
     </SidebarMenuItem>
   );
 }
@@ -74,6 +98,7 @@ function NavGroep({
               collapsed={collapsed}
               isMobile={isMobile}
               badgeCount={counts[item.badgeEntiteit ?? entityTypeForUrl(item.url) ?? ""] ?? 0}
+              entityType={item.badgeEntiteit ?? entityTypeForUrl(item.url) ?? null}
               onActivate={onActivate}
             />
           ))}
