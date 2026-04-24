@@ -3,48 +3,38 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import {
-  ArrowLeft, Mail, Phone, MapPin, Building2, Pencil,
-  FileText, ClipboardCheck, Wrench, Loader2, Save,
-  User, TrendingUp, CalendarIcon, StickyNote, Send, Trash2, LifeBuoy, ShieldCheck,
-} from "lucide-react";
+import { StickyNote } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 import {
-  QuickStat, TabButton, InfoRow, OffertesLijst, SchouwenLijst, AfsprakenLijst,
-  OpdrachtenLijst, InstallatiesLijst, OpleveringenLijst, SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
+  OffertesLijst, SchouwenLijst, AfsprakenLijst,
+  OpdrachtenLijst, InstallatiesLijst, OpleveringenLijst, SnelleActies, SamenvattingCard,
   formatDate, formatDateTime, formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
-import EmailAddressList from "@/components/email/EmailAddressList";
 import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
 import { fetchLaatsteVersieVoorRapporten, getSignedUrlForVersie } from "@/components/oplever/api/opleverPdfVersies";
 import GeleverdeApparatuurLijst from "@/components/serienummers/GeleverdeApparatuurLijst";
 import RetourDialog from "@/components/retouren/RetourDialog";
 import GecombineerdeTijdlijn, { type ExtraEvent } from "@/components/historie/GecombineerdeTijdlijn";
 import WoningProductenTab from "@/components/klanten/WoningProductenTab";
-import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
-import { RotateCcw } from "lucide-react";
+import KlantHeader from "@/components/klanten/detail/KlantHeader";
+import KlantStatsRow from "@/components/klanten/detail/KlantStatsRow";
+import KlantTabsNav, { type KlantTab } from "@/components/klanten/detail/KlantTabsNav";
+import KlantContactCard from "@/components/klanten/detail/KlantContactCard";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  useAuth();
   const queryClient = useQueryClient();
   const [afspraakOpen, setAfspraakOpen] = useState(false);
   const [retourOpen, setRetourOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
-  const [newNote, setNewNote] = useState("");
-  const [newNoteIntern, setNewNoteIntern] = useState(true);
 
   /* ─── Queries ─── */
   const { data: klant, isLoading } = useQuery({
