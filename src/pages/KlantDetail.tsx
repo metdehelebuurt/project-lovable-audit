@@ -11,7 +11,7 @@ import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
 import {
   OffertesLijst, SchouwenLijst, AfsprakenLijst,
   OpdrachtenLijst, InstallatiesLijst, OpleveringenLijst, SnelleActies, SamenvattingCard,
-  formatDate, formatDateTime, formatCurrency,
+  formatCurrency,
 } from "@/components/detail/DetailComponents";
 import EmailTab from "@/components/email/EmailTab";
 import { KlantTicketsList } from "@/components/helpdesk/KlantTicketsList";
