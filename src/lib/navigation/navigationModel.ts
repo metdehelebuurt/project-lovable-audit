@@ -104,21 +104,16 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
       id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren],
     },
-    {
-      id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
-        { label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
-        { label: "Tools & service", items: [ITEMS.tools, ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Beheer", items: [
-          ...(isSuper ? [ITEMS.partners] : []),
-          ITEMS.adviseurs, ITEMS.gebruikers,
-          ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen] : []),
-        ] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
+    { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
+    { id: "service", label: "Tools & service", items: [ITEMS.tools, ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "beheer", label: "Beheer", items: [
+      ...(isSuper ? [ITEMS.partners] : []),
+      ITEMS.adviseurs, ITEMS.gebruikers,
+      ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen] : []),
+    ] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
