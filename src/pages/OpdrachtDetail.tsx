@@ -227,6 +227,7 @@ const OpdrachtDetail = () => {
 
   return (
     <div className="space-y-6">
+      <WerkstroomStepper vanaf="opdracht" id={opdracht.id} huidig="opdracht" />
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/opdrachten")} aria-label="Terug naar verkooporders">
           <ArrowLeft className="h-5 w-5" />

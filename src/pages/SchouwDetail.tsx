@@ -103,6 +103,7 @@ const SchouwDetail = () => {
 
   return (
     <div className="space-y-6">
+      <WerkstroomStepper vanaf="schouw" id={schouw.id} huidig="schouw" />
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/schouwen")}>
           <ArrowLeft className="h-5 w-5" />

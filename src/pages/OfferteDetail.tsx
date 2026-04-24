@@ -318,6 +318,7 @@ const OfferteDetail = () => {
 
   return (
     <div className="space-y-6">
+      <WerkstroomStepper vanaf="offerte" id={offerte.id} huidig="offerte" />
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/offertes")}>

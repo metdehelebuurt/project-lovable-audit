@@ -450,6 +450,7 @@ const LeadDetail = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <WerkstroomStepper vanaf="lead" id={lead.id} huidig="lead" />
       {/* Header */}
       <div className="flex items-start gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/leads")} className="rounded-xl mt-1">

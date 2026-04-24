@@ -46,6 +46,7 @@ const InstallatieDetail = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <WerkstroomStepper vanaf="installatie" id={installatie.id} huidig="installatie" />
       <InstallatieHeader installatie={installatie} onMaakOplevering={naarOplevering} onChanged={refetch} />
       <WaarschuwingBalk installatie={installatie} />
       {!isInstallateur && (
