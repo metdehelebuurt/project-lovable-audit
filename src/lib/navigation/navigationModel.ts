@@ -26,11 +26,9 @@ export interface NavigatieItem {
 }
 
 export interface NavigatieGroep {
-  id: "werk" | "verkoop" | "uitvoering" | "meer";
+  id: string;
   label: string;
   items: NavigatieItem[];
-  /** Subkopjes binnen een groep (alleen "meer" gebruikt dit). */
-  subgroepen?: Array<{ label: string; items: NavigatieItem[] }>;
 }
 
 /* ─── Item-defs (één bron, hergebruikt per rol) ─── */
@@ -106,21 +104,16 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
       id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren],
     },
-    {
-      id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
-        { label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
-        { label: "Tools & service", items: [ITEMS.tools, ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Beheer", items: [
-          ...(isSuper ? [ITEMS.partners] : []),
-          ITEMS.adviseurs, ITEMS.gebruikers,
-          ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen] : []),
-        ] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
+    { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
+    { id: "service", label: "Tools & service", items: [ITEMS.tools, ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "beheer", label: "Beheer", items: [
+      ...(isSuper ? [ITEMS.partners] : []),
+      ITEMS.adviseurs, ITEMS.gebruikers,
+      ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen] : []),
+    ] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -131,15 +124,11 @@ function backofficeNav(): NavigatieGroep[] {
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
-        { label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
+    { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -150,14 +139,10 @@ function partnerStaffNav(): NavigatieGroep[] {
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "catalogus", label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -168,14 +153,10 @@ function adviseurNav(): NavigatieGroep[] {
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.schouwen, ITEMS.offertes] },
     { id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Catalogus & tools", items: [ITEMS.producten, ITEMS.tools, ITEMS.documenten] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "catalogus", label: "Catalogus & tools", items: [ITEMS.producten, ITEMS.tools, ITEMS.documenten] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -186,14 +167,10 @@ function installateurNav(): NavigatieGroep[] {
       items: [ITEMS.installaties, ITEMS.planning, ITEMS.opleveringen, ITEMS.voorraad] },
     { id: "verkoop", label: "Klant & Verkoop",
       items: [ITEMS.opdrachten] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "catalogus", label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -205,11 +182,7 @@ function consumentNav(): NavigatieGroep[] {
       items: [{ ...ITEMS.offertes, label: "Mijn offertes" }, { ...ITEMS.schouwen, label: "Mijn schouwen" }] },
     { id: "uitvoering", label: "Planning",
       items: [{ ...ITEMS.planning, label: "Mijn afspraken" }] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Support", items: [ITEMS.feedback] },
-      ],
-    },
+    { id: "support", label: "Support", items: [ITEMS.feedback] },
   ];
 }
 
@@ -217,13 +190,8 @@ function affiliateNav(): NavigatieGroep[] {
   return [
     { id: "werk", label: "Werk", items: [ITEMS.vandaag] },
     { id: "verkoop", label: "Verkoop", items: [ITEMS.affiliateLinks, ITEMS.offertes] },
-    { id: "uitvoering", label: "", items: [] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -249,7 +217,6 @@ export function getAlleNavItems(rol: AppRole | undefined | null): NavigatieItem[
   const out: NavigatieItem[] = [];
   for (const g of groepen) {
     out.push(...g.items);
-    for (const sg of g.subgroepen ?? []) out.push(...sg.items);
   }
   // dedupe op id
   const gezien = new Set<string>();
