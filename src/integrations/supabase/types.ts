@@ -5439,6 +5439,74 @@ export type Database = {
           },
         ]
       }
+      superadmin_access_grants: {
+        Row: {
+          created_at: string
+          id: string
+          ingetrokken_door: string | null
+          ingetrokken_op: string | null
+          notify_partner: boolean
+          partner_id: string
+          reden: string
+          superadmin_user_id: string
+          verleend_op: string
+          vervalt_op: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingetrokken_door?: string | null
+          ingetrokken_op?: string | null
+          notify_partner?: boolean
+          partner_id: string
+          reden: string
+          superadmin_user_id: string
+          verleend_op?: string
+          vervalt_op: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingetrokken_door?: string | null
+          ingetrokken_op?: string | null
+          notify_partner?: boolean
+          partner_id?: string
+          reden?: string
+          superadmin_user_id?: string
+          verleend_op?: string
+          vervalt_op?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "superadmin_access_grants_ingetrokken_door_fkey"
+            columns: ["ingetrokken_door"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "superadmin_access_grants_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "superadmin_access_grants_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "superadmin_access_grants_superadmin_user_id_fkey"
+            columns: ["superadmin_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -6113,6 +6181,10 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_voorraad_stand: { Args: { _product_id: string }; Returns: number }
+      has_break_glass_access: {
+        Args: { _partner_id: string; _user_id: string }
+        Returns: boolean
+      }
       increment_kb_views: { Args: { _artikel_id: string }; Returns: undefined }
       insert_oplever_pdf_versie: {
         Args: {
