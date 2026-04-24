@@ -3,7 +3,7 @@ import {
   FileText, ClipboardCheck, Wrench, ShieldCheck, Calendar, Package, Truck,
   RotateCcw, Receipt, Building2, UserCheck, FolderOpen, BarChart3, PenTool,
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
-  Lightbulb, Link2, Home, type LucideIcon,
+  Lightbulb, Link2, Home, ShieldAlert, type LucideIcon,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
