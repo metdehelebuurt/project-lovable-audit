@@ -1054,13 +1054,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "email_berichten_email_account_id_fkey"
-            columns: ["email_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_user_email_account"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "email_berichten_klant_id_fkey"
             columns: ["klant_id"]
             isOneToOne: false
@@ -6276,48 +6269,6 @@ export type Database = {
           },
         ]
       }
-      v_user_email_account: {
-        Row: {
-          actief: boolean | null
-          email_adres: string | null
-          id: string | null
-          partner_id: string | null
-          provider: string | null
-          user_id: string | null
-        }
-        Insert: {
-          actief?: boolean | null
-          email_adres?: string | null
-          id?: string | null
-          partner_id?: string | null
-          provider?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          actief?: boolean | null
-          email_adres?: string | null
-          id?: string | null
-          partner_id?: string | null
-          provider?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "email_accounts_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partner_branding"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "email_accounts_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       web_widgets_public: {
         Row: {
           actief: boolean | null
@@ -6411,6 +6362,17 @@ export type Database = {
       }
       generate_rma_nummer: { Args: { _partner_id: string }; Returns: string }
       get_gereserveerd: { Args: { _product_id: string }; Returns: number }
+      get_my_email_account: {
+        Args: never
+        Returns: {
+          actief: boolean
+          email_adres: string
+          id: string
+          partner_id: string
+          provider: string
+          user_id: string
+        }[]
+      }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
