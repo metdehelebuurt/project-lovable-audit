@@ -46,7 +46,7 @@ export default function KlantHeader({
           <h1 className="text-xl sm:text-2xl font-semibold text-foreground truncate">
             {klant.voornaam} {klant.achternaam}
           </h1>
-          <Badge className="bg-green-600 text-white">Klant</Badge>
+          <Badge className="bg-success text-success-foreground hover:bg-success/90">Klant</Badge>
         </div>
 
         {/* Inline contact info — verborgen op mobiel (zit in contact-card) */}
