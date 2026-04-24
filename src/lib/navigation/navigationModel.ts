@@ -26,11 +26,9 @@ export interface NavigatieItem {
 }
 
 export interface NavigatieGroep {
-  id: "werk" | "verkoop" | "uitvoering" | "meer";
+  id: string;
   label: string;
   items: NavigatieItem[];
-  /** Subkopjes binnen een groep (alleen "meer" gebruikt dit). */
-  subgroepen?: Array<{ label: string; items: NavigatieItem[] }>;
 }
 
 /* ─── Item-defs (één bron, hergebruikt per rol) ─── */
