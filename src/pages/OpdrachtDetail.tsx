@@ -26,6 +26,7 @@ import RetourDialog from "@/components/retouren/RetourDialog";
 import { RotateCcw } from "lucide-react";
 import { OfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
 import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",

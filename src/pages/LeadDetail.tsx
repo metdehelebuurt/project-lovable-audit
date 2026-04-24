@@ -30,6 +30,7 @@ import EmailTab from "@/components/email/EmailTab";
 import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 import GecombineerdeTijdlijn, { type ExtraEvent } from "@/components/historie/GecombineerdeTijdlijn";
 import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];

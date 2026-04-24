@@ -28,6 +28,7 @@ import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
 import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
 import SignaturePad from "@/components/schouwen/SignaturePad";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 type Offerte = Database["public"]["Tables"]["offertes"]["Row"];
 type OfferteStatus = Database["public"]["Enums"]["offerte_status"];

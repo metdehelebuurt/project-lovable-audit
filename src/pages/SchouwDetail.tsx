@@ -12,6 +12,7 @@ import SchouwSatellietKaart from "@/components/schouwen/SchouwSatellietKaart";
 import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 import type { Database } from "@/integrations/supabase/types";
 import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 

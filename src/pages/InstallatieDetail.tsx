@@ -23,6 +23,7 @@ import SerienummerEditor from "@/components/serienummers/SerienummerEditor";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import RetourDialog from "@/components/retouren/RetourDialog";
+import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
 const InstallatieDetail = () => {
   const { id } = useParams<{ id: string }>();
