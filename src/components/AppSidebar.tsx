@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { useEffect } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
@@ -8,7 +7,6 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
@@ -16,8 +14,8 @@ import { useModuleNotificatieCounts, entityTypeForUrl, markeerModuleGelezen } fr
 import { getNavigation, type NavigatieGroep, type NavigatieItem } from "@/lib/navigation/navigationModel";
 
 /**
- * Sidebar v2 — rol-gestuurd navigatiemodel met drie vaste hoofdgroepen
- * (Werk / Klant & Verkoop / Uitvoering) en een uitklapbaar "Meer"-blok.
+ * Sidebar v2.1 — alle rol-relevante groepen plat zichtbaar, sidebar scrollt.
+ * Geen verborgen "Meer"-uitklap meer; iedere module is met één klik bereikbaar.
  */
 
 function NavItem({
@@ -53,7 +51,7 @@ function NavItem({
   );
 }
 
-function HoofdGroep({
+function NavGroep({
   groep, collapsed, isMobile, counts, onActivate,
 }: {
   groep: NavigatieGroep; collapsed: boolean; isMobile: boolean;
@@ -85,87 +83,6 @@ function HoofdGroep({
   );
 }
 
-function MeerGroep({
-  groep, collapsed, isMobile, counts, onActivate, pathname,
-}: {
-  groep: NavigatieGroep; collapsed: boolean; isMobile: boolean;
-  counts: Record<string, number>; onActivate: (url: string) => void; pathname: string;
-}) {
-  // Open standaard wanneer een item binnen "Meer" actief is
-  const subItems = (groep.subgroepen ?? []).flatMap((sg) => sg.items);
-  const heeftActief = subItems.some((it) => pathname === it.url || pathname.startsWith(it.url.split("?")[0] + "/"));
-  const [open, setOpen] = useState(heeftActief);
-
-  // Wanneer collapsed: toon items als gewone navigatie zonder kop, anders is alles onbereikbaar in icon-mode.
-  if (collapsed && !isMobile) {
-    return (
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {subItems.map((item) => (
-              <NavItem
-                key={item.id}
-                item={item}
-                collapsed={collapsed}
-                isMobile={isMobile}
-                badgeCount={counts[item.badgeEntiteit ?? entityTypeForUrl(item.url) ?? ""] ?? 0}
-                onActivate={onActivate}
-              />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    );
-  }
-
-  if (subItems.length === 0) return null;
-
-  return (
-    <SidebarGroup>
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[40px]"
-          >
-            <MoreHorizontal className="h-4.5 w-4.5 shrink-0" />
-            <span className="text-sm flex-1 text-left">{groep.label}</span>
-            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="pl-2 space-y-2 mt-1">
-            {(groep.subgroepen ?? []).map((sg, sgi) => {
-              if (sg.items.length === 0) return null;
-              return (
-                <div key={`${sg.label}-${sgi}`}>
-                  {sg.label && (
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold px-3 mb-0.5 mt-2">
-                      {sg.label}
-                    </p>
-                  )}
-                  <SidebarMenu>
-                    {sg.items.map((item) => (
-                      <NavItem
-                        key={item.id}
-                        item={item}
-                        collapsed={false}
-                        isMobile={isMobile}
-                        badgeCount={counts[item.badgeEntiteit ?? entityTypeForUrl(item.url) ?? ""] ?? 0}
-                        onActivate={onActivate}
-                      />
-                    ))}
-                  </SidebarMenu>
-                </div>
-              );
-            })}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </SidebarGroup>
-  );
-}
-
 export function AppSidebar() {
   const { profile, user } = useAuth();
   const { state, setOpenMobile, openMobile } = useSidebar();
@@ -174,9 +91,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { data: counts = {} } = useModuleNotificatieCounts();
 
-  const groepen = getNavigation(profile?.rol);
-  const hoofdGroepen = groepen.filter((g) => g.id !== "meer");
-  const meerGroep = groepen.find((g) => g.id === "meer");
+  const groepen = getNavigation(profile?.rol).filter((g) => g.items.length > 0);
 
   const handleActivate = (url: string) => {
     if (!user) return;
@@ -199,10 +114,10 @@ export function AppSidebar() {
         <Logo showText={!collapsed || isMobile} />
       </div>
       <SidebarContent>
-        {hoofdGroepen.map((groep, gi) => (
+        {groepen.map((groep, gi) => (
           <div key={groep.id}>
             {gi > 0 && <Separator className="mx-3 my-1" />}
-            <HoofdGroep
+            <NavGroep
               groep={groep}
               collapsed={collapsed}
               isMobile={isMobile}
@@ -211,19 +126,6 @@ export function AppSidebar() {
             />
           </div>
         ))}
-        {meerGroep && (
-          <>
-            <Separator className="mx-3 my-1" />
-            <MeerGroep
-              groep={meerGroep}
-              collapsed={collapsed}
-              isMobile={isMobile}
-              counts={counts}
-              onActivate={handleActivate}
-              pathname={location.pathname}
-            />
-          </>
-        )}
       </SidebarContent>
     </Sidebar>
   );
