@@ -153,14 +153,10 @@ function adviseurNav(): NavigatieGroep[] {
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.schouwen, ITEMS.offertes] },
     { id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Catalogus & tools", items: [ITEMS.producten, ITEMS.tools, ITEMS.documenten] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "catalogus", label: "Catalogus & tools", items: [ITEMS.producten, ITEMS.tools, ITEMS.documenten] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -171,14 +167,10 @@ function installateurNav(): NavigatieGroep[] {
       items: [ITEMS.installaties, ITEMS.planning, ITEMS.opleveringen, ITEMS.voorraad] },
     { id: "verkoop", label: "Klant & Verkoop",
       items: [ITEMS.opdrachten] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "catalogus", label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -190,11 +182,7 @@ function consumentNav(): NavigatieGroep[] {
       items: [{ ...ITEMS.offertes, label: "Mijn offertes" }, { ...ITEMS.schouwen, label: "Mijn schouwen" }] },
     { id: "uitvoering", label: "Planning",
       items: [{ ...ITEMS.planning, label: "Mijn afspraken" }] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Support", items: [ITEMS.feedback] },
-      ],
-    },
+    { id: "support", label: "Support", items: [ITEMS.feedback] },
   ];
 }
 
@@ -202,13 +190,8 @@ function affiliateNav(): NavigatieGroep[] {
   return [
     { id: "werk", label: "Werk", items: [ITEMS.vandaag] },
     { id: "verkoop", label: "Verkoop", items: [ITEMS.affiliateLinks, ITEMS.offertes] },
-    { id: "uitvoering", label: "", items: [] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
