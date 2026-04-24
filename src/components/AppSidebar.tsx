@@ -39,7 +39,7 @@ function NavItem({
       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
       onClick={() => onActivate?.(item.url)}
     >
-      <Icon className="h-4.5 w-4.5 shrink-0" />
+      <Icon className="h-4 w-4 shrink-0" />
       {expanded && <span className="text-sm flex-1 truncate">{item.label}</span>}
       {!expanded && showBadge && (
         <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
