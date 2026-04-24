@@ -201,17 +201,12 @@ const KlantDetail = () => {
   const totalOpdrachtenValue = opdrachten.reduce((sum: number, o: any) => sum + (o.totaal_bedrag || 0), 0);
   const totalOfferteValue = offertes.reduce((sum: number, o: any) => sum + o.totaal_bedrag, 0);
 
-  const tabs = [
+  // Tabs: 5 hoofdgroepen i.p.v. 11 losse tabs
+  const tabs: KlantTab[] = [
     { key: "overzicht", label: "Overzicht" },
-    { key: "woning", label: "Woning & producten" },
-    { key: "email", label: "E-mail" },
-    { key: "offertes", label: "Offertes", count: offertes.length },
-    { key: "opdrachten", label: "Verkooporders", count: opdrachten.length },
-    { key: "installaties", label: "Installaties", count: installaties.length },
-    { key: "opleveringen", label: "Opleveringen", count: opleveringen.length },
-    { key: "apparatuur", label: "Apparatuur" },
-    { key: "schouwen", label: "Schouwen", count: schouwen.length },
-    { key: "afspraken", label: "Afspraken", count: afspraken.length },
+    { key: "verkoop", label: "Verkoop", count: offertes.length + opdrachten.length },
+    { key: "uitvoering", label: "Uitvoering", count: schouwen.length + installaties.length + opleveringen.length },
+    { key: "communicatie", label: "Communicatie", count: afspraken.length },
     { key: "activiteit", label: "Activiteit" },
   ];
 
@@ -240,145 +235,58 @@ const KlantDetail = () => {
   ] as ExtraEvent[];
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/klanten")} className="rounded-xl mt-1">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-semibold text-foreground">{klant.voornaam} {klant.achternaam}</h1>
-            <Badge className="bg-green-600 text-white">Klant</Badge>
-          </div>
-          {/* Inline contact info */}
-          <div className="flex items-center gap-4 text-muted-foreground text-sm mt-1 flex-wrap">
-            {klant.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{klant.email}</span>}
-            {klant.telefoon && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{klant.telefoon}</span>}
-            {klant.adres && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{klant.adres}, {klant.postcode} {klant.plaats}</span>}
-            {klant.bedrijfsnaam && <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{klant.bedrijfsnaam}</span>}
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-muted-foreground">Klant sinds {formatDate(klant.created_at)}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {!isEditing && (
-            <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={startEditing}>
-              <Pencil className="h-4 w-4" /> Bewerken
-            </Button>
-          )}
-          <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => setAfspraakOpen(true)}>
-            <CalendarIcon className="h-4 w-4" /> Afspraak
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => setRetourOpen(true)}>
-            <RotateCcw className="h-4 w-4" /> Retour
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => {
-            const params = new URLSearchParams({ bron: "klant", klant_id: klant.id });
-            if (klant.lead_id) params.set("lead_id", klant.lead_id);
-            navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
-          }}>
-            <LifeBuoy className="h-4 w-4" /> Ticket
-          </Button>
-          <Button size="sm" className="rounded-xl gap-1.5" onClick={handleNewOfferte}>
-            <FileText className="h-4 w-4" /> Offerte
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5 max-w-6xl">
+      <KlantHeader
+        klant={klant}
+        isEditing={isEditing}
+        onStartEdit={startEditing}
+        onAfspraak={() => setAfspraakOpen(true)}
+        onRetour={() => setRetourOpen(true)}
+        onTicket={() => {
+          const params = new URLSearchParams({ bron: "klant", klant_id: klant.id });
+          if (klant.lead_id) params.set("lead_id", klant.lead_id);
+          navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+        }}
+        onOfferte={handleNewOfferte}
+      />
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <QuickStat label="Offertes" value={offertes.length} icon={FileText} />
-        <QuickStat label="Verkooporders" value={opdrachten.length} icon={Wrench} />
-        <QuickStat label="Orderwaarde" value={formatCurrency(totalOpdrachtenValue)} icon={TrendingUp} />
-        <QuickStat label="Schouwen" value={schouwen.length} icon={ClipboardCheck} />
-        <QuickStat label="Opleveringen" value={opleveringen.length} icon={ShieldCheck} />
-        <QuickStat label="Afspraken" value={afspraken.length} icon={CalendarIcon} />
-      </div>
+      <KlantStatsRow
+        stats={{
+          offertes: offertes.length,
+          opdrachten: opdrachten.length,
+          orderwaarde: totalOpdrachtenValue,
+          schouwen: schouwen.length,
+          opleveringen: opleveringen.length,
+          afspraken: afspraken.length,
+        }}
+      />
 
-      {/* Tab Navigation */}
-      <div className="border-b border-border overflow-x-auto">
-        <div className="flex gap-0 min-w-max">
-          {tabs.map(tab => (
-            <TabButton key={tab.key} active={activeTab === tab.key} label={tab.label} count={tab.count} onClick={() => setActiveTab(tab.key)} />
-          ))}
-        </div>
-      </div>
+      <KlantTabsNav tabs={tabs} active={activeTab} onChange={setActiveTab} />
 
       {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          {/* OVERZICHT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 space-y-4 min-w-0">
+          {/* OVERZICHT — contact + woning/producten + notities + tickets */}
           {activeTab === "overzicht" && (
             <div className="space-y-4">
-              <Card className="rounded-2xl border-0 shadow-sm">
-                <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" /> Contactgegevens
-                  </CardTitle>
-                  {!isEditing && (
-                    <Button variant="ghost" size="sm" onClick={startEditing} className="rounded-xl gap-1.5 text-xs">
-                      <Pencil className="h-3.5 w-3.5" /> Bewerken
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {isEditing ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div><Label className="text-xs">Voornaam *</Label><Input value={editForm.voornaam || ""} onChange={e => setEditForm((p: any) => ({ ...p, voornaam: e.target.value }))} className="rounded-xl" /></div>
-                        <div><Label className="text-xs">Achternaam *</Label><Input value={editForm.achternaam || ""} onChange={e => setEditForm((p: any) => ({ ...p, achternaam: e.target.value }))} className="rounded-xl" /></div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="sm:col-span-2">
-                          <EmailAddressList
-                            primary={editForm.email || ""}
-                            onPrimaryChange={(v) => setEditForm((p: any) => ({ ...p, email: v }))}
-                            extras={editForm.extra_emails || []}
-                            onExtrasChange={(v) => setEditForm((p: any) => ({ ...p, extra_emails: v }))}
-                          />
-                        </div>
-                        <div><Label className="text-xs">Telefoon</Label><Input value={editForm.telefoon || ""} onChange={e => setEditForm((p: any) => ({ ...p, telefoon: e.target.value }))} className="rounded-xl" /></div>
-                      </div>
-                      <div><Label className="text-xs">Bedrijfsnaam</Label><Input value={editForm.bedrijfsnaam || ""} onChange={e => setEditForm((p: any) => ({ ...p, bedrijfsnaam: e.target.value }))} className="rounded-xl" /></div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="sm:col-span-2"><Label className="text-xs">Adres</Label><Input value={editForm.adres || ""} onChange={e => setEditForm((p: any) => ({ ...p, adres: e.target.value }))} className="rounded-xl" /></div>
-                        <div><Label className="text-xs">Postcode</Label><Input value={editForm.postcode || ""} onChange={e => setEditForm((p: any) => ({ ...p, postcode: e.target.value }))} className="rounded-xl" /></div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div><Label className="text-xs">Plaats</Label><Input value={editForm.plaats || ""} onChange={e => setEditForm((p: any) => ({ ...p, plaats: e.target.value }))} className="rounded-xl" /></div>
-                      </div>
-                      <div className="flex gap-2 justify-end pt-2">
-                        <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setIsEditing(false)}>Annuleren</Button>
-                        <Button size="sm" className="rounded-xl gap-1.5" onClick={saveEdit} disabled={updateKlantMutation.isPending}>
-                          {updateKlantMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                          Opslaan
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <InfoRow icon={Mail} label="E-mail" value={klant.email} />
-                        <InfoRow icon={Phone} label="Telefoon" value={klant.telefoon} />
-                        <InfoRow icon={MapPin} label="Adres" value={klant.adres ? `${klant.adres}, ${klant.postcode || ""} ${klant.plaats || ""}`.trim() : null} />
-                        <InfoRow icon={Building2} label="Bedrijf" value={klant.bedrijfsnaam} />
-                      </div>
-                      <Separator />
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Klant sinds: {formatDateTime(klant.created_at)}</span>
-                        <span>Laatst gewijzigd: {formatDateTime(klant.updated_at)}</span>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <KlantContactCard
+                klant={klant}
+                isEditing={isEditing}
+                editForm={editForm}
+                setEditForm={setEditForm}
+                onStartEdit={startEditing}
+                onCancelEdit={() => setIsEditing(false)}
+                onSave={saveEdit}
+                isSaving={updateKlantMutation.isPending}
+              />
 
-              {/* Notities */}
+              <WoningProductenTab klantId={klant.id} leadId={klant.lead_id} />
+
               <Card className="rounded-2xl border-0 shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2"><StickyNote className="h-4 w-4 text-primary" /> Notities</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <StickyNote className="h-4 w-4 text-primary" /> Notities
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Textarea
@@ -386,74 +294,64 @@ const KlantDetail = () => {
                     rows={4}
                     className="rounded-xl"
                     placeholder="Notities over deze klant..."
-                    onBlur={e => {
+                    onBlur={(e) => {
                       if (e.target.value !== (klant.notities || "")) saveNotities(e.target.value);
                     }}
                   />
                 </CardContent>
               </Card>
 
-              {/* Helpdesk-tickets */}
               <KlantTicketsList klantId={klant.id} leadId={klant.lead_id} />
             </div>
           )}
 
-          {/* OFFERTES */}
-          {activeTab === "offertes" && <OffertesLijst offertes={offertes} onNew={handleNewOfferte} />}
-
-          {/* OPDRACHTEN */}
-          {activeTab === "opdrachten" && <OpdrachtenLijst opdrachten={opdrachten} onNavigate={(oid) => navigate(`/opdrachten/${oid}`)} />}
-
-          {/* INSTALLATIES */}
-          {activeTab === "installaties" && <InstallatiesLijst installaties={installaties} onNavigate={(iid) => navigate(`/installaties/${iid}`)} />}
-
-          {/* OPLEVERINGEN */}
-          {activeTab === "opleveringen" && (
-            <OpleveringenLijst
-              opleveringen={opleveringen as any}
-              onNavigate={(rid) => navigate(`/opleveringen/${rid}`)}
-              onNew={() => navigate(`/opleveringen/nieuw?klant=${klant.id}`)}
-              onDownload={async (_rid, pdfUrl) => {
-                const url = await getSignedUrlForVersie(pdfUrl);
-                if (url) window.open(url, "_blank", "noopener,noreferrer");
-                else toast.error("Download niet beschikbaar");
-              }}
-            />
+          {/* VERKOOP — offertes + verkooporders */}
+          {activeTab === "verkoop" && (
+            <div className="space-y-4">
+              <OffertesLijst offertes={offertes} onNew={handleNewOfferte} />
+              <OpdrachtenLijst opdrachten={opdrachten} onNavigate={(oid) => navigate(`/opdrachten/${oid}`)} />
+            </div>
           )}
 
-          {/* SCHOUWEN */}
-          {activeTab === "schouwen" && <SchouwenLijst schouwen={schouwen} onNew={() => navigate("/schouwen")} />}
-
-          {/* APPARATUUR */}
-          {activeTab === "apparatuur" && (
-            <GeleverdeApparatuurLijst klantId={klant.id} leadId={klant.lead_id} />
+          {/* UITVOERING — schouwen, installaties, opleveringen, apparatuur */}
+          {activeTab === "uitvoering" && (
+            <div className="space-y-4">
+              <SchouwenLijst schouwen={schouwen} onNew={() => navigate("/schouwen")} />
+              <InstallatiesLijst installaties={installaties} onNavigate={(iid) => navigate(`/installaties/${iid}`)} />
+              <OpleveringenLijst
+                opleveringen={opleveringen as any}
+                onNavigate={(rid) => navigate(`/opleveringen/${rid}`)}
+                onNew={() => navigate(`/opleveringen/nieuw?klant=${klant.id}`)}
+                onDownload={async (_rid, pdfUrl) => {
+                  const url = await getSignedUrlForVersie(pdfUrl);
+                  if (url) window.open(url, "_blank", "noopener,noreferrer");
+                  else toast.error("Download niet beschikbaar");
+                }}
+              />
+              <GeleverdeApparatuurLijst klantId={klant.id} leadId={klant.lead_id} />
+            </div>
           )}
 
-          {/* AFSPRAKEN */}
-          {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />}
-
-          {/* E-MAIL */}
-          {activeTab === "email" && (
-            <EmailTab
-              klantId={id}
-              email={klant.email}
-              emails={[klant.email, ...(klant.extra_emails || [])].filter(Boolean)}
-            />
+          {/* COMMUNICATIE — e-mail + afspraken */}
+          {activeTab === "communicatie" && (
+            <div className="space-y-4">
+              <EmailTab
+                klantId={id}
+                email={klant.email}
+                emails={[klant.email, ...(klant.extra_emails || [])].filter(Boolean)}
+              />
+              <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />
+            </div>
           )}
 
           {/* ACTIVITEIT */}
           {activeTab === "activiteit" && (
             <GecombineerdeTijdlijn entiteitType="klant" entiteitId={klant.id} extraEvents={timelineEvents} />
           )}
-
-          {/* WONING & PRODUCTEN */}
-          {activeTab === "woning" && (
-            <WoningProductenTab klantId={klant.id} leadId={klant.lead_id} />
-          )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
+        {/* Sidebar — alleen op desktop */}
+        <aside className="hidden lg:block space-y-4">
           <SamenvattingCard items={[
             { label: "Totaal offertes", value: offertes.length },
             { label: "Offertewaarde", value: formatCurrency(totalOfferteValue) },
@@ -473,7 +371,7 @@ const KlantDetail = () => {
             email={klant.email}
             telefoon={klant.telefoon}
           />
-        </div>
+        </aside>
       </div>
 
       <AfspraakDialog
