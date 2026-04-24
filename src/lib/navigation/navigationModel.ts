@@ -124,15 +124,11 @@ function backofficeNav(): NavigatieGroep[] {
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad, ITEMS.retouren] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
-        { label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "financieel", label: "Financieel", items: [ITEMS.financieel, ITEMS.leveranciers] },
+    { id: "catalogus", label: "Catalogus & data", items: [ITEMS.producten, ITEMS.documenten, ITEMS.analytics] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
@@ -143,14 +139,10 @@ function partnerStaffNav(): NavigatieGroep[] {
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
       items: [ITEMS.planning, ITEMS.installaties, ITEMS.opleveringen, ITEMS.voorraad] },
-    { id: "meer", label: "Meer", items: [],
-      subgroepen: [
-        { label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
-        { label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
-        { label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
-        { label: "", items: [ITEMS.instellingen] },
-      ],
-    },
+    { id: "catalogus", label: "Catalogus", items: [ITEMS.producten, ITEMS.documenten] },
+    { id: "service", label: "Service", items: [ITEMS.helpdesk, ITEMS.kennisbank] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
 }
 
