@@ -8,6 +8,7 @@ import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
 import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
 import NummerreeksConfig from "@/components/instellingen/NummerreeksConfig";
+import InkoopInstellingenForm from "@/components/instellingen/InkoopInstellingenForm";
 import InstallateurVoorkeurenForm from "@/components/oplever/InstallateurVoorkeurenForm";
 import MijnEmailKoppeling from "@/components/instellingen/MijnEmailKoppeling";
 import InboxZichtbaarheidBeheer from "@/components/instellingen/InboxZichtbaarheidBeheer";
@@ -23,7 +24,7 @@ import { toast } from "sonner";
 import {
   User, Lock, Shield, Download, Trash2, Sparkles, Palette, FileText,
   Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy, KeyRound, Wrench, Bell
-  , Hash
+  , Hash, ShoppingCart
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,7 @@ const Instellingen = () => {
     { id: "offertes", label: "Offertes", icon: FileText, roles: ADMIN_ROLLEN },
     { id: "leads", label: "Leads", icon: Users, roles: ADMIN_ROLLEN },
     { id: "schouwen", label: "Schouwen", icon: ClipboardList, roles: ADMIN_ROLLEN },
+    { id: "inkoop", label: "Inkoop", icon: ShoppingCart, roles: ADMIN_ROLLEN },
     { id: "nummerreeksen", label: "Nummerreeksen", icon: Hash, roles: ADMIN_ROLLEN },
     { id: "helpdesk", label: "Helpdesk notificaties", icon: LifeBuoy, roles: ADMIN_ROLLEN },
     { id: "modules", label: "Modules & rollen", icon: KeyRound, roles: ADMIN_ROLLEN },
@@ -123,6 +125,7 @@ const Instellingen = () => {
           {activeTab === "producten" && isPartnerAdmin && profile?.partner_id && <ProductenInstellingen partnerId={profile.partner_id} />}
           {activeTab === "leads" && isPartnerAdmin && profile?.partner_id && <LeadBronnenConfig partnerId={profile.partner_id} />}
           {activeTab === "schouwen" && isPartnerAdmin && profile?.partner_id && <SchouwInstellingen partnerId={profile.partner_id} />}
+          {activeTab === "inkoop" && isPartnerAdmin && profile?.partner_id && <InkoopInstellingenForm partnerId={profile.partner_id} />}
           {activeTab === "nummerreeksen" && isPartnerAdmin && profile?.partner_id && <NummerreeksConfig partnerId={profile.partner_id} />}
           {activeTab === "helpdesk" && isPartnerAdmin && profile?.partner_id && <HelpdeskNotificatieConfig partnerId={profile.partner_id} />}
           {activeTab === "modules" && isPartnerAdmin && profile?.partner_id && (
