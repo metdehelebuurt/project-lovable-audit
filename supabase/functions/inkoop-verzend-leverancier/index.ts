@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     if (!userRow?.partner_id) return jsonResponse({ error: "Geen organisatie gekoppeld" }, 400);
 
     const { data: doc } = await adminClient.from("financiele_documenten")
-      .select("id, documentnummer, type, leverancier_id, totaal_bedrag, status, partner_id, goedkeuring_status")
+      .select("id, documentnummer, type, leverancier_id, totaal_bedrag, status, partner_id, goedgekeurd_op")
       .eq("id", inkooporder_id).eq("partner_id", userRow.partner_id).single();
     if (!doc) return jsonResponse({ error: "Inkooporder niet gevonden" }, 404);
     if (doc.type !== "inkooporder") {
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       (modus === "altijd") ||
       (modus === "drempel" && totaal >= drempel && drempel > 0);
 
-    if (moetGoedgekeurd && (doc as any).goedkeuring_status !== "goedgekeurd") {
+    if (moetGoedgekeurd && !doc.goedgekeurd_op) {
       return jsonResponse({
         error: "Deze inkooporder moet eerst worden goedgekeurd voordat hij verzonden kan worden.",
       }, 403);
