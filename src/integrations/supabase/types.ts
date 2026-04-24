@@ -5717,6 +5717,66 @@ export type Database = {
         }
         Relationships: []
       }
+      system_error_logs: {
+        Row: {
+          bericht: string
+          bron: string
+          context: Json | null
+          created_at: string
+          edge_function_naam: string | null
+          id: string
+          ip: unknown
+          niveau: string
+          partner_id: string | null
+          request_id: string | null
+          route: string | null
+          stacktrace: string | null
+          status_code: number | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_rol: string | null
+        }
+        Insert: {
+          bericht: string
+          bron: string
+          context?: Json | null
+          created_at?: string
+          edge_function_naam?: string | null
+          id?: string
+          ip?: unknown
+          niveau?: string
+          partner_id?: string | null
+          request_id?: string | null
+          route?: string | null
+          stacktrace?: string | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_rol?: string | null
+        }
+        Update: {
+          bericht?: string
+          bron?: string
+          context?: Json | null
+          created_at?: string
+          edge_function_naam?: string | null
+          id?: string
+          ip?: unknown
+          niveau?: string
+          partner_id?: string | null
+          request_id?: string | null
+          route?: string | null
+          stacktrace?: string | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_rol?: string | null
+        }
+        Relationships: []
+      }
       tickets: {
         Row: {
           berichten_json: Json | null
@@ -6460,6 +6520,7 @@ export type Database = {
         }
         Returns: number
       }
+      purge_system_error_logs: { Args: { _dagen?: number }; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
