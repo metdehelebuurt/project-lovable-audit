@@ -281,7 +281,7 @@ export default function Inkoop() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/financieel/nieuw/inkooporder">
+          <Link to="/inkoop/nieuw">
             <Send className="h-4 w-4 mr-2" /> Nieuwe inkooporder
           </Link>
         </Button>
