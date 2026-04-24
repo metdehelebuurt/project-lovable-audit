@@ -77,6 +77,8 @@ const ITEMS = {
   kennisbank: { id: "kennisbank", label: "Kennisbank", icon: BookOpen, url: "/helpdesk/kennisbank",
     synoniemen: ["wiki", "kb"] } as NavigatieItem,
   partners: { id: "partners", label: "Partners", icon: Building2, url: "/partners" } as NavigatieItem,
+  platformToegang: { id: "platform-toegang", label: "Platformtoegang", icon: ShieldAlert,
+    url: "/superadmin/access-grants", synoniemen: ["break-glass", "access grants"] } as NavigatieItem,
   adviseurs: { id: "adviseurs", label: "Adviseurs", icon: UserCheck, url: "/adviseurs" } as NavigatieItem,
   gebruikers: { id: "gebruikers", label: "Gebruikers", icon: Users, url: "/gebruikers" } as NavigatieItem,
   affiliateBeheer: { id: "affiliate-beheer", label: "Affiliate beheer", icon: Handshake, url: "/affiliate-beheer" } as NavigatieItem,
@@ -113,7 +115,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
     { id: "beheer", label: "Beheer", items: [
       ...(isSuper ? [ITEMS.partners] : []),
       ITEMS.adviseurs, ITEMS.gebruikers,
-      ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen] : []),
+      ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen, ITEMS.platformToegang] : []),
     ] },
     { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
     { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
