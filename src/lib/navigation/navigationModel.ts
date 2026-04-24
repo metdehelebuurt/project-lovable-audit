@@ -4,6 +4,7 @@ import {
   RotateCcw, Receipt, Building2, UserCheck, FolderOpen, BarChart3, PenTool,
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
   Lightbulb, Link2, Home, ShieldAlert, ShoppingCart, type LucideIcon,
+  ScrollText,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
