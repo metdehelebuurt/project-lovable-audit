@@ -1542,6 +1542,7 @@ export type Database = {
           goedgekeurd_door_id: string | null
           goedgekeurd_op: string | null
           id: string
+          inkooporder_id: string | null
           installatie_id: string | null
           interne_notities: string | null
           klant_id: string | null
@@ -1586,6 +1587,7 @@ export type Database = {
           goedgekeurd_door_id?: string | null
           goedgekeurd_op?: string | null
           id?: string
+          inkooporder_id?: string | null
           installatie_id?: string | null
           interne_notities?: string | null
           klant_id?: string | null
@@ -1630,6 +1632,7 @@ export type Database = {
           goedgekeurd_door_id?: string | null
           goedgekeurd_op?: string | null
           id?: string
+          inkooporder_id?: string | null
           installatie_id?: string | null
           interne_notities?: string | null
           klant_id?: string | null
@@ -6316,6 +6319,10 @@ export type Database = {
       }
     }
     Functions: {
+      bereken_inkoop_match: {
+        Args: { _inkoopfactuur_id: string }
+        Returns: string
+      }
       bereken_inkoop_voorstellen: {
         Args: { _partner_id: string }
         Returns: number
