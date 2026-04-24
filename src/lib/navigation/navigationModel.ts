@@ -217,7 +217,6 @@ export function getAlleNavItems(rol: AppRole | undefined | null): NavigatieItem[
   const out: NavigatieItem[] = [];
   for (const g of groepen) {
     out.push(...g.items);
-    for (const sg of g.subgroepen ?? []) out.push(...sg.items);
   }
   // dedupe op id
   const gezien = new Set<string>();
