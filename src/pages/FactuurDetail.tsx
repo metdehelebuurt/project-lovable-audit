@@ -17,6 +17,7 @@ import FactuurEmailDialog from "@/components/financieel/FactuurEmailDialog";
 import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
 import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
 import InkoopOntvangstenLijst from "@/components/inkoop/InkoopOntvangstenLijst";
+import InkoopOrderActies from "@/components/inkoop/InkoopOrderActies";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -309,21 +310,29 @@ export default function FactuurDetail() {
             </Button>
           )}
 
-          {/* Inkooporder flow */}
-          {doc.type === "inkooporder" && doc.status === "verzonden" && (
-            <>
-              <Button variant="outline" onClick={() => updateStatus("deels_ontvangen")}>
-                Deels ontvangen
-              </Button>
-              <Button onClick={() => updateStatus("volledig_ontvangen")} className="bg-green-600 hover:bg-green-700">
-                Volledig ontvangen
-              </Button>
-            </>
-          )}
-          {doc.type === "inkooporder" && doc.status === "deels_ontvangen" && (
-            <Button onClick={() => updateStatus("volledig_ontvangen")} className="bg-green-600 hover:bg-green-700">
-              Volledig ontvangen
-            </Button>
+          {/* Inkooporder flow — goedkeuring + verzenden via gebruikers eigen mailbox */}
+          {doc.type === "inkooporder" && (
+            <InkoopOrderActies
+              doc={{
+                id: doc.id,
+                status: doc.status,
+                totaal_bedrag: Number(doc.totaal_bedrag ?? 0),
+                goedgekeurd_op: doc.goedgekeurd_op ?? null,
+                verzonden_op: doc.verzonden_op ?? null,
+                leverancier_id: doc.leverancier_id ?? null,
+                leveranciers: doc.leveranciers,
+              }}
+              partnerId={doc.partner_id}
+              onUpdated={() => {
+                // Refetch single doc
+                supabase
+                  .from("financiele_documenten")
+                  .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), offertes(offertenummer)")
+                  .eq("id", id!)
+                  .single()
+                  .then(({ data }) => { if (data) setDoc(data); });
+              }}
+            />
           )}
 
           {/* Pakbon flow */}
