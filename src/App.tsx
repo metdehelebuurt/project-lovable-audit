@@ -11,6 +11,7 @@ import { SessionTimeout } from "@/components/SessionTimeout";
 import Login from "@/pages/Login";
 import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
+import Vandaag from "@/pages/Vandaag";
 import Partners from "@/pages/Partners";
 import Gebruikers from "@/pages/Gebruikers";
 import GebruikerDetail from "@/pages/GebruikerDetail";
@@ -150,6 +151,7 @@ const App = () => (
 
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/vandaag" element={<Vandaag />} />
               <Route path="/partners" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><Partners /></ProtectedRoute>
               } />
