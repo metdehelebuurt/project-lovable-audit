@@ -18,6 +18,7 @@ import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
 import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
 import InkoopOntvangstenLijst from "@/components/inkoop/InkoopOntvangstenLijst";
 import InkoopOrderActies from "@/components/inkoop/InkoopOrderActies";
+import InkoopFactuurMatchPanel from "@/components/inkoop/InkoopFactuurMatchPanel";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -441,6 +442,15 @@ export default function FactuurDetail() {
           partnerId={doc.partner_id}
           inkooporderRegels={regels.map((r: any) => ({ omschrijving: r.omschrijving, aantal: Number(r.aantal ?? 0) }))}
           kanBoeken={!["volledig_ontvangen","betaald","gecrediteerd"].includes(doc.status)}
+        />
+      )}
+
+      {doc.type === "inkoopfactuur" && (
+        <InkoopFactuurMatchPanel
+          inkoopfactuurId={doc.id}
+          partnerId={doc.partner_id}
+          leverancierId={doc.leverancier_id ?? null}
+          inkooporderId={doc.inkooporder_id ?? null}
         />
       )}
 
