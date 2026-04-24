@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     const { data: partner, error: partnerErr } = await admin
       .from('partners')
-      .select('id, bedrijfsnaam')
+      .select('id, naam')
       .eq('id', partner_id)
       .single()
     if (partnerErr || !partner) {
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       const fromEmail = Deno.env.get('SENDGRID_FROM_EMAIL') ?? 'noreply@mijnhuis.nu'
       if (sendgridKey && partnerAdmins && partnerAdmins.length > 0) {
         const adminNaam = `${profile.voornaam ?? ''} ${profile.achternaam ?? ''}`.trim() || profile.email
-        const subject = `Tijdelijke platformtoegang geactiveerd voor ${partner.bedrijfsnaam}`
+        const subject = `Tijdelijke platformtoegang geactiveerd voor ${partner.naam}`
         const html = `
           <p>Beste ${partnerAdmins[0].voornaam ?? ''},</p>
           <p>Een platformbeheerder heeft tijdelijke toegang tot uw partneromgeving geactiveerd.</p>
