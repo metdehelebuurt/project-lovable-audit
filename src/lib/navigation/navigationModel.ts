@@ -122,6 +122,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
       ITEMS.adviseurs, ITEMS.gebruikers,
       ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen, ITEMS.platformToegang] : []),
     ] },
+    ...(isSuper ? [{ id: "systeem-superadmin", label: "Platform-systeem", items: [ITEMS.systeemlogs] }] : []),
     { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
     { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
