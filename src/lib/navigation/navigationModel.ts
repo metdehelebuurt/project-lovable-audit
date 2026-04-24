@@ -4,6 +4,7 @@ import {
   RotateCcw, Receipt, Building2, UserCheck, FolderOpen, BarChart3, PenTool,
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
   Lightbulb, Link2, Home, ShieldAlert, ShoppingCart, type LucideIcon,
+  ScrollText,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
@@ -81,6 +82,8 @@ const ITEMS = {
   partners: { id: "partners", label: "Partners", icon: Building2, url: "/partners" } as NavigatieItem,
   platformToegang: { id: "platform-toegang", label: "Platformtoegang", icon: ShieldAlert,
     url: "/superadmin/access-grants", synoniemen: ["break-glass", "access grants"] } as NavigatieItem,
+  systeemlogs: { id: "systeemlogs", label: "Systeemlogs", icon: ScrollText,
+    url: "/superadmin/logs", synoniemen: ["errors", "fouten", "logs", "edge logs", "auth logs"] } as NavigatieItem,
   adviseurs: { id: "adviseurs", label: "Adviseurs", icon: UserCheck, url: "/adviseurs" } as NavigatieItem,
   gebruikers: { id: "gebruikers", label: "Gebruikers", icon: Users, url: "/gebruikers" } as NavigatieItem,
   affiliateBeheer: { id: "affiliate-beheer", label: "Affiliate beheer", icon: Handshake, url: "/affiliate-beheer" } as NavigatieItem,
@@ -119,6 +122,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
       ITEMS.adviseurs, ITEMS.gebruikers,
       ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen, ITEMS.platformToegang] : []),
     ] },
+    ...(isSuper ? [{ id: "systeem-superadmin", label: "Platform-systeem", items: [ITEMS.systeemlogs] }] : []),
     { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
     { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];

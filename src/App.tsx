@@ -14,6 +14,7 @@ import Dashboard from "@/pages/Dashboard";
 import Vandaag from "@/pages/Vandaag";
 import Partners from "@/pages/Partners";
 import AccessGrants from "@/pages/Superadmin/AccessGrants";
+import SystemLogs from "@/pages/Superadmin/SystemLogs";
 import Gebruikers from "@/pages/Gebruikers";
 import GebruikerDetail from "@/pages/GebruikerDetail";
 import Adviseurs from "@/pages/Adviseurs";
@@ -160,6 +161,9 @@ const App = () => (
               } />
               <Route path="/superadmin/access-grants" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><AccessGrants /></ProtectedRoute>
+              } />
+              <Route path="/superadmin/logs" element={
+                <ProtectedRoute allowedRoles={["superadmin"]}><SystemLogs /></ProtectedRoute>
               } />
               <Route path="/adviseurs" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><Adviseurs /></ProtectedRoute>
