@@ -36,6 +36,8 @@ export interface NavigatieGroep {
 const ITEMS = {
   vandaag: { id: "vandaag", label: "Vandaag", icon: LayoutDashboard, url: "/vandaag",
     synoniemen: ["dashboard", "overzicht", "home"] } as NavigatieItem,
+  dashboard: { id: "dashboard", label: "Dashboard", icon: BarChart3, url: "/dashboard",
+    synoniemen: ["statistieken", "overzicht", "kpi"] } as NavigatieItem,
   actiecentrum: { id: "actiecentrum", label: "Actiecentrum", icon: Inbox, url: "/actiecentrum",
     synoniemen: ["taken", "todo"] } as NavigatieItem,
   berichten: { id: "berichten", label: "Berichten", icon: MessageSquare, url: "/berichten",
@@ -85,7 +87,7 @@ const ITEMS = {
     url: "/feedback/nieuw?type=functieverzoek", synoniemen: ["wens", "feature request"] } as NavigatieItem,
   instellingen: { id: "instellingen", label: "Instellingen", icon: Settings, url: "/instellingen",
     synoniemen: ["voorkeuren", "profiel"] } as NavigatieItem,
-  mijnWoning: { id: "mijn-woning", label: "Mijn woning", icon: Home, url: "/dashboard" } as NavigatieItem,
+  mijnWoning: { id: "mijn-woning", label: "Mijn woning", icon: Home, url: "/vandaag" } as NavigatieItem,
 } as const;
 
 /* ─── Per rol: groepen ─── */
@@ -95,7 +97,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
   return [
     {
       id: "werk", label: "Werk",
-      items: [ITEMS.vandaag, ITEMS.actiecentrum, ITEMS.berichten],
+      items: [ITEMS.vandaag, ITEMS.dashboard, ITEMS.actiecentrum, ITEMS.berichten],
     },
     {
       id: "verkoop", label: "Klant & Verkoop",
@@ -120,7 +122,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
 
 function backofficeNav(): NavigatieGroep[] {
   return [
-    { id: "werk", label: "Werk", items: [ITEMS.vandaag, ITEMS.actiecentrum, ITEMS.berichten] },
+    { id: "werk", label: "Werk", items: [ITEMS.vandaag, ITEMS.dashboard, ITEMS.actiecentrum, ITEMS.berichten] },
     { id: "verkoop", label: "Klant & Verkoop",
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
@@ -135,7 +137,7 @@ function backofficeNav(): NavigatieGroep[] {
 
 function partnerStaffNav(): NavigatieGroep[] {
   return [
-    { id: "werk", label: "Werk", items: [ITEMS.vandaag, ITEMS.actiecentrum, ITEMS.berichten] },
+    { id: "werk", label: "Werk", items: [ITEMS.vandaag, ITEMS.dashboard, ITEMS.actiecentrum, ITEMS.berichten] },
     { id: "verkoop", label: "Klant & Verkoop",
       items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen] },
     { id: "uitvoering", label: "Uitvoering",
