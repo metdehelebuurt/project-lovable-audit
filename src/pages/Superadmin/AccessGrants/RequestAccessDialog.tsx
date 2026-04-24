@@ -34,8 +34,8 @@ export function RequestAccessDialog() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, bedrijfsnaam")
-        .order("bedrijfsnaam", { ascending: true });
+        .select("id, naam")
+        .order("naam", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
@@ -98,7 +98,7 @@ export function RequestAccessDialog() {
               <SelectContent>
                 {partners.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.bedrijfsnaam ?? p.id}
+                    {p.naam ?? p.id}
                   </SelectItem>
                 ))}
               </SelectContent>

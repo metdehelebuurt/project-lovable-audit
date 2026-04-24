@@ -14,7 +14,7 @@ export interface AccessGrant {
   ingetrokken_op: string | null;
   ingetrokken_door: string | null;
   created_at: string;
-  partner?: { id: string; bedrijfsnaam: string | null } | null;
+  partner?: { id: string; naam: string | null } | null;
 }
 
 export type GrantStatus = "actief" | "verlopen" | "ingetrokken";
@@ -33,7 +33,7 @@ export function useAccessGrants() {
     queryFn: async (): Promise<AccessGrant[]> => {
       const { data, error } = await supabase
         .from("superadmin_access_grants")
-        .select("*, partner:partners(id, bedrijfsnaam)")
+        .select("*, partner:partners(id, naam)")
         .order("verleend_op", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as AccessGrant[];
