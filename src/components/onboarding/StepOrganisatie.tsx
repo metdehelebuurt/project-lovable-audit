@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Building2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { optimaliseerAfbeelding } from "@/lib/imageOptimizer";
 import { toast } from "sonner";
 import type { OnboardingPartnerData } from "./useOnboardingState";
 
@@ -24,12 +25,12 @@ export const StepOrganisatie = ({ partner, partnerId, onSave, onNext, onPrev }: 
     setData(p => ({ ...p, [k]: val }));
 
   const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error("Logo max 2 MB"); return; }
+    const origineel = e.target.files?.[0];
+    if (!origineel) return;
+    if (origineel.size > 10 * 1024 * 1024) { toast.error("Logo max 10 MB"); return; }
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${partnerId}/logo-${Date.now()}.${ext}`;
+    const file = await optimaliseerAfbeelding(origineel, { maxWidth: 800, maxHeight: 800, kwaliteit: 0.92 });
+    const path = `${partnerId}/logo-${Date.now()}.webp`;
     const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
     if (error) { toast.error("Upload mislukt"); setUploading(false); return; }
     const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
