@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { optimaliseerAfbeelding } from "@/lib/imageOptimizer";
 import SchouwInstellingen from "@/components/instellingen/SchouwInstellingen";
 import PartnerAbonnement from "@/components/abonnementen/PartnerAbonnement";
 import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
@@ -396,14 +397,14 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
   }, [partnerId]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Selecteer een afbeelding"); return; }
-    if (file.size > 2 * 1024 * 1024) { toast.error("Maximaal 2MB"); return; }
+    const origineel = e.target.files?.[0];
+    if (!origineel) return;
+    if (!origineel.type.startsWith("image/")) { toast.error("Selecteer een afbeelding"); return; }
+    if (origineel.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `${partnerId}/logo_${Date.now()}.${ext}`;
+      const file = await optimaliseerAfbeelding(origineel, { maxWidth: 800, maxHeight: 800, kwaliteit: 0.92 });
+      const path = `${partnerId}/logo_${Date.now()}.webp`;
       const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
       if (error) { toast.error("Upload mislukt: " + error.message); setUploading(false); return; }
       const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
@@ -454,7 +455,7 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
             )}
             <div>
               <Input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} className="text-sm" />
-              <p className="text-xs text-muted-foreground mt-1">Max 2MB, wordt getoond op offertes</p>
+              <p className="text-xs text-muted-foreground mt-1">Max 10MB, wordt automatisch geoptimaliseerd naar WebP</p>
             </div>
           </div>
         </div>
@@ -473,14 +474,14 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
             )}
             <div>
               <Input type="file" accept="image/*" onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                if (!file.type.startsWith("image/")) { toast.error("Selecteer een afbeelding"); return; }
-                if (file.size > 2 * 1024 * 1024) { toast.error("Maximaal 2MB"); return; }
+                const origineel = e.target.files?.[0];
+                if (!origineel) return;
+                if (!origineel.type.startsWith("image/")) { toast.error("Selecteer een afbeelding"); return; }
+                if (origineel.size > 10 * 1024 * 1024) { toast.error("Maximaal 10MB"); return; }
                 setUploadingDark(true);
                 try {
-                  const ext = file.name.split(".").pop();
-                  const path = `${partnerId}/logo_donker_${Date.now()}.${ext}`;
+                  const file = await optimaliseerAfbeelding(origineel, { maxWidth: 800, maxHeight: 800, kwaliteit: 0.92 });
+                  const path = `${partnerId}/logo_donker_${Date.now()}.webp`;
                   const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
                   if (error) { toast.error("Upload mislukt: " + error.message); setUploadingDark(false); return; }
                   const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
@@ -495,7 +496,7 @@ function HuisstijlTab({ partnerId }: { partnerId: string }) {
                 }
                 setUploadingDark(false);
               }} disabled={uploadingDark} className="text-sm" />
-              <p className="text-xs text-muted-foreground mt-1">Max 2MB, voor donkere/gekleurde achtergronden op offertes</p>
+              <p className="text-xs text-muted-foreground mt-1">Max 10MB, voor donkere/gekleurde achtergronden op offertes</p>
             </div>
           </div>
         </div>

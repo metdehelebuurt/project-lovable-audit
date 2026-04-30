@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, ArrowRight, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { optimaliseerAfbeelding } from "@/lib/imageOptimizer";
 import { toast } from "sonner";
 import type { OnboardingUserData } from "./useOnboardingState";
 
@@ -29,12 +30,12 @@ export const StepProfiel = ({ user, userId, email, onSave, onNext, onPrev }: Pro
   const initials = `${voornaam[0] || ""}${achternaam[0] || ""}`.toUpperCase() || "?";
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5 MB"); return; }
+    const origineel = e.target.files?.[0];
+    if (!origineel) return;
+    if (origineel.size > 10 * 1024 * 1024) { toast.error("Max 10 MB"); return; }
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${userId}/avatar-${Date.now()}.${ext}`;
+    const file = await optimaliseerAfbeelding(origineel, { maxWidth: 512, maxHeight: 512, kwaliteit: 0.9 });
+    const path = `${userId}/avatar-${Date.now()}.webp`;
     const { error } = await supabase.storage.from("partner-assets").upload(path, file, { upsert: true });
     if (error) { toast.error("Upload mislukt", { description: error.message }); setUploading(false); return; }
     const { data: { publicUrl } } = supabase.storage.from("partner-assets").getPublicUrl(path);
