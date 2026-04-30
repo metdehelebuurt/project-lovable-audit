@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, X, Loader2 } from "lucide-react";
 import ProductImage from "./ProductImage";
+import { vriendelijkeUploadFout } from "@/lib/storageErrors";
 
 interface ProductImageUploadProps {
   productId: string;
@@ -79,13 +80,7 @@ export default function ProductImageUpload({
       }
       toast.success("Afbeelding geüpload");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Onbekende fout";
-      const friendly = /row-level security|not authorized|permission/i.test(msg)
-        ? "Je hebt geen rechten om productafbeeldingen te uploaden. Neem contact op met je beheerder."
-        : /exceeded|too large|payload/i.test(msg)
-          ? "Het bestand is te groot voor de server (max 10 MB)."
-          : msg;
-      toast.error("Upload mislukt", { description: friendly });
+      toast.error("Upload mislukt", { description: vriendelijkeUploadFout(err) });
     } finally {
       setUploading(false);
     }
