@@ -15,6 +15,9 @@ interface ProductImageUploadProps {
   onGalleryChange: (urls: string[]) => void;
 }
 
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const TOEGESTAAN = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+
 export default function ProductImageUpload({
   productId,
   mainImage,
@@ -27,14 +30,43 @@ export default function ProductImageUpload({
   const [uploading, setUploading] = useState(false);
 
   const uploadFile = async (file: File, isMain: boolean) => {
-    const ext = file.name.split(".").pop();
-    const path = `${productId}/${isMain ? "main" : `gallery-${Date.now()}`}.${ext}`;
+    if (!TOEGESTAAN.includes(file.type)) {
+      toast.error("Ongeldig bestandstype", {
+        description: "Alleen JPG, PNG, WebP, GIF of SVG zijn toegestaan.",
+      });
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error("Bestand te groot", {
+        description: `Maximaal 10 MB. Dit bestand is ${(file.size / 1024 / 1024).toFixed(1)} MB.`,
+      });
+      return;
+    }
+
+    // Sessie + partner ophalen voor pad-prefix conform RLS-conventie.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Niet ingelogd", { description: "Log opnieuw in en probeer het nogmaals." });
+      return;
+    }
+    const { data: profiel } = await supabase
+      .from("users")
+      .select("partner_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    const partnerPrefix = profiel?.partner_id ?? "global";
+
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const bestandsnaam = isMain
+      ? `main-${Date.now()}.${ext}`
+      : `gallery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const path = `${partnerPrefix}/products/${productId}/${bestandsnaam}`;
 
     setUploading(true);
     try {
       const { error: uploadError } = await supabase.storage
         .from("product-images")
-        .upload(path, file, { upsert: true });
+        .upload(path, file, { upsert: true, contentType: file.type, cacheControl: "3600" });
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from("product-images").getPublicUrl(path);
@@ -46,8 +78,14 @@ export default function ProductImageUpload({
         onGalleryChange([...galleryImages, url]);
       }
       toast.success("Afbeelding geüpload");
-    } catch (err: any) {
-      toast.error("Upload mislukt", { description: err.message });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Onbekende fout";
+      const friendly = /row-level security|not authorized|permission/i.test(msg)
+        ? "Je hebt geen rechten om productafbeeldingen te uploaden. Neem contact op met je beheerder."
+        : /exceeded|too large|payload/i.test(msg)
+          ? "Het bestand is te groot voor de server (max 10 MB)."
+          : msg;
+      toast.error("Upload mislukt", { description: friendly });
     } finally {
       setUploading(false);
     }
