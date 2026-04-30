@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Upload, X, Loader2 } from "lucide-react";
 import ProductImage from "./ProductImage";
 import { vriendelijkeUploadFout } from "@/lib/storageErrors";
+import { optimaliseerAfbeelding } from "@/lib/imageOptimizer";
 
 interface ProductImageUploadProps {
   productId: string;
@@ -30,16 +31,16 @@ export default function ProductImageUpload({
 }: ProductImageUploadProps) {
   const [uploading, setUploading] = useState(false);
 
-  const uploadFile = async (file: File, isMain: boolean) => {
-    if (!TOEGESTAAN.includes(file.type)) {
+  const uploadFile = async (origineel: File, isMain: boolean) => {
+    if (!TOEGESTAAN.includes(origineel.type)) {
       toast.error("Ongeldig bestandstype", {
         description: "Alleen JPG, PNG, WebP, GIF of SVG zijn toegestaan.",
       });
       return;
     }
-    if (file.size > MAX_BYTES) {
+    if (origineel.size > MAX_BYTES) {
       toast.error("Bestand te groot", {
-        description: `Maximaal 10 MB. Dit bestand is ${(file.size / 1024 / 1024).toFixed(1)} MB.`,
+        description: `Maximaal 10 MB. Dit bestand is ${(origineel.size / 1024 / 1024).toFixed(1)} MB.`,
       });
       return;
     }
@@ -57,13 +58,15 @@ export default function ProductImageUpload({
       .maybeSingle();
     const partnerPrefix = profiel?.partner_id ?? "global";
 
+    setUploading(true);
+    // Resize + WebP-conversie (SVG/GIF blijven origineel)
+    const file = await optimaliseerAfbeelding(origineel, { maxWidth: 1600, maxHeight: 1600, kwaliteit: 0.9 });
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
     const bestandsnaam = isMain
       ? `main-${Date.now()}.${ext}`
       : `gallery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const path = `${partnerPrefix}/products/${productId}/${bestandsnaam}`;
 
-    setUploading(true);
     try {
       const { error: uploadError } = await supabase.storage
         .from("product-images")
