@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { vriendelijkeUploadFout } from "@/lib/storageErrors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -94,8 +95,8 @@ export default function ProductDatasheetSection({
 
       onDatasheetChange(path, "fabrikant");
       toast.success("Fabrikant-datasheet geüpload");
-    } catch (err: any) {
-      toast.error("Upload mislukt", { description: err.message });
+    } catch (err: unknown) {
+      toast.error("Upload mislukt", { description: vriendelijkeUploadFout(err) });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

@@ -6,6 +6,7 @@ import { BookOpen, Wrench, Upload, Loader2, Trash2, ExternalLink } from "lucide-
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildHandleidingUrl, type HandleidingType } from "@/lib/productHandleidingen";
+import { vriendelijkeUploadFout } from "@/lib/storageErrors";
 
 interface Props {
   productId: string;
@@ -114,7 +115,7 @@ function UploadSlot({ productId, type, icon, titel, beschrijving, huidigeUrl, hu
       toast.success("Handleiding geüpload");
       onChanged?.();
     } catch (err) {
-      toast.error("Upload mislukt", { description: err instanceof Error ? err.message : String(err) });
+      toast.error("Upload mislukt", { description: vriendelijkeUploadFout(err) });
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
