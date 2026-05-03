@@ -3365,8 +3365,10 @@ export type Database = {
       lead_contactmomenten: {
         Row: {
           created_at: string | null
+          gebeurd_op: string
           id: string
-          lead_id: string
+          klant_id: string | null
+          lead_id: string | null
           notitie: string | null
           partner_id: string
           resultaat: string | null
@@ -3376,8 +3378,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          gebeurd_op?: string
           id?: string
-          lead_id: string
+          klant_id?: string | null
+          lead_id?: string | null
           notitie?: string | null
           partner_id: string
           resultaat?: string | null
@@ -3387,8 +3391,10 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          gebeurd_op?: string
           id?: string
-          lead_id?: string
+          klant_id?: string | null
+          lead_id?: string | null
           notitie?: string | null
           partner_id?: string
           resultaat?: string | null
@@ -3397,6 +3403,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_contactmomenten_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lead_contactmomenten_lead_id_fkey"
             columns: ["lead_id"]
