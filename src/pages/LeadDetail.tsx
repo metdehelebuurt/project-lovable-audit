@@ -938,55 +938,8 @@ const LeadDetail = () => {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {/* Log contact widget */}
-          <Card className="rounded-2xl border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <PhoneCall className="h-4 w-4 text-primary" /> Log contactmoment
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-[10px]">Type</Label>
-                  <Select value={contactForm.type} onValueChange={v => setContactForm(p => ({ ...p, type: v }))}>
-                    <SelectTrigger className="h-8 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {contactTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-[10px]">Richting</Label>
-                  <Select value={contactForm.richting} onValueChange={v => setContactForm(p => ({ ...p, richting: v }))}>
-                    <SelectTrigger className="h-8 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="uitgaand">Uitgaand</SelectItem>
-                      <SelectItem value="inkomend">Inkomend</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label className="text-[10px]">Resultaat</Label>
-                <Select value={contactForm.resultaat || "none"} onValueChange={v => setContactForm(p => ({ ...p, resultaat: v === "none" ? "" : v }))}>
-                  <SelectTrigger className="h-8 text-xs rounded-lg"><SelectValue placeholder="Optioneel" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">—</SelectItem>
-                    {contactResultaatOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-[10px]">Notitie</Label>
-                <Input value={contactForm.notitie} onChange={e => setContactForm(p => ({ ...p, notitie: e.target.value }))} className="h-8 text-xs rounded-lg" placeholder="Korte notitie..." />
-              </div>
-              <Button size="sm" className="w-full rounded-xl text-xs" onClick={() => addContactMutation.mutate(contactForm)} disabled={addContactMutation.isPending}>
-                {addContactMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
-                Loggen
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Log contact widget — gedeelde component met datum/tijd in verleden */}
+          <LogContactmomentCard leadId={id} />
 
           {/* AI Signals */}
           <Card className="rounded-2xl border-0 shadow-sm">
