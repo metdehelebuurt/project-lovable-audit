@@ -209,6 +209,14 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
         telefoon: form.telefoon || null,
       });
     } else {
+      // Verplichte partner-koppeling voor alle rollen behalve superadmin
+      const effectievePartnerId = form.partner_id || profile?.partner_id || null;
+      if (form.rol !== "superadmin" && !effectievePartnerId) {
+        toast.error("Selecteer een organisatie", {
+          description: "Een gebruiker met deze rol moet aan een organisatie gekoppeld zijn.",
+        });
+        return;
+      }
       createMutation.mutate(form);
     }
   };
