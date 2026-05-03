@@ -137,10 +137,12 @@ export default function KlantContactCard({
           </div>
         ) : (
           <div className="space-y-3">
-            <ContactItem icon={Mail} label="E-mail" value={klant.email} href={klant.email ? `mailto:${klant.email}` : undefined} />
-            <ContactItem icon={Phone} label="Telefoon" value={klant.telefoon} href={klant.telefoon ? `tel:${klant.telefoon}` : undefined} />
-            <ContactItem icon={MapPin} label="Adres" value={adresStr} />
-            <ContactItem icon={Building2} label="Bedrijf" value={klant.bedrijfsnaam} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              <ContactItem icon={Mail} label="E-mail" value={klant.email} href={klant.email ? `mailto:${klant.email}` : undefined} />
+              <ContactItem icon={Phone} label="Telefoon" value={klant.telefoon} href={klant.telefoon ? `tel:${klant.telefoon}` : undefined} />
+              <ContactItem icon={MapPin} label="Adres" value={adresStr} />
+              <ContactItem icon={Building2} label="Bedrijf" value={klant.bedrijfsnaam} />
+            </div>
             <Separator className="my-2" />
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-muted-foreground">
               <span>Klant sinds: {formatDateTime(klant.created_at)}</span>

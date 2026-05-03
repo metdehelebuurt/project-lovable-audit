@@ -416,16 +416,16 @@ const LeadDetail = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-[1600px] mx-auto">
       <WerkstroomStepper vanaf="lead" id={lead.id} huidig="lead" />
       {/* Header */}
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/leads")} className="rounded-xl mt-1">
+      <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/leads")} className="rounded-xl mt-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[260px]">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-semibold text-foreground">{lead.voornaam} {lead.achternaam}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">{lead.voornaam} {lead.achternaam}</h1>
             <Badge className={allStatusColors[lead.lead_status]}>{lead.lead_status.replace(/_/g, " ")}</Badge>
           </div>
           {/* Inline contact info */}
@@ -448,7 +448,7 @@ const LeadDetail = () => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {!isEditing && (
             <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={startEditing}>
               <Pencil className="h-4 w-4" /> Bewerken
@@ -521,11 +521,13 @@ const LeadDetail = () => {
       </Card>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         <QuickStat label="Offertes" value={offertes.length} icon={FileText} />
         <QuickStat label="Offertewaarde" value={formatCurrency(totalOfferteValue)} icon={TrendingUp} />
         <QuickStat label="Schouwen" value={schouwen.length} icon={ClipboardCheck} />
         <QuickStat label="Dagen in pipeline" value={daysSinceCreated} icon={Clock} />
+        <QuickStat label="Afspraken" value={afspraken.length} icon={CalendarIcon} />
+        <QuickStat label="Notities" value={notities.length} icon={StickyNote} />
       </div>
 
       {/* Tab Navigation */}
@@ -538,8 +540,8 @@ const LeadDetail = () => {
       </div>
 
       {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 xl:col-span-9 min-w-0">
           {/* OVERZICHT */}
           {activeTab === "overzicht" && (
             <Card className="rounded-2xl border-0 shadow-sm">
@@ -593,7 +595,7 @@ const LeadDetail = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                       <InfoRow icon={Mail} label="E-mail" value={lead.email} />
                       <InfoRow icon={Phone} label="Telefoon" value={lead.telefoon} />
                       <InfoRow icon={MapPin} label="Adres" value={lead.adres ? `${lead.adres}, ${lead.postcode || ""} ${lead.plaats || ""}`.trim() : null} />
@@ -903,7 +905,7 @@ const LeadDetail = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <div className="lg:col-span-4 xl:col-span-3 space-y-4">
           {/* Log contact widget — gedeelde component met datum/tijd in verleden */}
           <LogContactmomentCard leadId={id} />
 
