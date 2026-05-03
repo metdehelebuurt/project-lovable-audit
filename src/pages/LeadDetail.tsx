@@ -419,13 +419,13 @@ const LeadDetail = () => {
     <div className="space-y-6 max-w-[1600px] mx-auto">
       <WerkstroomStepper vanaf="lead" id={lead.id} huidig="lead" />
       {/* Header */}
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/leads")} className="rounded-xl mt-1">
+      <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/leads")} className="rounded-xl mt-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[260px]">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-semibold text-foreground">{lead.voornaam} {lead.achternaam}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">{lead.voornaam} {lead.achternaam}</h1>
             <Badge className={allStatusColors[lead.lead_status]}>{lead.lead_status.replace(/_/g, " ")}</Badge>
           </div>
           {/* Inline contact info */}
@@ -448,7 +448,7 @@ const LeadDetail = () => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {!isEditing && (
             <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={startEditing}>
               <Pencil className="h-4 w-4" /> Bewerken
