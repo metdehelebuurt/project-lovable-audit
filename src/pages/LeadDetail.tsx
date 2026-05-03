@@ -81,21 +81,6 @@ const DEFAULT_BRONNEN = ["website", "telefoon", "referral", "advertentie", "beur
 const woningtypeOptions = ["vrijstaand", "twee_onder_een_kap", "hoekwoning", "tussenwoning", "appartement", "bungalow", "overig"];
 const daktypeOptions = ["schuin_pannen", "schuin_leien", "plat", "gemengd", "overig"];
 const energielabelOptions = ["A++++", "A+++", "A++", "A+", "A", "B", "C", "D", "E", "F", "G"];
-const contactTypeOptions = [
-  { value: "call", label: "Telefoongesprek" },
-  { value: "voicemail", label: "Voicemail" },
-  { value: "email", label: "E-mail" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "bezoek", label: "Bezoek" },
-  { value: "overig", label: "Overig" },
-];
-const contactResultaatOptions = [
-  { value: "bereikt", label: "Bereikt" },
-  { value: "geen_gehoor", label: "Geen gehoor" },
-  { value: "voicemail", label: "Voicemail" },
-  { value: "terugbelverzoek", label: "Terugbelverzoek" },
-];
-
 const LeadDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -109,7 +94,6 @@ const LeadDetail = () => {
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
-  const [contactForm, setContactForm] = useState({ type: "call", richting: "uitgaand", resultaat: "", notitie: "" });
 
   /* ─── Queries ─── */
   const { data: bronOptions = DEFAULT_BRONNEN } = useQuery({
