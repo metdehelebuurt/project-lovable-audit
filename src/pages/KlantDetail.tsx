@@ -24,6 +24,7 @@ import KlantHeader from "@/components/klanten/detail/KlantHeader";
 import KlantStatsRow from "@/components/klanten/detail/KlantStatsRow";
 import KlantTabsNav, { type KlantTab } from "@/components/klanten/detail/KlantTabsNav";
 import KlantContactCard from "@/components/klanten/detail/KlantContactCard";
+import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -341,6 +342,7 @@ const KlantDetail = () => {
                 emails={[klant.email, ...(klant.extra_emails || [])].filter(Boolean)}
               />
               <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />
+              <LogContactmomentCard klantId={klant.id} leadId={klant.lead_id} showRecent />
             </div>
           )}
 
@@ -352,6 +354,8 @@ const KlantDetail = () => {
 
         {/* Sidebar — alleen op desktop */}
         <aside className="hidden lg:block space-y-4">
+          <LogContactmomentCard klantId={klant.id} leadId={klant.lead_id} />
+
           <SamenvattingCard items={[
             { label: "Totaal offertes", value: offertes.length },
             { label: "Offertewaarde", value: formatCurrency(totalOfferteValue) },
