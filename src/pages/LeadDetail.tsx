@@ -595,7 +595,7 @@ const LeadDetail = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                       <InfoRow icon={Mail} label="E-mail" value={lead.email} />
                       <InfoRow icon={Phone} label="Telefoon" value={lead.telefoon} />
                       <InfoRow icon={MapPin} label="Adres" value={lead.adres ? `${lead.adres}, ${lead.postcode || ""} ${lead.plaats || ""}`.trim() : null} />
