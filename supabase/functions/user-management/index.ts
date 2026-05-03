@@ -98,9 +98,11 @@ serve(async (req) => {
           });
         }
 
-        // Server-side guard: niet-superadmin rollen MOETEN aan een partner gekoppeld zijn.
+        // Server-side guard: partner-scoped rollen MOETEN aan een partner gekoppeld zijn.
+        // Platformrollen (superadmin, affiliate) hebben geen partner_id.
         // Voorkomt "wees-users" die door RLS onzichtbaar worden voor platformbeheerders.
-        if (rol !== "superadmin" && !partner_id) {
+        const platformRollen = ["superadmin", "affiliate"];
+        if (!platformRollen.includes(rol) && !partner_id) {
           return new Response(
             JSON.stringify({ error: "partner_id is verplicht voor deze rol" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -136,7 +138,7 @@ serve(async (req) => {
           voornaam,
           achternaam,
           rol,
-          partner_id: rol === "superadmin" ? null : partner_id,
+          partner_id: platformRollen.includes(rol) ? null : partner_id,
           telefoon,
           status: "actief",
         });
