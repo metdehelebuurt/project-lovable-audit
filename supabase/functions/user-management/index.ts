@@ -98,6 +98,15 @@ serve(async (req) => {
           });
         }
 
+        // Server-side guard: niet-superadmin rollen MOETEN aan een partner gekoppeld zijn.
+        // Voorkomt "wees-users" die door RLS onzichtbaar worden voor platformbeheerders.
+        if (rol !== "superadmin" && !partner_id) {
+          return new Response(
+            JSON.stringify({ error: "partner_id is verplicht voor deze rol" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         // Partner admin can only create users within their own partner
         if (callerProfile.rol === "partner_admin" && partner_id !== callerProfile.partner_id) {
           return new Response(JSON.stringify({ error: "Kan alleen gebruikers binnen eigen organisatie aanmaken" }), {
