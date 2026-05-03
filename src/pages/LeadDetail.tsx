@@ -304,24 +304,6 @@ const LeadDetail = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const addContactMutation = useMutation({
-    mutationFn: async (data: { type: string; richting: string; resultaat: string; notitie: string }) => {
-      const { error } = await supabase.from("lead_contactmomenten" as any).insert({
-        lead_id: id!, user_id: profile!.id, partner_id: profile!.partner_id,
-        type: data.type, richting: data.richting,
-        resultaat: data.resultaat || null,
-        notitie: data.notitie || null,
-      } as any);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lead-contactmomenten", id] });
-      setContactForm({ type: "call", richting: "uitgaand", resultaat: "", notitie: "" });
-      toast.success("Contactmoment gelogd");
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
   const fetchAiSignals = async () => {
     if (!id) return;
     setAiLoading(true);
