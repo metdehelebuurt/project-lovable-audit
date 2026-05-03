@@ -236,7 +236,7 @@ const KlantDetail = () => {
   ] as ExtraEvent[];
 
   return (
-    <div className="space-y-5 max-w-6xl">
+    <div className="space-y-5 max-w-[1600px] mx-auto">
       <KlantHeader
         klant={klant}
         isEditing={isEditing}
@@ -265,8 +265,8 @@ const KlantDetail = () => {
       <KlantTabsNav tabs={tabs} active={activeTab} onChange={setActiveTab} />
 
       {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 space-y-4 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-8 xl:col-span-9 space-y-4 min-w-0">
           {/* OVERZICHT — contact + woning/producten + notities + tickets */}
           {activeTab === "overzicht" && (
             <div className="space-y-4">
@@ -353,7 +353,7 @@ const KlantDetail = () => {
         </div>
 
         {/* Sidebar — alleen op desktop */}
-        <aside className="hidden lg:block space-y-4">
+        <aside className="hidden lg:block lg:col-span-4 xl:col-span-3 space-y-4">
           <LogContactmomentCard klantId={klant.id} leadId={klant.lead_id} />
 
           <SamenvattingCard items={[
