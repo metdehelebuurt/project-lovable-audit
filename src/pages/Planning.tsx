@@ -142,7 +142,7 @@ const Planning = () => {
 
       const takenRes = await supabase
         .from("helpdesk_ticket_taken")
-        .select("id, titel, geplande_datum, geplande_starttijd, geplande_eindtijd, agenda_user_id, status, ticket_id")
+        .select("id, titel, geplande_datum, geplande_starttijd, geplande_eindtijd, agenda_user_id, toegewezen_aan, gemaakt_door, status, ticket_id")
         .eq("inplannen_in_agenda", true)
         .gte("geplande_datum", rangeStart)
         .lte("geplande_datum", rangeEnd);
@@ -169,13 +169,18 @@ const Planning = () => {
           adviseur_id: a.adviseur_id, adviseur_naam: userMap.get(a.adviseur_id),
           extra: { type: a.type, start_tijd: a.start_tijd, eind_tijd: a.eind_tijd, locatie: a.locatie },
         })),
-        ...((takenRes.data as any[]) ?? []).map((t: any) => ({
-          id: t.id, date: t.geplande_datum,
-          title: t.titel, type: "taak" as const, status: t.status,
-          adviseur_id: t.agenda_user_id ?? undefined,
-          adviseur_naam: t.agenda_user_id ? userMap.get(t.agenda_user_id) : undefined,
-          extra: { start_tijd: t.geplande_starttijd, eind_tijd: t.geplande_eindtijd, ticket_id: t.ticket_id },
-        })),
+        ...((takenRes.data as any[]) ?? []).map((t: any) => {
+          // Fallback: oude taken zonder agenda_user_id alsnog koppelen aan
+          // de toegewezen of aanmakende gebruiker, anders zijn ze onvindbaar.
+          const ownerId = t.agenda_user_id ?? t.toegewezen_aan ?? t.gemaakt_door ?? undefined;
+          return {
+            id: t.id, date: t.geplande_datum,
+            title: t.titel, type: "taak" as const, status: t.status,
+            adviseur_id: ownerId,
+            adviseur_naam: ownerId ? userMap.get(ownerId) : undefined,
+            extra: { start_tijd: t.geplande_starttijd, eind_tijd: t.geplande_eindtijd, ticket_id: t.ticket_id },
+          };
+        }),
       ];
       setEvents(mapped);
       setLoading(false);

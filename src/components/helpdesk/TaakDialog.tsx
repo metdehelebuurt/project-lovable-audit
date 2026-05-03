@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUpsertTaak, type TicketTaak } from "@/hooks/helpdesk/useTicketDetail";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -59,19 +60,25 @@ export function TaakDialog({ open, onOpenChange, ticketId, partnerId, userId, ta
       setDatum(t?.geplande_datum ?? "");
       setStart((t?.geplande_starttijd ?? "09:00").slice(0, 5));
       setEind((t?.geplande_eindtijd ?? "09:30").slice(0, 5));
-      setAgendaUserId(t?.agenda_user_id ?? "");
+      // Default agenda-eigenaar = ingelogde gebruiker, zodat de taak
+      // standaard ook in zijn/haar planning-kalender verschijnt.
+      setAgendaUserId(t?.agenda_user_id ?? userId);
       setHerinnering(t?.herinnering_dag_voor ?? true);
     }
-  }, [open, taak]);
+  }, [open, taak, userId]);
 
   const opslaan = async () => {
     if (!titel.trim()) return;
+    if (inAgenda && !datum) {
+      toast.error("Kies een datum om de taak in te plannen in de agenda");
+      return;
+    }
     const agendaPayload = inAgenda ? {
       inplannen_in_agenda: true,
       geplande_datum: datum || null,
       geplande_starttijd: start || null,
       geplande_eindtijd: eind || null,
-      agenda_user_id: agendaUserId || null,
+      agenda_user_id: agendaUserId || userId,
       herinnering_dag_voor: herinnering,
     } : { inplannen_in_agenda: false };
     await upsert.mutateAsync({
@@ -79,6 +86,9 @@ export function TaakDialog({ open, onOpenChange, ticketId, partnerId, userId, ta
       ticket_id: ticketId,
       partner_id: partnerId,
       gemaakt_door: userId,
+      // Standaard wijst de taak naar de aanmaker zelf, zodat hij ook
+      // verschijnt onder "Mijn taken" in het Actiecentrum.
+      toegewezen_aan: (taak as unknown as { toegewezen_aan?: string | null })?.toegewezen_aan ?? userId,
       titel: titel.trim(),
       omschrijving: omschrijving.trim() || null,
       prioriteit,
