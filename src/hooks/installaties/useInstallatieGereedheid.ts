@@ -11,6 +11,9 @@ export interface GereedheidsItem {
   details?: string;
   link?: string;
   blokkerend?: boolean;
+  manueel?: boolean;
+  systeem?: boolean;
+  voltooid_op?: string | null;
 }
 
 export interface ChecklistRow {
@@ -39,6 +42,35 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
       const items: GereedheidsItem[] = [];
       if (!installatie) return { items, open_blokkades: [], totaal: 0, ok: 0, klaar: true };
 
+      // Handmatige overrides ophalen
+      const { data: overridesRows } = await supabase
+        .from("installatie_gereedheid_overrides")
+        .select("item_key, voltooid_op, notitie")
+        .eq("installatie_id", installatie.id);
+      const overrides = new Map<string, { voltooid_op: string; notitie: string | null }>();
+      for (const o of overridesRows ?? []) {
+        overrides.set(o.item_key as string, {
+          voltooid_op: o.voltooid_op as string,
+          notitie: (o.notitie as string | null) ?? null,
+        });
+      }
+      const pushSysteem = (item: GereedheidsItem) => {
+        const ov = overrides.get(item.key);
+        if (ov && item.status !== "ok") {
+          items.push({
+            ...item,
+            status: "ok",
+            blokkerend: false,
+            manueel: true,
+            systeem: true,
+            voltooid_op: ov.voltooid_op,
+            details: `Handmatig gemarkeerd${ov.notitie ? ` — ${ov.notitie}` : ""}`,
+          });
+        } else {
+          items.push({ ...item, systeem: true });
+        }
+      };
+
       // Schouw — direct via installatie.schouw_id, anders via opdracht.schouw_id
       let schouwOk = false;
       let schouwDetail = "Geen gekoppelde schouw";
@@ -61,21 +93,21 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
         if (sch?.status === "uitgevoerd") { schouwOk = true; schouwDetail = "Uitgevoerd"; }
         else if (sch) schouwDetail = `Status: ${sch.status}`;
       }
-      items.push({
+      pushSysteem({
         key: "schouw", label: "Schouw uitgevoerd",
         status: schouwOk ? "ok" : "fail", details: schouwDetail, blokkerend: !schouwOk,
       });
 
       // Klant bevestigd
       const klantOk = !!installatie.bevestiging_verzonden_op && !!installatie.monteur_geaccepteerd_op;
-      items.push({
+      pushSysteem({
         key: "klant_bevestigd", label: "Klantbevestiging compleet",
         status: klantOk ? "ok" : installatie.bevestiging_verzonden_op ? "warn" : "fail",
         details: klantOk ? "Klant + monteur akkoord" : installatie.bevestiging_verzonden_op ? "Klant nog te bevestigen" : "Nog niet verzonden",
       });
 
       // Monteur
-      items.push({
+      pushSysteem({
         key: "monteur", label: "Monteur toegewezen",
         status: installatie.installateur_id ? "ok" : "fail",
         details: installatie.installateur_id ? undefined : "Nog geen monteur",
@@ -83,7 +115,7 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
 
       // Werkadres
       const adresOk = !!installatie.werkadres && !!installatie.klant_postcode && !!installatie.klant_plaats;
-      items.push({
+      pushSysteem({
         key: "werkadres", label: "Werkadres compleet",
         status: adresOk ? "ok" : "warn",
       });
@@ -91,7 +123,7 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
       // Producten + voorraad
       const producten = Array.isArray(installatie.producten) ? installatie.producten as Array<{ product_id?: string | null; aantal?: number; omschrijving?: string }> : [];
       const productenOk = producten.length > 0;
-      items.push({
+      pushSysteem({
         key: "producten", label: "Producten gekoppeld",
         status: productenOk ? "ok" : "fail",
         details: productenOk ? `${producten.length} regel(s)` : "Geen producten",
@@ -111,7 +143,7 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
         voorraadStatus = "warn";
         voorraadDetail = `Tekort: ${tekorten.join(", ")}`;
       }
-      if (productenOk) items.push({ key: "voorraad", label: "Voorraad beschikbaar", status: voorraadStatus, details: voorraadDetail });
+      if (productenOk) pushSysteem({ key: "voorraad", label: "Voorraad beschikbaar", status: voorraadStatus, details: voorraadDetail });
 
       // Serienummers (alleen vereist na 'gereed')
       if (installatie.status === "gereed" || installatie.status === "afgerond") {
@@ -120,11 +152,11 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
           .select("id")
           .eq("installatie_id", installatie.id);
         const heeft = (sn?.length ?? 0) > 0;
-        items.push({ key: "serienummers", label: "Serienummers ingevoerd", status: heeft ? "ok" : "warn", details: heeft ? `${sn!.length} stuks` : "Nog niet ingevuld" });
+        pushSysteem({ key: "serienummers", label: "Serienummers ingevoerd", status: heeft ? "ok" : "warn", details: heeft ? `${sn!.length} stuks` : "Nog niet ingevuld" });
       }
 
       // Werkomschrijving + datum
-      items.push({
+      pushSysteem({
         key: "planning", label: "Werkomschrijving + datum",
         status: installatie.geplande_startdatum && installatie.werkomschrijving ? "ok" : "warn",
         details: !installatie.geplande_startdatum ? "Geen datum" : !installatie.werkomschrijving ? "Geen werkomschrijving" : undefined,
@@ -143,6 +175,8 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
           status: ok ? "ok" : c.blokkerend ? "fail" : "warn",
           blokkerend: c.blokkerend && !ok,
           details: ok ? "Voltooid" : c.notitie ?? undefined,
+          systeem: false,
+          voltooid_op: c.voltooid_op,
         });
       }
 
