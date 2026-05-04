@@ -2844,6 +2844,50 @@ export type Database = {
         }
         Relationships: []
       }
+      installatie_gereedheid_overrides: {
+        Row: {
+          created_at: string
+          id: string
+          installatie_id: string
+          item_key: string
+          notitie: string | null
+          partner_id: string
+          updated_at: string
+          voltooid_door: string | null
+          voltooid_op: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          installatie_id: string
+          item_key: string
+          notitie?: string | null
+          partner_id: string
+          updated_at?: string
+          voltooid_door?: string | null
+          voltooid_op?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          installatie_id?: string
+          item_key?: string
+          notitie?: string | null
+          partner_id?: string
+          updated_at?: string
+          voltooid_door?: string | null
+          voltooid_op?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installatie_gereedheid_overrides_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installatie_historie: {
         Row: {
           actie: string
