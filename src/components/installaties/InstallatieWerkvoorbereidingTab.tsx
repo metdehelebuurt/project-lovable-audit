@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, FileDown, Sparkles, Hash, Save, Settings2 } from "lucide-react";
+import { Plus, Trash2, FileDown, Sparkles, Hash, Save, Settings2, CheckCircle2, AlertTriangle, XCircle, Info, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Installatie } from "./api/installatieApi";
 import { generateInstallatienummer, updateInstallatie } from "./api/installatieApi";
 import AiWerkomschrijvingDialog from "./AiWerkomschrijvingDialog";
+import { useInstallatieGereedheid, type CheckStatus, type GereedheidsItem } from "@/hooks/installaties/useInstallatieGereedheid";
+import { useGereedheidOverride } from "@/hooks/installaties/useGereedheidOverride";
+import { Badge } from "@/components/ui/badge";
 
 interface ChecklistItem {
   id: string;
@@ -28,6 +31,15 @@ interface ChecklistItem {
   notitie: string | null;
 }
 
+const iconFor = (status: CheckStatus) => {
+  switch (status) {
+    case "ok": return <CheckCircle2 className="h-4 w-4 text-success" />;
+    case "warn": return <AlertTriangle className="h-4 w-4 text-warning-foreground" />;
+    case "fail": return <XCircle className="h-4 w-4 text-destructive" />;
+    default: return <Info className="h-4 w-4 text-muted-foreground" />;
+  }
+};
+
 export default function InstallatieWerkvoorbereidingTab({ installatie }: { installatie: Installatie }) {
   const { profile } = useAuth();
   const qc = useQueryClient();
@@ -37,6 +49,9 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
   const [werkomschrijving, setWerkomschrijving] = useState(installatie.werkomschrijving ?? "");
   const [werkBusy, setWerkBusy] = useState(false);
   const kanTemplatesBeheren = profile?.rol === "partner_admin" || profile?.rol === "superadmin";
+
+  const { data: gereedheid } = useInstallatieGereedheid(installatie);
+  const { markeer: markeerOverride, verwijder: verwijderOverride } = useGereedheidOverride(installatie.id, installatie.partner_id);
 
   const kenNummerToe = async () => {
     setNummerBusy(true);
@@ -100,7 +115,10 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
         .eq("id", item.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] });
+      qc.invalidateQueries({ queryKey: ["installatie-gereedheid", installatie.id] });
+    },
   });
 
   const verwijder = useMutation({
@@ -108,7 +126,10 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
       const { error } = await supabase.from("installatie_checklist_items").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] });
+      qc.invalidateQueries({ queryKey: ["installatie-gereedheid", installatie.id] });
+    },
   });
 
   const voegToe = useMutation({
@@ -127,6 +148,7 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
     onSuccess: () => {
       toast.success("Item toegevoegd");
       qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] });
+      qc.invalidateQueries({ queryKey: ["installatie-gereedheid", installatie.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -167,9 +189,79 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
         toast.success(`${added} item(s) toegevoegd uit standaard checklist`);
       }
       qc.invalidateQueries({ queryKey: ["installatie_checklist", installatie.id] });
+      qc.invalidateQueries({ queryKey: ["installatie-gereedheid", installatie.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const customItemById = new Map(items.map((i) => [i.id, i]));
+
+  const renderRij = (g: GereedheidsItem) => {
+    const isCustom = g.key.startsWith("cl_");
+    const customItem = isCustom ? customItemById.get(g.key.slice(3)) : undefined;
+    const checked = g.status === "ok";
+    const handleToggle = (next: boolean) => {
+      if (isCustom && customItem) {
+        toggle.mutate(customItem);
+        return;
+      }
+      // Systeemcheck
+      if (g.manueel) {
+        verwijderOverride.mutate(g.key);
+      } else if (next) {
+        markeerOverride.mutate({ itemKey: g.key });
+      }
+    };
+
+    const badge = isCustom
+      ? { label: "Custom", className: "bg-muted text-muted-foreground" }
+      : g.manueel
+        ? { label: "Handmatig", className: "bg-warning/15 text-warning-foreground" }
+        : { label: "Auto", className: "bg-primary/10 text-primary" };
+
+    return (
+      <li key={g.key} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
+        <Checkbox
+          checked={checked}
+          onCheckedChange={(v) => handleToggle(!!v)}
+          className="mt-0.5"
+          aria-label={g.label}
+        />
+        <span className="mt-0.5">{iconFor(g.status)}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className={`text-sm ${checked ? "line-through text-muted-foreground" : "font-medium"}`}>
+              {g.label}
+            </p>
+            <Badge variant="outline" className={`text-[10px] uppercase tracking-wide border-0 ${badge.className}`}>
+              {badge.label}
+            </Badge>
+            {g.blokkerend && !checked && (
+              <span className="text-[10px] uppercase tracking-wide text-destructive font-semibold">Blokkerend</span>
+            )}
+          </div>
+          {g.details && (
+            <p className="text-xs text-muted-foreground">{g.details}</p>
+          )}
+        </div>
+        {isCustom && customItem ? (
+          <Button size="icon" variant="ghost" onClick={() => verwijder.mutate(customItem.id)} aria-label="Verwijderen">
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        ) : g.manueel ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1.5 text-xs"
+            onClick={() => verwijderOverride.mutate(g.key)}
+            disabled={verwijderOverride.isPending}
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Auto
+          </Button>
+        ) : null}
+      </li>
+    );
+  };
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
@@ -218,34 +310,24 @@ export default function InstallatieWerkvoorbereidingTab({ installatie }: { insta
           </div>
         </div>
 
-        {isLoading ? (
+        {!gereedheid || isLoading ? (
           <p className="text-sm text-muted-foreground">Laden…</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Geen checklist-items. Voeg toe of pas een template toe.</p>
+        ) : gereedheid.items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Geen items. Voeg een custom item toe of pas een template toe.</p>
         ) : (
-          <ul className="space-y-2">
-            {items.map((it) => (
-              <li key={it.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
-                <Checkbox checked={!!it.voltooid_op} onCheckedChange={() => toggle.mutate(it)} className="mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${it.voltooid_op ? "line-through text-muted-foreground" : ""}`}>
-                    {it.label}
-                    {it.blokkerend && !it.voltooid_op && (
-                      <span className="ml-2 text-[10px] uppercase tracking-wide text-destructive font-semibold">Blokkerend</span>
-                    )}
-                  </p>
-                  {it.voltooid_op && (
-                    <p className="text-xs text-muted-foreground">
-                      Voltooid {new Date(it.voltooid_op).toLocaleString("nl-NL")}
-                    </p>
-                  )}
-                </div>
-                <Button size="icon" variant="ghost" onClick={() => verwijder.mutate(it.id)} aria-label="Verwijderen">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{gereedheid.ok} van {gereedheid.totaal} gereed</span>
+              {gereedheid.open_blokkades.length > 0 && (
+                <span className="text-destructive font-medium">
+                  {gereedheid.open_blokkades.length} blokkerend(e) item(s)
+                </span>
+              )}
+            </div>
+            <ul className="space-y-1.5">
+              {gereedheid.items.map(renderRij)}
+            </ul>
+          </div>
         )}
 
         <div className="border-t pt-4 space-y-2">
