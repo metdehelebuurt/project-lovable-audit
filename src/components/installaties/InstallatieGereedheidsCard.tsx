@@ -47,6 +47,11 @@ export default function InstallatieGereedheidsCard({ installatie }: { installati
               <div className="min-w-0 flex-1">
                 <p className={it.status === "fail" ? "font-medium text-destructive" : "font-medium"}>
                   {it.label}
+                  {it.manueel && (
+                    <span className="ml-2 text-[10px] uppercase tracking-wide text-warning-foreground font-semibold">
+                      Handmatig
+                    </span>
+                  )}
                 </p>
                 {it.details && <p className="text-xs text-muted-foreground">{it.details}</p>}
               </div>
