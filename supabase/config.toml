@@ -1,94 +1,67 @@
 project_id = "xmguipmetciwvzeyxugu"
 
-[functions.trial-signup]
-verify_jwt = false
-
-[functions.user-management]
-verify_jwt = false
-
-[functions.ai-product-import]
-verify_jwt = false
-
-[functions.clear-demo-data]
-verify_jwt = false
-
-[functions.send-offerte-email]
-verify_jwt = false
-
-[functions.ai-data-import]
-verify_jwt = false
-
-[functions.widget-submit]
-verify_jwt = false
-
-[functions.ai-lead-signals]
-verify_jwt = false
-
-[functions.google-user-provision]
-verify_jwt = false
-
-[functions.ai-verify-product-specs]
-verify_jwt = false
-
-[functions.ai-offerte-intro]
-verify_jwt = false
-
-[functions.offerte-accept]
-verify_jwt = false
-
-[functions.planning-ical-feed]
-verify_jwt = false
-
-[functions.offerte-public-view]
-verify_jwt = false
-
-[functions.ai-parse-datasheet]
-verify_jwt = false
-
-[functions.ai-feedback-categorize]
-verify_jwt = false
-
-[functions.solar-building-insights]
-verify_jwt = false
-
-[functions.ai-offerte-feedback-analyse]
-verify_jwt = false
-
-[functions.helpdesk-notify]
-verify_jwt = false
-
-[functions.helpdesk-ai-foutcode]
-verify_jwt = false
-
-[functions.helpdesk-ai-troubleshooter]
-verify_jwt = false
-
-[functions.helpdesk-ai-genereer-kbartikel]
-verify_jwt = false
-
-[functions.helpdesk-ai-analyze-bijlage]
-verify_jwt = false
-
-[functions.helpdesk-klant-duplicaat-check]
-verify_jwt = false
-
-[functions.email-oauth-config]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
-
-[functions.mollie-webhook]
-verify_jwt = false
-
-[functions.mollie-trial-converter]
-verify_jwt = false
-
-[functions.oplever-public-view]
-verify_jwt = false
-
-[functions.oplever-klant-ondertekenen]
-verify_jwt = false
-
-[functions.genereer-werkomschrijving]
-verify_jwt = true
+[functions]
+  [functions.ai-data-import]
+    verify_jwt = false
+  [functions.ai-feedback-categorize]
+    verify_jwt = false
+  [functions.ai-lead-signals]
+    verify_jwt = false
+  [functions.ai-offerte-feedback-analyse]
+    verify_jwt = false
+  [functions.ai-offerte-intro]
+    verify_jwt = false
+  [functions.ai-parse-datasheet]
+    verify_jwt = false
+  [functions.ai-product-import]
+    verify_jwt = false
+  [functions.ai-verify-product-specs]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.clear-demo-data]
+    verify_jwt = false
+  [functions.email-oauth-config]
+    verify_jwt = false
+  [functions.genereer-werkomschrijving]
+    verify_jwt = true
+  [functions.google-user-provision]
+    verify_jwt = false
+  [functions.helpdesk-ai-analyze-bijlage]
+    verify_jwt = false
+  [functions.helpdesk-ai-foutcode]
+    verify_jwt = false
+  [functions.helpdesk-ai-genereer-kbartikel]
+    verify_jwt = false
+  [functions.helpdesk-ai-troubleshooter]
+    verify_jwt = false
+  [functions.helpdesk-klant-duplicaat-check]
+    verify_jwt = false
+  [functions.helpdesk-notify]
+    verify_jwt = false
+  [functions.mollie-trial-converter]
+    verify_jwt = false
+  [functions.mollie-webhook]
+    verify_jwt = false
+  [functions.offerte-accept]
+    verify_jwt = false
+  [functions.offerte-public-view]
+    verify_jwt = false
+  [functions.oplever-klant-ondertekenen]
+    verify_jwt = false
+  [functions.oplever-public-view]
+    verify_jwt = false
+  [functions.planning-ical-feed]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.send-offerte-email]
+    verify_jwt = false
+  [functions.solar-building-insights]
+    verify_jwt = false
+  [functions.trial-signup]
+    verify_jwt = false
+  [functions.user-management]
+    verify_jwt = false
+  [functions.widget-submit]
+    verify_jwt = false
