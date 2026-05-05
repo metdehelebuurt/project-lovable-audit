@@ -219,6 +219,20 @@ serve(async (req) => {
       console.error("Demo seed error (non-fatal):", seedErr);
     }
 
+    // 7. Verstuur welkomstmail via Lovable Email (niet-blokkerend)
+    try {
+      await supabaseAdmin.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "trial-welkom",
+          recipientEmail: email,
+          idempotencyKey: `trial-welkom-${partner.id}`,
+          templateData: { voornaam, bedrijfsnaam, loginUrl: "https://mijnhuis.nu/login" },
+        },
+      });
+    } catch (mailErr) {
+      console.error("Trial welkomstmail mislukt (non-fatal):", mailErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true, email, partner_id: partner.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
