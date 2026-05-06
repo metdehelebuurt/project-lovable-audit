@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescript
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProductImage from "@/components/producten/ProductImage";
+import ProductImageUpload from "@/components/producten/ProductImageUpload";
 import ProductDatasheet from "@/components/producten/ProductDatasheet";
 import { getGroupedSpecs, categorySpecDefinitions } from "@/components/producten/categorySpecDefinitions";
 import SpecsEditor from "@/components/producten/SpecsEditor";
@@ -572,15 +573,22 @@ const ProductDetail = () => {
         <TabsContent value="overzicht">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardContent className="pt-6 flex items-center justify-center">
-                <div className="w-48 h-48">
-                  <ProductImage
-                    afbeeldingUrl={product.afbeelding_url}
-                    naam={product.naam}
-                    merk={product.merk}
-                    size="lg"
-                  />
-                </div>
+              <CardContent className="pt-6">
+                <ProductImageUpload
+                  productId={product.id}
+                  mainImage={product.afbeelding_url}
+                  galleryImages={Array.isArray(product.afbeeldingen) ? (product.afbeeldingen as string[]) : []}
+                  merk={product.merk}
+                  naam={product.naam}
+                  onMainImageChange={(url) => {
+                    queryClient.setQueryData(["product", id], { ...product, afbeelding_url: url });
+                    setIsDirty(true);
+                  }}
+                  onGalleryChange={(urls) => {
+                    queryClient.setQueryData(["product", id], { ...product, afbeeldingen: urls });
+                    setIsDirty(true);
+                  }}
+                />
               </CardContent>
             </Card>
             <div className="lg:col-span-2 space-y-4">
