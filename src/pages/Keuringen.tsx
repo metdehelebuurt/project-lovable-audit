@@ -68,10 +68,25 @@ const Keuringen = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("keuringen" as any)
-      .select("id, keuringnummer, type, status, geplande_datum, uitgevoerd_op, klant_id, installatie_id, object_omschrijving, locatie_plaats, resultaat, klant:klanten!keuringen_klant_id_fkey(voornaam, achternaam, bedrijfsnaam, plaats)")
+      .select("id, keuringnummer, type, status, geplande_datum, uitgevoerd_op, klant_id, installatie_id, object_omschrijving, locatie_plaats, resultaat")
       .order("geplande_datum", { ascending: true });
-    if (error) toast.error(error.message);
-    setItems((data ?? []) as any[]);
+    if (error) {
+      toast.error(error.message);
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    const rows = (data ?? []) as any[];
+    const klantIds = Array.from(new Set(rows.map((r) => r.klant_id).filter(Boolean)));
+    let klantMap = new Map<string, any>();
+    if (klantIds.length > 0) {
+      const { data: klanten } = await supabase
+        .from("klanten")
+        .select("id, voornaam, achternaam, bedrijfsnaam, plaats")
+        .in("id", klantIds);
+      klantMap = new Map((klanten ?? []).map((k: any) => [k.id, k]));
+    }
+    setItems(rows.map((r) => ({ ...r, klant: r.klant_id ? klantMap.get(r.klant_id) ?? null : null })));
     setLoading(false);
   };
 
