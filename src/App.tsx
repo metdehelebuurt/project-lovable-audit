@@ -90,6 +90,9 @@ import Opleveringen from "@/pages/Opleveringen";
 import OpleverNieuw from "@/pages/OpleverNieuw";
 import OpleverDetail from "@/pages/OpleverDetail";
 import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
+import Keuringen from "@/pages/Keuringen";
+import KeuringNieuw from "@/pages/KeuringNieuw";
+import KeuringDetail from "@/pages/KeuringDetail";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
@@ -367,6 +370,15 @@ const App = () => (
               } />
               <Route path="/opleveringen/:id" element={
                 <ProtectedRoute moduleKey="opleveringen" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><OpleverDetail /></ProtectedRoute>
+              } />
+              <Route path="/keuringen" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Keuringen /></ProtectedRoute>
+              } />
+              <Route path="/keuringen/nieuw" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"]}><KeuringNieuw /></ProtectedRoute>
+              } />
+              <Route path="/keuringen/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><KeuringDetail /></ProtectedRoute>
               } />
               <Route path="/retouren" element={
                 <ProtectedRoute moduleKey="retouren" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><Retouren /></ProtectedRoute>
