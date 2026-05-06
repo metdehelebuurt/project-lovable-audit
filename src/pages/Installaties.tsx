@@ -253,9 +253,9 @@ const Installaties = () => {
                       </Button>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{inst.consument_naam ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{inst.werkadres ?? inst.klant_adres ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{inst.klant_plaats ?? "—"}</TableCell>
+                  <TableCell className="font-medium">{klantNaamVan(inst as any)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{adresVan(inst as any)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{plaatsVan(inst as any)}</TableCell>
                   <TableCell>
                     <InstallatieGereedheidsBar data={gereedheidMap?.[inst.id]} loading={gereedLoading} />
                   </TableCell>
