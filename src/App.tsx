@@ -53,6 +53,7 @@ import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import ProductDatasheetPage from "@/pages/ProductDatasheetPage";
 import ProductDetail from "@/pages/ProductDetail";
+import ProductWebsite from "@/pages/ProductWebsite";
 import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
