@@ -30,7 +30,7 @@ export const useCatalogusData = (widgetId: string | undefined): State => {
         return;
       }
 
-      const { data: w, error: wErr } = await (supabase.from("web_widgets_public") as never)
+      const { data: w, error: wErr } = await (supabase.from("web_widgets_public" as never) as any)
         .select("partner_id, config, actief, type")
         .eq("id", widgetId)
         .single();
@@ -41,13 +41,13 @@ export const useCatalogusData = (widgetId: string | undefined): State => {
       }
 
       const { data: p } = await (supabase
-        .from("partner_branding") as never)
+        .from("partner_branding" as never) as any)
         .select("naam, logo_url, primaire_kleur")
         .eq("id", w.partner_id)
         .single();
 
       const { data: prods } = await (supabase
-        .from("producten_publiek") as never)
+        .from("producten_publiek" as never) as any)
         .select(
           "id, naam, merk, categorie, afbeelding_url, afbeeldingen, prijs_excl_btw, btw_percentage, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, garantie_jaren, specs"
         )
