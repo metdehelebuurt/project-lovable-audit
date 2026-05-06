@@ -9,6 +9,9 @@ import { Send, Loader2, Paperclip, RefreshCw, ExternalLink, AlertCircle } from "
 import { toast } from "sonner";
 import { renderElementToPdfBlob, uploadPdfToStorage, uploadPdfToFacturenBucket } from "@/lib/pdfFromElement";
 import { renderFactuurPdf } from "@/lib/renderFactuurPdf";
+import { useAuth } from "@/contexts/AuthContext";
+import { parseAddressList } from "@/components/email/EmailComposerFields";
+import { Mail, X } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -51,7 +54,12 @@ function createDefaultBody(label: string, documentnummer: string, isResend: bool
 
 export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo, pdfElementSelector = ".pdf-print-root", isResend = false, onSent }: Props) {
   const label = getLabel(doc.type, doc.factuur_subtype);
+  const { profile } = useAuth();
   const [to, setTo] = useState(defaultTo);
+  const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [subject, setSubject] = useState(createDefaultSubject(label, doc.documentnummer, isResend));
   const [body, setBody] = useState(createDefaultBody(label, doc.documentnummer, isResend));
   const [sending, setSending] = useState(false);
@@ -131,6 +139,10 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
 
     // Volledige reset zodat oude state nooit per ongeluk wordt verzonden.
     setTo(defaultTo);
+    setCc("");
+    setBcc("");
+    setShowCc(false);
+    setShowBcc(false);
     setSubject(createDefaultSubject(label, doc.documentnummer, isResend));
     setBody(createDefaultBody(label, doc.documentnummer, isResend));
     setPdfBlob(null);
@@ -185,6 +197,8 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
           attachment_path: path || null,
           attachment_filename: `${label.replace(/\s+/g, "")}-${doc.documentnummer}.pdf`,
           is_resend: isResend,
+          cc: parseAddressList(cc),
+          bcc: parseAddressList(bcc),
         },
       });
       if (error || data?.error) {
@@ -262,7 +276,45 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
             </div>
           </div>
 
-          <div><Label>Aan</Label><Input value={to} onChange={(e) => setTo(e.target.value)} className="mt-1" /></div>
+          <div>
+            <div className="flex items-center justify-between">
+              <Label>Aan</Label>
+              <div className="flex items-center gap-2 text-xs">
+                {!showCc && <button type="button" onClick={() => setShowCc(true)} className="text-muted-foreground hover:text-foreground">+ CC</button>}
+                {!showBcc && <button type="button" onClick={() => setShowBcc(true)} className="text-muted-foreground hover:text-foreground">+ BCC</button>}
+              </div>
+            </div>
+            <Input value={to} onChange={(e) => setTo(e.target.value)} className="mt-1" />
+          </div>
+          {showCc && (
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>CC</Label>
+                <button type="button" onClick={() => { setCc(""); setShowCc(false); }} className="text-xs text-muted-foreground" aria-label="CC verwijderen"><X className="h-3.5 w-3.5" /></button>
+              </div>
+              <Input value={cc} onChange={(e) => setCc(e.target.value)} className="mt-1" placeholder="cc1@voorbeeld.nl, cc2@voorbeeld.nl" />
+            </div>
+          )}
+          {showBcc && (
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>BCC</Label>
+                <div className="flex items-center gap-2">
+                  {profile?.email && (
+                    <button type="button" onClick={() => {
+                      const list = parseAddressList(bcc);
+                      if (!list.includes(profile.email!)) list.push(profile.email!);
+                      setBcc(list.join(", "));
+                    }} className="text-xs text-primary hover:underline flex items-center gap-1">
+                      <Mail className="h-3 w-3" /> BCC mij
+                    </button>
+                  )}
+                  <button type="button" onClick={() => { setBcc(""); setShowBcc(false); }} className="text-xs text-muted-foreground" aria-label="BCC verwijderen"><X className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+              <Input value={bcc} onChange={(e) => setBcc(e.target.value)} className="mt-1" placeholder="bcc1@voorbeeld.nl" />
+            </div>
+          )}
           <div><Label>Onderwerp</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} className="mt-1" /></div>
           <div><Label>Bericht</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className="mt-1" /></div>
           <div className="flex justify-end gap-2">
