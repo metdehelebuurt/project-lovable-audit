@@ -12,6 +12,7 @@ import { Loader2, Save, RotateCcw } from "lucide-react";
 import {
   EMAIL_TEMPLATE_KEYS,
   EMAIL_TEMPLATE_KEY_LIST,
+  EMAIL_TEMPLATE_TYPE_BY_KEY,
   type EmailTemplateKey,
 } from "@/lib/email/emailTemplateKeys";
 import { TEMPLATE_VARIABLES } from "@/lib/email/renderTemplate";
@@ -87,6 +88,8 @@ export default function EmailTemplatesBeheer({ partnerId }: Props) {
       const payload = {
         partner_id: partnerId,
         sleutel: active,
+        naam: EMAIL_TEMPLATE_KEYS[active],
+        type: EMAIL_TEMPLATE_TYPE_BY_KEY[active],
         onderwerp: state.onderwerp,
         html_body: state.html_body,
         bijlage_default: state.bijlage_default,
