@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateOffertePdfViaIframe } from "@/lib/pdfFromPages";
+import { parseAddressList } from "@/components/email/EmailComposerFields";
+import { Mail, X } from "lucide-react";
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -59,6 +61,10 @@ export default function OfferteEmailEditor({
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [to, setTo] = useState(offerte.klant_email);
+  const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [subject, setSubject] = useState(
     `Offerte ${offerte.offertenummer} — ${partnerNaam || "Uw adviseur"}`,
   );
@@ -211,6 +217,8 @@ export default function OfferteEmailEditor({
           subject,
           attachment_path: pdf.path,
           attachment_filename: `Offerte-${offerte.offertenummer}.pdf`,
+          cc: parseAddressList(cc),
+          bcc: parseAddressList(bcc),
         },
       });
       if (error || data?.error) {
