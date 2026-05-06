@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     // Validate share_token -> get offerte
     const { data: offerte, error: oErr } = await supabase
       .from("offertes")
-      .select("id, share_token, share_expires_at")
+      .select("id, offertenummer, partner_id, adviseur_id, klant_naam, share_token, share_expires_at")
       .eq("share_token", share_token)
       .single();
 
@@ -82,6 +82,35 @@ Deno.serve(async (req) => {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Notificeer backoffice: adviseur (eigenaar) + alle partner_admins van deze partner.
+      try {
+        const ontvangerIds = new Set<string>();
+        if (offerte.adviseur_id) ontvangerIds.add(offerte.adviseur_id);
+        if (offerte.partner_id) {
+          const { data: admins } = await supabase
+            .from("users")
+            .select("id")
+            .eq("partner_id", offerte.partner_id)
+            .eq("rol", "partner_admin");
+          for (const a of admins || []) ontvangerIds.add(a.id);
+        }
+        if (ontvangerIds.size > 0) {
+          const snippet = bericht.trim().slice(0, 140);
+          const rows = Array.from(ontvangerIds).map((uid) => ({
+            user_id: uid,
+            type: "offerte_bericht",
+            titel: `Nieuw bericht van ${afzender_naam.trim()}`,
+            bericht: `Offerte ${offerte.offertenummer || ""}: ${snippet}`,
+            entity_type: "offerte",
+            entity_id: offerte.id,
+          }));
+          await supabase.from("notificaties").insert(rows);
+        }
+      } catch (notifErr) {
+        // Notificaties zijn best-effort — niet blokkerend voor verzending.
+        console.warn("Notificatie aanmaken mislukt:", notifErr);
       }
 
       return new Response(JSON.stringify({ success: true }), {
