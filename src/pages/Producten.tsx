@@ -687,7 +687,14 @@ const Producten = () => {
                       <TableCell>{product.voorraad ?? "—"}</TableCell>
                       <TableCell><Badge className={statusColors[product.status]}>{statusLabels[product.status]}</Badge></TableCell>
                       <TableCell>
-                        <Badge variant="outline">{product.partner_id ? "Partner" : "Globaal"}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{product.partner_id ? "Partner" : "Globaal"}</Badge>
+                          {(product as any).toon_op_website && (
+                            <span title="Zichtbaar op website" className="inline-flex items-center text-primary">
+                              <Globe className="h-4 w-4" />
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       {canEdit && (
                         <TableCell className="text-right" onClick={e => e.stopPropagation()}>
