@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Code, Pencil, Trash2, Loader2, Sun, Thermometer, Home, Plug, Battery, MessageSquare } from "lucide-react";
+import { Plus, Code, Pencil, Trash2, Loader2, Sun, Thermometer, Home, Plug, Battery, MessageSquare, Store } from "lucide-react";
 import { WidgetConfigurator, type WidgetFormData } from "@/components/webtools/WidgetConfigurator";
 import { EmbedCodeDialog } from "@/components/webtools/EmbedCodeDialog";
 import { toast } from "@/hooks/use-toast";
@@ -26,6 +26,7 @@ const widgetTemplates = [
   { type: "calculator_isolatie", label: "Isolatie Calculator", beschrijving: "Bereken hoeveel bezoekers besparen met betere isolatie.", icon: Home },
   { type: "calculator_laadpaal", label: "Laadpaal Calculator", beschrijving: "Vergelijk laadkosten thuis versus openbaar laden.", icon: Plug },
   { type: "calculator_thuisbatterij", label: "Thuisbatterij Calculator", beschrijving: "Adviseer de ideale batterijcapaciteit op basis van teruglevering en verbruik.", icon: Battery },
+  { type: "productcatalogus", label: "Productcatalogus (nieuw)", beschrijving: "Toon je volledige assortiment, merkenpagina's en converterende productdetail-pagina's met offerte-aanvraag, vergelijker en API-toegang. Add-on vereist.", icon: Store },
 ];
 
 const typeLabels: Record<string, string> = Object.fromEntries(widgetTemplates.map(t => [t.type, t.label]));
