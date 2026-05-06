@@ -48,36 +48,6 @@ const statusColors: Record<ProductStatus, string> = {
   niet_beschikbaar: "bg-error-light text-error",
 };
 
-interface ProductFormData {
-  naam: string;
-  categorie: ProductCategorie;
-  merk: string;
-  model: string;
-  omschrijving: string;
-  offerte_tekst: string;
-  prijs_excl_btw: number;
-  kostprijs: number | null;
-  eenheid: string;
-  voorraad: number | null;
-  min_voorraad: number | null;
-  btw_percentage: number;
-  max_korting_euro: number | null;
-  max_korting_percentage: number | null;
-  product_code: string;
-  leverancier: string;
-  artikelnummer: string;
-  ean_code: string;
-  levertijd: string;
-  garantie_jaren: number | null;
-  certificeringen: string;
-  status: ProductStatus;
-  afbeelding_url: string | null;
-  afbeeldingen: string[];
-  specs: Record<string, string>;
-  datasheet_url: string | null;
-  datasheet_type: string | null;
-}
-
 const emptyForm: ProductFormData = {
   naam: "", categorie: "zonnepanelen", merk: "", model: "",
   omschrijving: "", offerte_tekst: "", prijs_excl_btw: 0, kostprijs: null, eenheid: "stuk",
@@ -88,19 +58,6 @@ const emptyForm: ProductFormData = {
   afbeeldingen: [], specs: {},
   datasheet_url: null, datasheet_type: null,
 };
-
-interface AIProduct {
-  naam: string;
-  model: string;
-  merk: string;
-  omschrijving: string;
-  prijs_excl_btw: number;
-  garantie_jaren?: number;
-  certificeringen?: string;
-  specs?: Record<string, string>;
-  categorie: ProductCategorie;
-  warnings?: string[];
-}
 
 function isSimilar(a: string, b: string): boolean {
   const normalize = (s: string) => s.toLowerCase().replace(/[\s\-_\/\\().]+/g, "").trim();
