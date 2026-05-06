@@ -84,6 +84,8 @@ const ITEMS = {
     url: "/superadmin/access-grants", synoniemen: ["break-glass", "access grants"] } as NavigatieItem,
   systeemlogs: { id: "systeemlogs", label: "Systeemlogs", icon: ScrollText,
     url: "/superadmin/logs", synoniemen: ["errors", "fouten", "logs", "edge logs", "auth logs"] } as NavigatieItem,
+  emaillogs: { id: "emaillogs", label: "E-maillogs", icon: ScrollText,
+    url: "/superadmin/email-logs", synoniemen: ["mail logs", "verzendlogs", "email"] } as NavigatieItem,
   adviseurs: { id: "adviseurs", label: "Adviseurs", icon: UserCheck, url: "/adviseurs" } as NavigatieItem,
   gebruikers: { id: "gebruikers", label: "Gebruikers", icon: Users, url: "/gebruikers" } as NavigatieItem,
   affiliateBeheer: { id: "affiliate-beheer", label: "Affiliate beheer", icon: Handshake, url: "/affiliate-beheer" } as NavigatieItem,
@@ -122,7 +124,7 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
       ITEMS.adviseurs, ITEMS.gebruikers,
       ...(isSuper ? [ITEMS.affiliateBeheer, ITEMS.abonnementen, ITEMS.platformToegang] : []),
     ] },
-    ...(isSuper ? [{ id: "systeem-superadmin", label: "Platform-systeem", items: [ITEMS.systeemlogs] }] : []),
+    ...(isSuper ? [{ id: "systeem-superadmin", label: "Platform-systeem", items: [ITEMS.systeemlogs, ITEMS.emaillogs] }] : []),
     { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
     { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
