@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateOffertePdfViaIframe } from "@/lib/pdfFromPages";
+import { parseAddressList } from "@/components/email/EmailComposerFields";
+import { Mail, X } from "lucide-react";
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -59,6 +61,10 @@ export default function OfferteEmailEditor({
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [to, setTo] = useState(offerte.klant_email);
+  const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [subject, setSubject] = useState(
     `Offerte ${offerte.offertenummer} — ${partnerNaam || "Uw adviseur"}`,
   );
@@ -115,6 +121,10 @@ export default function OfferteEmailEditor({
     if (open) {
       setSent(false);
       setFeedbackScore(null);
+      setCc("");
+      setBcc("");
+      setShowCc(false);
+      setShowBcc(false);
       void generatePdf();
     } else {
       setPdf({ status: "idle" });
@@ -211,6 +221,8 @@ export default function OfferteEmailEditor({
           subject,
           attachment_path: pdf.path,
           attachment_filename: `Offerte-${offerte.offertenummer}.pdf`,
+          cc: parseAddressList(cc),
+          bcc: parseAddressList(bcc),
         },
       });
       if (error || data?.error) {
@@ -304,12 +316,46 @@ export default function OfferteEmailEditor({
           {/* To */}
           <div className="grid grid-cols-[80px_1fr] items-center gap-2">
             <Label className="text-right text-sm text-muted-foreground">Aan</Label>
-            <Input
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              placeholder="klant@email.nl"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                placeholder="klant@email.nl"
+                className="flex-1"
+              />
+              {!showCc && <button type="button" onClick={() => setShowCc(true)} className="text-xs text-muted-foreground hover:text-foreground">+ CC</button>}
+              {!showBcc && <button type="button" onClick={() => setShowBcc(true)} className="text-xs text-muted-foreground hover:text-foreground">+ BCC</button>}
+            </div>
           </div>
+
+          {showCc && (
+            <div className="grid grid-cols-[80px_1fr] items-center gap-2">
+              <Label className="text-right text-sm text-muted-foreground">CC</Label>
+              <div className="flex items-center gap-2">
+                <Input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="cc1@voorbeeld.nl, cc2@voorbeeld.nl" className="flex-1" />
+                <button type="button" onClick={() => { setCc(""); setShowCc(false); }} aria-label="CC verwijderen" className="text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+              </div>
+            </div>
+          )}
+
+          {showBcc && (
+            <div className="grid grid-cols-[80px_1fr] items-center gap-2">
+              <Label className="text-right text-sm text-muted-foreground">BCC</Label>
+              <div className="flex items-center gap-2">
+                <Input value={bcc} onChange={(e) => setBcc(e.target.value)} placeholder="bcc1@voorbeeld.nl" className="flex-1" />
+                {profile?.email && (
+                  <button type="button" onClick={() => {
+                    const list = parseAddressList(bcc);
+                    if (!list.includes(profile.email!)) list.push(profile.email!);
+                    setBcc(list.join(", "));
+                  }} className="text-xs text-primary hover:underline flex items-center gap-1 whitespace-nowrap">
+                    <Mail className="h-3 w-3" /> BCC mij
+                  </button>
+                )}
+                <button type="button" onClick={() => { setBcc(""); setShowBcc(false); }} aria-label="BCC verwijderen" className="text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+              </div>
+            </div>
+          )}
 
           {/* Subject */}
           <div className="grid grid-cols-[80px_1fr] items-center gap-2">
