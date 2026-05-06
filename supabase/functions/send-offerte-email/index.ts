@@ -287,9 +287,9 @@ Deno.serve(async (req) => {
       }
 
       if (emailAccount.provider === "google") {
-        await sharedSendViaGmailApi({ accessToken, from: emailAccount.email_adres, to: ontvanger_email, subject: emailSubject, html, attachment });
+        await sharedSendViaGmailApi({ accessToken, from: emailAccount.email_adres, to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment });
       } else {
-        await sharedSendViaMsGraphApi({ accessToken, to: ontvanger_email, subject: emailSubject, html, attachment });
+        await sharedSendViaMsGraphApi({ accessToken, to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment });
       }
       imapSaved = true; // OAuth APIs auto-save to sent
 
@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
         host: partner.smtp_host, port: partner.smtp_port || 587,
         user: partner.smtp_user, pass: partner.smtp_pass_encrypted,
         from: partner.afzender_email, fromName: partner.afzender_naam || partner.naam,
-        to: ontvanger_email, subject: emailSubject, html, attachment,
+        to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment,
       });
 
       // Save to IMAP sent folder
