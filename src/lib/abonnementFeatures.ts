@@ -29,6 +29,8 @@ export const ALL_PLAN_FEATURES: PlanFeature[] = [
   { key: "webtools_embeds", label: "Webtools embeds", groep: "Tools" },
   { key: "energieadvies_wizard", label: "Energieadvies wizard", groep: "Tools" },
   { key: "thuisbatterij_selector", label: "Thuisbatterij selector", groep: "Tools" },
+  { key: "webshop_module", label: "Webshop & catalogus (add-on)", groep: "Tools",
+    beschrijving: "Embed je productassortiment, merkenpagina's en converterende productpagina's met offerte-aanvraag, vergelijker en API-toegang." },
 
   // Financieel
   { key: "btw_aangifte_export", label: "BTW-aangifte export", groep: "Financieel" },
