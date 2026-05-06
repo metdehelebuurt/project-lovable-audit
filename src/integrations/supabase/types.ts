@@ -3501,7 +3501,43 @@ export type Database = {
           updated_at?: string
           volgende_keuring_datum?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "keuringen_installatie_id_fkey"
+            columns: ["installatie_id"]
+            isOneToOne: false
+            referencedRelation: "installaties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keuringen_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keuringen_next_keuring_id_fkey"
+            columns: ["next_keuring_id"]
+            isOneToOne: false
+            referencedRelation: "keuringen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keuringen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keuringen_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       klant_notities: {
         Row: {
