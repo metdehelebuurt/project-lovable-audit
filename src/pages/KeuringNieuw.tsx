@@ -117,7 +117,7 @@ export default function KeuringNieuw() {
       type StructGroup = { categorie: string; items: StructItem[] };
       const checklistRows: Array<Record<string, unknown>> = [];
       let order = 0;
-      for (const tpl of finalTemplates as Array<{ structuur: StructGroup[] }>) {
+      for (const tpl of finalTemplates as unknown as Array<{ structuur: StructGroup[] }>) {
         for (const grp of (tpl.structuur ?? [])) {
           for (const it of (grp.items ?? [])) {
             checklistRows.push({
