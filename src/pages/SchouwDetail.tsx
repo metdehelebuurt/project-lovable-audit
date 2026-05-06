@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, PlayCircle } from "lucide-react";
+import { ArrowLeft, PlayCircle, Pencil } from "lucide-react";
 import { categoryFields, getSections, isFieldVisible, type WizardStep } from "@/components/schouwen/SchouwCategoryFields";
 import { categoryChecklists } from "@/components/schouwen/SchouwChecklists";
 import PaneelClusterEditor from "@/components/schouwen/PaneelClusterEditor";
@@ -113,9 +113,17 @@ const SchouwDetail = () => {
           <p className="text-muted-foreground text-sm">{categorieLabels[schouw.categorie]} • {schouw.consument_naam}</p>
         </div>
         <Badge className={statusColors[schouw.status] || ""}>{schouw.status}</Badge>
-        {schouw.status === "gepland" && (
+        {schouw.status === "gepland" ? (
           <Button onClick={() => navigate(`/schouwen/${schouw.id}/uitvoeren`)} className="gap-2">
             <PlayCircle className="h-4 w-4" /> Uitvoeren
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/schouwen/${schouw.id}/uitvoeren`)}
+            className="gap-2"
+          >
+            <Pencil className="h-4 w-4" /> Bewerken
           </Button>
         )}
       </div>
