@@ -544,6 +544,14 @@ const ProductDetail = () => {
         </div>
         <Badge className={statusColors[product.status] || ""}>{product.status.replace(/_/g, " ")}</Badge>
         <Badge variant="outline">{categorieLabels[product.categorie] || product.categorie}</Badge>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-[40px] gap-1.5"
+          onClick={() => navigate(`/producten/${product.id}/website`)}
+        >
+          <Globe className="h-3.5 w-3.5" /> Op mijn website
+        </Button>
         {isDirty && (
           <Button size="sm" className="gap-1.5 rounded-lg" disabled={savingProduct} onClick={handleSaveProduct}>
             {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
