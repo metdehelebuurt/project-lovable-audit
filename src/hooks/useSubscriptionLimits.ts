@@ -60,7 +60,7 @@ export function useSubscriptionLimits(): SubscriptionInfo & {
           .maybeSingle(),
         supabase
           .from("abonnement_addon_aankopen")
-          .select("aantal, abonnement_addons(type)")
+          .select("aantal, abonnement_addons(type, slug)")
           .eq("partner_id", profile.partner_id!)
           .eq("status", "actief"),
       ]);
@@ -68,23 +68,34 @@ export function useSubscriptionLimits(): SubscriptionInfo & {
       // Calculate addon extras
       let extraAdviseurs = 0;
       let extraInstallateurs = 0;
+      const addonFeatures: string[] = [];
       if (addonAankopen) {
         for (const a of addonAankopen) {
-          const type = (a as any).abonnement_addons?.type;
+          const ad = (a as any).abonnement_addons;
+          const type = ad?.type;
+          const slug = ad?.slug as string | undefined;
           if (type === "adviseur") extraAdviseurs += a.aantal;
           if (type === "installateur") extraInstallateurs += a.aantal;
+          // Map add-on slug → feature key zodat hasFeature() add-on aankopen meeneemt
+          if (slug === "website-webshop") addonFeatures.push("webshop_module");
         }
       }
       setAddonExtras({ adviseurs: extraAdviseurs, installateurs: extraInstallateurs });
 
       if (!abo) {
-        setInfo(prev => ({ ...prev, loading: false, status: "geen" }));
+        setInfo(prev => ({
+          ...prev,
+          loading: false,
+          status: "geen",
+          limits: { ...DEFAULT_LIMITS, features: addonFeatures },
+        }));
         return;
       }
 
       const plan = (abo as any).abonnement_plannen;
       const modules = Array.isArray(plan?.modules) ? plan.modules as string[] : [];
-      const features = Array.isArray(plan?.features) ? plan.features as string[] : [];
+      const planFeatures = Array.isArray(plan?.features) ? plan.features as string[] : [];
+      const features = Array.from(new Set([...planFeatures, ...addonFeatures]));
 
       setInfo({
         plan_naam: plan?.naam ?? abo.plan ?? "",
