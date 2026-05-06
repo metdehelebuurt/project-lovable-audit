@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── Send offerte email ───
-    const { offerte_id, ontvanger_email, html_body, subject: customSubject, attachment_path, attachment_filename } = body;
+    const { offerte_id, ontvanger_email, html_body, subject: customSubject, attachment_path, attachment_filename, cc, bcc } = body;
     if (!offerte_id || !ontvanger_email) {
       return new Response(JSON.stringify({ error: "offerte_id en ontvanger_email zijn verplicht" }), { status: 400, headers: corsHeaders });
     }
@@ -227,6 +227,13 @@ Deno.serve(async (req) => {
 
     if (!offerte) {
       return new Response(JSON.stringify({ error: "Offerte niet gevonden" }), { status: 404, headers: corsHeaders });
+    }
+
+    // Zorg dat er een share_token bestaat zodat de acceptatielink in de e-mail werkt.
+    if (!offerte.share_token) {
+      const newToken = crypto.randomUUID().replace(/-/g, "");
+      await adminClient.from("offertes").update({ share_token: newToken }).eq("id", offerte_id);
+      offerte.share_token = newToken;
     }
 
     // Determine send method: OAuth or SMTP
