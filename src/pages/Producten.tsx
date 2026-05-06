@@ -579,142 +579,33 @@ const Producten = () => {
       </Card>
 
       {/* AI Import Dialog (kept as dialog — it's a wizard flow) */}
-      <Dialog open={aiDialogOpen} onOpenChange={(open) => { if (!open) closeAiDialog(); else setAiDialogOpen(true); }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              AI Product Import
-            </DialogTitle>
-          </DialogHeader>
-
-          {aiStep === "input" && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Voer een merknaam en categorie in. AI zoekt automatisch het volledige productassortiment op met alle varianten en technische specificaties (tot 50 producten per keer).
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Merknaam *</Label>
-                  <Input placeholder="bijv. SolarEdge, Enphase, Daikin..." value={aiMerk} onChange={e => setAiMerk(e.target.value)} className="rounded-xl" />
-                </div>
-                <div>
-                  <Label>Categorie *</Label>
-                  <Select value={aiCategorie} onValueChange={v => setAiCategorie(v as ProductCategorie)}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(categorieLabels) as ProductCategorie[]).map(c => (
-                        <SelectItem key={c} value={c}>{categorieLabels[c]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={closeAiDialog} className="rounded-pill">Annuleren</Button>
-                <Button onClick={handleAiSearch} disabled={aiLoading} className="rounded-pill gap-2">
-                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {aiLoading ? "Zoeken..." : "Producten ophalen"}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-
-          {aiStep === "preview" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>{aiProducts.length}</strong> producten gevonden voor <strong>{aiMerk}</strong> · <strong>{aiSelected.size}</strong> geselecteerd
-                  </p>
-                  {(aiDuplicateCount > 0 || aiWarningCount > 0) && (
-                    <div className="flex gap-2 text-xs">
-                      {aiDuplicateCount > 0 && (
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Copy className="h-3 w-3" /> {aiDuplicateCount} duplica{aiDuplicateCount === 1 ? "at" : "ten"}
-                        </span>
-                      )}
-                      {aiWarningCount > 0 && (
-                        <span className="flex items-center gap-1 text-warning-foreground">
-                          <AlertTriangle className="h-3 w-3" /> {aiWarningCount} waarschuwing{aiWarningCount === 1 ? "" : "en"}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    const all = new Set<number>();
-                    aiProducts.forEach((p, i) => { if (!isDuplicate(p, aiExistingNames)) all.add(i); });
-                    setAiSelected(all);
-                  }}>Selecteer nieuw</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}>Alles</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set())}>Niets</Button>
-                </div>
-              </div>
-
-              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                {aiProducts.map((product, idx) => {
-                  const duplicate = isDuplicate(product, aiExistingNames);
-                  const hasWarnings = product.warnings && product.warnings.length > 0;
-                  return (
-                    <Card key={idx} className={`rounded-xl border cursor-pointer transition-colors ${
-                      aiSelected.has(idx) ? "border-primary bg-primary/5" : duplicate ? "border-muted bg-muted/30 opacity-60" : "border-border"
-                    }`} onClick={() => toggleAiSelect(idx)}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Checkbox checked={aiSelected.has(idx)} onCheckedChange={() => toggleAiSelect(idx)} className="mt-1" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <p className="font-medium text-foreground truncate">{product.naam}</p>
-                                {duplicate && <Badge variant="outline" className="text-xs shrink-0 border-warning-foreground text-warning-foreground"><Copy className="h-3 w-3 mr-1" /> Bestaat al</Badge>}
-                                {hasWarnings && <Badge variant="outline" className="text-xs shrink-0 border-destructive text-destructive"><AlertTriangle className="h-3 w-3 mr-1" /> Let op</Badge>}
-                              </div>
-                              <p className="text-sm font-semibold text-primary whitespace-nowrap">{formatPrice(product.prijs_excl_btw)}</p>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-0.5">{product.model} · {product.merk}</p>
-                            {product.omschrijving && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.omschrijving}</p>}
-                            {hasWarnings && (
-                              <div className="mt-1.5 space-y-0.5">
-                                {product.warnings!.map((w, wi) => (
-                                  <p key={wi} className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3 shrink-0" /> {w}</p>
-                                ))}
-                              </div>
-                            )}
-                            {product.specs && Object.keys(product.specs).length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {Object.entries(product.specs).slice(0, 6).map(([key, val]) => (
-                                  <Badge key={key} variant="outline" className="text-xs font-normal">{key}: {val}</Badge>
-                                ))}
-                                {Object.keys(product.specs).length > 6 && (
-                                  <Badge variant="outline" className="text-xs font-normal text-muted-foreground">+{Object.keys(product.specs).length - 6} meer</Badge>
-                                )}
-                              </div>
-                            )}
-                            <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                              {product.garantie_jaren && <span>Garantie: {product.garantie_jaren} jaar</span>}
-                              {product.certificeringen && <span>{product.certificeringen}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setAiStep("input")} className="rounded-pill">Terug</Button>
-                <Button onClick={handleAiImport} disabled={aiLoading || aiSelected.size === 0} className="rounded-pill gap-2">
-                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  {aiLoading ? "Importeren..." : `${aiSelected.size} producten importeren`}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AiImportDialog
+        open={aiDialogOpen}
+        onClose={closeAiDialog}
+        step={aiStep}
+        onStepChange={setAiStep}
+        merk={aiMerk}
+        onMerkChange={setAiMerk}
+        categorie={aiCategorie}
+        onCategorieChange={setAiCategorie}
+        categorieLabels={categorieLabels}
+        loading={aiLoading}
+        products={aiProducts}
+        selected={aiSelected}
+        onToggleSelect={toggleAiSelect}
+        onSelectAll={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}
+        onSelectNone={() => setAiSelected(new Set())}
+        onSelectNew={() => {
+          const all = new Set<number>();
+          aiProducts.forEach((p, i) => { if (!isDuplicate(p, aiExistingNames)) all.add(i); });
+          setAiSelected(all);
+        }}
+        existingNames={aiExistingNames}
+        isDuplicate={isDuplicate}
+        onSearch={handleAiSearch}
+        onImport={handleAiImport}
+        formatPrice={formatPrice}
+      />
     </div>
   );
 };
