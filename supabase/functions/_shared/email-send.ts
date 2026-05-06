@@ -34,6 +34,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 export async function sendViaSMTP(opts: {
   host: string; port: number; user: string; pass: string;
   from: string; fromName: string; to: string; subject: string; html: string;
+  cc?: string[]; bcc?: string[];
   attachment?: AttachmentInfo | null;
 }) {
   const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
@@ -47,6 +48,8 @@ export async function sendViaSMTP(opts: {
     content: "auto",
     html: opts.html,
   };
+  if (opts.cc && opts.cc.length > 0) message.cc = opts.cc;
+  if (opts.bcc && opts.bcc.length > 0) message.bcc = opts.bcc;
   if (opts.attachment) {
     message.attachments = [{
       filename: opts.attachment.filename,
@@ -61,9 +64,12 @@ export async function sendViaSMTP(opts: {
 
 export async function sendViaGmailApi(opts: {
   accessToken: string; from: string; to: string; subject: string; html: string;
+  cc?: string[]; bcc?: string[];
   attachment?: AttachmentInfo | null;
 }) {
   const subjectEnc = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(opts.subject)))}?=`;
+  const ccLine = opts.cc && opts.cc.length > 0 ? `Cc: ${opts.cc.join(", ")}\r\n` : "";
+  const bccLine = opts.bcc && opts.bcc.length > 0 ? `Bcc: ${opts.bcc.join(", ")}\r\n` : "";
   let raw: string;
 
   if (opts.attachment) {
@@ -72,6 +78,8 @@ export async function sendViaGmailApi(opts: {
     raw = [
       `From: ${opts.from}`,
       `To: ${opts.to}`,
+      ...(ccLine ? [ccLine.trimEnd()] : []),
+      ...(bccLine ? [bccLine.trimEnd()] : []),
       `Subject: ${subjectEnc}`,
       `MIME-Version: 1.0`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
@@ -94,6 +102,8 @@ export async function sendViaGmailApi(opts: {
   } else {
     raw = [
       `From: ${opts.from}`, `To: ${opts.to}`,
+      ...(ccLine ? [ccLine.trimEnd()] : []),
+      ...(bccLine ? [bccLine.trimEnd()] : []),
       `Subject: ${subjectEnc}`,
       `MIME-Version: 1.0`, `Content-Type: text/html; charset=UTF-8`, ``, opts.html,
     ].join("\r\n");
@@ -112,6 +122,7 @@ export async function sendViaGmailApi(opts: {
 
 export async function sendViaMsGraphApi(opts: {
   accessToken: string; to: string; subject: string; html: string;
+  cc?: string[]; bcc?: string[];
   attachment?: AttachmentInfo | null;
 }) {
   const message: any = {
@@ -119,6 +130,12 @@ export async function sendViaMsGraphApi(opts: {
     body: { contentType: "HTML", content: opts.html },
     toRecipients: [{ emailAddress: { address: opts.to } }],
   };
+  if (opts.cc && opts.cc.length > 0) {
+    message.ccRecipients = opts.cc.map((a) => ({ emailAddress: { address: a } }));
+  }
+  if (opts.bcc && opts.bcc.length > 0) {
+    message.bccRecipients = opts.bcc.map((a) => ({ emailAddress: { address: a } }));
+  }
   if (opts.attachment) {
     message.attachments = [{
       "@odata.type": "#microsoft.graph.fileAttachment",
