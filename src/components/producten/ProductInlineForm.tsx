@@ -53,12 +53,20 @@ interface Props {
   onSubmit: (e: React.FormEvent) => void;
   categorieLabels: Record<ProductCategorie, string>;
   statusLabels: Record<ProductStatus, string>;
+  merken?: string[];
 }
 
 export default function ProductInlineForm({
-  form, setForm, editingProduct, isPending, onClose, onSubmit, categorieLabels, statusLabels,
+  form, setForm, editingProduct, isPending, onClose, onSubmit, categorieLabels, statusLabels, merken = [],
 }: Props) {
   const formProductId = editingProduct?.id || "new-product";
+
+  const handleMerkBlur = () => {
+    const v = form.merk.trim();
+    if (!v) return;
+    const match = merken.find((m) => m.toLowerCase() === v.toLowerCase());
+    setForm((p) => ({ ...p, merk: match ?? v }));
+  };
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
@@ -100,7 +108,23 @@ export default function ProductInlineForm({
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Merk</Label><Input value={form.merk} onChange={e => setForm(p => ({ ...p, merk: e.target.value }))} className="rounded-xl" /></div>
+              <div>
+                <Label>Merk</Label>
+                <Input
+                  value={form.merk}
+                  onChange={e => setForm(p => ({ ...p, merk: e.target.value }))}
+                  onBlur={handleMerkBlur}
+                  list="product-merken-list"
+                  placeholder="Bijv. SolarEdge"
+                  className="rounded-xl"
+                />
+                <datalist id="product-merken-list">
+                  {merken.map((m) => <option key={m} value={m} />)}
+                </datalist>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nieuwe merken worden automatisch toegevoegd aan Merkenbeheer.
+                </p>
+              </div>
               <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="rounded-xl" /></div>
               <div className="col-span-2"><Label>Omschrijving</Label><Textarea value={form.omschrijving} onChange={e => setForm(p => ({ ...p, omschrijving: e.target.value }))} className="rounded-xl" rows={3} /></div>
               <div className="col-span-2">
