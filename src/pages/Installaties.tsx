@@ -51,6 +51,25 @@ const Installaties = () => {
     return m ? `${m.voornaam} ${m.achternaam}` : null;
   };
 
+  const klantNaamVan = (i: Installatie & { klant?: any }): string => {
+    if (i.consument_naam && i.consument_naam.trim()) return i.consument_naam;
+    const k = i.klant;
+    if (k) {
+      if (k.bedrijfsnaam) return k.bedrijfsnaam;
+      const naam = `${k.voornaam ?? ""} ${k.achternaam ?? ""}`.trim();
+      if (naam) return naam;
+    }
+    return "—";
+  };
+
+  const adresVan = (i: Installatie & { klant?: any }): string => {
+    return (i as any).werkadres || i.klant_adres || i.klant?.adres || "—";
+  };
+
+  const plaatsVan = (i: Installatie & { klant?: any }): string => {
+    return i.klant_plaats || i.klant?.plaats || "—";
+  };
+
   useEffect(() => {
     if (isInstallateur) setFocusTab("vandaag");
   }, [isInstallateur]);
@@ -59,7 +78,7 @@ const Installaties = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("installaties")
-      .select("*")
+      .select("*, klant:klanten!installaties_klant_id_fkey(voornaam, achternaam, bedrijfsnaam, adres, plaats, postcode)")
       .order("geplande_startdatum", { ascending: true, nullsFirst: false });
     if (error) toast.error(error.message);
     setInstallaties(data ?? []);
@@ -101,10 +120,10 @@ const Installaties = () => {
       const q = search.toLowerCase().trim();
       if (!q) return true;
       return (
-        (i.consument_naam ?? "").toLowerCase().includes(q) ||
+        klantNaamVan(i as any).toLowerCase().includes(q) ||
         (i.installatienummer ?? "").toLowerCase().includes(q) ||
-        (i.werkadres ?? "").toLowerCase().includes(q) ||
-        (i.klant_plaats ?? "").toLowerCase().includes(q)
+        adresVan(i as any).toLowerCase().includes(q) ||
+        plaatsVan(i as any).toLowerCase().includes(q)
       );
     });
   }, [installaties, search, statusFilter, monteurFilter, focusTab]);
@@ -234,9 +253,9 @@ const Installaties = () => {
                       </Button>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{inst.consument_naam ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{inst.werkadres ?? inst.klant_adres ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{inst.klant_plaats ?? "—"}</TableCell>
+                  <TableCell className="font-medium">{klantNaamVan(inst as any)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{adresVan(inst as any)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{plaatsVan(inst as any)}</TableCell>
                   <TableCell>
                     <InstallatieGereedheidsBar data={gereedheidMap?.[inst.id]} loading={gereedLoading} />
                   </TableCell>
