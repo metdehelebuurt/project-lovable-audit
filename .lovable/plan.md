@@ -1,155 +1,149 @@
+## Productcatalogus-webtool — bouwplan
 
-# Mail-architectuur opschonen + verzendlogs voor platformadmin
+Een nieuwe webtool waarmee partners hun assortiment, merkenpagina's en converterende productpagina's op hun eigen site kunnen tonen. Twee distributievormen naast elkaar (embed-script én REST API per partner), volledig in eigen huisstijl, met AI-gegenereerde marketingcontent, automatisch gekoppelde calculators, vergelijker en lead → conceptofferte-flow. Achter FeatureGate add-on.
 
-## Het verschil dat we vasthouden (3 stromen, blijven gescheiden)
+### 1. Wat partners ervaren
 
-```text
-1) PARTNER → externen (offerte, factuur, orderbevestiging, oplever, helpdesk-notify)
-   Afzender: het Gmail/Outlook-account van de partner (email_accounts).
-   Logging:  email_log + email_berichten (in de Inbox van de partner).
-   Code:     _shared/partner-email-send.ts  → ONGEWIJZIGD.
+**In het platform — nieuw onder Producten + Webtools:**
 
-2) GEBRUIKER → externen (1-op-1 vanuit eigen postvak, b.v. inkoop, ad-hoc mails)
-   Afzender: persoonlijke OAuth-mailbox van de ingelogde user.
-   Logging:  email_log + email_berichten (zichtbaar in eigen Inbox).
-   Code:     _shared/user-email-send.ts     → ONGEWIJZIGD.
+- Op elke productkaart een nieuw blok **"Op mijn website"** met:
+  - Toggle "Tonen op website" (per product)
+  - Bulkacties op de productlijst: "Toon alle Daikin", "Verberg categorie X"
+  - Marketingvelden (los van offerte-tekst): korte pitch, lange omschrijving (rich text/Tiptap), 3–5 USP's, FAQ-blok
+  - Knop **"AI-content genereren"**: stuurt productspecs + merk + categorie naar Lovable AI en stelt pitch + omschrijving + USP's + FAQ voor; partner kan accepteren/bewerken
+  - Verplichte AI-disclaimer onder gegenereerde content (project-regel)
+  - Eigen URL-slug per product (auto van naam, handmatig overschrijfbaar)
 
-3) PLATFORM → eindgebruiker (auth-mails + systeem/transactional mails van Mijnhuis zelf)
-   Afzender: notify.mijnhuis.nu via Lovable Email.
-   Logging:  email_send_log (al aanwezig) — apart van partner/user-logs.
-   Hier zit nu de gap: deels niet ingericht, geen UI om logs te zien.
-```
+- In **Webtools** een nieuwe template-kaart **"Productcatalogus"** (naast de bestaande 6). Bij aanmaken kiest partner welke onderdelen in de embed: catalogus, merkenpagina, productdetail, vergelijker (alle 4 default aan).
+- Configurator: huisstijl-overrides (kleuren, font, hoekradius) bovenop auto-branding, leadnotificatie-mail, zichtbare filters (categorie/merk/prijs), default sortering.
+- Tab **"API-toegang"** in de webtool: toont per-partner API-token (genereren/roteren), basis-URL, voorbeeldrequests in cURL/JS, rate-limit-info.
 
-Stroom 1 en 2 raken we niet aan. Alle nieuwe werk zit in stroom 3 + één
-nieuw platformadmin-scherm dat álle drie de stromen kan tonen, mét duidelijk
-label wie welke mail verstuurde.
+**Op de site van de bezoeker:**
 
-## Wat we gaan bouwen
+- `/catalogus` — grid met filter (categorie, merk, prijs), zoek, sortering
+- `/merken/{merk-slug}` — merkenpagina met logo/intro + producten van dat merk
+- `/p/{product-slug}` — productdetail met: hero (afbeeldingen carousel), pitch, USP's, prijs vanaf, specs-tabel, datasheet (PDF-viewer), FAQ, gerelateerde producten, **CTA's**: "Offerte aanvragen", "Vergelijken toevoegen", en automatisch onder detail de juiste **calculator** op basis van producttype (zonnepaneel / warmtepomp / isolatie / laadpaal / batterij), voorgevuld met productspecs.
+- `/vergelijken` — tot 3 producten van dezelfde categorie naast elkaar met spec-tabel; één gezamenlijke "Offerte aanvragen"-CTA.
 
-### A. Lovable Email infrastructuur afmaken (stroom 3)
+### 2. Lead-routering
 
-DNS-domein `notify.mijnhuis.nu` staat al op pending. We:
+Aanvraagknop op productpagina → `widget-submit` (uitgebreid):
+1. Maak lead aan met productinteresse en bron `Webshop {productnaam}`.
+2. Maak **direct een conceptofferte** aan (status `concept`), met het aangevraagde product als regel, gebruikt `partner_product_teksten` voor omschrijving.
+3. Stuur leadnotificatie-mail naar partner via bestaande partner-emailflow (Gmail/Graph/SMTP — niet via platformmails).
+4. Bezoeker krijgt bevestigingsscherm: "Je offerte staat klaar, je hoort binnen X uur van {partnernaam}".
 
-1. Roepen `email_domain--setup_email_infra` aan (idempotent — vult queues,
-   RPC's, cron, vault-secret aan voor zover nog niet aanwezig).
-2. Roepen `email_domain--scaffold_auth_email_templates` aan zodat
-   wachtwoord-reset / magic-link / signup-bevestiging via onze eigen
-   gebrande templates lopen i.p.v. de default Lovable mail. Templates in
-   Mijnhuis-stijl (paars primary, Nederlands).
-3. Roepen `email_domain--scaffold_transactional_email` aan voor
-   `send-transactional-email` + unsubscribe + suppression.
-4. Voegen één template toe: `trial-welkom` (welkomstmail nieuwe trial-partner)
-   en hangen die aan `trial-signup`. Verdere triggers worden later toegevoegd
-   wanneer nodig — geen scope-creep.
+### 3. Twee distributievormen
 
-### B. Verzendlogs-dashboard voor superadmin
+**A. Embed (zoals huidige webtools)**
+- Script-snippet → laadt iframe `mijnhuis.nu/embed/catalogus/{widget_id}` (en routes voor `/p/{slug}`, `/merken/{slug}`, `/vergelijken`).
+- Iframes auto-resize via postMessage (zoals bestaande embeds).
 
-Nieuw menu-item onder **Superadmin → E-maillogs** (route
-`/superadmin/email-logs`, beschermd via `ProtectedRoute allowedRoles={["superadmin"]}`).
+**B. REST API per partner**
+- Basis-URL: `https://api.mijnhuis.nu/v1/...` (Edge Function `partner-api`).
+- Auth: `Authorization: Bearer {partner_api_token}` — token is per partner, te roteren vanuit de webtool-config.
+- Endpoints (read-only + lead create):
+  - `GET /products` (filters: `categorie`, `merk`, `q`, `page`)
+  - `GET /products/{slug}`
+  - `GET /brands` / `GET /brands/{slug}`
+  - `GET /categories`
+  - `POST /leads` (zelfde validatie als widget-submit)
+- Rate limit per token: 60 req/min (in-memory + DB-counter).
+- Alleen producten van die partner met `toon_op_website=true` worden geretourneerd.
 
-Drie tabs:
+### 4. Toegang & abonnement
 
-```text
-[ Platform-mails ]   bron: email_send_log (Lovable Email)
-[ Partner-mails  ]   bron: email_log waar verzonden_door_id = user van partner
-[ Gebruiker-inbox]   bron: email_berichten (samenvatting per partner)
-```
+- Add-on `webshop_module` via FeatureGate (zoals andere add-ons).
+- Zonder add-on: partner ziet de webtool-template, maar publish-knop is gedisabled met upsell-CTA. Productinstellingen (toggle, marketingteksten) blijven configureerbaar zodat ze klaarstaan.
+- API-token alleen genereerbaar mét add-on actief.
 
-Per tab:
+### 5. Database (migratie)
 
-- Tijdsfilter (24u / 7d / 30d / custom)
-- Templatenaam / type filter (dropdown uit data)
-- Statusfilter (verzonden / mislukt / suppressed / dlq)
-- Stat-cards: totaal, verzonden, mislukt, suppressed
-- Tabel met paginatie (50/pagina, sort op datum desc)
-- Detail-drawer: html-preview, foutmelding, headers, ontvanger
+Nieuwe kolommen op `producten`:
+- `toon_op_website boolean default false`
+- `website_slug text` (unique per partner)
+- `website_pitch text`, `website_omschrijving text`, `website_usps jsonb` (array van strings), `website_faq jsonb` (array van `{vraag, antwoord}`)
+- `website_ai_gegenereerd boolean default false` (voor disclaimer-tracking)
 
-**Belangrijk voor stroom 3:** dedupliceren op `message_id` (DISTINCT ON)
-zodat één mail niet dubbel telt.
+Nieuwe tabellen:
+- `partner_merken` — `id, partner_id, merk, slug, logo_url, intro_html, toon_op_website` (één rij per merk, voor de merkenpagina; auto-aangemaakt op basis van bestaande merken in producten)
+- `partner_api_tokens` — `id, partner_id, token_hash, label, last_used_at, created_at, revoked_at`
+- `partner_api_rate_log` — `partner_id, minute_bucket, count` (voor rate limiting)
+- `webshop_lead_bron` — koppeling lead ↔ aangevraagd product_id (voor conversie-analytics)
 
-**Voor stroom 1+2 in de tabel een kolom "Verzonden door":**
-- Naam van de gebruiker (`users.naam`) + e-mailadres dat in `from` zat
-- Provider-badge: `Partner SMTP`, `Gmail (gebruiker)`, `Outlook (gebruiker)`,
-  `Lovable Email (platform)` — afgeleid van bron + `email_log.type`.
+Nieuwe enum-waarde voor `web_widgets.type`: `productcatalogus`.
 
-Hierdoor zie je in één oogopslag: "deze mail kwam vanuit Roshny haar
-Gmail-postvak", "die kwam vanuit Mijnhuis-platform", "die kwam vanuit
-partner-SMTP".
+RLS: alle nieuwe tabellen partner-scoped; `producten_publiek` view uitbreiden met website-velden voor publieke toegang (alleen waar `toon_op_website=true`).
 
-### C. helpdesk-notify migreren naar shared sender
+### 6. Edge Functions (nieuw)
 
-Nu heeft `helpdesk-notify` 130+ regels gedupliceerde Gmail/Graph code. We
-vervangen dat door een aanroep van `sendPartnerEmail()`, zodat:
+- `productcatalogus-public` — publieke read-API voor embed (catalogus/merken/detail), gebruikt service-role + filtert op `toon_op_website` + `widget_id` → `partner_id`.
+- `partner-api` — REST API per partner (token-auth, rate limit, dezelfde data als public maar via token i.p.v. widget_id).
+- `ai-product-marketing` — AI-content genereren (pitch/omschrijving/USP's/FAQ) via Lovable AI Gateway (`google/gemini-3-flash-preview`, met optie pro voor "uitgebreid").
+- `widget-submit` uitbreiden — bij `widget.type='productcatalogus'`: ook conceptofferte aanmaken.
+- `partner-api-token-manage` — token genereren/roteren/intrekken.
 
-- minder code (regel-limiet),
-- consistent gedrag (token refresh, foutlogging),
-- alle partner-uitgaande mails op één plek bij elkaar.
+### 7. Frontend (nieuw / gewijzigd)
 
-Stroom blijft hetzelfde (partner-account → ontvanger), alleen via shared
-helper.
+Nieuw:
+- `src/pages/embed/EmbedCatalogus.tsx` — public embed root (router naar list/detail/vergelijken/merken)
+- `src/pages/embed/CatalogusList.tsx`, `ProductDetail.tsx`, `MerkenPagina.tsx`, `Vergelijker.tsx`
+- `src/components/producten/WebsiteContentTab.tsx` — toggle, marketingvelden, AI-knop, slug
+- `src/components/producten/BulkWebsiteActies.tsx` — bulk toggle per merk/categorie
+- `src/components/webtools/CatalogusConfigurator.tsx` — branding-overrides, zichtbare modules, leadmail
+- `src/components/webtools/ApiTokenTab.tsx` — token-beheer + voorbeeldrequests
+- `src/pages/Merken.tsx` — beheer merkenpagina's (logo, intro per merk)
 
-### D. Niet doen
+Gewijzigd:
+- `src/pages/WebTools.tsx` — nieuwe template-kaart (icoon `Store`)
+- `src/pages/ProductDetail.tsx` — nieuwe tab "Op mijn website"
+- `src/pages/Producten.tsx` — kolom + bulk-acties
+- `src/lib/abonnementFeatures.ts` — `webshop_module` add-on key
+- Nieuwe routes in `App.tsx`: `/embed/catalogus/:widgetId/*`, `/merken`
 
-- Geen nieuwe Edge Functions per mailtype (regel: 1 generieke
-  `send-transactional-email`).
-- Partner-flows (offerte/factuur/oplever/inkoop) niet aanraken.
-- Auth-mails niet via partner-account — die horen platform te zijn (Lovable
-  Email), zodat ze ook werken vóórdat een partner z'n Gmail koppelt.
+Bestandsregels: max 800 regels per bestand, max 50 per functie — embed-componenten splitsen in subfolders met index.tsx.
 
-## Bestanden / wijzigingen
-
-```text
-NIEUW:
-  src/pages/Superadmin/EmailLogs/index.tsx
-  src/pages/Superadmin/EmailLogs/PlatformTab.tsx
-  src/pages/Superadmin/EmailLogs/PartnerTab.tsx
-  src/pages/Superadmin/EmailLogs/InboxTab.tsx
-  src/pages/Superadmin/EmailLogs/EmailDetailDrawer.tsx
-  src/pages/Superadmin/EmailLogs/filters.tsx
-  src/pages/Superadmin/EmailLogs/useEmailLogs.ts
-  supabase/functions/_shared/transactional-email-templates/trial-welkom.tsx
-  (auth email templates worden door scaffold tool aangemaakt)
-
-GEWIJZIGD:
-  src/App.tsx                 — route toevoegen
-  src/lib/navigation/...      — menu-item Superadmin
-  supabase/functions/helpdesk-notify/index.ts   — vervangen door sendPartnerEmail
-  supabase/functions/trial-signup/index.ts      — invoke send-transactional-email
-
-INFRA-tools:
-  email_domain--setup_email_infra
-  email_domain--scaffold_auth_email_templates
-  email_domain--scaffold_transactional_email
-  supabase--deploy_edge_functions [auth-email-hook, send-transactional-email,
-                                   process-email-queue, helpdesk-notify, trial-signup]
-```
-
-## Wat de superadmin straks ziet
-
-Eén dashboard, drie heldere kolommen "wie/waarvandaan/waarheen":
+### 8. Architectuur
 
 ```text
-| Datum | Type           | Verzonden door          | Aan              | Status   |
-| ----- | -------------- | ----------------------- | ---------------- | -------- |
-| 09:14 | offerte        | Roshny (Gmail)          | klant@x.nl       | ✅       |
-| 09:11 | helpdesk_notify| Smartaccu (Gmail)       | esteban@cenora   | ✅       |
-| 09:02 | wachtwoord-res | Platform (Lovable)      | charlotte@cen…   | ✅       |
-| 08:58 | trial-welkom   | Platform (Lovable)      | nieuw@partner.nl | ⚠ dlq    |
+Partner-portaal                 Bezoeker (partnersite)
+─────────────                   ──────────────────────
+ProductDetail                   <script> embed  ──┐
+  └ WebsiteContentTab           OF                ├─► iframe / API call
+      ├ toggle                  REST API          │
+      ├ marketingvelden                           ▼
+      ├ AI-knop ─► ai-product-marketing  productcatalogus-public
+      └ slug                                      │   (widget_id)
+                                partner-api ──────┤   (token + rate limit)
+WebTools                                          │
+  └ CatalogusConfigurator                         ▼
+  └ ApiTokenTab                          producten + partner_merken
+                                         (filter: toon_op_website)
+                                                  │
+                                         Lead aanvraag
+                                                  ▼
+                                         widget-submit
+                                           ├ leads insert
+                                           ├ offertes insert (concept)
+                                           └ partner-email-send (leadmail)
 ```
 
-DNS-vinkje voor `notify.mijnhuis.nu` is een randvoorwaarde — totdat dat
-groen is werken auth/system-mails nog niet, maar de logs en partner-mails
-werken direct na deze release.
+### 9. Bouwvolgorde
 
-## Open punt waar ik akkoord op vraag
+1. Migratie (kolommen + tabellen + enum + RLS + view-update)
+2. `WebsiteContentTab` + slug + bulkacties (zonder AI nog)
+3. `productcatalogus-public` Edge Function + embed-pagina's (catalogus + detail)
+4. `widget-submit` uitbreiden met conceptofferte-aanmaak
+5. Calculator-koppeling per producttype op detailpagina
+6. Vergelijker
+7. `ai-product-marketing` + AI-knop in `WebsiteContentTab`
+8. Merkenpagina-beheer + merken-route
+9. `partner-api` + `partner-api-token-manage` + ApiTokenTab
+10. FeatureGate `webshop_module` + upsell-states
+11. QA: embed in test-pagina, API met curl, conversieflow end-to-end
 
-De DNS-records voor `notify.mijnhuis.nu` staan op **Pending**. Als jij die
-verificatie nog niet hebt afgerond (in **Cloud → Emails**), dan zal de
-infra-stap wel slagen maar zullen platform-mails pas wegvliegen zodra DNS
-groen is. Partner/gebruiker-mails en het log-dashboard werken direct.
+### 10. Open punten (kies tijdens bouw, geen blokker)
 
-Akkoord op deze aanpak? Dan zet ik 'm in elkaar in deze volgorde:
-1. infra + auth-templates + transactional-scaffold
-2. trial-welkom template + trial-signup koppeling
-3. helpdesk-notify opruimen
-4. Superadmin → E-maillogs dashboard
+- Domein API: `api.mijnhuis.nu` subdomein (vereist DNS) of pad onder bestaande functions-host. Default = pad onder functions tot DNS klaar is.
+- Limiet aantal producten "tonen op website" per abonnementniveau — voorstel: onbeperkt voor nu, later inperken via `useSubscriptionLimits` als nodig.
+- SEO publieke detail-URL's op mijnhuis.nu: voorlopig niet (alles via iframe/API). Later eventueel `/p/{partner-slug}/{product-slug}` als losse vervolgstap.

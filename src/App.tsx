@@ -53,6 +53,7 @@ import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
 import ProductDatasheetPage from "@/pages/ProductDatasheetPage";
 import ProductDetail from "@/pages/ProductDetail";
+import ProductWebsite from "@/pages/ProductWebsite";
 import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
@@ -196,6 +197,9 @@ const App = () => (
               } />
               <Route path="/producten/:id" element={
                 <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><ProductDetail /></ProtectedRoute>
+              } />
+              <Route path="/producten/:id/website" element={
+                <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><ProductWebsite /></ProtectedRoute>
               } />
               <Route path="/voorraad" element={
                 <ProtectedRoute moduleKey="voorraad" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Voorraad /></ProtectedRoute>
