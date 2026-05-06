@@ -6433,7 +6433,11 @@ export type Database = {
           ean_code: string | null
           eenheid: string | null
           garantie_jaren: number | null
+          gebruiker_handleiding_naam: string | null
+          gebruiker_handleiding_url: string | null
           id: string | null
+          installatie_handleiding_naam: string | null
+          installatie_handleiding_url: string | null
           installatie_instructies: string | null
           kostprijs: number | null
           leverancier: string | null
@@ -6441,6 +6445,7 @@ export type Database = {
           max_korting_euro: number | null
           max_korting_percentage: number | null
           merk: string | null
+          min_voorraad: number | null
           model: string | null
           naam: string | null
           offerte_tekst: string | null
@@ -6451,8 +6456,15 @@ export type Database = {
           product_code: string | null
           specs: Json | null
           status: Database["public"]["Enums"]["product_status"] | null
+          toon_op_website: boolean | null
           updated_at: string | null
           voorraad: number | null
+          website_ai_gegenereerd: boolean | null
+          website_faq: Json | null
+          website_omschrijving: string | null
+          website_pitch: string | null
+          website_slug: string | null
+          website_usps: Json | null
         }
         Insert: {
           afbeelding_url?: string | null
@@ -6467,7 +6479,11 @@ export type Database = {
           ean_code?: string | null
           eenheid?: string | null
           garantie_jaren?: number | null
+          gebruiker_handleiding_naam?: string | null
+          gebruiker_handleiding_url?: string | null
           id?: string | null
+          installatie_handleiding_naam?: string | null
+          installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
           kostprijs?: number | null
           leverancier?: string | null
@@ -6475,6 +6491,7 @@ export type Database = {
           max_korting_euro?: number | null
           max_korting_percentage?: number | null
           merk?: string | null
+          min_voorraad?: number | null
           model?: string | null
           naam?: string | null
           offerte_tekst?: string | null
@@ -6485,8 +6502,15 @@ export type Database = {
           product_code?: string | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"] | null
+          toon_op_website?: boolean | null
           updated_at?: string | null
           voorraad?: number | null
+          website_ai_gegenereerd?: boolean | null
+          website_faq?: Json | null
+          website_omschrijving?: string | null
+          website_pitch?: string | null
+          website_slug?: string | null
+          website_usps?: Json | null
         }
         Update: {
           afbeelding_url?: string | null
@@ -6501,7 +6525,11 @@ export type Database = {
           ean_code?: string | null
           eenheid?: string | null
           garantie_jaren?: number | null
+          gebruiker_handleiding_naam?: string | null
+          gebruiker_handleiding_url?: string | null
           id?: string | null
+          installatie_handleiding_naam?: string | null
+          installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
           kostprijs?: number | null
           leverancier?: string | null
@@ -6509,6 +6537,7 @@ export type Database = {
           max_korting_euro?: number | null
           max_korting_percentage?: number | null
           merk?: string | null
+          min_voorraad?: number | null
           model?: string | null
           naam?: string | null
           offerte_tekst?: string | null
@@ -6519,8 +6548,15 @@ export type Database = {
           product_code?: string | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"] | null
+          toon_op_website?: boolean | null
           updated_at?: string | null
           voorraad?: number | null
+          website_ai_gegenereerd?: boolean | null
+          website_faq?: Json | null
+          website_omschrijving?: string | null
+          website_pitch?: string | null
+          website_slug?: string | null
+          website_usps?: Json | null
         }
         Relationships: [
           {
@@ -6594,6 +6630,7 @@ export type Database = {
         Args: { _partner_id: string }
         Returns: number
       }
+      cleanup_partner_api_rate_log: { Args: never; Returns: undefined }
       current_actor_meta: {
         Args: { _user_id: string }
         Returns: {
@@ -6748,6 +6785,14 @@ export type Database = {
       user_kan_module: {
         Args: { _module_key: string; _user_id: string }
         Returns: boolean
+      }
+      validate_partner_api_token: {
+        Args: { _token_hash: string }
+        Returns: {
+          allowed: boolean
+          partner_id: string
+          reden: string
+        }[]
       }
     }
     Enums: {

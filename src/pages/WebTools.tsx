@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Code, Pencil, Trash2, Loader2, Sun, Thermometer, Home, Plug, Battery, MessageSquare, Store } from "lucide-react";
 import { WidgetConfigurator, type WidgetFormData } from "@/components/webtools/WidgetConfigurator";
 import { EmbedCodeDialog } from "@/components/webtools/EmbedCodeDialog";
+import { ApiTokensManager } from "@/components/webtools/ApiTokensManager";
+import { FeatureGate } from "@/components/abonnementen/FeatureGate";
 import { toast } from "@/hooks/use-toast";
 
 type Widget = {
@@ -237,6 +239,23 @@ const WebTools = () => {
           widgetType={embedWidget.type}
         />
       )}
+
+      {/* Productcatalogus add-on: API-tokens beheer */}
+      <div className="pt-4 border-t">
+        <FeatureGate feature="webshop_module">
+          <Card className="rounded-2xl border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Productcatalogus API</CardTitle>
+              <CardDescription>
+                Headless toegang tot je catalogus via REST. Beheer hier je tokens.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ApiTokensManager />
+            </CardContent>
+          </Card>
+        </FeatureGate>
+      </div>
     </div>
   );
 };

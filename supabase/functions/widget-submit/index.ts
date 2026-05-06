@@ -12,7 +12,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { widget_id, voornaam, achternaam, email, telefoon, bericht, calculator_resultaat } = await req.json();
+    const {
+      widget_id,
+      voornaam,
+      achternaam,
+      email,
+      telefoon,
+      bericht,
+      calculator_resultaat,
+      product_id,
+      product_naam,
+    } = await req.json();
 
     // Input validation
     if (!widget_id || !voornaam || !achternaam || !email) {
@@ -122,22 +132,98 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Productcatalogus: koppel webshop bron en (optioneel) maak conceptofferte
+    let conceptOfferteId: string | null = null;
+    if (product_id) {
+      // Log webshop bron
+      await supabaseAdmin.from("webshop_lead_bron").insert({
+        lead_id: lead.id,
+        partner_id: widget.partner_id,
+        product_id,
+        product_naam: product_naam ?? null,
+        widget_id: widget.id,
+        bron: "webshop",
+      });
+
+      // Haal product op (alleen als toon_op_website)
+      const { data: product } = await supabaseAdmin
+        .from("producten")
+        .select("id, naam, prijs_excl_btw, btw_percentage, eenheid, toon_op_website, partner_id")
+        .eq("id", product_id)
+        .eq("partner_id", widget.partner_id)
+        .eq("toon_op_website", true)
+        .maybeSingle();
+
+      if (product) {
+        const prijs = Number(product.prijs_excl_btw ?? 0);
+        const btwPct = Number(product.btw_percentage ?? 21);
+        const subtotaal = prijs;
+        const btwBedrag = +(subtotaal * (btwPct / 100)).toFixed(2);
+        const totaal = +(subtotaal + btwBedrag).toFixed(2);
+
+        const regels = [
+          {
+            product_id: product.id,
+            omschrijving: product.naam,
+            aantal: 1,
+            eenheid: product.eenheid ?? "stuks",
+            prijs_excl_btw: prijs,
+            btw_percentage: btwPct,
+            korting_euro: 0,
+            korting_percentage: 0,
+            totaal: prijs,
+          },
+        ];
+
+        const { data: offerte } = await supabaseAdmin
+          .from("offertes")
+          .insert({
+            partner_id: widget.partner_id,
+            adviseur_id: partnerAdmin.id,
+            lead_id: lead.id,
+            klant_voornaam: trimmedVoornaam,
+            klant_achternaam: trimmedAchternaam,
+            klant_email: trimmedEmail,
+            klant_telefoon: trimmedTelefoon,
+            status: "concept",
+            regels,
+            subtotaal,
+            btw_bedrag: btwBedrag,
+            totaal_bedrag: totaal,
+            notities: `Automatische conceptofferte aangemaakt op basis van productaanvraag via website${
+              product_naam ? ` (${product_naam})` : ""
+            }.`,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (offerte) {
+          conceptOfferteId = offerte.id;
+        }
+      }
+    }
+
     // Create notification for partner_admin
     const widgetLabel = widget.type === "contactformulier"
       ? "het contactformulier"
+      : widget.type === "productcatalogus"
+      ? "de productcatalogus"
       : `de ${widget.type.replace("calculator_", "")} calculator`;
 
+    const productSuffix = product_naam ? ` voor product "${product_naam}"` : "";
     await supabaseAdmin.from("notificaties").insert({
       user_id: partnerAdmin.id,
       titel: "Nieuwe lead via website widget",
-      bericht: `${trimmedVoornaam} ${trimmedAchternaam} heeft contact opgenomen via ${widgetLabel} op uw website.`,
+      bericht: `${trimmedVoornaam} ${trimmedAchternaam} heeft contact opgenomen via ${widgetLabel}${productSuffix}.${
+        conceptOfferteId ? " Er is automatisch een conceptofferte aangemaakt." : ""
+      }`,
       type: "nieuwe_lead",
       entity_type: "leads",
       entity_id: lead.id,
     });
 
     return new Response(
-      JSON.stringify({ success: true, lead_id: lead.id }),
+      JSON.stringify({ success: true, lead_id: lead.id, concept_offerte_id: conceptOfferteId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
