@@ -59,7 +59,7 @@ const Installaties = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("installaties")
-      .select("*")
+      .select("*, klant:klanten!installaties_klant_id_fkey(voornaam, achternaam, bedrijfsnaam, adres, plaats, postcode)")
       .order("geplande_startdatum", { ascending: true, nullsFirst: false });
     if (error) toast.error(error.message);
     setInstallaties(data ?? []);
