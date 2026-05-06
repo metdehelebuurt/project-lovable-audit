@@ -33,6 +33,7 @@ const statusLabels: Record<OfferteStatus, string> = {
   geaccepteerd: "Geaccepteerd",
   afgewezen: "Afgewezen",
   verlopen: "Verlopen",
+  geconverteerd_extern: "Andere optie gekozen",
 };
 
 const statusColors: Record<OfferteStatus, string> = {
@@ -41,6 +42,7 @@ const statusColors: Record<OfferteStatus, string> = {
   geaccepteerd: "bg-success-light text-success",
   afgewezen: "bg-error-light text-error",
   verlopen: "bg-warning-light text-warning-foreground",
+  geconverteerd_extern: "bg-info-light text-info",
 };
 
 // Using shared OfferteRegel from @/types/offerte
