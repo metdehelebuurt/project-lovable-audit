@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       opdracht_id, ontvanger_email,
+      cc, bcc,
       html_body, subject: customSubject, attachment_path, attachment_filename,
     } = body;
 
@@ -63,6 +64,8 @@ Deno.serve(async (req) => {
 
     await sendPartnerEmail({
       adminClient, partnerId: userRow.partner_id, to: ontvanger_email,
+      cc: Array.isArray(cc) ? cc : [],
+      bcc: Array.isArray(bcc) ? bcc : [],
       subject, html, attachment, type: "orderbevestiging",
       klantId: opdracht.klant_id || null, verzondenDoorId: userId,
     });
