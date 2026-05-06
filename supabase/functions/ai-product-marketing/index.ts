@@ -73,75 +73,110 @@ Certificeringen: ${product.certificeringen ?? "—"}
 Bestaande omschrijving: ${product.omschrijving ?? "—"}
 Specs: ${JSON.stringify(product.specs ?? {})}`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "lever_marketing_content",
-              description: "Lever de marketing-content voor de productpagina.",
-              parameters: {
+    const tool = {
+      type: "function" as const,
+      function: {
+        name: "lever_marketing_content",
+        description: "Lever de marketing-content voor de productpagina.",
+        parameters: {
+          type: "object",
+          properties: {
+            pitch: { type: "string" },
+            omschrijving: { type: "string" },
+            usps: { type: "array", items: { type: "string" } },
+            faq: {
+              type: "array",
+              items: {
                 type: "object",
-                properties: {
-                  pitch: { type: "string", maxLength: 160 },
-                  omschrijving: { type: "string" },
-                  usps: { type: "array", items: { type: "string", maxLength: 80 }, minItems: 3, maxItems: 6 },
-                  faq: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: { vraag: { type: "string" }, antwoord: { type: "string" } },
-                      required: ["vraag", "antwoord"],
-                      additionalProperties: false,
-                    },
-                    minItems: 3,
-                    maxItems: 6,
-                  },
-                },
-                required: ["pitch", "omschrijving", "usps", "faq"],
+                properties: { vraag: { type: "string" }, antwoord: { type: "string" } },
+                required: ["vraag", "antwoord"],
                 additionalProperties: false,
               },
             },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "lever_marketing_content" } },
-      }),
-    });
+          required: ["pitch", "omschrijving", "usps", "faq"],
+          additionalProperties: false,
+        },
+      },
+    };
 
-    if (aiResp.status === 429) return json({ error: "Te veel verzoeken — probeer over een minuut opnieuw." }, 429);
-    if (aiResp.status === 402) return json({ error: "AI-tegoed op. Vul je workspace-credits aan." }, 402);
+    const modellen = ["google/gemini-2.5-flash", "google/gemini-2.5-flash-lite"];
+    let parsed: any = null;
+    let laatsteFout = "";
 
-    if (!aiResp.ok) {
-      const txt = await aiResp.text();
-      console.error("AI gateway error:", aiResp.status, txt);
-      return json({ error: "AI-aanroep mislukt" }, 500);
+    for (const model of modellen) {
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+          tools: [tool],
+          tool_choice: { type: "function", function: { name: "lever_marketing_content" } },
+        }),
+      });
+
+      if (aiResp.status === 429) return json({ error: "Te veel verzoeken — probeer over een minuut opnieuw." }, 429);
+      if (aiResp.status === 402) return json({ error: "AI-tegoed op. Vul je workspace-credits aan." }, 402);
+
+      if (!aiResp.ok) {
+        laatsteFout = await aiResp.text();
+        console.error(`AI gateway error (${model}):`, aiResp.status, laatsteFout);
+        continue;
+      }
+
+      const aiJson = await aiResp.json();
+      const msg = aiJson?.choices?.[0]?.message;
+      const args = msg?.tool_calls?.[0]?.function?.arguments;
+
+      if (args) {
+        try {
+          parsed = typeof args === "string" ? JSON.parse(args) : args;
+          break;
+        } catch (e) {
+          laatsteFout = `Parse-fout: ${(e as Error).message}`;
+          console.error(laatsteFout, args);
+          continue;
+        }
+      }
+
+      // Fallback: sommige modellen leveren JSON in content
+      const content = typeof msg?.content === "string" ? msg.content : "";
+      if (content) {
+        const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+        try {
+          parsed = JSON.parse(cleaned);
+          break;
+        } catch {
+          laatsteFout = "Onverwacht AI-antwoord (geen tool-call, geen JSON)";
+          console.error(laatsteFout, content.slice(0, 500));
+        }
+      }
     }
 
-    const aiJson = await aiResp.json();
-    const toolCall = aiJson?.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      return json({ error: "Onverwacht AI-antwoord" }, 500);
+    if (!parsed) {
+      return json({ error: `AI-aanroep mislukt: ${laatsteFout || "geen bruikbaar antwoord"}` }, 500);
     }
 
-    let parsed: any;
-    try {
-      parsed = JSON.parse(toolCall.function.arguments);
-    } catch {
-      return json({ error: "AI-antwoord kon niet worden verwerkt" }, 500);
-    }
+    // Normaliseer
+    const result = {
+      pitch: typeof parsed.pitch === "string" ? parsed.pitch.slice(0, 200) : "",
+      omschrijving: typeof parsed.omschrijving === "string" ? parsed.omschrijving : "",
+      usps: Array.isArray(parsed.usps) ? parsed.usps.filter((u: unknown) => typeof u === "string") : [],
+      faq: Array.isArray(parsed.faq)
+        ? parsed.faq
+            .filter((f: any) => f && typeof f.vraag === "string" && typeof f.antwoord === "string")
+            .map((f: any) => ({ vraag: f.vraag, antwoord: f.antwoord }))
+        : [],
+    };
 
-    return json(parsed, 200);
+    return json(result, 200);
   } catch (e: any) {
     console.error("ai-product-marketing error:", e);
     return json({ error: e?.message ?? "Onbekende fout" }, 500);
