@@ -7287,6 +7287,7 @@ export type Database = {
         | "calculator_isolatie"
         | "calculator_laadpaal"
         | "calculator_thuisbatterij"
+        | "productcatalogus"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7579,6 +7580,7 @@ export const Constants = {
         "calculator_isolatie",
         "calculator_laadpaal",
         "calculator_thuisbatterij",
+        "productcatalogus",
       ],
     },
   },
