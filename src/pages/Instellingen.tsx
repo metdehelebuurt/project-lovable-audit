@@ -12,6 +12,7 @@ import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotific
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
 import NummerreeksConfig from "@/components/instellingen/NummerreeksConfig";
 import InkoopInstellingenForm from "@/components/instellingen/InkoopInstellingenForm";
+import WebtoolsApiInstellingen from "@/components/instellingen/WebtoolsApiInstellingen";
 import InstallateurVoorkeurenForm from "@/components/oplever/InstallateurVoorkeurenForm";
 import MijnEmailKoppeling from "@/components/instellingen/MijnEmailKoppeling";
 import InboxZichtbaarheidBeheer from "@/components/instellingen/InboxZichtbaarheidBeheer";
@@ -69,6 +70,7 @@ const Instellingen = () => {
     { id: "email-templates", label: "E-mailtemplates", icon: Mail, roles: ADMIN_ROLLEN },
     { id: "producten", label: "Producten", icon: Package, roles: ADMIN_ROLLEN },
     { id: "offertes", label: "Offertes", icon: FileText, roles: ADMIN_ROLLEN },
+    { id: "webtools-api", label: "Webtools & API", icon: Globe, roles: ADMIN_ROLLEN },
     { id: "leads", label: "Leads", icon: Users, roles: ADMIN_ROLLEN },
     { id: "schouwen", label: "Schouwen", icon: ClipboardList, roles: ADMIN_ROLLEN },
     { id: "inkoop", label: "Inkoop", icon: ShoppingCart, roles: ADMIN_ROLLEN },
@@ -128,6 +130,7 @@ const Instellingen = () => {
             </div>
           )}
           {activeTab === "producten" && isPartnerAdmin && profile?.partner_id && <ProductenInstellingen partnerId={profile.partner_id} />}
+          {activeTab === "webtools-api" && isPartnerAdmin && profile?.partner_id && <WebtoolsApiInstellingen />}
           {activeTab === "leads" && isPartnerAdmin && profile?.partner_id && <LeadBronnenConfig partnerId={profile.partner_id} />}
           {activeTab === "schouwen" && isPartnerAdmin && profile?.partner_id && <SchouwInstellingen partnerId={profile.partner_id} />}
           {activeTab === "inkoop" && isPartnerAdmin && profile?.partner_id && <InkoopInstellingenForm partnerId={profile.partner_id} />}
