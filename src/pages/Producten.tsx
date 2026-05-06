@@ -136,6 +136,24 @@ const Producten = () => {
     },
   });
 
+  const { data: partnerMerken = [] } = useQuery({
+    queryKey: ["partner-merken-namen", profile?.partner_id],
+    enabled: !!profile?.partner_id,
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("partner_merken" as never) as any)
+        .select("merk")
+        .eq("partner_id", profile!.partner_id!)
+        .order("merk", { ascending: true });
+      if (error) return [];
+      return Array.from(new Set(((data ?? []) as { merk: string }[]).map(r => r.merk).filter(Boolean)));
+    },
+  });
+
+  const merkSuggesties = Array.from(new Set([
+    ...partnerMerken,
+    ...producten.map(p => p.merk).filter((m): m is string => !!m && m.trim() !== ""),
+  ])).sort((a, b) => a.localeCompare(b));
+
   const actief = producten.filter(p => p.status === "actief").length;
   const uitgefaseerd = producten.filter(p => p.status === "uitgefaseerd").length;
   const totaalWaarde = producten.reduce((sum, p) => sum + Number(p.prijs_excl_btw), 0);
@@ -376,6 +394,7 @@ const Producten = () => {
           onSubmit={handleSubmit}
           categorieLabels={categorieLabels}
           statusLabels={statusLabels}
+          merken={merkSuggesties}
         />
       )}
 
