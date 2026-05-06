@@ -177,7 +177,6 @@ export default function ProductcatalogusCard() {
             <TabsList>
               <TabsTrigger value="publiek">Publieke pagina</TabsTrigger>
               <TabsTrigger value="embed">Embed</TabsTrigger>
-              <TabsTrigger value="api">REST API</TabsTrigger>
             </TabsList>
 
             {/* Publieke URL */}
@@ -257,15 +256,13 @@ export default function ProductcatalogusCard() {
               )}
             </TabsContent>
 
-            {/* REST API tokens */}
-            <TabsContent value="api" className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Headless toegang tot je catalogus en lead-endpoint via REST. Beheer hier je tokens.
-              </p>
-              <ApiTokensManager />
-            </TabsContent>
           </Tabs>
         </FeatureGate>
+
+        {/* REST API tokens — altijd beschikbaar voor partner_admin, los van webshop add-on */}
+        <div className="mt-6 pt-6 border-t">
+          <ApiTokensManager />
+        </div>
       </CardContent>
     </Card>
   );
