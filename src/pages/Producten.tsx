@@ -22,6 +22,9 @@ import ProductImage from "@/components/producten/ProductImage";
 import ProductImageUpload from "@/components/producten/ProductImageUpload";
 import SpecsEditor from "@/components/producten/SpecsEditor";
 import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
+import BulkWebsiteToggle from "@/components/producten/website/BulkWebsiteToggle";
+import { hasFeature } from "@/lib/abonnementFeatures";
+import { Globe } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 type ProductInsert = Database["public"]["Tables"]["producten"]["Insert"];
