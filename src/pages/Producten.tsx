@@ -133,6 +133,8 @@ function isDuplicate(product: AIProduct, existingNames: string[]): boolean {
 const Producten = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { hasFeature } = useSubscriptionLimits();
+  const hasWebshopModule = hasFeature("webshop_module");
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string>("alle");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -608,6 +610,14 @@ const Producten = () => {
       )}
 
       {/* Product table */}
+      {canEdit && (
+        <BulkWebsiteToggle
+          producten={producten}
+          partnerId={profile?.partner_id}
+          hasWebshopModule={hasWebshopModule}
+          categorieLabels={categorieLabels}
+        />
+      )}
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row gap-3">
