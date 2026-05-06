@@ -5201,6 +5201,7 @@ export type Database = {
           mollie_mandate_status: string | null
           naam: string
           notities: string | null
+          partner_slug: string | null
           plaats: string | null
           postcode: string | null
           primaire_kleur: string | null
@@ -5257,6 +5258,7 @@ export type Database = {
           mollie_mandate_status?: string | null
           naam: string
           notities?: string | null
+          partner_slug?: string | null
           plaats?: string | null
           postcode?: string | null
           primaire_kleur?: string | null
@@ -5313,6 +5315,7 @@ export type Database = {
           mollie_mandate_status?: string | null
           naam?: string
           notities?: string | null
+          partner_slug?: string | null
           plaats?: string | null
           postcode?: string | null
           primaire_kleur?: string | null
@@ -6684,6 +6687,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_partner_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          id: string
+          logo_url: string
+          logo_url_donker: string
+          naam: string
+          partner_slug: string
+          primaire_kleur: string
+          website: string
+        }[]
+      }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -6773,6 +6788,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      slugify_partner_naam: { Args: { _naam: string }; Returns: string }
       suggest_leverancier: {
         Args: { _partner_id: string; _product_id: string }
         Returns: {
