@@ -160,11 +160,11 @@ export const ApiTokensManager = () => {
     // Step 2: POST /leads with a test payload
     try {
       const payload = {
-        naam: "API Test Lead",
+        voornaam: "API",
+        achternaam: "Test",
         email: `apitest+${Date.now()}@mijnhuis.nu`,
         telefoon: "0600000000",
-        bron: "api_test",
-        notitie: "Automatisch aangemaakt via testknop in Lovable.",
+        bericht: "Automatisch aangemaakte testlead via tokenvalidator.",
       };
       const res = await fetch(`${API_BASE}/leads`, {
         method: "POST",
@@ -176,8 +176,11 @@ export const ApiTokensManager = () => {
       });
       const body = await res.json().catch(() => ({}));
       if (res.ok) {
-        const id = body?.data?.id ?? body?.id ?? "onbekend";
-        updateStep(1, { status: "ok", detail: `Lead aangemaakt (id: ${String(id).slice(0, 8)}…)` });
+        const id = body?.lead_id ?? body?.data?.id ?? body?.id ?? "onbekend";
+        updateStep(1, {
+          status: "ok",
+          detail: `Lead aangemaakt (id: ${String(id).slice(0, 8)}…) — controleer Leads-overzicht`,
+        });
       } else {
         const detail =
           typeof body?.error === "string"
