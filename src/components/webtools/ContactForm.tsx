@@ -10,6 +10,8 @@ interface ContactFormProps {
   primaryColor?: string;
   ctaText?: string;
   calculatorResultaat?: Record<string, unknown>;
+  productId?: string;
+  productNaam?: string;
   onSuccess?: () => void;
 }
 
@@ -18,6 +20,8 @@ export const ContactForm = ({
   primaryColor = "#5B58E1",
   ctaText = "Verstuur aanvraag",
   calculatorResultaat,
+  productId,
+  productNaam,
   onSuccess,
 }: ContactFormProps) => {
   const [form, setForm] = useState({
@@ -58,6 +62,8 @@ export const ContactForm = ({
             widget_id: widgetId,
             ...form,
             calculator_resultaat: calculatorResultaat,
+            product_id: productId,
+            product_naam: productNaam,
           }),
         }
       );
