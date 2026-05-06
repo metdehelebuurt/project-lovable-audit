@@ -1200,34 +1200,40 @@ export type Database = {
       }
       email_templates: {
         Row: {
+          bijlage_default: boolean
           created_at: string
           html_body: string
           id: string
           naam: string
           onderwerp: string
           partner_id: string
+          sleutel: string | null
           standaard: boolean | null
           type: string
           updated_at: string
         }
         Insert: {
+          bijlage_default?: boolean
           created_at?: string
           html_body: string
           id?: string
           naam: string
           onderwerp: string
           partner_id: string
+          sleutel?: string | null
           standaard?: boolean | null
           type?: string
           updated_at?: string
         }
         Update: {
+          bijlage_default?: boolean
           created_at?: string
           html_body?: string
           id?: string
           naam?: string
           onderwerp?: string
           partner_id?: string
+          sleutel?: string | null
           standaard?: boolean | null
           type?: string
           updated_at?: string
