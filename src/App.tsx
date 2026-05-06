@@ -94,6 +94,7 @@ import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
 import EmbedCatalogus from "@/pages/embed/EmbedCatalogus";
+import PublicCatalogus from "@/pages/public/PublicCatalogus";
 import MerkenBeheer from "@/pages/MerkenBeheer";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
