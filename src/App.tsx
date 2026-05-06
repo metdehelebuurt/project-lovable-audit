@@ -94,6 +94,7 @@ import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
 import EmbedCatalogus from "@/pages/embed/EmbedCatalogus";
+import MerkenBeheer from "@/pages/MerkenBeheer";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
 import FeatureOffertes from "@/pages/website/FeatureOffertes";
@@ -202,6 +203,9 @@ const App = () => (
               } />
               <Route path="/producten/:id/website" element={
                 <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><ProductWebsite /></ProtectedRoute>
+              } />
+              <Route path="/producten/merken" element={
+                <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><MerkenBeheer /></ProtectedRoute>
               } />
               <Route path="/voorraad" element={
                 <ProtectedRoute moduleKey="voorraad" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Voorraad /></ProtectedRoute>

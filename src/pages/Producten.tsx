@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X, FileText, BookOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X, FileText, BookOpen, Tag } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
 import ProductImage from "@/components/producten/ProductImage";
@@ -403,6 +403,9 @@ const Producten = () => {
             />
             <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="rounded-pill gap-2">
               <Sparkles className="h-4 w-4" /> AI Import
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/producten/merken")} className="rounded-pill gap-2">
+              <Tag className="h-4 w-4" /> Merken
             </Button>
             <Button onClick={openCreate} className="rounded-pill gap-2">
               <Plus className="h-4 w-4" /> Nieuw Product

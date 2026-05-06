@@ -10,6 +10,8 @@ interface Props {
   categorieen: string[];
   primaryColor: string;
   onSelect: (p: EmbedProduct) => void;
+  compareIds: string[];
+  onToggleCompare: (p: EmbedProduct) => void;
 }
 
 export const CatalogusOverview = ({
@@ -18,6 +20,8 @@ export const CatalogusOverview = ({
   categorieen,
   primaryColor,
   onSelect,
+  compareIds,
+  onToggleCompare,
 }: Props) => {
   const [zoek, setZoek] = useState("");
   const [merkFilter, setMerkFilter] = useState<string | null>(null);
@@ -77,6 +81,9 @@ export const CatalogusOverview = ({
               product={p}
               primaryColor={primaryColor}
               onClick={() => onSelect(p)}
+              isComparing={compareIds.includes(p.id)}
+              compareDisabled={compareIds.length >= 3}
+              onToggleCompare={() => onToggleCompare(p)}
             />
           ))}
         </div>
