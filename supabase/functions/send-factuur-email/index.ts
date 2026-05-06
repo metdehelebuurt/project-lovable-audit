@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     const {
       financieel_document_id, ontvanger_email,
       html_body, subject: customSubject, attachment_path, attachment_filename,
-      is_resend,
+      is_resend, cc, bcc,
     } = body;
 
     if (!financieel_document_id || !ontvanger_email) {
@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
 
     await sendPartnerEmail({
       adminClient, partnerId: userRow.partner_id, to: ontvanger_email,
+      cc: Array.isArray(cc) ? cc : [],
+      bcc: Array.isArray(bcc) ? bcc : [],
       subject, html, attachment, type: emailType,
       klantId: doc.klant_id || null, verzondenDoorId: userId,
     });
