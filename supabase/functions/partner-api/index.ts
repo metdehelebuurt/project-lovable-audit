@@ -61,17 +61,101 @@ Deno.serve(async (req) => {
   }
   const partnerId: string = row.partner_id;
 
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const buildStorageUrl = (path: string | null | undefined): string | null => {
+    if (!path) return null;
+    if (typeof path !== "string") return null;
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    return `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}`;
+  };
+  const mapAfbeeldingen = (val: unknown): string[] => {
+    if (!Array.isArray(val)) return [];
+    return val
+      .map((v) => {
+        if (typeof v === "string") return buildStorageUrl(v);
+        if (v && typeof v === "object") {
+          const obj = v as Record<string, unknown>;
+          const cand = obj.url ?? obj.path ?? obj.src;
+          return typeof cand === "string" ? buildStorageUrl(cand) : null;
+        }
+        return null;
+      })
+      .filter((u): u is string => Boolean(u));
+  };
+  const mapProduct = (p: Record<string, any>) => ({
+    id: p.id,
+    naam: p.naam,
+    merk: p.merk,
+    model: p.model,
+    categorie: p.categorie,
+    omschrijving: p.omschrijving,
+    prijs_excl_btw: p.prijs_excl_btw,
+    btw_percentage: p.btw_percentage,
+    eenheid: p.eenheid,
+    product_code: p.product_code,
+    artikelnummer: p.artikelnummer,
+    ean_code: p.ean_code,
+    levertijd: p.levertijd,
+    garantie_jaren: p.garantie_jaren,
+    certificeringen: p.certificeringen,
+    installatie_instructies: p.installatie_instructies,
+    onderhoud: p.onderhoud,
+    specs: p.specs ?? {},
+    website_slug: p.website_slug,
+    website_pitch: p.website_pitch,
+    website_omschrijving: p.website_omschrijving,
+    website_usps: p.website_usps ?? [],
+    website_faq: p.website_faq ?? [],
+    afbeelding_url: buildStorageUrl(p.afbeelding_url),
+    afbeeldingen: mapAfbeeldingen(p.afbeeldingen),
+    datasheet: p.datasheet_url
+      ? { url: buildStorageUrl(p.datasheet_url), type: p.datasheet_type ?? null }
+      : null,
+    installatie_handleiding: p.installatie_handleiding_url
+      ? {
+          url: buildStorageUrl(p.installatie_handleiding_url),
+          bestandsnaam: p.installatie_handleiding_naam ?? null,
+        }
+      : null,
+    gebruiker_handleiding: p.gebruiker_handleiding_url
+      ? {
+          url: buildStorageUrl(p.gebruiker_handleiding_url),
+          bestandsnaam: p.gebruiker_handleiding_naam ?? null,
+        }
+      : null,
+  });
+
+  const PRODUCT_COLUMNS =
+    "id, naam, merk, model, categorie, omschrijving, prijs_excl_btw, btw_percentage, eenheid, product_code, artikelnummer, ean_code, levertijd, garantie_jaren, certificeringen, installatie_instructies, onderhoud, specs, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, afbeelding_url, afbeeldingen, datasheet_url, datasheet_type, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam";
+
   try {
     if (req.method === "GET" && (subPath === "products" || subPath === "")) {
       const { data, error } = await supabase
         .from("producten_publiek")
-        .select(
-          "id, naam, merk, categorie, afbeelding_url, prijs_excl_btw, btw_percentage, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, garantie_jaren"
-        )
+        .select(PRODUCT_COLUMNS)
         .eq("partner_id", partnerId)
         .eq("toon_op_website", true);
       if (error) throw error;
-      return json({ data });
+      return json({ data: (data ?? []).map(mapProduct) });
+    }
+
+    // GET /partner-api/products/:id  of  /partner-api/products/slug/:slug
+    if (req.method === "GET" && subPath.startsWith("products/")) {
+      const rest = subPath.slice("products/".length);
+      let query = supabase
+        .from("producten_publiek")
+        .select(PRODUCT_COLUMNS)
+        .eq("partner_id", partnerId)
+        .eq("toon_op_website", true);
+      if (rest.startsWith("slug/")) {
+        query = query.eq("website_slug", rest.slice("slug/".length));
+      } else {
+        query = query.eq("id", rest);
+      }
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ error: "not_found" }, 404);
+      return json({ data: mapProduct(data as Record<string, any>) });
     }
 
     if (req.method === "GET" && subPath === "brands") {
