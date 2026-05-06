@@ -93,6 +93,7 @@ import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
 
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
+import EmbedCatalogus from "@/pages/embed/EmbedCatalogus";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
 import FeatureOffertes from "@/pages/website/FeatureOffertes";
@@ -132,6 +133,7 @@ const App = () => (
             <Route path="/oplevering/:token" element={<OpleverKlantOndertekenen />} />
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
             <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
+            <Route path="/embed/catalogus/:widgetId" element={<EmbedCatalogus />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
