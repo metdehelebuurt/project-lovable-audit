@@ -121,6 +121,10 @@ export default function OfferteEmailEditor({
     if (open) {
       setSent(false);
       setFeedbackScore(null);
+      setCc("");
+      setBcc("");
+      setShowCc(false);
+      setShowBcc(false);
       void generatePdf();
     } else {
       setPdf({ status: "idle" });
