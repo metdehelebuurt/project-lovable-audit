@@ -1,12 +1,26 @@
 import { Link } from "react-router-dom";
+import { Copy, Check } from "lucide-react";
+import { useState } from "react";
 
 import { ApiTokensManager } from "@/components/webtools/ApiTokensManager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CopyButton } from "@/components/ui/copy-button";
+import { toast } from "sonner";
 
 export default function WebtoolsApiInstellingen() {
   const apiBaseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/partner-api`;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(apiBaseUrl);
+      setCopied(true);
+      toast.success("API base URL gekopieerd");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Kopiëren mislukt");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -24,7 +38,9 @@ export default function WebtoolsApiInstellingen() {
               <code className="flex-1 rounded bg-background border px-2 py-1.5 text-xs break-all">
                 {apiBaseUrl}
               </code>
-              <CopyButton value={apiBaseUrl} />
+              <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               Gebruik deze URL als basis voor alle endpoints, bijvoorbeeld
