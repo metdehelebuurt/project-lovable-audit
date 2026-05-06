@@ -6912,6 +6912,7 @@ export type Database = {
         | "geaccepteerd"
         | "afgewezen"
         | "verlopen"
+        | "geconverteerd_extern"
       opdracht_status:
         | "nieuw"
         | "bevestigd"
@@ -7185,6 +7186,7 @@ export const Constants = {
         "geaccepteerd",
         "afgewezen",
         "verlopen",
+        "geconverteerd_extern",
       ],
       opdracht_status: [
         "nieuw",
