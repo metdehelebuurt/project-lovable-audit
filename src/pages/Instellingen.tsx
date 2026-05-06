@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { optimaliseerAfbeelding } from "@/lib/imageOptimizer";
 import SchouwInstellingen from "@/components/instellingen/SchouwInstellingen";
 import PartnerAbonnement from "@/components/abonnementen/PartnerAbonnement";
+import AbonnementZichtbaarheid from "@/components/abonnementen/AbonnementZichtbaarheid";
 import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
 import BetalingsvoorwaardenConfig from "@/components/instellingen/BetalingsvoorwaardenConfig";
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
@@ -138,7 +139,12 @@ const Instellingen = () => {
               <InboxZichtbaarheidBeheer partnerId={profile.partner_id} />
             </div>
           )}
-          {activeTab === "abonnement" && isPartnerAdmin && profile?.partner_id && <PartnerAbonnement />}
+          {activeTab === "abonnement" && isPartnerAdmin && profile?.partner_id && (
+            <div className="space-y-6">
+              <AbonnementZichtbaarheid />
+              <PartnerAbonnement />
+            </div>
+          )}
           {activeTab === "privacy" && <PrivacyTab isSuperOrPartner={isSuperOrPartner} />}
         </div>
       </div>
