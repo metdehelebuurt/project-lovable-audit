@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Crown, Sparkles, ExternalLink } from "lucide-react";
-import { ALL_PLAN_FEATURES, FEATURE_BY_KEY } from "@/lib/abonnementFeatures";
+import { FEATURE_BY_KEY } from "@/lib/abonnementFeatures";
 import { MODULES } from "@/lib/modules";
 
 interface AddonAankoop {
@@ -247,6 +247,3 @@ export default function AbonnementZichtbaarheid() {
     </div>
   );
 }
-
-// Stille re-export om unused warning op ALL_PLAN_FEATURES te voorkomen indien tree-shake
-export const _ALL_PLAN_FEATURES_REF = ALL_PLAN_FEATURES.length;
