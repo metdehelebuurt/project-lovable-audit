@@ -3220,6 +3220,289 @@ export type Database = {
           },
         ]
       }
+      keuring_checklist_items: {
+        Row: {
+          antwoord: string | null
+          beoordeeld_op: string | null
+          blokkerend: boolean
+          categorie: string
+          created_at: string
+          foto_pad: string | null
+          id: string
+          keuring_id: string
+          label: string
+          meetwaarde: string | null
+          norm_referentie: string | null
+          opmerking: string | null
+          partner_id: string
+          volgorde: number
+        }
+        Insert: {
+          antwoord?: string | null
+          beoordeeld_op?: string | null
+          blokkerend?: boolean
+          categorie: string
+          created_at?: string
+          foto_pad?: string | null
+          id?: string
+          keuring_id: string
+          label: string
+          meetwaarde?: string | null
+          norm_referentie?: string | null
+          opmerking?: string | null
+          partner_id: string
+          volgorde?: number
+        }
+        Update: {
+          antwoord?: string | null
+          beoordeeld_op?: string | null
+          blokkerend?: boolean
+          categorie?: string
+          created_at?: string
+          foto_pad?: string | null
+          id?: string
+          keuring_id?: string
+          label?: string
+          meetwaarde?: string | null
+          norm_referentie?: string | null
+          opmerking?: string | null
+          partner_id?: string
+          volgorde?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keuring_checklist_items_keuring_id_fkey"
+            columns: ["keuring_id"]
+            isOneToOne: false
+            referencedRelation: "keuringen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keuring_intervallen: {
+        Row: {
+          auto_volgende: boolean
+          created_at: string
+          herinner_dagen_vooraf: number
+          id: string
+          interval_maanden: number
+          partner_id: string
+          type: Database["public"]["Enums"]["keuring_type"]
+          updated_at: string
+        }
+        Insert: {
+          auto_volgende?: boolean
+          created_at?: string
+          herinner_dagen_vooraf?: number
+          id?: string
+          interval_maanden?: number
+          partner_id: string
+          type: Database["public"]["Enums"]["keuring_type"]
+          updated_at?: string
+        }
+        Update: {
+          auto_volgende?: boolean
+          created_at?: string
+          herinner_dagen_vooraf?: number
+          id?: string
+          interval_maanden?: number
+          partner_id?: string
+          type?: Database["public"]["Enums"]["keuring_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      keuring_pdf_versies: {
+        Row: {
+          bestandsgrootte: number | null
+          created_at: string
+          gegenereerd_door: string | null
+          id: string
+          keuring_id: string
+          partner_id: string
+          pdf_hash: string | null
+          pdf_path: string
+          reden: string | null
+          status_op_moment: string | null
+          versie: number
+        }
+        Insert: {
+          bestandsgrootte?: number | null
+          created_at?: string
+          gegenereerd_door?: string | null
+          id?: string
+          keuring_id: string
+          partner_id: string
+          pdf_hash?: string | null
+          pdf_path: string
+          reden?: string | null
+          status_op_moment?: string | null
+          versie: number
+        }
+        Update: {
+          bestandsgrootte?: number | null
+          created_at?: string
+          gegenereerd_door?: string | null
+          id?: string
+          keuring_id?: string
+          partner_id?: string
+          pdf_hash?: string | null
+          pdf_path?: string
+          reden?: string | null
+          status_op_moment?: string | null
+          versie?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keuring_pdf_versies_keuring_id_fkey"
+            columns: ["keuring_id"]
+            isOneToOne: false
+            referencedRelation: "keuringen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keuring_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          naam: string
+          partner_id: string
+          structuur: Json
+          type: Database["public"]["Enums"]["keuring_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          naam: string
+          partner_id: string
+          structuur?: Json
+          type: Database["public"]["Enums"]["keuring_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          naam?: string
+          partner_id?: string
+          structuur?: Json
+          type?: Database["public"]["Enums"]["keuring_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      keuringen: {
+        Row: {
+          aanbevelingen: string | null
+          conclusie: string | null
+          created_at: string
+          created_by: string | null
+          geplande_datum: string
+          handtekening_klant: string | null
+          handtekening_klant_naam: string | null
+          handtekening_monteur: string | null
+          herinnering_verstuurd_op: string | null
+          id: string
+          installatie_id: string | null
+          keuringnummer: string | null
+          klant_id: string | null
+          locatie_adres: string | null
+          locatie_plaats: string | null
+          locatie_postcode: string | null
+          next_keuring_id: string | null
+          normenkader: string[]
+          object_omschrijving: string | null
+          partner_id: string
+          pdf_gegenereerd_op: string | null
+          pdf_hash: string | null
+          pdf_url: string | null
+          resultaat: Database["public"]["Enums"]["keuring_resultaat"] | null
+          score_percentage: number | null
+          status: Database["public"]["Enums"]["keuring_status"]
+          type: Database["public"]["Enums"]["keuring_type"]
+          uitgevoerd_door_certificering: string | null
+          uitgevoerd_door_id: string | null
+          uitgevoerd_door_naam: string | null
+          uitgevoerd_op: string | null
+          updated_at: string
+          volgende_keuring_datum: string | null
+        }
+        Insert: {
+          aanbevelingen?: string | null
+          conclusie?: string | null
+          created_at?: string
+          created_by?: string | null
+          geplande_datum: string
+          handtekening_klant?: string | null
+          handtekening_klant_naam?: string | null
+          handtekening_monteur?: string | null
+          herinnering_verstuurd_op?: string | null
+          id?: string
+          installatie_id?: string | null
+          keuringnummer?: string | null
+          klant_id?: string | null
+          locatie_adres?: string | null
+          locatie_plaats?: string | null
+          locatie_postcode?: string | null
+          next_keuring_id?: string | null
+          normenkader?: string[]
+          object_omschrijving?: string | null
+          partner_id: string
+          pdf_gegenereerd_op?: string | null
+          pdf_hash?: string | null
+          pdf_url?: string | null
+          resultaat?: Database["public"]["Enums"]["keuring_resultaat"] | null
+          score_percentage?: number | null
+          status?: Database["public"]["Enums"]["keuring_status"]
+          type: Database["public"]["Enums"]["keuring_type"]
+          uitgevoerd_door_certificering?: string | null
+          uitgevoerd_door_id?: string | null
+          uitgevoerd_door_naam?: string | null
+          uitgevoerd_op?: string | null
+          updated_at?: string
+          volgende_keuring_datum?: string | null
+        }
+        Update: {
+          aanbevelingen?: string | null
+          conclusie?: string | null
+          created_at?: string
+          created_by?: string | null
+          geplande_datum?: string
+          handtekening_klant?: string | null
+          handtekening_klant_naam?: string | null
+          handtekening_monteur?: string | null
+          herinnering_verstuurd_op?: string | null
+          id?: string
+          installatie_id?: string | null
+          keuringnummer?: string | null
+          klant_id?: string | null
+          locatie_adres?: string | null
+          locatie_plaats?: string | null
+          locatie_postcode?: string | null
+          next_keuring_id?: string | null
+          normenkader?: string[]
+          object_omschrijving?: string | null
+          partner_id?: string
+          pdf_gegenereerd_op?: string | null
+          pdf_hash?: string | null
+          pdf_url?: string | null
+          resultaat?: Database["public"]["Enums"]["keuring_resultaat"] | null
+          score_percentage?: number | null
+          status?: Database["public"]["Enums"]["keuring_status"]
+          type?: Database["public"]["Enums"]["keuring_type"]
+          uitgevoerd_door_certificering?: string | null
+          uitgevoerd_door_id?: string | null
+          uitgevoerd_door_naam?: string | null
+          uitgevoerd_op?: string | null
+          updated_at?: string
+          volgende_keuring_datum?: string | null
+        }
+        Relationships: []
+      }
       klant_notities: {
         Row: {
           created_at: string
@@ -6680,6 +6963,7 @@ export type Database = {
         Args: { _partner_id: string }
         Returns: string
       }
+      generate_keuringnummer: { Args: { _partner_id: string }; Returns: string }
       generate_rma_nummer: { Args: { _partner_id: string }; Returns: string }
       get_gereserveerd: { Args: { _product_id: string }; Returns: number }
       get_my_email_account: {
@@ -6894,6 +7178,17 @@ export type Database = {
         | "gereed"
         | "afgerond"
         | "geannuleerd"
+      keuring_resultaat:
+        | "goedgekeurd"
+        | "goedgekeurd_met_opmerkingen"
+        | "afgekeurd"
+      keuring_status:
+        | "gepland"
+        | "in_uitvoering"
+        | "afgerond"
+        | "achterstallig"
+        | "geannuleerd"
+      keuring_type: "zonnepanelen" | "thuisbatterij" | "combi"
       lead_status:
         | "nieuw"
         | "gekwalificeerd"
@@ -7167,6 +7462,19 @@ export const Constants = {
         "afgerond",
         "geannuleerd",
       ],
+      keuring_resultaat: [
+        "goedgekeurd",
+        "goedgekeurd_met_opmerkingen",
+        "afgekeurd",
+      ],
+      keuring_status: [
+        "gepland",
+        "in_uitvoering",
+        "afgerond",
+        "achterstallig",
+        "geannuleerd",
+      ],
+      keuring_type: ["zonnepanelen", "thuisbatterij", "combi"],
       lead_status: [
         "nieuw",
         "gekwalificeerd",
