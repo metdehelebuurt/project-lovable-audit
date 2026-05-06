@@ -4945,6 +4945,102 @@ export type Database = {
           },
         ]
       }
+      partner_api_rate_log: {
+        Row: {
+          count: number
+          minute_bucket: string
+          partner_id: string
+        }
+        Insert: {
+          count?: number
+          minute_bucket: string
+          partner_id: string
+        }
+        Update: {
+          count?: number
+          minute_bucket?: string
+          partner_id?: string
+        }
+        Relationships: []
+      }
+      partner_api_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          last_used_at: string | null
+          partner_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          token_hash: string
+          token_prefix: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          partner_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash: string
+          token_prefix: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          partner_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash?: string
+          token_prefix?: string
+        }
+        Relationships: []
+      }
+      partner_merken: {
+        Row: {
+          created_at: string
+          id: string
+          intro_html: string | null
+          logo_url: string | null
+          merk: string
+          partner_id: string
+          slug: string
+          toon_op_website: boolean
+          updated_at: string
+          volgorde: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intro_html?: string | null
+          logo_url?: string | null
+          merk: string
+          partner_id: string
+          slug: string
+          toon_op_website?: boolean
+          updated_at?: string
+          volgorde?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intro_html?: string | null
+          logo_url?: string | null
+          merk?: string
+          partner_id?: string
+          slug?: string
+          toon_op_website?: boolean
+          updated_at?: string
+          volgorde?: number
+        }
+        Relationships: []
+      }
       partner_product_datasheets: {
         Row: {
           created_at: string
@@ -5336,8 +5432,15 @@ export type Database = {
           product_code: string | null
           specs: Json | null
           status: Database["public"]["Enums"]["product_status"]
+          toon_op_website: boolean
           updated_at: string
           voorraad: number | null
+          website_ai_gegenereerd: boolean
+          website_faq: Json
+          website_omschrijving: string | null
+          website_pitch: string | null
+          website_slug: string | null
+          website_usps: Json
         }
         Insert: {
           afbeelding_url?: string | null
@@ -5375,8 +5478,15 @@ export type Database = {
           product_code?: string | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"]
+          toon_op_website?: boolean
           updated_at?: string
           voorraad?: number | null
+          website_ai_gegenereerd?: boolean
+          website_faq?: Json
+          website_omschrijving?: string | null
+          website_pitch?: string | null
+          website_slug?: string | null
+          website_usps?: Json
         }
         Update: {
           afbeelding_url?: string | null
@@ -5414,8 +5524,15 @@ export type Database = {
           product_code?: string | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"]
+          toon_op_website?: boolean
           updated_at?: string
           voorraad?: number | null
+          website_ai_gegenereerd?: boolean
+          website_faq?: Json
+          website_omschrijving?: string | null
+          website_pitch?: string | null
+          website_slug?: string | null
+          website_usps?: Json
         }
         Relationships: [
           {
@@ -6215,6 +6332,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webshop_lead_bron: {
+        Row: {
+          bron: string
+          created_at: string
+          id: string
+          lead_id: string
+          partner_id: string
+          product_id: string | null
+          product_naam: string | null
+          widget_id: string | null
+        }
+        Insert: {
+          bron?: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          partner_id: string
+          product_id?: string | null
+          product_naam?: string | null
+          widget_id?: string | null
+        }
+        Update: {
+          bron?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          partner_id?: string
+          product_id?: string | null
+          product_naam?: string | null
+          widget_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
