@@ -33,8 +33,12 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Niet ingelogd" }, 401);
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: claimsRes, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsRes?.claims?.sub) {
+      return json({ error: "Niet ingelogd" }, 401);
+    }
+    const user = { id: claimsRes.claims.sub as string };
 
     const { product_id } = await req.json().catch(() => ({}));
     if (!product_id || typeof product_id !== "string") {
