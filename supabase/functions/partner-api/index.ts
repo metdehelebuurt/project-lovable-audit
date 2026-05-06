@@ -82,6 +82,17 @@ Deno.serve(async (req) => {
       })
       .filter((u): u is string => Boolean(u));
   };
+  const slugifyFilename = (s: string): string =>
+    (s || "bestand")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 80) || "bestand";
+  const buildDownloadUrl = (
+    productId: string,
+    kind: "datasheet" | "installatie-handleiding" | "gebruiker-handleiding",
+  ): string =>
+    `${SUPABASE_URL}/functions/v1/partner-api/products/${productId}/download/${kind}`;
   const mapProduct = (p: Record<string, any>) => ({
     id: p.id,
     naam: p.naam,
@@ -109,17 +120,24 @@ Deno.serve(async (req) => {
     afbeelding_url: buildStorageUrl(p.afbeelding_url),
     afbeeldingen: mapAfbeeldingen(p.afbeeldingen),
     datasheet: p.datasheet_url
-      ? { url: buildStorageUrl(p.datasheet_url), type: p.datasheet_type ?? null }
+      ? {
+          url: buildStorageUrl(p.datasheet_url),
+          download_url: buildDownloadUrl(p.id, "datasheet"),
+          bestandsnaam: `${slugifyFilename(p.naam ?? "datasheet")}-datasheet.pdf`,
+          type: p.datasheet_type ?? null,
+        }
       : null,
     installatie_handleiding: p.installatie_handleiding_url
       ? {
           url: buildStorageUrl(p.installatie_handleiding_url),
+          download_url: buildDownloadUrl(p.id, "installatie-handleiding"),
           bestandsnaam: p.installatie_handleiding_naam ?? null,
         }
       : null,
     gebruiker_handleiding: p.gebruiker_handleiding_url
       ? {
           url: buildStorageUrl(p.gebruiker_handleiding_url),
+          download_url: buildDownloadUrl(p.id, "gebruiker-handleiding"),
           bestandsnaam: p.gebruiker_handleiding_naam ?? null,
         }
       : null,
@@ -129,6 +147,49 @@ Deno.serve(async (req) => {
     "id, naam, merk, model, categorie, omschrijving, prijs_excl_btw, btw_percentage, eenheid, product_code, artikelnummer, ean_code, levertijd, garantie_jaren, certificeringen, installatie_instructies, onderhoud, specs, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, afbeelding_url, afbeeldingen, datasheet_url, datasheet_type, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam";
 
   try {
+    // GET /partner-api/products/:id/download/:kind  → 302 redirect met Content-Disposition hint
+    const downloadMatch = subPath.match(
+      /^products\/([^/]+)\/download\/(datasheet|installatie-handleiding|gebruiker-handleiding)$/,
+    );
+    if (req.method === "GET" && downloadMatch) {
+      const [, productId, kind] = downloadMatch;
+      const { data, error } = await supabase
+        .from("producten_publiek")
+        .select(
+          "id, naam, datasheet_url, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam",
+        )
+        .eq("partner_id", partnerId)
+        .eq("toon_op_website", true)
+        .eq("id", productId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ error: "not_found" }, 404);
+      let path: string | null = null;
+      let filename = "bestand.pdf";
+      const baseSlug = slugifyFilename(data.naam ?? "product");
+      if (kind === "datasheet") {
+        path = data.datasheet_url;
+        filename = `${baseSlug}-datasheet.pdf`;
+      } else if (kind === "installatie-handleiding") {
+        path = data.installatie_handleiding_url;
+        filename = data.installatie_handleiding_naam || `${baseSlug}-installatiehandleiding.pdf`;
+      } else if (kind === "gebruiker-handleiding") {
+        path = data.gebruiker_handleiding_url;
+        filename = data.gebruiker_handleiding_naam || `${baseSlug}-gebruikershandleiding.pdf`;
+      }
+      if (!path) return json({ error: "file_not_available" }, 404);
+      const target = buildStorageUrl(path);
+      if (!target) return json({ error: "file_not_available" }, 404);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          Location: target,
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    }
+
     if (req.method === "GET" && (subPath === "products" || subPath === "")) {
       const { data, error } = await supabase
         .from("producten_publiek")
