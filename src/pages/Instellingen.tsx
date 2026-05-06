@@ -6,6 +6,7 @@ import PartnerAbonnement from "@/components/abonnementen/PartnerAbonnement";
 import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
 import BetalingsvoorwaardenConfig from "@/components/instellingen/BetalingsvoorwaardenConfig";
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
+import EmailTemplatesBeheer from "@/components/instellingen/EmailTemplatesBeheer";
 import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
 import NummerreeksConfig from "@/components/instellingen/NummerreeksConfig";
@@ -64,6 +65,7 @@ const Instellingen = () => {
     { id: "bedrijf", label: "Bedrijfsgegevens", icon: Building2, roles: ADMIN_ROLLEN },
     { id: "huisstijl", label: "Huisstijl", icon: Palette, roles: ADMIN_ROLLEN },
     { id: "email", label: "E-mail (organisatie)", icon: Mail, roles: ADMIN_ROLLEN },
+    { id: "email-templates", label: "E-mailtemplates", icon: Mail, roles: ADMIN_ROLLEN },
     { id: "producten", label: "Producten", icon: Package, roles: ADMIN_ROLLEN },
     { id: "offertes", label: "Offertes", icon: FileText, roles: ADMIN_ROLLEN },
     { id: "leads", label: "Leads", icon: Users, roles: ADMIN_ROLLEN },
@@ -117,6 +119,7 @@ const Instellingen = () => {
           {activeTab === "bedrijf" && isPartnerAdmin && profile?.partner_id && <BedrijfsgegevensTab partnerId={profile.partner_id} />}
           {activeTab === "huisstijl" && isPartnerAdmin && profile?.partner_id && <HuisstijlTab partnerId={profile.partner_id} />}
           {activeTab === "email" && isPartnerAdmin && profile?.partner_id && <EmailConfiguratie partnerId={profile.partner_id} />}
+          {activeTab === "email-templates" && isPartnerAdmin && profile?.partner_id && <EmailTemplatesBeheer partnerId={profile.partner_id} />}
           {activeTab === "offertes" && isPartnerAdmin && profile?.partner_id && (
             <div className="space-y-6">
               <BetalingsvoorwaardenConfig partnerId={profile.partner_id} />
