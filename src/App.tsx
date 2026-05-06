@@ -94,6 +94,7 @@ import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
 import EmbedContact from "@/pages/embed/EmbedContact";
 import EmbedCalculator from "@/pages/embed/EmbedCalculator";
 import EmbedCatalogus from "@/pages/embed/EmbedCatalogus";
+import PublicCatalogus from "@/pages/public/PublicCatalogus";
 import MerkenBeheer from "@/pages/MerkenBeheer";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
@@ -135,6 +136,9 @@ const App = () => (
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
             <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
             <Route path="/embed/catalogus/:widgetId" element={<EmbedCatalogus />} />
+            {/* Public SEO-friendly catalog: /c/:partnerSlug and /c/:partnerSlug/:productSlug */}
+            <Route path="/c/:partnerSlug" element={<PublicCatalogus />} />
+            <Route path="/c/:partnerSlug/:productSlug" element={<PublicCatalogus />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 

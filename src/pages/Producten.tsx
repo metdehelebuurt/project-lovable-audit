@@ -5,26 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Package, Sparkles, Loader2, AlertTriangle, Copy, ChevronDown, ChevronUp, X, FileText, BookOpen, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Sparkles, Copy, Tag } from "lucide-react";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
 import ProductImage from "@/components/producten/ProductImage";
-import ProductImageUpload from "@/components/producten/ProductImageUpload";
-import SpecsEditor from "@/components/producten/SpecsEditor";
-import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
 import BulkWebsiteToggle from "@/components/producten/website/BulkWebsiteToggle";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
 import { Globe } from "lucide-react";
+import ProductInlineForm, { type ProductFormData } from "@/components/producten/ProductInlineForm";
+import AiImportDialog, { type AIProduct } from "@/components/producten/AiImportDialog";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 type ProductInsert = Database["public"]["Tables"]["producten"]["Insert"];
@@ -53,36 +48,6 @@ const statusColors: Record<ProductStatus, string> = {
   niet_beschikbaar: "bg-error-light text-error",
 };
 
-interface ProductFormData {
-  naam: string;
-  categorie: ProductCategorie;
-  merk: string;
-  model: string;
-  omschrijving: string;
-  offerte_tekst: string;
-  prijs_excl_btw: number;
-  kostprijs: number | null;
-  eenheid: string;
-  voorraad: number | null;
-  min_voorraad: number | null;
-  btw_percentage: number;
-  max_korting_euro: number | null;
-  max_korting_percentage: number | null;
-  product_code: string;
-  leverancier: string;
-  artikelnummer: string;
-  ean_code: string;
-  levertijd: string;
-  garantie_jaren: number | null;
-  certificeringen: string;
-  status: ProductStatus;
-  afbeelding_url: string | null;
-  afbeeldingen: string[];
-  specs: Record<string, string>;
-  datasheet_url: string | null;
-  datasheet_type: string | null;
-}
-
 const emptyForm: ProductFormData = {
   naam: "", categorie: "zonnepanelen", merk: "", model: "",
   omschrijving: "", offerte_tekst: "", prijs_excl_btw: 0, kostprijs: null, eenheid: "stuk",
@@ -93,19 +58,6 @@ const emptyForm: ProductFormData = {
   afbeeldingen: [], specs: {},
   datasheet_url: null, datasheet_type: null,
 };
-
-interface AIProduct {
-  naam: string;
-  model: string;
-  merk: string;
-  omschrijving: string;
-  prijs_excl_btw: number;
-  garantie_jaren?: number;
-  certificeringen?: string;
-  specs?: Record<string, string>;
-  categorie: ProductCategorie;
-  warnings?: string[];
-}
 
 function isSimilar(a: string, b: string): boolean {
   const normalize = (s: string) => s.toLowerCase().replace(/[\s\-_\/\\().]+/g, "").trim();
@@ -378,12 +330,6 @@ const Producten = () => {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(price);
 
-  const aiDuplicateCount = aiProducts.filter(p => isDuplicate(p, aiExistingNames)).length;
-  const aiWarningCount = aiProducts.filter(p => p.warnings && p.warnings.length > 0).length;
-
-  // Product ID for image upload — use existing or temp id
-  const formProductId = editingProduct?.id || "new-product";
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -421,145 +367,16 @@ const Producten = () => {
 
       {/* Inline Form */}
       {showInlineForm && (
-        <Card className="rounded-2xl border-0 shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">
-                {editingProduct ? "Product bewerken" : "Nieuw product"}
-              </h2>
-              <Button variant="ghost" size="icon" onClick={closeForm}>
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Basisgegevens</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2"><Label>Productnaam *</Label><Input value={form.naam} onChange={e => setForm(p => ({ ...p, naam: e.target.value }))} required className="rounded-xl" /></div>
-                  <div>
-                    <Label>Categorie *</Label>
-                    <Select value={form.categorie} onValueChange={v => setForm(p => ({ ...p, categorie: v as ProductCategorie }))}>
-                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(categorieLabels) as ProductCategorie[]).map(c => (
-                          <SelectItem key={c} value={c}>{categorieLabels[c]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Status</Label>
-                    <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as ProductStatus }))}>
-                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(statusLabels) as ProductStatus[]).map(s => (
-                          <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div><Label>Merk</Label><Input value={form.merk} onChange={e => setForm(p => ({ ...p, merk: e.target.value }))} className="rounded-xl" /></div>
-                  <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="rounded-xl" /></div>
-                  <div className="col-span-2"><Label>Omschrijving</Label><Textarea value={form.omschrijving} onChange={e => setForm(p => ({ ...p, omschrijving: e.target.value }))} className="rounded-xl" rows={3} /></div>
-                  <div className="col-span-2">
-                    <Label>Tekst op offerte</Label>
-                    <p className="text-xs text-muted-foreground mb-1">Deze tekst wordt automatisch getoond op offertes onder de productregel.</p>
-                    <Textarea value={form.offerte_tekst} onChange={e => setForm(p => ({ ...p, offerte_tekst: e.target.value }))} className="rounded-xl" rows={3} placeholder="Bijv. inclusief montage, 25 jaar vermogensgarantie..." />
-                  </div>
-                </div>
-              </div>
-
-              {/* Image upload (only for existing products) */}
-              {editingProduct && (
-                <ProductImageUpload
-                  productId={formProductId}
-                  mainImage={form.afbeelding_url}
-                  galleryImages={form.afbeeldingen}
-                  merk={form.merk}
-                  naam={form.naam}
-                  onMainImageChange={(url) => setForm(p => ({ ...p, afbeelding_url: url }))}
-                  onGalleryChange={(urls) => setForm(p => ({ ...p, afbeeldingen: urls }))}
-                />
-              )}
-
-              {/* Specs editor */}
-              <SpecsEditor
-                specs={form.specs}
-                onChange={(specs) => setForm(p => ({ ...p, specs }))}
-                categorie={form.categorie}
-              />
-
-              {/* Datasheet section (only for existing products) */}
-              {editingProduct && (
-                <ProductDatasheetSection
-                  productId={editingProduct.id}
-                  productData={{
-                    naam: form.naam,
-                    merk: form.merk,
-                    model: form.model,
-                    categorie: form.categorie,
-                    omschrijving: form.omschrijving,
-                    specs: form.specs,
-                    certificeringen: form.certificeringen,
-                    garantie_jaren: form.garantie_jaren,
-                    prijs_excl_btw: form.prijs_excl_btw,
-                    afbeelding_url: form.afbeelding_url,
-                  }}
-                  datasheetUrl={form.datasheet_url}
-                  datasheetType={form.datasheet_type}
-                  onDatasheetChange={(url, type) => setForm(p => ({ ...p, datasheet_url: url, datasheet_type: type }))}
-                  onSpecsUpdate={(specs) => setForm(p => ({ ...p, specs }))}
-                  onOmschrijvingUpdate={(omschrijving) => setForm(p => ({ ...p, omschrijving }))}
-                  partnerId={editingProduct.partner_id}
-                />
-              )}
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Prijzen & Voorraad</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Verkoopprijs excl. BTW *</Label><Input type="number" step="0.01" value={form.prijs_excl_btw} onChange={e => setForm(p => ({ ...p, prijs_excl_btw: parseFloat(e.target.value) || 0 }))} required className="rounded-xl" /></div>
-                  <div><Label>Kostprijs</Label><Input type="number" step="0.01" value={form.kostprijs ?? ""} onChange={e => setForm(p => ({ ...p, kostprijs: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
-                  <div><Label>BTW %</Label><Input type="number" value={form.btw_percentage} onChange={e => setForm(p => ({ ...p, btw_percentage: parseInt(e.target.value) || 21 }))} className="rounded-xl" /></div>
-                  <div>
-                    <Label>Eenheid</Label>
-                    <Select value={form.eenheid} onValueChange={v => setForm(p => ({ ...p, eenheid: v }))}>
-                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {["stuk", "m2", "meter", "set", "uur"].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div><Label>Voorraad</Label><Input type="number" value={form.voorraad ?? ""} onChange={e => setForm(p => ({ ...p, voorraad: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
-                  <div><Label>Min. voorraad (waarschuwing)</Label><Input type="number" min="0" value={form.min_voorraad ?? ""} onChange={e => setForm(p => ({ ...p, min_voorraad: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
-                  <div><Label>Max korting €</Label><Input type="number" step="0.01" value={form.max_korting_euro ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_euro: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
-                  <div><Label>Max korting %</Label><Input type="number" step="0.1" value={form.max_korting_percentage ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_percentage: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Leverancier & Codes</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Product code</Label><Input value={form.product_code} onChange={e => setForm(p => ({ ...p, product_code: e.target.value }))} className="rounded-xl" /></div>
-                  <div><Label>Leverancier</Label><Input value={form.leverancier} onChange={e => setForm(p => ({ ...p, leverancier: e.target.value }))} className="rounded-xl" /></div>
-                  <div><Label>Artikelnummer</Label><Input value={form.artikelnummer} onChange={e => setForm(p => ({ ...p, artikelnummer: e.target.value }))} className="rounded-xl" /></div>
-                  <div><Label>EAN code</Label><Input value={form.ean_code} onChange={e => setForm(p => ({ ...p, ean_code: e.target.value }))} className="rounded-xl" /></div>
-                  <div><Label>Levertijd</Label><Input value={form.levertijd} onChange={e => setForm(p => ({ ...p, levertijd: e.target.value }))} className="rounded-xl" /></div>
-                  <div><Label>Garantie (jaren)</Label><Input type="number" value={form.garantie_jaren ?? ""} onChange={e => setForm(p => ({ ...p, garantie_jaren: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
-                  <div className="col-span-2"><Label>Certificeringen</Label><Input value={form.certificeringen} onChange={e => setForm(p => ({ ...p, certificeringen: e.target.value }))} className="rounded-xl" /></div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={closeForm} className="rounded-pill">Annuleren</Button>
-                <Button type="submit" className="rounded-pill" disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? "Opslaan..." : editingProduct ? "Bijwerken" : "Aanmaken"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        <ProductInlineForm
+          form={form}
+          setForm={(updater) => setForm(updater)}
+          editingProduct={editingProduct}
+          isPending={saveMutation.isPending}
+          onClose={closeForm}
+          onSubmit={handleSubmit}
+          categorieLabels={categorieLabels}
+          statusLabels={statusLabels}
+        />
       )}
 
       {/* Stats */}
@@ -762,142 +579,33 @@ const Producten = () => {
       </Card>
 
       {/* AI Import Dialog (kept as dialog — it's a wizard flow) */}
-      <Dialog open={aiDialogOpen} onOpenChange={(open) => { if (!open) closeAiDialog(); else setAiDialogOpen(true); }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              AI Product Import
-            </DialogTitle>
-          </DialogHeader>
-
-          {aiStep === "input" && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Voer een merknaam en categorie in. AI zoekt automatisch het volledige productassortiment op met alle varianten en technische specificaties (tot 50 producten per keer).
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Merknaam *</Label>
-                  <Input placeholder="bijv. SolarEdge, Enphase, Daikin..." value={aiMerk} onChange={e => setAiMerk(e.target.value)} className="rounded-xl" />
-                </div>
-                <div>
-                  <Label>Categorie *</Label>
-                  <Select value={aiCategorie} onValueChange={v => setAiCategorie(v as ProductCategorie)}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(categorieLabels) as ProductCategorie[]).map(c => (
-                        <SelectItem key={c} value={c}>{categorieLabels[c]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={closeAiDialog} className="rounded-pill">Annuleren</Button>
-                <Button onClick={handleAiSearch} disabled={aiLoading} className="rounded-pill gap-2">
-                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {aiLoading ? "Zoeken..." : "Producten ophalen"}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-
-          {aiStep === "preview" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>{aiProducts.length}</strong> producten gevonden voor <strong>{aiMerk}</strong> · <strong>{aiSelected.size}</strong> geselecteerd
-                  </p>
-                  {(aiDuplicateCount > 0 || aiWarningCount > 0) && (
-                    <div className="flex gap-2 text-xs">
-                      {aiDuplicateCount > 0 && (
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Copy className="h-3 w-3" /> {aiDuplicateCount} duplica{aiDuplicateCount === 1 ? "at" : "ten"}
-                        </span>
-                      )}
-                      {aiWarningCount > 0 && (
-                        <span className="flex items-center gap-1 text-warning-foreground">
-                          <AlertTriangle className="h-3 w-3" /> {aiWarningCount} waarschuwing{aiWarningCount === 1 ? "" : "en"}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    const all = new Set<number>();
-                    aiProducts.forEach((p, i) => { if (!isDuplicate(p, aiExistingNames)) all.add(i); });
-                    setAiSelected(all);
-                  }}>Selecteer nieuw</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}>Alles</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setAiSelected(new Set())}>Niets</Button>
-                </div>
-              </div>
-
-              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                {aiProducts.map((product, idx) => {
-                  const duplicate = isDuplicate(product, aiExistingNames);
-                  const hasWarnings = product.warnings && product.warnings.length > 0;
-                  return (
-                    <Card key={idx} className={`rounded-xl border cursor-pointer transition-colors ${
-                      aiSelected.has(idx) ? "border-primary bg-primary/5" : duplicate ? "border-muted bg-muted/30 opacity-60" : "border-border"
-                    }`} onClick={() => toggleAiSelect(idx)}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Checkbox checked={aiSelected.has(idx)} onCheckedChange={() => toggleAiSelect(idx)} className="mt-1" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <p className="font-medium text-foreground truncate">{product.naam}</p>
-                                {duplicate && <Badge variant="outline" className="text-xs shrink-0 border-warning-foreground text-warning-foreground"><Copy className="h-3 w-3 mr-1" /> Bestaat al</Badge>}
-                                {hasWarnings && <Badge variant="outline" className="text-xs shrink-0 border-destructive text-destructive"><AlertTriangle className="h-3 w-3 mr-1" /> Let op</Badge>}
-                              </div>
-                              <p className="text-sm font-semibold text-primary whitespace-nowrap">{formatPrice(product.prijs_excl_btw)}</p>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-0.5">{product.model} · {product.merk}</p>
-                            {product.omschrijving && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.omschrijving}</p>}
-                            {hasWarnings && (
-                              <div className="mt-1.5 space-y-0.5">
-                                {product.warnings!.map((w, wi) => (
-                                  <p key={wi} className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3 shrink-0" /> {w}</p>
-                                ))}
-                              </div>
-                            )}
-                            {product.specs && Object.keys(product.specs).length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {Object.entries(product.specs).slice(0, 6).map(([key, val]) => (
-                                  <Badge key={key} variant="outline" className="text-xs font-normal">{key}: {val}</Badge>
-                                ))}
-                                {Object.keys(product.specs).length > 6 && (
-                                  <Badge variant="outline" className="text-xs font-normal text-muted-foreground">+{Object.keys(product.specs).length - 6} meer</Badge>
-                                )}
-                              </div>
-                            )}
-                            <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                              {product.garantie_jaren && <span>Garantie: {product.garantie_jaren} jaar</span>}
-                              {product.certificeringen && <span>{product.certificeringen}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setAiStep("input")} className="rounded-pill">Terug</Button>
-                <Button onClick={handleAiImport} disabled={aiLoading || aiSelected.size === 0} className="rounded-pill gap-2">
-                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  {aiLoading ? "Importeren..." : `${aiSelected.size} producten importeren`}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AiImportDialog
+        open={aiDialogOpen}
+        onClose={closeAiDialog}
+        step={aiStep}
+        onStepChange={setAiStep}
+        merk={aiMerk}
+        onMerkChange={setAiMerk}
+        categorie={aiCategorie}
+        onCategorieChange={setAiCategorie}
+        categorieLabels={categorieLabels}
+        loading={aiLoading}
+        products={aiProducts}
+        selected={aiSelected}
+        onToggleSelect={toggleAiSelect}
+        onSelectAll={() => setAiSelected(new Set(aiProducts.map((_, i) => i)))}
+        onSelectNone={() => setAiSelected(new Set())}
+        onSelectNew={() => {
+          const all = new Set<number>();
+          aiProducts.forEach((p, i) => { if (!isDuplicate(p, aiExistingNames)) all.add(i); });
+          setAiSelected(all);
+        }}
+        existingNames={aiExistingNames}
+        isDuplicate={isDuplicate}
+        onSearch={handleAiSearch}
+        onImport={handleAiImport}
+        formatPrice={formatPrice}
+      />
     </div>
   );
 };
