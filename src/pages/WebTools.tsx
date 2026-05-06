@@ -4,11 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Code, Pencil, Trash2, Loader2, Sun, Thermometer, Home, Plug, Battery, MessageSquare, Store } from "lucide-react";
+import { Plus, Code, Pencil, Trash2, Loader2, Sun, Thermometer, Home, Plug, Battery, MessageSquare } from "lucide-react";
 import { WidgetConfigurator, type WidgetFormData } from "@/components/webtools/WidgetConfigurator";
 import { EmbedCodeDialog } from "@/components/webtools/EmbedCodeDialog";
-import { ApiTokensManager } from "@/components/webtools/ApiTokensManager";
-import { FeatureGate } from "@/components/abonnementen/FeatureGate";
+import ProductcatalogusCard from "@/components/webtools/ProductcatalogusCard";
 import { toast } from "@/hooks/use-toast";
 
 type Widget = {
@@ -28,7 +27,6 @@ const widgetTemplates = [
   { type: "calculator_isolatie", label: "Isolatie Calculator", beschrijving: "Bereken hoeveel bezoekers besparen met betere isolatie.", icon: Home },
   { type: "calculator_laadpaal", label: "Laadpaal Calculator", beschrijving: "Vergelijk laadkosten thuis versus openbaar laden.", icon: Plug },
   { type: "calculator_thuisbatterij", label: "Thuisbatterij Calculator", beschrijving: "Adviseer de ideale batterijcapaciteit op basis van teruglevering en verbruik.", icon: Battery },
-  { type: "productcatalogus", label: "Productcatalogus (nieuw)", beschrijving: "Toon je volledige assortiment, merkenpagina's en converterende productdetail-pagina's met offerte-aanvraag, vergelijker en API-toegang. Add-on vereist.", icon: Store },
 ];
 
 const typeLabels: Record<string, string> = Object.fromEntries(widgetTemplates.map(t => [t.type, t.label]));
@@ -129,6 +127,9 @@ const WebTools = () => {
           Kant-en-klare widgets voor uw website — in uw eigen huisstijl. Kies een template en embed het op uw site.
         </p>
       </div>
+
+      {/* Productcatalogus add-on: aparte sectie bovenaan */}
+      <ProductcatalogusCard />
 
       {/* Template cards */}
       <div>
@@ -239,23 +240,6 @@ const WebTools = () => {
           widgetType={embedWidget.type}
         />
       )}
-
-      {/* Productcatalogus add-on: API-tokens beheer */}
-      <div className="pt-4 border-t">
-        <FeatureGate feature="webshop_module">
-          <Card className="rounded-2xl border shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Productcatalogus API</CardTitle>
-              <CardDescription>
-                Headless toegang tot je catalogus via REST. Beheer hier je tokens.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ApiTokensManager />
-            </CardContent>
-          </Card>
-        </FeatureGate>
-      </div>
     </div>
   );
 };
