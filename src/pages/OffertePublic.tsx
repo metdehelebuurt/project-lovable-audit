@@ -349,9 +349,15 @@ export default function OffertePublic() {
               </CardContent>
             </Card>
 
-            {(offerte.garantie_voorwaarden || offerte.installatie_termijn) && (
+            {(offerte.garantie_voorwaarden || offerte.installatie_termijn || offerte.betalingsvoorwaarden) && (
               <Card className="rounded-2xl border-0 shadow-sm">
-                <CardContent className="pt-6 space-y-3">
+                <CardContent className="pt-6 space-y-4">
+                  {offerte.betalingsvoorwaarden && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Betalingstermijn</p>
+                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.betalingsvoorwaarden) }} />
+                    </div>
+                  )}
                   {offerte.garantie_voorwaarden && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Garantie</p>
