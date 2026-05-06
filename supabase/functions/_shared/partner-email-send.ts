@@ -11,6 +11,8 @@ export interface SendPartnerEmailParams {
   adminClient: any;
   partnerId: string;
   to: string;
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   html: string;
   attachment?: AttachmentInfo | null;
@@ -39,7 +41,7 @@ export class PartnerEmailError extends Error {
 
 export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<SendPartnerEmailResult> {
   const {
-    adminClient, partnerId, to, subject, html, attachment = null,
+    adminClient, partnerId, to, cc = [], bcc = [], subject, html, attachment = null,
     type, klantId = null, offerteId = null, leadId = null, verzondenDoorId = null,
   } = params;
 
@@ -76,11 +78,11 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
       }
       if (emailAccount.provider === "google") {
         await sendViaGmailApi({
-          accessToken, from: emailAccount.email_adres, to, subject, html, attachment,
+          accessToken, from: emailAccount.email_adres, to, cc, bcc, subject, html, attachment,
         });
         result = { provider: "gmail", from: emailAccount.email_adres };
       } else {
-        await sendViaMsGraphApi({ accessToken, to, subject, html, attachment });
+        await sendViaMsGraphApi({ accessToken, to, cc, bcc, subject, html, attachment });
         result = { provider: "msgraph", from: emailAccount.email_adres };
       }
 
@@ -96,7 +98,7 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
         host: partner.smtp_host!, port: partner.smtp_port || 587,
         user: partner.smtp_user!, pass: partner.smtp_pass_encrypted!,
         from: partner.afzender_email!, fromName: partner.afzender_naam || partner.naam,
-        to, subject, html, attachment,
+        to, cc, bcc, subject, html, attachment,
       });
       result = { provider: "smtp", from: partner.afzender_email! };
     }
