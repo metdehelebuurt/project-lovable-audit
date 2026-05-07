@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ContactForm } from "@/components/webtools/ContactForm";
@@ -14,6 +14,33 @@ const EmbedContact = () => {
     logo_url: string | null;
     primaire_kleur: string | null;
   } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Maak embed transparant zodat de host-achtergrond doorschijnt en het naadloos oogt.
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.background;
+    const prevBody = document.body.style.background;
+    document.documentElement.style.background = "transparent";
+    document.body.style.background = "transparent";
+    return () => {
+      document.documentElement.style.background = prevHtml;
+      document.body.style.background = prevBody;
+    };
+  }, []);
+
+  // Stuur hoogte naar parent zodat een luisterende iframe automatisch kan meeschalen.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const post = () => {
+      const height = el.scrollHeight;
+      window.parent?.postMessage({ type: "mijnhuis:embed:height", widgetId, height }, "*");
+    };
+    const ro = new ResizeObserver(post);
+    ro.observe(el);
+    post();
+    return () => ro.disconnect();
+  }, [widgetId, loading]);
 
   useEffect(() => {
     const load = async () => {
@@ -45,7 +72,7 @@ const EmbedContact = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-[200px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -53,7 +80,7 @@ const EmbedContact = () => {
 
   if (error || !widget || !partner) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-[200px]">
         <p className="text-muted-foreground">{error || "Widget niet beschikbaar"}</p>
       </div>
     );
@@ -63,28 +90,16 @@ const EmbedContact = () => {
   const config = widget.config;
 
   return (
-    <div className="min-h-screen bg-white p-6 max-w-md mx-auto">
-      {partner.logo_url && (
-        <img src={partner.logo_url} alt={partner.naam} className="h-10 mb-6 object-contain" />
-      )}
-
-      {config.intro_tekst && (
-        <p className="text-sm text-muted-foreground mb-4">{String(config.intro_tekst)}</p>
-      )}
-
-      <h2 className="text-xl font-semibold mb-4" style={{ color: primaryColor }}>
-        Neem contact op
-      </h2>
+    <div ref={containerRef} className="w-full px-1 py-2">
+      {config.intro_tekst ? (
+        <p className="mb-4 text-sm text-muted-foreground">{String(config.intro_tekst)}</p>
+      ) : null}
 
       <ContactForm
         widgetId={widgetId!}
         primaryColor={primaryColor}
         ctaText={config.cta_tekst ? String(config.cta_tekst) : undefined}
       />
-
-      <p className="text-xs text-muted-foreground text-center mt-6">
-        Aangedreven door {partner.naam}
-      </p>
     </div>
   );
 };
