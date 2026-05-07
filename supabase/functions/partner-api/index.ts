@@ -230,6 +230,27 @@ Deno.serve(async (req) => {
   const PRODUCT_COLUMNS =
     "id, naam, merk, model, categorie, omschrijving, prijs_excl_btw, btw_percentage, eenheid, product_code, artikelnummer, ean_code, levertijd, garantie_jaren, certificeringen, installatie_instructies, onderhoud, specs, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, afbeelding_url, afbeeldingen, datasheet_url, datasheet_type, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam";
 
+  // Haal merken op die de partner zichtbaar heeft gezet. Producten van een
+  // verborgen merk worden uit de API gefilterd, ook al staat het product zelf
+  // op toon_op_website=true.
+  async function getVisibleMerken(): Promise<string[] | null> {
+    const { data, error } = await supabase
+      .from("partner_merken")
+      .select("merk")
+      .eq("partner_id", partnerId)
+      .eq("toon_op_website", true);
+    if (error) {
+      console.error("partner_merken lookup", error);
+      return null;
+    }
+    return (data ?? []).map((r: { merk: string }) => r.merk).filter(Boolean);
+  }
+
+  function applyVisibilityFilters<T>(q: T): T {
+    // status='actief' + toon_op_website=true (merk-filter wordt los toegevoegd)
+    return (q as any).eq("status", "actief").eq("toon_op_website", true);
+  }
+
   try {
     // GET /partner-api/products/:id/download/:kind  → 302 redirect met Content-Disposition hint
     const downloadMatch = subPath.match(
@@ -237,17 +258,24 @@ Deno.serve(async (req) => {
     );
     if (req.method === "GET" && downloadMatch) {
       const [, productId, kind] = downloadMatch;
-      const { data, error } = await supabase
+      const visibleMerken = await getVisibleMerken();
+      let q = supabase
         .from("producten_publiek")
         .select(
-          "id, naam, datasheet_url, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam",
+          "id, naam, merk, status, datasheet_url, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam",
         )
         .eq("partner_id", partnerId)
+        .eq("status", "actief")
         .eq("toon_op_website", true)
-        .eq("id", productId)
-        .maybeSingle();
+        .eq("id", productId);
+      if (visibleMerken && visibleMerken.length > 0) {
+        q = q.in("merk", visibleMerken);
+      } else if (visibleMerken) {
+        return json({ error: "not_found" }, 404, vHeaders);
+      }
+      const { data, error } = await q.maybeSingle();
       if (error) throw error;
-      if (!data) return json({ error: "not_found" }, 404);
+      if (!data) return json({ error: "not_found" }, 404, vHeaders);
       let path: string | null = null;
       let filename = "bestand.pdf";
       const baseSlug = slugifyFilename(data.naam ?? "product");
@@ -261,13 +289,14 @@ Deno.serve(async (req) => {
         path = data.gebruiker_handleiding_url;
         filename = data.gebruiker_handleiding_naam || `${baseSlug}-gebruikershandleiding.pdf`;
       }
-      if (!path) return json({ error: "file_not_available" }, 404);
+      if (!path) return json({ error: "file_not_available" }, 404, vHeaders);
       const target = buildStorageUrl(path);
-      if (!target) return json({ error: "file_not_available" }, 404);
+      if (!target) return json({ error: "file_not_available" }, 404, vHeaders);
       return new Response(null, {
         status: 302,
         headers: {
           ...corsHeaders,
+          ...vHeaders,
           Location: target,
           "Content-Disposition": `attachment; filename="${filename}"`,
         },
@@ -275,11 +304,18 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "GET" && (subPath === "products" || subPath === "")) {
-      const { data, error } = await supabase
+      const visibleMerken = await getVisibleMerken();
+      if (visibleMerken && visibleMerken.length === 0) {
+        return json({ api_version: version, data: [] }, 200, vHeaders);
+      }
+      let q = supabase
         .from("producten_publiek")
         .select(PRODUCT_COLUMNS)
         .eq("partner_id", partnerId)
+        .eq("status", "actief")
         .eq("toon_op_website", true);
+      if (visibleMerken) q = q.in("merk", visibleMerken);
+      const { data, error } = await q;
       if (error) throw error;
       return json({ api_version: version, data: (data ?? []).map(mapProduct) }, 200, vHeaders);
     }
@@ -287,11 +323,17 @@ Deno.serve(async (req) => {
     // GET /partner-api/products/:id  of  /partner-api/products/slug/:slug
     if (req.method === "GET" && subPath.startsWith("products/")) {
       const rest = subPath.slice("products/".length);
+      const visibleMerken = await getVisibleMerken();
+      if (visibleMerken && visibleMerken.length === 0) {
+        return json({ error: "not_found" }, 404, vHeaders);
+      }
       let query = supabase
         .from("producten_publiek")
         .select(PRODUCT_COLUMNS)
         .eq("partner_id", partnerId)
+        .eq("status", "actief")
         .eq("toon_op_website", true);
+      if (visibleMerken) query = query.in("merk", visibleMerken);
       if (rest.startsWith("slug/")) {
         query = query.eq("website_slug", rest.slice("slug/".length));
       } else {
@@ -315,12 +357,19 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "GET" && subPath === "categories") {
-      const { data, error } = await supabase
+      const visibleMerken = await getVisibleMerken();
+      if (visibleMerken && visibleMerken.length === 0) {
+        return json({ api_version: version, data: [] }, 200, vHeaders);
+      }
+      let q = supabase
         .from("producten_publiek")
         .select("categorie")
         .eq("partner_id", partnerId)
+        .eq("status", "actief")
         .eq("toon_op_website", true)
         .not("categorie", "is", null);
+      if (visibleMerken) q = q.in("merk", visibleMerken);
+      const { data, error } = await q;
       if (error) throw error;
       const unique = Array.from(new Set((data ?? []).map((r: { categorie: string }) => r.categorie)));
       return json({ api_version: version, data: unique }, 200, vHeaders);
