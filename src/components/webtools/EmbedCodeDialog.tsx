@@ -27,20 +27,36 @@ export const EmbedCodeDialog = ({ open, onOpenChange, widgetId, widgetType }: Em
   const iframeHeight = isCatalogus ? 900 : 600;
   const iframeMaxWidth = isCatalogus ? 1080 : 520;
 
-  const embedCode = `<iframe
-  src="${baseUrl}${embedPath}"
-  width="100%"
-  height="${iframeHeight}"
-  frameborder="0"
-  style="border: none; border-radius: 12px; max-width: ${iframeMaxWidth}px;"
-  title="${
+  const widgetTitle =
     widgetType === "contactformulier"
       ? "Contactformulier"
       : isCatalogus
       ? "Productcatalogus"
-      : "Besparingscalculator"
-  }"
-></iframe>`;
+      : "Besparingscalculator";
+
+  const iframeId = `mijnhuis-embed-${widgetId}`;
+  const embedCode = `<iframe
+  id="${iframeId}"
+  src="${baseUrl}${embedPath}"
+  width="100%"
+  height="${iframeHeight}"
+  frameborder="0"
+  scrolling="no"
+  style="border: none; border-radius: 12px; max-width: ${iframeMaxWidth}px; display: block; background: transparent;"
+  title="${widgetTitle}"
+  allowtransparency="true"
+></iframe>
+<script>
+(function () {
+  window.addEventListener("message", function (e) {
+    if (!e.data || e.data.type !== "mijnhuis:embed:height") return;
+    var f = document.getElementById("${iframeId}");
+    if (f && typeof e.data.height === "number") {
+      f.style.height = e.data.height + "px";
+    }
+  });
+})();
+</script>`;
 
   const projectRef = (import.meta.env.VITE_SUPABASE_PROJECT_ID as string) || "";
   const apiBase = projectRef
