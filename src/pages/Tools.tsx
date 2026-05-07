@@ -102,9 +102,15 @@ const Tools = () => {
 
   const handleCreate = async (formData: WidgetFormData) => {
     if (!profile?.partner_id) return;
+    // Veiligheidsvalidatie: het opgeslagen type moet altijd overeenkomen met de
+    // aangeklikte template, ongeacht eventuele stale form-state.
+    const veiligType = configuratorType;
+    if (formData.type !== veiligType) {
+      console.warn("Widget type mismatch — corrigeren naar", veiligType);
+    }
     const { error } = await (supabase.from("web_widgets") as any).insert({
       partner_id: profile.partner_id,
-      type: formData.type,
+      type: veiligType,
       naam: formData.naam,
       config: formData.config,
       actief: formData.actief,
@@ -285,18 +291,20 @@ const Tools = () => {
       )}
 
       {/* ── Dialogs ─────────────────────────────────── */}
-      <WidgetConfigurator
-        open={configuratorOpen}
-        onOpenChange={setConfiguratorOpen}
-        onSave={handleCreate}
-        initialData={{
-          type: configuratorType,
-          naam: "",
-          config: { intro_tekst: "", cta_tekst: "Verstuur aanvraag", toon_telefoon: true, toon_bericht: true },
-          actief: true,
-          notificatie_email: "",
-        }}
-      />
+      {configuratorOpen && (
+        <WidgetConfigurator
+          open
+          onOpenChange={setConfiguratorOpen}
+          onSave={handleCreate}
+          initialData={{
+            type: configuratorType,
+            naam: "",
+            config: { intro_tekst: "", cta_tekst: "Verstuur aanvraag", toon_telefoon: true, toon_bericht: true },
+            actief: true,
+            notificatie_email: "",
+          }}
+        />
+      )}
 
       {editingWidget && (
         <WidgetConfigurator
