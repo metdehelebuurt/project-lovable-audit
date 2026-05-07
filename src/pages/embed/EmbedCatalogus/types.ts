@@ -14,6 +14,12 @@ export interface EmbedProduct {
   website_faq: unknown;
   garantie_jaren: number | null;
   specs: unknown;
+  datasheet_url?: string | null;
+  datasheet_type?: string | null;
+  installatie_handleiding_url?: string | null;
+  installatie_handleiding_naam?: string | null;
+  gebruiker_handleiding_url?: string | null;
+  gebruiker_handleiding_naam?: string | null;
 }
 
 export interface EmbedPartner {
