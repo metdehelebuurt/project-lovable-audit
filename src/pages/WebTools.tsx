@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Code, Pencil, Trash2, Loader2, Sun, Thermometer, Home, Plug, Battery, MessageSquare } from "lucide-react";
+import { Plus, Code, Pencil, Trash2, Loader2, Sun, Thermometer, Home, Plug, Battery, MessageSquare, AlertTriangle } from "lucide-react";
 import { WidgetConfigurator, type WidgetFormData } from "@/components/webtools/WidgetConfigurator";
 import { EmbedCodeDialog } from "@/components/webtools/EmbedCodeDialog";
 import ProductcatalogusCard from "@/components/webtools/ProductcatalogusCard";
@@ -30,6 +30,21 @@ const widgetTemplates = [
 ];
 
 const typeLabels: Record<string, string> = Object.fromEntries(widgetTemplates.map(t => [t.type, t.label]));
+
+const CALCULATOR_NAAM_KEYWORDS = [
+  "calculator",
+  "thuisbatterij",
+  "zonnepanelen",
+  "warmtepomp",
+  "isolatie",
+  "laadpaal",
+];
+
+const lijktVerkeerdType = (w: Widget) => {
+  if (w.type !== "contactformulier") return false;
+  const naam = (w.naam || "").toLowerCase();
+  return CALCULATOR_NAAM_KEYWORDS.some((k) => naam.includes(k));
+};
 
 const WebTools = () => {
   const { profile } = useAuth();
@@ -179,6 +194,12 @@ const WebTools = () => {
                       <CardDescription className="mt-0.5">{typeLabels[w.type] || w.type}</CardDescription>
                       {w.notificatie_email && (
                         <p className="text-xs text-muted-foreground mt-1">📧 {w.notificatie_email}</p>
+                      )}
+                      {lijktVerkeerdType(w) && (
+                        <p className="text-xs text-destructive mt-1 flex items-start gap-1">
+                          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          <span>Type lijkt niet te kloppen — verwijder en maak opnieuw aan.</span>
+                        </p>
                       )}
                     </div>
                     <Badge variant={w.actief ? "default" : "secondary"}>
