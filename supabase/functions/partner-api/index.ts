@@ -3,14 +3,52 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-api-key",
+    "authorization, x-client-info, apikey, content-type, x-api-key, x-api-version, accept-version",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Expose-Headers":
+    "x-api-version, x-api-default-version, x-api-supported-versions, x-api-latest-version, sunset, deprecation",
 };
 
-const json = (body: unknown, status = 200) =>
+/* ─── API versioning ───────────────────────────────────────────────────────
+ * Versies worden bepaald in deze volgorde:
+ *   1. URL-prefix:   /partner-api/v2/products
+ *   2. Header:       X-Api-Version: 2  of  Accept-Version: v2
+ *   3. Default:      DEFAULT_VERSION (laatste stabiele major)
+ *
+ * Binnen één major versie zijn ALLEEN additieve wijzigingen toegestaan
+ * (nieuwe velden, nieuwe endpoints). Verwijderen/hernoemen vereist een
+ * nieuwe major. Zo komen nieuwe product-media velden zonder breaking
+ * changes beschikbaar.
+ * ─────────────────────────────────────────────────────────────────────── */
+const SUPPORTED_VERSIONS = ["v1"] as const;
+type ApiVersion = typeof SUPPORTED_VERSIONS[number];
+const DEFAULT_VERSION: ApiVersion = "v1";
+const LATEST_VERSION: ApiVersion = "v1";
+
+function parseVersion(raw: string | null | undefined): ApiVersion | null {
+  if (!raw) return null;
+  const norm = raw.trim().toLowerCase().replace(/^v?/, "v").split(/[.,;\s]/)[0];
+  return (SUPPORTED_VERSIONS as readonly string[]).includes(norm) ? (norm as ApiVersion) : null;
+}
+
+function versionHeaders(version: ApiVersion, source: "url" | "header" | "default") {
+  const h: Record<string, string> = {
+    "X-Api-Version": version,
+    "X-Api-Default-Version": DEFAULT_VERSION,
+    "X-Api-Latest-Version": LATEST_VERSION,
+    "X-Api-Supported-Versions": SUPPORTED_VERSIONS.join(","),
+  };
+  if (source === "default") {
+    h["Warning"] =
+      '299 - "Geen API versie opgegeven. Zet X-Api-Version header of gebruik /v1/ prefix om te pinnen."';
+  }
+  return h;
+}
+
+const json = (body: unknown, status = 200, extraHeaders: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json", ...extraHeaders },
   });
 
 async function sha256Hex(input: string): Promise<string> {
@@ -28,9 +66,50 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const url = new URL(req.url);
-  // Path na /partner-api
+  // Path na /partner-api[/vN]
   const fullPath = url.pathname.replace(/^\/+/, "");
-  const subPath = fullPath.replace(/^partner-api\/?/, "");
+  let subPath = fullPath.replace(/^partner-api\/?/, "");
+
+  // 1) versie uit URL-prefix
+  let version: ApiVersion | null = null;
+  let versionSource: "url" | "header" | "default" = "default";
+  const urlPrefix = subPath.match(/^(v\d+)(?:\/(.*))?$/);
+  if (urlPrefix) {
+    const candidate = parseVersion(urlPrefix[1]);
+    if (!candidate) {
+      return json(
+        { error: "unsupported_version", supported: SUPPORTED_VERSIONS, latest: LATEST_VERSION },
+        400,
+      );
+    }
+    version = candidate;
+    versionSource = "url";
+    subPath = urlPrefix[2] ?? "";
+  }
+
+  // 2) versie uit header
+  if (!version) {
+    const headerVersion =
+      parseVersion(req.headers.get("x-api-version")) ??
+      parseVersion(req.headers.get("accept-version"));
+    if (req.headers.get("x-api-version") || req.headers.get("accept-version")) {
+      if (!headerVersion) {
+        return json(
+          { error: "unsupported_version", supported: SUPPORTED_VERSIONS, latest: LATEST_VERSION },
+          400,
+        );
+      }
+      version = headerVersion;
+      versionSource = "header";
+    }
+  }
+
+  // 3) default
+  if (!version) version = DEFAULT_VERSION;
+  const vHeaders = versionHeaders(version, versionSource);
+
+  // Preflight gebruikt nu ook expose-headers; korte handler hier ipv vroeg
+  // (maar de eerste OPTIONS check werd al voor de versie-parsing gedaan).
 
   // Token uit Authorization: Bearer of x-api-key
   const authHeader = req.headers.get("authorization") ?? "";
@@ -39,7 +118,7 @@ Deno.serve(async (req) => {
     ? authHeader.slice(7).trim()
     : xApiKey.trim();
 
-  if (!rawToken) return json({ error: "missing_token" }, 401);
+  if (!rawToken) return json({ error: "missing_token" }, 401, vHeaders);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -52,12 +131,12 @@ Deno.serve(async (req) => {
   });
   if (vErr) {
     console.error("validate error", vErr);
-    return json({ error: "validation_failed" }, 500);
+    return json({ error: "validation_failed" }, 500, vHeaders);
   }
   const row = Array.isArray(validation) ? validation[0] : validation;
   if (!row?.allowed) {
-    if (row?.reden === "rate_limited") return json({ error: "rate_limited" }, 429);
-    return json({ error: "invalid_token" }, 401);
+    if (row?.reden === "rate_limited") return json({ error: "rate_limited" }, 429, vHeaders);
+    return json({ error: "invalid_token" }, 401, vHeaders);
   }
   const partnerId: string = row.partner_id;
 
@@ -92,8 +171,9 @@ Deno.serve(async (req) => {
     productId: string,
     kind: "datasheet" | "installatie-handleiding" | "gebruiker-handleiding",
   ): string =>
-    `${SUPABASE_URL}/functions/v1/partner-api/products/${productId}/download/${kind}`;
-  const mapProduct = (p: Record<string, any>) => ({
+    `${SUPABASE_URL}/functions/v1/partner-api/${version}/products/${productId}/download/${kind}`;
+  const mapProduct = (p: Record<string, any>) => {
+    const base: Record<string, unknown> = {
     id: p.id,
     naam: p.naam,
     merk: p.merk,
@@ -141,7 +221,11 @@ Deno.serve(async (req) => {
           bestandsnaam: p.gebruiker_handleiding_naam ?? null,
         }
       : null,
-  });
+    };
+    // Toekomstige major-versies (v2+) kunnen velden hernoemen of weglaten.
+    // Vandaag is v1 het volledige actuele schema en zijn additieve velden welkom.
+    return base;
+  };
 
   const PRODUCT_COLUMNS =
     "id, naam, merk, model, categorie, omschrijving, prijs_excl_btw, btw_percentage, eenheid, product_code, artikelnummer, ean_code, levertijd, garantie_jaren, certificeringen, installatie_instructies, onderhoud, specs, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, afbeelding_url, afbeeldingen, datasheet_url, datasheet_type, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam";
@@ -197,7 +281,7 @@ Deno.serve(async (req) => {
         .eq("partner_id", partnerId)
         .eq("toon_op_website", true);
       if (error) throw error;
-      return json({ data: (data ?? []).map(mapProduct) });
+      return json({ api_version: version, data: (data ?? []).map(mapProduct) }, 200, vHeaders);
     }
 
     // GET /partner-api/products/:id  of  /partner-api/products/slug/:slug
@@ -215,8 +299,8 @@ Deno.serve(async (req) => {
       }
       const { data, error } = await query.maybeSingle();
       if (error) throw error;
-      if (!data) return json({ error: "not_found" }, 404);
-      return json({ data: mapProduct(data as Record<string, any>) });
+      if (!data) return json({ error: "not_found" }, 404, vHeaders);
+      return json({ api_version: version, data: mapProduct(data as Record<string, any>) }, 200, vHeaders);
     }
 
     if (req.method === "GET" && subPath === "brands") {
@@ -227,7 +311,7 @@ Deno.serve(async (req) => {
         .eq("toon_op_website", true)
         .order("volgorde");
       if (error) throw error;
-      return json({ data });
+      return json({ api_version: version, data }, 200, vHeaders);
     }
 
     if (req.method === "GET" && subPath === "categories") {
@@ -239,7 +323,7 @@ Deno.serve(async (req) => {
         .not("categorie", "is", null);
       if (error) throw error;
       const unique = Array.from(new Set((data ?? []).map((r: { categorie: string }) => r.categorie)));
-      return json({ data: unique });
+      return json({ api_version: version, data: unique }, 200, vHeaders);
     }
 
     if (req.method === "POST" && subPath === "leads") {
@@ -251,8 +335,8 @@ Deno.serve(async (req) => {
       const bericht = body.bericht ? String(body.bericht).trim().slice(0, 2000) : null;
       const productId = body.product_id ? String(body.product_id) : null;
 
-      if (!voornaam || !achternaam || !email) return json({ error: "missing_fields" }, 400);
-      if (!emailValid(email)) return json({ error: "invalid_email" }, 400);
+      if (!voornaam || !achternaam || !email) return json({ error: "missing_fields" }, 400, vHeaders);
+      if (!emailValid(email)) return json({ error: "invalid_email" }, 400, vHeaders);
 
       const { data: admin } = await supabase
         .from("users")
@@ -263,7 +347,7 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle();
 
-      if (!admin) return json({ error: "no_partner_admin" }, 500);
+      if (!admin) return json({ error: "no_partner_admin" }, 500, vHeaders);
 
       const { data: lead, error: leadErr } = await supabase
         .from("leads")
@@ -283,7 +367,7 @@ Deno.serve(async (req) => {
 
       if (leadErr) {
         console.error("lead insert", leadErr);
-        return json({ error: "lead_create_failed" }, 500);
+        return json({ error: "lead_create_failed" }, 500, vHeaders);
       }
 
       if (productId) {
@@ -295,12 +379,25 @@ Deno.serve(async (req) => {
         });
       }
 
-      return json({ success: true, lead_id: lead.id });
+      return json({ api_version: version, success: true, lead_id: lead.id }, 200, vHeaders);
     }
 
-    return json({ error: "not_found" }, 404);
+    if (req.method === "GET" && (subPath === "" || subPath === "version")) {
+      return json(
+        {
+          api_version: version,
+          default_version: DEFAULT_VERSION,
+          latest_version: LATEST_VERSION,
+          supported_versions: SUPPORTED_VERSIONS,
+        },
+        200,
+        vHeaders,
+      );
+    }
+
+    return json({ error: "not_found" }, 404, vHeaders);
   } catch (err) {
     console.error("partner-api error", err);
-    return json({ error: "internal_error" }, 500);
+    return json({ error: "internal_error" }, 500, vHeaders);
   }
 });
