@@ -24,8 +24,6 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Light website nav: always use light backdrop + purple logo
-  const lightMode = true;
 
   return (
     <nav
