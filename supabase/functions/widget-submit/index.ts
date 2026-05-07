@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     // Find partner_admin for this partner to use as owner_user_id
     const { data: partnerAdmin } = await supabaseAdmin
       .from("users")
-      .select("id")
+      .select("id, email")
       .eq("partner_id", widget.partner_id)
       .eq("rol", "partner_admin")
       .eq("status", "actief")
@@ -221,6 +221,35 @@ Deno.serve(async (req) => {
       entity_type: "leads",
       entity_id: lead.id,
     });
+
+    // Stuur e-mailnotificatie naar de ingestelde notificatie-email
+    // (valt terug op de partner-admin e-mail).
+    try {
+      const recipient = (widget.notificatie_email && String(widget.notificatie_email).trim())
+        || partnerAdmin.email;
+      if (recipient) {
+        const siteUrl = Deno.env.get("SITE_URL") || "https://mijnhuis.nu";
+        await supabaseAdmin.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "nieuwe-lead",
+            recipientEmail: recipient,
+            idempotencyKey: `nieuwe-lead-${lead.id}`,
+            templateData: {
+              voornaam: trimmedVoornaam,
+              achternaam: trimmedAchternaam,
+              email: trimmedEmail,
+              telefoon: trimmedTelefoon,
+              bron,
+              bericht: trimmedBericht,
+              productNaam: product_naam ?? null,
+              leadUrl: `${siteUrl}/leads/${lead.id}`,
+            },
+          },
+        });
+      }
+    } catch (mailErr) {
+      console.error("Email notificatie nieuwe lead mislukt:", mailErr);
+    }
 
     return new Response(
       JSON.stringify({ success: true, lead_id: lead.id, concept_offerte_id: conceptOfferteId }),
