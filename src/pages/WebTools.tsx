@@ -80,9 +80,16 @@ const WebTools = () => {
 
   const handleCreate = async (formData: WidgetFormData) => {
     if (!profile?.partner_id) return;
+    // Veiligheidsvalidatie: zorg dat het opgeslagen type altijd overeenkomt met
+    // de template-knop die de gebruiker heeft aangeklikt. Voorkomt dat stale
+    // form-state ooit nog tot een verkeerd type kan leiden.
+    const veiligType = configuratorType;
+    if (formData.type !== veiligType) {
+      console.warn("Widget type mismatch — corrigeren naar", veiligType);
+    }
     const { error } = await (supabase.from("web_widgets") as any).insert({
       partner_id: profile.partner_id,
-      type: formData.type,
+      type: veiligType,
       naam: formData.naam,
       config: formData.config,
       actief: formData.actief,
