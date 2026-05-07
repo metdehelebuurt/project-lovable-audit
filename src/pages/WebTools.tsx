@@ -203,18 +203,20 @@ const WebTools = () => {
         </div>
       )}
 
-      <WidgetConfigurator
-        open={configuratorOpen}
-        onOpenChange={setConfiguratorOpen}
-        onSave={handleCreate}
-        initialData={{
-          type: configuratorType,
-          naam: "",
-          config: { intro_tekst: "", cta_tekst: "Verstuur aanvraag", toon_telefoon: true, toon_bericht: true },
-          actief: true,
-          notificatie_email: "",
-        }}
-      />
+      {configuratorOpen && (
+        <WidgetConfigurator
+          open
+          onOpenChange={setConfiguratorOpen}
+          onSave={handleCreate}
+          initialData={{
+            type: configuratorType,
+            naam: "",
+            config: { intro_tekst: "", cta_tekst: "Verstuur aanvraag", toon_telefoon: true, toon_bericht: true },
+            actief: true,
+            notificatie_email: "",
+          }}
+        />
+      )}
 
       {editingWidget && (
         <WidgetConfigurator
