@@ -1,0 +1,1 @@
+DELETE FROM partner_api_tokens WHERE token_prefix='pat_qaver'
