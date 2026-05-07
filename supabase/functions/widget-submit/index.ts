@@ -222,34 +222,74 @@ Deno.serve(async (req) => {
       entity_id: lead.id,
     });
 
-    // Stuur e-mailnotificatie naar de ingestelde notificatie-email
-    // (valt terug op de partner-admin e-mail).
+    // Stuur e-mailnotificatie naar de partner via diens eigen
+    // e-mailkoppeling (Gmail / Outlook / SMTP). Valt terug op
+    // het systeem (Lovable transactional) als er nog geen
+    // mailkoppeling is.
     try {
       const recipient = (widget.notificatie_email && String(widget.notificatie_email).trim())
         || partnerAdmin.email;
       if (recipient) {
         const siteUrl = Deno.env.get("SITE_URL") || "https://mijnhuis.nu";
-        await supabaseAdmin.functions.invoke("send-transactional-email", {
-          body: {
-            templateName: "nieuwe-lead",
-            recipientEmail: recipient,
-            idempotencyKey: `nieuwe-lead-${lead.id}`,
-            templateData: {
-              voornaam: trimmedVoornaam,
-              achternaam: trimmedAchternaam,
-              email: trimmedEmail,
-              telefoon: trimmedTelefoon,
-              bron,
-              bericht: trimmedBericht,
-              productNaam: product_naam ?? null,
-              leadUrl: `${siteUrl}/leads/${lead.id}`,
+        const subject = `Nieuwe lead via website: ${trimmedVoornaam} ${trimmedAchternaam}`;
+        const rows: string[] = [];
+        rows.push(`<p><strong>Naam:</strong> ${escapeHtml(`${trimmedVoornaam} ${trimmedAchternaam}`)}</p>`);
+        rows.push(`<p><strong>E-mail:</strong> ${escapeHtml(trimmedEmail)}</p>`);
+        if (trimmedTelefoon) rows.push(`<p><strong>Telefoon:</strong> ${escapeHtml(trimmedTelefoon)}</p>`);
+        if (product_naam) rows.push(`<p><strong>Product:</strong> ${escapeHtml(String(product_naam))}</p>`);
+        if (bron) rows.push(`<p><strong>Bron:</strong> ${escapeHtml(bron)}</p>`);
+        if (trimmedBericht) rows.push(`<p><strong>Bericht:</strong><br/>${escapeHtml(trimmedBericht).replace(/\n/g,"<br/>")}</p>`);
+        const html = `
+          <div style="font-family:Inter,Arial,sans-serif;color:#222;max-width:560px">
+            <h2 style="margin:0 0 12px">Nieuwe lead binnen</h2>
+            <p style="color:#555">Er is via je website een nieuwe lead binnengekomen.</p>
+            <div style="background:#f6f6f9;padding:14px 18px;border-radius:10px;margin:12px 0">${rows.join("")}</div>
+            <p><a href="${siteUrl}/leads/${lead.id}" style="background:#5B58E1;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;display:inline-block">Bekijk lead</a></p>
+          </div>
+        `;
+
+        // Probeer eerst via partner-email (Gmail/Outlook/SMTP koppeling).
+        let usedPartnerEmail = false;
+        try {
+          const { sendPartnerEmail } = await import("../_shared/partner-email-send.ts");
+          await sendPartnerEmail({
+            adminClient: supabaseAdmin,
+            partnerId: widget.partner_id,
+            to: recipient,
+            subject,
+            html,
+            type: "nieuwe_lead",
+            leadId: lead.id,
+          });
+          usedPartnerEmail = true;
+        } catch (partnerMailErr) {
+          console.warn("Partner email mislukt, fallback naar systeem:", partnerMailErr);
+        }
+
+        if (!usedPartnerEmail) {
+          await supabaseAdmin.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "nieuwe-lead",
+              recipientEmail: recipient,
+              idempotencyKey: `nieuwe-lead-${lead.id}`,
+              templateData: {
+                voornaam: trimmedVoornaam,
+                achternaam: trimmedAchternaam,
+                email: trimmedEmail,
+                telefoon: trimmedTelefoon,
+                bron,
+                bericht: trimmedBericht,
+                productNaam: product_naam ?? null,
+                leadUrl: `${siteUrl}/leads/${lead.id}`,
+              },
             },
-          },
-        });
+          });
+        }
       }
     } catch (mailErr) {
       console.error("Email notificatie nieuwe lead mislukt:", mailErr);
     }
+
 
     return new Response(
       JSON.stringify({ success: true, lead_id: lead.id, concept_offerte_id: conceptOfferteId }),
