@@ -32,7 +32,7 @@ export function usePublicCatalogus(partnerSlug: string | undefined): State {
 
       const { data: prods } = await (supabase.from("producten_publiek" as never) as any)
         .select(
-          "id, naam, merk, categorie, afbeelding_url, afbeeldingen, prijs_excl_btw, btw_percentage, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, garantie_jaren, specs"
+          "id, naam, merk, categorie, afbeelding_url, afbeeldingen, prijs_excl_btw, btw_percentage, website_slug, website_pitch, website_omschrijving, website_usps, website_faq, garantie_jaren, specs, datasheet_url, datasheet_type, installatie_handleiding_url, installatie_handleiding_naam, gebruiker_handleiding_url, gebruiker_handleiding_naam"
         )
         .eq("partner_id", partner.id)
         .eq("toon_op_website", true)
