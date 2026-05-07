@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,25 @@ export const WidgetConfigurator = ({
       notificatie_email: "",
     }
   );
+
+  // Sync form-state met initialData wanneer de dialog (opnieuw) opent of wanneer
+  // het type wijzigt. Anders blijft state hangen op de eerste mount-waarde,
+  // waardoor elke nieuw aangemaakte widget als 'contactformulier' opgeslagen werd.
+  useEffect(() => {
+    if (!open || !initialData) return;
+    setForm({
+      type: initialData.type,
+      naam: initialData.naam ?? "",
+      config: {
+        intro_tekst: initialData.config?.intro_tekst ?? "",
+        cta_tekst: initialData.config?.cta_tekst ?? "Verstuur aanvraag",
+        toon_telefoon: initialData.config?.toon_telefoon ?? true,
+        toon_bericht: initialData.config?.toon_bericht ?? true,
+      },
+      actief: initialData.actief ?? true,
+      notificatie_email: initialData.notificatie_email ?? "",
+    });
+  }, [open, initialData?.type]);
 
   const handleSave = async () => {
     setSaving(true);
