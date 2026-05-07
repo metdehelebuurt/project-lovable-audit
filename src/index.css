@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,8 +8,15 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 0 0% 10%;
+    --background: 38 30% 97%;
+    --foreground: 222 25% 11%;
+
+    --surface: 0 0% 100%;
+    --surface-muted: 38 24% 94%;
+    --ink: 222 25% 11%;
+    --ink-soft: 222 14% 28%;
+    --ochre: 36 78% 56%;
+    --ochre-foreground: 222 25% 11%;
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
@@ -47,6 +56,9 @@
     --ring: 242 67% 62%;
 
     --radius: 0.75rem;
+
+    --shadow-soft: 0 1px 2px hsl(222 25% 11% / 0.04), 0 8px 24px -12px hsl(222 25% 11% / 0.08);
+    --shadow-frame: 0 30px 60px -30px hsl(222 25% 11% / 0.25), 0 12px 24px -12px hsl(222 25% 11% / 0.12);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 10%;
@@ -105,5 +117,12 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  .font-display {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 }
