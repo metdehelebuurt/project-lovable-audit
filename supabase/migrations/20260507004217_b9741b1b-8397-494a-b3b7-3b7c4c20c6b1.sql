@@ -1,0 +1,1 @@
+DELETE FROM partner_api_tokens WHERE token_prefix IN ('pat_qatest','pat_qatest2')
