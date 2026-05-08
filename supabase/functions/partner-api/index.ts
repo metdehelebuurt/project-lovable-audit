@@ -167,6 +167,29 @@ Deno.serve(async (req) => {
       .replace(/[^a-z0-9]+/gi, "-")
       .replace(/(^-|-$)/g, "")
       .slice(0, 80) || "bestand";
+  // Zorgt dat tekstvelden als geldige HTML worden teruggegeven, zodat
+  // afnemers de opmaak (alinea's, regelafbrekingen, opsommingen) direct
+  // kunnen renderen. Velden die al HTML-tags bevatten worden ongewijzigd
+  // doorgegeven; platte tekst krijgt <p>/<br> opmaak en wordt geëscaped.
+  const escapeHtml = (s: string): string =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  const looksLikeHtml = (s: string): boolean => /<\/?[a-z][\s\S]*>/i.test(s);
+  const toHtml = (val: unknown): string | null => {
+    if (val == null) return null;
+    const raw = String(val).trim();
+    if (!raw) return null;
+    if (looksLikeHtml(raw)) return raw;
+    const paragraphs = raw
+      .split(/\n{2,}/)
+      .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
+      .join("");
+    return paragraphs;
+  };
   const buildDownloadUrl = (
     productId: string,
     kind: "datasheet" | "installatie-handleiding" | "gebruiker-handleiding",
@@ -179,7 +202,7 @@ Deno.serve(async (req) => {
     merk: p.merk,
     model: p.model,
     categorie: p.categorie,
-    omschrijving: p.omschrijving,
+    omschrijving: toHtml(p.omschrijving),
     prijs_excl_btw: p.prijs_excl_btw,
     btw_percentage: p.btw_percentage,
     eenheid: p.eenheid,
@@ -189,14 +212,23 @@ Deno.serve(async (req) => {
     levertijd: p.levertijd,
     garantie_jaren: p.garantie_jaren,
     certificeringen: p.certificeringen,
-    installatie_instructies: p.installatie_instructies,
-    onderhoud: p.onderhoud,
+    installatie_instructies: toHtml(p.installatie_instructies),
+    onderhoud: toHtml(p.onderhoud),
     specs: p.specs ?? {},
     website_slug: p.website_slug,
-    website_pitch: p.website_pitch,
-    website_omschrijving: p.website_omschrijving,
-    website_usps: p.website_usps ?? [],
-    website_faq: p.website_faq ?? [],
+    website_pitch: toHtml(p.website_pitch),
+    website_omschrijving: toHtml(p.website_omschrijving),
+    website_usps: Array.isArray(p.website_usps)
+      ? (p.website_usps as unknown[])
+          .map((u) => toHtml(u))
+          .filter((u): u is string => Boolean(u))
+      : [],
+    website_faq: Array.isArray(p.website_faq)
+      ? (p.website_faq as Array<Record<string, unknown>>).map((f) => ({
+          vraag: toHtml(f?.vraag),
+          antwoord: toHtml(f?.antwoord),
+        }))
+      : [],
     afbeelding_url: buildStorageUrl(p.afbeelding_url),
     afbeeldingen: mapAfbeeldingen(p.afbeeldingen),
     datasheet: p.datasheet_url
@@ -353,7 +385,11 @@ Deno.serve(async (req) => {
         .eq("toon_op_website", true)
         .order("volgorde");
       if (error) throw error;
-      return json({ api_version: version, data }, 200, vHeaders);
+      const mapped = (data ?? []).map((b: Record<string, any>) => ({
+        ...b,
+        intro_html: toHtml(b.intro_html),
+      }));
+      return json({ api_version: version, data: mapped }, 200, vHeaders);
     }
 
     if (req.method === "GET" && subPath === "categories") {
