@@ -3,47 +3,52 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const CTAV2 = () => (
-  <section
-    className="relative py-24 lg:py-32 text-background"
-    style={{
-      backgroundImage:
-        "linear-gradient(180deg, hsl(var(--ink) / 0.92) 0%, hsl(var(--ink) / 0.96) 100%), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2400&q=80')",
-      backgroundAttachment: "fixed",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    }}
-  >
-    <div className="absolute inset-0 pointer-events-none">
-      <div className="absolute -right-20 top-10 h-96 w-96 rounded-full bg-primary/20 blur-[120px]" />
-      <div className="absolute -left-20 bottom-10 h-72 w-72 rounded-full bg-ochre/15 blur-[120px]" />
+  <section className="bg-ink text-background py-24 lg:py-36 relative overflow-hidden">
+    {/* mark */}
+    <div className="absolute top-10 left-10 font-mono text-[10px] uppercase tracking-[0.3em] text-background/40">
+      § 06 / Begin vandaag
+    </div>
+    <div className="absolute top-10 right-10 font-mono text-[10px] uppercase tracking-[0.3em] text-background/40">
+      mijnhuis.nu — 2026
     </div>
 
     <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
-      <div className="max-w-3xl">
-        <span className="text-[11px] uppercase tracking-[0.22em] text-background/60">Begin vandaag</span>
-        <h2 className="font-display text-4xl lg:text-6xl mt-4 leading-[1.02]">
-          Eén platform. Eindelijk overzicht.
-        </h2>
-        <p className="mt-6 text-base lg:text-lg text-background/70 max-w-xl leading-relaxed">
-          30 dagen gratis, geen creditcard nodig. Inclusief demo-data zodat
-          je direct kunt ervaren hoe je bedrijf eruit kan zien.
-        </p>
-        <div className="mt-10 flex flex-col sm:flex-row gap-3">
-          <Button size="lg" className="rounded-full px-7 h-12 text-sm font-medium bg-background text-ink hover:bg-background/90" asChild>
-            <Link to="/signup">
-              Start gratis proefperiode
-              <ArrowRight size={16} />
-            </Link>
-          </Button>
-          <Button
-            size="lg"
-            variant="ghost"
-            className="rounded-full px-6 h-12 text-sm text-background hover:bg-background/10 hover:text-background"
-            asChild
-          >
-            <Link to="/prijzen">Bekijk prijzen →</Link>
-          </Button>
+      <div className="grid lg:grid-cols-12 gap-10 items-end">
+        <div className="lg:col-span-9">
+          <h2 className="font-display text-[clamp(3rem,9vw,9rem)] leading-[0.9] tracking-[-0.035em]">
+            Eén platform.<br />
+            <span className="italic font-light text-ochre">Eindelijk</span> overzicht.
+          </h2>
         </div>
+        <div className="lg:col-span-3">
+          <p className="text-sm text-background/65 leading-relaxed border-l-2 border-ochre pl-5 mb-8">
+            30 dagen gratis, geen creditcard nodig. Inclusief demo-data zodat
+            je direct kunt ervaren hoe je bedrijf eruit kan zien.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button size="lg" className="rounded-none px-7 h-12 text-sm font-medium bg-bone text-ink hover:bg-bone/90 justify-between" asChild>
+              <Link to="/signup">
+                Start proefperiode
+                <ArrowRight size={16} />
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              className="rounded-none px-0 h-10 text-sm text-background hover:bg-transparent hover:text-ochre justify-start font-mono uppercase tracking-[0.18em] text-[11px]"
+              asChild
+            >
+              <Link to="/prijzen">→ Bekijk prijzen</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* bottom rule */}
+      <div className="mt-24 pt-6 border-t border-background/15 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.25em] text-background/50">
+        <span>— Editorial / NL</span>
+        <span>Vakmanschap, digitaal</span>
+        <span className="hidden md:inline">No. 06 / 06</span>
       </div>
     </div>
   </section>
