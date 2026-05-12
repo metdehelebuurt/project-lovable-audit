@@ -14,16 +14,16 @@ const BranchSwitcher = () => {
   const current = branches.find((b) => b.id === active)!;
 
   return (
-    <section className="py-24 lg:py-32 bg-surface-muted">
+    <section className="py-20 lg:py-28 bg-secondary">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-xs uppercase tracking-[0.2em] text-ink-soft">Voor jouw branche</span>
-          <h2 className="font-display text-4xl lg:text-6xl text-ink mt-4 leading-[1.05]">
-            Vakkennis <span className="italic text-primary">ingebouwd</span>.
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <span className="text-[11px] uppercase tracking-[0.22em] text-ink-soft">Voor jouw branche</span>
+          <h2 className="font-display text-4xl lg:text-5xl text-ink mt-4 leading-[1.05]">
+            Vakkennis ingebouwd.
           </h2>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
+        <div className="flex flex-wrap justify-center gap-2 mb-10">
           {branches.map((b) => {
             const Icon = b.icon;
             const isActive = b.id === active;
@@ -31,7 +31,7 @@ const BranchSwitcher = () => {
               <button
                 key={b.id}
                 onClick={() => setActive(b.id)}
-                className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
                   isActive
                     ? "bg-ink text-background"
                     : "bg-surface text-ink-soft hover:text-ink border border-border"
@@ -44,16 +44,16 @@ const BranchSwitcher = () => {
           })}
         </div>
 
-        <div className="bg-surface rounded-3xl border border-border p-10 lg:p-16 shadow-[var(--shadow-soft)]">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="bg-ink text-background rounded-2xl p-8 lg:p-12 shadow-[var(--shadow-frame)]">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
-              <span className="text-xs uppercase tracking-widest text-primary font-medium">{current.label}</span>
-              <h3 className="font-display text-3xl lg:text-5xl text-ink mt-4 leading-tight">
+              <span className="text-[11px] uppercase tracking-[0.22em] text-ochre font-medium">{current.label}</span>
+              <h3 className="font-display text-2xl lg:text-4xl mt-4 leading-tight">
                 {current.claim}
               </h3>
             </div>
-            <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-surface-muted via-background to-primary/5 border border-border flex items-center justify-center">
-              <current.icon className="h-32 w-32 text-primary/30 stroke-[1]" />
+            <div className="aspect-[4/3] rounded-xl bg-gradient-to-br from-background/[0.04] via-background/[0.02] to-primary/10 border border-background/10 flex items-center justify-center">
+              <current.icon className="h-28 w-28 text-background/30 stroke-[1]" />
             </div>
           </div>
         </div>
