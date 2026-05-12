@@ -19,21 +19,21 @@ const problems = [
 ];
 
 const ProblemSection = () => (
-  <section className="py-24 lg:py-32 bg-background">
+  <section className="py-20 lg:py-28 bg-surface-muted">
     <div className="max-w-7xl mx-auto px-6 lg:px-10">
-      <div className="max-w-3xl mb-16">
-        <span className="text-xs uppercase tracking-[0.2em] text-ink-soft">Herken je dit?</span>
-        <h2 className="font-display text-4xl lg:text-6xl text-ink mt-4 leading-[1.05]">
-          Groei wordt geremd door <span className="italic text-primary">losse onderdelen</span>.
+      <div className="max-w-3xl mb-12">
+        <span className="text-[11px] uppercase tracking-[0.22em] text-ink-soft">Herken je dit?</span>
+        <h2 className="font-display text-4xl lg:text-5xl text-ink mt-4 leading-[1.05]">
+          Groei wordt geremd door losse onderdelen.
         </h2>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-px bg-border rounded-3xl overflow-hidden border border-border">
+      <div className="grid md:grid-cols-3 gap-px bg-border rounded-2xl overflow-hidden border border-border">
         {problems.map((p) => (
-          <div key={p.title} className="bg-surface p-10">
-            <p.icon className="h-8 w-8 text-primary stroke-[1.25]" />
+          <div key={p.title} className="bg-surface p-8 lg:p-10">
+            <p.icon className="h-7 w-7 text-primary stroke-[1.5]" />
             <h3 className="font-display text-2xl text-ink mt-6">{p.title}</h3>
-            <p className="mt-3 text-ink-soft leading-relaxed">{p.body}</p>
+            <p className="mt-3 text-sm text-ink-soft leading-relaxed">{p.body}</p>
           </div>
         ))}
       </div>

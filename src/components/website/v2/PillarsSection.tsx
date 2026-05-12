@@ -25,18 +25,26 @@ const pillars = [
 ];
 
 const PillarsSection = () => (
-  <section className="py-24 lg:py-32 bg-ink text-background">
-    <div className="max-w-7xl mx-auto px-6 lg:px-10">
-      <div className="grid lg:grid-cols-12 gap-12 mb-20">
+  <section
+    className="relative py-24 lg:py-32 text-background"
+    style={{
+      backgroundImage:
+        "linear-gradient(180deg, hsl(var(--ink) / 0.94) 0%, hsl(var(--ink) / 0.98) 100%), url('https://images.unsplash.com/photo-1581094271901-8022df4466f9?auto=format&fit=crop&w=2400&q=80')",
+      backgroundAttachment: "fixed",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+      <div className="grid lg:grid-cols-12 gap-10 mb-16">
         <div className="lg:col-span-5">
-          <span className="text-xs uppercase tracking-[0.2em] text-background/50">Het platform</span>
-          <h2 className="font-display text-4xl lg:text-6xl mt-4 leading-[1.05]">
-            Drie pijlers,<br />
-            <span className="italic text-ochre">één systeem</span>.
+          <span className="text-[11px] uppercase tracking-[0.22em] text-background/50">Het platform</span>
+          <h2 className="font-display text-4xl lg:text-5xl mt-4 leading-[1.05]">
+            Drie pijlers, één systeem.
           </h2>
         </div>
         <div className="lg:col-span-6 lg:col-start-7 flex items-end">
-          <p className="text-lg text-background/70 leading-relaxed">
+          <p className="text-base text-background/70 leading-relaxed">
             mijnhuis.nu vervangt versnipperde software door één samenhangend
             platform. Van eerste lead tot opgeleverd project — alles in
             dezelfde taal, dezelfde stijl, dezelfde data.
@@ -44,18 +52,18 @@ const PillarsSection = () => (
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-4">
         {pillars.map((p) => (
           <article
             key={p.title}
-            className="rounded-3xl border border-background/10 bg-background/[0.03] p-8 hover:bg-background/[0.06] transition-colors"
+            className="rounded-2xl border border-background/10 bg-background/[0.04] backdrop-blur-sm p-7 hover:bg-background/[0.07] transition-colors"
           >
-            <div className="flex items-center justify-between mb-10">
-              <p.icon className="h-7 w-7 text-ochre stroke-[1.25]" />
-              <span className="text-xs uppercase tracking-widest text-background/40">{p.label}</span>
+            <div className="flex items-center justify-between mb-8">
+              <p.icon className="h-6 w-6 text-ochre stroke-[1.5]" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-background/40">{p.label}</span>
             </div>
-            <h3 className="font-display text-3xl">{p.title}</h3>
-            <p className="mt-4 text-background/70 leading-relaxed">{p.body}</p>
+            <h3 className="font-display text-2xl">{p.title}</h3>
+            <p className="mt-3 text-sm text-background/70 leading-relaxed">{p.body}</p>
             <ul className="mt-6 pt-6 border-t border-background/10 space-y-2 text-sm text-background/80">
               {p.items.map((i) => (
                 <li key={i} className="flex items-center gap-2">
