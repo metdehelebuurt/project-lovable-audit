@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,15 +8,19 @@
 
 @layer base {
   :root {
-    --background: 38 30% 97%;
-    --foreground: 222 25% 11%;
+    --background: 36 22% 96%;
+    --foreground: 220 30% 9%;
 
     --surface: 0 0% 100%;
-    --surface-muted: 38 24% 94%;
-    --ink: 222 25% 11%;
-    --ink-soft: 222 14% 28%;
-    --ochre: 36 78% 56%;
-    --ochre-foreground: 222 25% 11%;
+    --surface-muted: 36 18% 92%;
+    --ink: 220 30% 9%;
+    --ink-soft: 220 14% 32%;
+    --ochre: 28 70% 52%;
+    --ochre-foreground: 220 30% 9%;
+    --sage: 152 18% 36%;
+    --sage-foreground: 36 22% 96%;
+    --bone: 36 30% 90%;
+    --clay: 18 35% 88%;
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
@@ -118,11 +122,18 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
   }
 
   .font-display {
-    font-family: 'Instrument Serif', Georgia, serif;
+    font-family: 'Fraunces', Georgia, serif;
     font-weight: 400;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.025em;
+    font-optical-sizing: auto;
+  }
+
+  .font-mono-tag {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-feature-settings: "ss01";
   }
 }
