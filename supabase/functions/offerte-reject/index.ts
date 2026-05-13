@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getPartnerNotifyRecipients,
+  sendTransactionalBatch,
+} from "../_shared/partner-notify-recipients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +25,7 @@ serve(async (req) => {
     // Find offerte by token
     const { data: offerte, error: fetchErr } = await supabase
       .from("offertes")
-      .select("id, offertenummer, klant_naam, adviseur_id, status, share_token, share_expires_at")
+      .select("id, offertenummer, klant_naam, adviseur_id, partner_id, status, share_token, share_expires_at")
       .eq("share_token", share_token)
       .single();
 
@@ -63,6 +67,30 @@ serve(async (req) => {
         entity_type: "offertes",
         entity_id: offerte.id,
       });
+    }
+
+    // E-mail naar partner_admin/backoffice + adviseur
+    try {
+      if (offerte.partner_id) {
+        const recipients = await getPartnerNotifyRecipients(
+          supabase,
+          offerte.partner_id,
+          [offerte.adviseur_id],
+        );
+        await sendTransactionalBatch(
+          "offerte-afgewezen",
+          recipients,
+          `offerte-afgewezen-${offerte.id}`,
+          {
+            klantNaam: offerte.klant_naam,
+            offertenummer: offerte.offertenummer,
+            categorie: categorie || undefined,
+            reden: reden || undefined,
+          },
+        );
+      }
+    } catch (e) {
+      console.warn("E-mail bij offerte-afwijzing mislukt:", e);
     }
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
