@@ -83,6 +83,19 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
     return undefined;
   }
 
+  async function resolveKlantEmail(): Promise<string | undefined> {
+    if (!form) return;
+    if (form.klant_id) {
+      const { data } = await supabase.from("klanten").select("email").eq("id", form.klant_id).maybeSingle();
+      return data?.email || undefined;
+    }
+    if (form.lead_id) {
+      const { data } = await supabase.from("leads").select("email").eq("id", form.lead_id).maybeSingle();
+      return data?.email || undefined;
+    }
+    return undefined;
+  }
+
   async function adviseurEmail(id: string | null): Promise<string | undefined> {
     if (!id) return;
     const { data } = await supabase.from("users").select("email").eq("id", id).maybeSingle();
