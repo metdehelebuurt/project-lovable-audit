@@ -17,6 +17,12 @@ import { template as offerteNieuwBericht } from './offerte-nieuw-bericht.tsx'
 import { template as factuurBetaald } from './factuur-betaald.tsx'
 import { template as factuurVervaltBinnenkort } from './factuur-vervalt-binnenkort.tsx'
 import { template as trialVerloopt } from './trial-verloopt.tsx'
+import { template as schouwAfgerond } from './schouw-afgerond.tsx'
+import { template as installatieIngepland } from './installatie-ingepland.tsx'
+import { template as installatieGereed } from './installatie-gereed.tsx'
+import { template as opleverOndertekend } from './oplever-ondertekend.tsx'
+import { template as helpdeskEvent } from './helpdesk-event.tsx'
+import { template as gebruikerWelkom } from './gebruiker-welkom.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'trial-welkom': trialWelkom,
@@ -27,4 +33,10 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'factuur-betaald': factuurBetaald,
   'factuur-vervalt-binnenkort': factuurVervaltBinnenkort,
   'trial-verloopt': trialVerloopt,
+  'schouw-afgerond': schouwAfgerond,
+  'installatie-ingepland': installatieIngepland,
+  'installatie-gereed': installatieGereed,
+  'oplever-ondertekend': opleverOndertekend,
+  'helpdesk-event': helpdeskEvent,
+  'gebruiker-welkom': gebruikerWelkom,
 }

@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { sendPartnerEmail, PartnerEmailError } from "../_shared/partner-email-send.ts";
+import { sendTransactional } from "../_shared/partner-notify-recipients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,27 +78,23 @@ Deno.serve(async (req) => {
       .eq("id", body.ticket_id).maybeSingle();
     if (!ticket) return json({ skipped: "ticket niet gevonden" }, 200);
 
-    const { data: partner } = await supa
-      .from("partners").select("naam").eq("id", body.partner_id).maybeSingle();
+    const ticketUrl = `${Deno.env.get("SUPABASE_URL")?.replace(/\.supabase\.co$/, "") ?? ""}`; // niet gebruikt — frontend-URL is brand-domein
+    const templateData = {
+      event: body.event,
+      ticketnummer: ticket.ticketnummer,
+      titel: ticket.titel,
+      prioriteit: ticket.prioriteit,
+      status: ticket.status,
+      type: ticket.type,
+      omschrijving: ticket.omschrijving ?? undefined,
+      slaDeadline: ticket.sla_deadline ? new Date(ticket.sla_deadline).toLocaleString("nl-NL") : undefined,
+    };
+    const idemBase = `helpdesk-${body.event}-${body.ticket_id}`;
 
-    const subject = buildSubject(body.event, ticket);
-    const html = buildHtml(body.event, ticket, partner?.naam ?? "Helpdesk");
-
-    const results: Array<{ to: string; status: string; error?: string }> = [];
+    const results: Array<{ to: string; status: string }> = [];
     for (const to of ontvangers) {
-      try {
-        await sendPartnerEmail({
-          adminClient: supa,
-          partnerId: body.partner_id,
-          to, subject, html,
-          type: "helpdesk_notify",
-        });
-        results.push({ to, status: "verzonden" });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        const skipped = e instanceof PartnerEmailError && e.status === 400;
-        results.push({ to, status: skipped ? "skipped_no_account" : "fout", error: msg });
-      }
+      await sendTransactional("helpdesk-event", to, `${idemBase}-${to}`, templateData);
+      results.push({ to, status: "enqueued" });
     }
     return json({ ok: true, event: body.event, results }, 200);
   } catch (e) {
@@ -111,53 +107,4 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
-
-function buildSubject(event: EventType, t: { ticketnummer: string; titel: string }): string {
-  const emoji = event === "storing" || event === "escalatie" ? "🚨 " : "";
-  const labels: Record<EventType, string> = {
-    nieuw_ticket: "Nieuw ticket",
-    toewijzing: "Ticket toegewezen",
-    klant_reactie: "Klantreactie op ticket",
-    escalatie: "Ticket geëscaleerd",
-    oplossing: "Ticket opgelost",
-    storing: "STORING gemeld",
-    monteur_ticket: "Monteur heeft een ticket aangemaakt",
-  };
-  return `${emoji}${labels[event]}: ${t.ticketnummer} — ${t.titel}`;
-}
-
-function buildHtml(
-  event: EventType,
-  t: { ticketnummer: string; titel: string; prioriteit: string; status: string; type: string; omschrijving: string | null; sla_deadline: string | null },
-  partnerNaam: string,
-): string {
-  const labels: Record<EventType, string> = {
-    nieuw_ticket: "Er is een nieuw ticket aangemaakt.",
-    toewijzing: "Een ticket is aan je toegewezen.",
-    klant_reactie: "Er is een klantreactie geplaatst op een ticket.",
-    escalatie: "Een ticket is geëscaleerd door SLA-overschrijding.",
-    oplossing: "Een ticket is gemarkeerd als opgelost.",
-    storing: "Er is een storing gemeld die direct aandacht vraagt.",
-    monteur_ticket: "Een monteur heeft een ticket aangemaakt op een installatie die jij beheert.",
-  };
-  const sla = t.sla_deadline ? new Date(t.sla_deadline).toLocaleString("nl-NL") : "—";
-  return `
-    <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#0f172a">
-      <h2 style="margin:0 0 16px">${labels[event]}</h2>
-      <table style="width:100%;border-collapse:collapse;font-size:14px">
-        <tr><td style="padding:8px 0;color:#64748b;width:140px">Ticketnummer</td><td><strong>${t.ticketnummer}</strong></td></tr>
-        <tr><td style="padding:8px 0;color:#64748b">Titel</td><td>${esc(t.titel)}</td></tr>
-        <tr><td style="padding:8px 0;color:#64748b">Type</td><td>${t.type}</td></tr>
-        <tr><td style="padding:8px 0;color:#64748b">Prioriteit</td><td>${t.prioriteit}</td></tr>
-        <tr><td style="padding:8px 0;color:#64748b">Status</td><td>${t.status}</td></tr>
-        <tr><td style="padding:8px 0;color:#64748b">SLA-deadline</td><td>${sla}</td></tr>
-      </table>
-      ${t.omschrijving ? `<p style="margin-top:16px;background:#f1f5f9;padding:12px;border-radius:8px;white-space:pre-wrap">${esc(t.omschrijving)}</p>` : ""}
-      <p style="margin-top:24px;font-size:12px;color:#64748b">— ${esc(partnerNaam)} helpdesk</p>
-    </div>`;
-}
-
-function esc(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getPartnerNotifyRecipients, sendTransactionalBatch } from "../_shared/partner-notify-recipients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,30 @@ Deno.serve(async (req) => {
       actie: "klant_ondertekend",
       details: { naam, ip },
     });
+
+    // Notificeer partner-team
+    try {
+      const { data: full } = await admin
+        .from("opleverrapporten")
+        .select("rapportnummer")
+        .eq("id", rapport.id)
+        .maybeSingle();
+      const recipients = await getPartnerNotifyRecipients(admin, rapport.partner_id);
+      if (recipients.length > 0) {
+        await sendTransactionalBatch(
+          "oplever-ondertekend",
+          recipients,
+          `oplever-ondertekend-${rapport.id}`,
+          {
+            rapportnummer: full?.rapportnummer ?? undefined,
+            klantNaam: naam,
+            ondertekendOp: new Date().toLocaleDateString("nl-NL"),
+          },
+        );
+      }
+    } catch (e) {
+      console.warn("oplever-ondertekend mail kon niet worden verzonden:", e);
+    }
 
     return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
