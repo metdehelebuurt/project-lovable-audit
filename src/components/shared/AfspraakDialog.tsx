@@ -5,14 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
 import { CalendarIcon, Video, MapPin, Phone, User } from "lucide-react";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface AfspraakDialogProps {
   open: boolean;
@@ -214,7 +221,29 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Datum *</Label>
-              <Input type="date" value={form.datum} onChange={e => update("datum", e.target.value)} />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !form.datum && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.datum ? format(new Date(form.datum + "T00:00:00"), "d MMMM yyyy", { locale: nl }) : <span>Kies een datum</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.datum ? new Date(form.datum + "T00:00:00") : undefined}
+                    onSelect={(date) => update("datum", date ? format(date, "yyyy-MM-dd") : "")}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label>Van</Label>
