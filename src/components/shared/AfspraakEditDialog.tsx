@@ -83,6 +83,19 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
     return undefined;
   }
 
+  async function resolveKlantEmail(): Promise<string | undefined> {
+    if (!form) return;
+    if (form.klant_id) {
+      const { data } = await supabase.from("klanten").select("email").eq("id", form.klant_id).maybeSingle();
+      return data?.email || undefined;
+    }
+    if (form.lead_id) {
+      const { data } = await supabase.from("leads").select("email").eq("id", form.lead_id).maybeSingle();
+      return data?.email || undefined;
+    }
+    return undefined;
+  }
+
   async function adviseurEmail(id: string | null): Promise<string | undefined> {
     if (!id) return;
     const { data } = await supabase.from("users").select("email").eq("id", id).maybeSingle();
@@ -167,12 +180,14 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
       } else if (wijzigingen.length > 0) {
         const email = await adviseurEmail(form.adviseur_id);
         if (email && form.adviseur_id !== profile?.id) recipients.add(email);
+        const klantEmail = await resolveKlantEmail();
+        if (klantEmail) recipients.add(klantEmail);
         for (const r of recipients) {
           await supabase.functions.invoke("send-transactional-email", {
             body: {
               templateName: "afspraak-gewijzigd",
               recipientEmail: r,
-              idempotencyKey: `afspraak-gewijzigd-${afspraak.id}-${Date.now()}`,
+              idempotencyKey: `afspraak-gewijzigd-${afspraak.id}-${r}-${Date.now()}`,
               templateData: {
                 titel: form.titel,
                 datum: fmtDate(form.datum),
@@ -205,13 +220,17 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
     try {
       const klantNaam = await resolveKlantNaam();
       const geannuleerdDoor = [profile?.voornaam, profile?.achternaam].filter(Boolean).join(" ") || undefined;
-      const email = await adviseurEmail(afspraak.adviseur_id);
-      if (email && afspraak.adviseur_id !== profile?.id) {
+      const recipients = new Set<string>();
+      const advEmail = await adviseurEmail(afspraak.adviseur_id);
+      if (advEmail && afspraak.adviseur_id !== profile?.id) recipients.add(advEmail);
+      const klantEmail = await resolveKlantEmail();
+      if (klantEmail) recipients.add(klantEmail);
+      for (const r of recipients) {
         await supabase.functions.invoke("send-transactional-email", {
           body: {
             templateName: "afspraak-geannuleerd",
-            recipientEmail: email,
-            idempotencyKey: `afspraak-geannuleerd-${afspraak.id}`,
+            recipientEmail: r,
+            idempotencyKey: `afspraak-geannuleerd-${afspraak.id}-${r}`,
             templateData: {
               titel: afspraak.titel,
               datum: fmtDate(afspraak.datum),
