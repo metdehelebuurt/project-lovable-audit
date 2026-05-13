@@ -1,4 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getPartnerNotifyRecipients,
+  sendTransactionalBatch,
+} from "../_shared/partner-notify-recipients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,6 +115,29 @@ Deno.serve(async (req) => {
       } catch (notifErr) {
         // Notificaties zijn best-effort — niet blokkerend voor verzending.
         console.warn("Notificatie aanmaken mislukt:", notifErr);
+      }
+
+      // E-mail naar partner_admin/backoffice + adviseur
+      try {
+        if (offerte.partner_id) {
+          const recipients = await getPartnerNotifyRecipients(
+            supabase,
+            offerte.partner_id,
+            [offerte.adviseur_id],
+          );
+          await sendTransactionalBatch(
+            "offerte-nieuw-bericht",
+            recipients,
+            `offerte-bericht-${offerte.id}-${Date.now()}`,
+            {
+              afzenderNaam: afzender_naam.trim(),
+              offertenummer: offerte.offertenummer,
+              bericht: bericht.trim(),
+            },
+          );
+        }
+      } catch (mailErr) {
+        console.warn("E-mail bij portal-bericht mislukt:", mailErr);
       }
 
       return new Response(JSON.stringify({ success: true }), {
