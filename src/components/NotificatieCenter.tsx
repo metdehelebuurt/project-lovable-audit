@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 
 type NotifFilter = "alle" | "tickets" | "installaties" | "leads" | "financieel";
 
@@ -49,6 +50,7 @@ export function NotificatieCenter() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<NotifFilter>("alle");
+  const { show: showBrowserNotif } = useBrowserNotifications();
 
   const { data: notificaties = [] } = useQuery({
     queryKey: ["notificaties", user?.id],
@@ -102,12 +104,23 @@ export function NotificatieCenter() {
         schema: "public",
         table: "notificaties",
         filter: `user_id=eq.${user.id}`,
-      }, () => {
+      }, (payload) => {
         queryClient.invalidateQueries({ queryKey: ["notificaties"] });
+        const n = payload.new as { titel?: string; bericht?: string; entity_type?: string | null; entity_id?: string | null };
+        if (n?.titel) {
+          showBrowserNotif(n.titel, {
+            body: n.bericht ?? "",
+            tag: `notif-${n.entity_type ?? ""}-${n.entity_id ?? ""}`,
+            onClick: () => {
+              const route = routeForEntity(n.entity_type ?? null, n.entity_id ?? null);
+              if (route) navigate(route);
+            },
+          });
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, queryClient]);
+  }, [user, queryClient, showBrowserNotif, navigate]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
