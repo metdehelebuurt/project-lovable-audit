@@ -88,6 +88,23 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
     if (defaultTitle) setForm(prev => ({ ...prev, titel: defaultTitle }));
   }, [defaultTitle]);
 
+  // Fetch klant email when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    const fetchKlantEmail = async () => {
+      if (klantId) {
+        const { data } = await supabase.from("klanten").select("email").eq("id", klantId).maybeSingle();
+        if (data?.email) setKlantEmail(data.email);
+      } else if (leadId) {
+        const { data } = await supabase.from("leads").select("email").eq("id", leadId).maybeSingle();
+        if (data?.email) setKlantEmail(data.email);
+      } else {
+        setKlantEmail(null);
+      }
+    };
+    fetchKlantEmail();
+  }, [open, klantId, leadId]);
+
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSave = async () => {
