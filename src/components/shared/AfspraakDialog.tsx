@@ -52,6 +52,8 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
     notities: "",
     adviseur_id: profile?.id || "",
   });
+  const [bevestigingVersturen, setBevestigingVersturen] = useState(false);
+  const [klantEmail, setKlantEmail] = useState<string | null>(null);
 
   // Fetch team users (adviseurs + staff + admin) for partner
   useEffect(() => {
