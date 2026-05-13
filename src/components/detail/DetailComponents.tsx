@@ -142,6 +142,11 @@ export const AfsprakenLijst = ({ afspraken, onNew }: { afspraken: any[]; onNew?:
                     {a.start_tijd && ` • ${a.start_tijd.slice(0, 5)}`}
                     {a.eind_tijd && ` - ${a.eind_tijd.slice(0, 5)}`}
                   </p>
+                  {a.adviseur && (a.adviseur.voornaam || a.adviseur.achternaam) ? (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Adviseur: {[a.adviseur.voornaam, a.adviseur.achternaam].filter(Boolean).join(" ")}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <Badge variant="outline" className="text-xs">{a.status}</Badge>
