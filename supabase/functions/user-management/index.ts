@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendTransactional } from "../_shared/partner-notify-recipients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -150,6 +151,32 @@ serve(async (req) => {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
+        }
+
+        // Welkomstmail met password-reset link
+        try {
+          const siteUrl = req.headers.get("origin") ?? "https://mijnhuis.nu";
+          const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
+            type: "recovery",
+            email,
+            options: { redirectTo: `${siteUrl}/reset-password` },
+          });
+          const setupUrl = linkData?.properties?.action_link ?? `${siteUrl}/login`;
+          let partnerNaam: string | undefined;
+          if (partner_id) {
+            const { data: p } = await supabaseAdmin
+              .from("partners").select("naam").eq("id", partner_id).maybeSingle();
+            partnerNaam = p?.naam ?? undefined;
+          }
+          const { data: inviter } = await supabaseAdmin
+            .from("users").select("voornaam, achternaam")
+            .eq("id", caller.id).maybeSingle();
+          const uitgenodigdDoor = [inviter?.voornaam, inviter?.achternaam].filter(Boolean).join(" ") || undefined;
+          await sendTransactional("gebruiker-welkom", email, `gebruiker-welkom-${authUser.user.id}`, {
+            voornaam, email, rol, partnerNaam, uitgenodigdDoor, setupUrl,
+          });
+        } catch (e) {
+          console.warn("gebruiker-welkom mail kon niet worden verzonden:", e);
         }
 
         return new Response(JSON.stringify({ user: { id: authUser.user.id, email } }), {
