@@ -389,6 +389,13 @@ const KlantDetail = () => {
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["klant-afspraken", id] })}
       />
 
+      <AfspraakEditDialog
+        open={!!editAfspraak}
+        onOpenChange={(o) => { if (!o) setEditAfspraak(null); }}
+        afspraak={editAfspraak}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["klant-afspraken", id] })}
+      />
+
       <RetourDialog
         open={retourOpen}
         onOpenChange={setRetourOpen}
