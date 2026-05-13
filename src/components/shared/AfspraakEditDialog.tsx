@@ -180,12 +180,14 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
       } else if (wijzigingen.length > 0) {
         const email = await adviseurEmail(form.adviseur_id);
         if (email && form.adviseur_id !== profile?.id) recipients.add(email);
+        const klantEmail = await resolveKlantEmail();
+        if (klantEmail) recipients.add(klantEmail);
         for (const r of recipients) {
           await supabase.functions.invoke("send-transactional-email", {
             body: {
               templateName: "afspraak-gewijzigd",
               recipientEmail: r,
-              idempotencyKey: `afspraak-gewijzigd-${afspraak.id}-${Date.now()}`,
+              idempotencyKey: `afspraak-gewijzigd-${afspraak.id}-${r}-${Date.now()}`,
               templateData: {
                 titel: form.titel,
                 datum: fmtDate(form.datum),
