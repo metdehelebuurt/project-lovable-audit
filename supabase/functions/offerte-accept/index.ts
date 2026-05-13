@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getPartnerNotifyRecipients,
+  sendTransactionalBatch,
+} from "../_shared/partner-notify-recipients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -138,6 +142,30 @@ serve(async (req) => {
       entity_type: "offertes",
       entity_id: offerte.id,
     });
+
+    // E-mail naar partner_admin/backoffice + adviseur
+    try {
+      const recipients = await getPartnerNotifyRecipients(
+        supabase,
+        offerte.partner_id,
+        [offerte.adviseur_id],
+      );
+      const totaal = typeof offerte.totaal_bedrag === "number"
+        ? `€ ${offerte.totaal_bedrag.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : undefined;
+      await sendTransactionalBatch(
+        "offerte-geaccepteerd",
+        recipients,
+        `offerte-geaccepteerd-${offerte.id}`,
+        {
+          klantNaam: offerte.klant_naam,
+          offertenummer: offerte.offertenummer,
+          totaalBedrag: totaal,
+        },
+      );
+    } catch (e) {
+      console.warn("E-mail bij offerte-acceptatie mislukt:", e);
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
