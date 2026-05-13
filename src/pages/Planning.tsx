@@ -139,7 +139,8 @@ const Planning = () => {
         supabase.from("installaties").select("id, geplande_startdatum, geplande_einddatum, consument_naam, status, installateur_id")
           .gte("geplande_startdatum", rangeStart).lte("geplande_startdatum", rangeEnd),
         supabase.from("afspraken" as any).select("id, datum, titel, type, status, start_tijd, eind_tijd, locatie, notities, adviseur_id")
-          .gte("datum", rangeStart).lte("datum", rangeEnd),
+          .gte("datum", rangeStart).lte("datum", rangeEnd)
+          .neq("status", "geannuleerd"),
       ]);
 
       const takenRes = await supabase

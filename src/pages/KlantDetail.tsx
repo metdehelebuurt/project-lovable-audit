@@ -95,7 +95,9 @@ const KlantDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("afspraken" as any)
         .select("*, adviseur:users!afspraken_adviseur_id_fkey(voornaam, achternaam)")
-        .eq("klant_id", id!).order("datum", { ascending: false });
+        .eq("klant_id", id!)
+        .neq("status", "geannuleerd")
+        .order("datum", { ascending: false });
       if (error) throw error;
       return data as any[];
     },
