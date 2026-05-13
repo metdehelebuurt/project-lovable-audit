@@ -23,6 +23,9 @@ import { template as installatieGereed } from './installatie-gereed.tsx'
 import { template as opleverOndertekend } from './oplever-ondertekend.tsx'
 import { template as helpdeskEvent } from './helpdesk-event.tsx'
 import { template as gebruikerWelkom } from './gebruiker-welkom.tsx'
+import { template as afspraakIngepland } from './afspraak-ingepland.tsx'
+import { template as afspraakGewijzigd } from './afspraak-gewijzigd.tsx'
+import { template as afspraakGeannuleerd } from './afspraak-geannuleerd.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'trial-welkom': trialWelkom,
@@ -39,4 +42,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'oplever-ondertekend': opleverOndertekend,
   'helpdesk-event': helpdeskEvent,
   'gebruiker-welkom': gebruikerWelkom,
+  'afspraak-ingepland': afspraakIngepland,
+  'afspraak-gewijzigd': afspraakGewijzigd,
+  'afspraak-geannuleerd': afspraakGeannuleerd,
 }
