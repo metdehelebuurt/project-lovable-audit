@@ -3,6 +3,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.99.0';
+import {
+  getPartnerNotifyRecipients,
+  sendTransactionalBatch,
+} from '../_shared/partner-notify-recipients.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -54,6 +58,27 @@ Deno.serve(async (req) => {
             entity_type: 'abonnementen',
             entity_id: abo.id,
           });
+        }
+
+        // Verstuur e-mail aan partner_admin + backoffice (alleen voor trials)
+        if (abo.status === 'trial') {
+          try {
+            const recipients = await getPartnerNotifyRecipients(supabase, abo.partner_id);
+            const verloopFmt = new Date(abo.verloop_datum).toLocaleDateString('nl-NL');
+            await sendTransactionalBatch(
+              'trial-verloopt',
+              recipients,
+              `trial-verloopt-${abo.id}-${daysUntil}`,
+              {
+                partnerNaam: (abo as any).partners?.naam,
+                daysUntil,
+                verloopDatum: verloopFmt,
+                planNaam: (abo as any).abonnement_plannen?.naam ?? abo.plan,
+              },
+            );
+          } catch (mailErr) {
+            console.warn('Trial-verloopt e-mail mislukt:', mailErr);
+          }
         }
 
         // Admin notification
