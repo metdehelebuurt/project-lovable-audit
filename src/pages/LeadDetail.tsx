@@ -182,7 +182,8 @@ const LeadDetail = () => {
     queryKey: ["lead-afspraken", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("afspraken" as any)
-        .select("*").eq("lead_id", id!).order("datum", { ascending: false });
+        .select("*, adviseur:users!afspraken_adviseur_id_fkey(voornaam, achternaam)")
+        .eq("lead_id", id!).order("datum", { ascending: false });
       if (error) throw error;
       return data as any[];
     },
