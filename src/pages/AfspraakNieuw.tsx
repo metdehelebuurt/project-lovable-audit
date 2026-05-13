@@ -113,9 +113,10 @@ const AfspraakNieuw = () => {
     if (!profile?.partner_id) { toast.error("Geen partner gekoppeld"); return; }
 
     setSaving(true);
-    const { error } = await supabase.from("afspraken" as any).insert({
+    const adviseurId = form.adviseur_id || profile.id;
+    const { data: inserted, error } = await supabase.from("afspraken" as any).insert({
       partner_id: profile.partner_id,
-      adviseur_id: form.adviseur_id || profile.id,
+      adviseur_id: adviseurId,
       lead_id: selectedLead?.id || null,
       titel: form.titel.trim(),
       type: form.type,
@@ -125,10 +126,41 @@ const AfspraakNieuw = () => {
       locatie: form.locatie.trim() || null,
       notities: form.notities.trim() || null,
       status: "gepland",
-    } as any);
+    } as any).select("id").single();
     setSaving(false);
 
     if (error) { toast.error(error.message); return; }
+
+    try {
+      if (adviseurId && adviseurId !== profile.id) {
+        const { data: adviseur } = await supabase.from("users")
+          .select("email").eq("id", adviseurId).maybeSingle();
+        if (adviseur?.email) {
+          const ingeplandDoor = [(profile as any).voornaam, (profile as any).achternaam].filter(Boolean).join(" ") || undefined;
+          const klantNaam = selectedLead ? `${selectedLead.voornaam} ${selectedLead.achternaam}`.trim() : undefined;
+          await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "afspraak-ingepland",
+              recipientEmail: adviseur.email,
+              idempotencyKey: `afspraak-ingepland-${(inserted as any)?.id}`,
+              templateData: {
+                titel: form.titel.trim(),
+                type: form.type,
+                datum: new Date(form.datum).toLocaleDateString("nl-NL"),
+                tijd: form.start_tijd ? form.start_tijd.slice(0, 5) : undefined,
+                locatie: form.locatie.trim() || undefined,
+                klantNaam,
+                notities: form.notities.trim() || undefined,
+                ingeplandDoor,
+              },
+            },
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("afspraak-ingepland mail kon niet worden verzonden", e);
+    }
+
     toast.success("Afspraak ingepland");
     navigate("/planning");
   };
