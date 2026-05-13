@@ -169,8 +169,36 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
       console.warn("afspraak-ingepland mail kon niet worden verzonden", e);
     }
 
+    // E-mail naar klant/lead als bevestiging is aangevinkt
+    try {
+      if (bevestigingVersturen && klantEmail) {
+        const ingeplandDoor = [profile.voornaam, profile.achternaam].filter(Boolean).join(" ") || undefined;
+        const klantNaam = await resolveKlantNaam(leadId, klantId);
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "afspraak-ingepland",
+            recipientEmail: klantEmail,
+            idempotencyKey: `afspraak-bevestiging-klant-${(inserted as any)?.id}`,
+            templateData: {
+              titel: form.titel,
+              type: form.type,
+              datum: new Date(form.datum).toLocaleDateString("nl-NL"),
+              tijd: form.start_tijd ? form.start_tijd.slice(0, 5) : undefined,
+              locatie: form.locatie || undefined,
+              klantNaam,
+              notities: form.notities || undefined,
+              ingeplandDoor,
+            },
+          },
+        });
+      }
+    } catch (e) {
+      console.warn("afspraak-bevestiging-klant mail kon niet worden verzonden", e);
+    }
+
     toast.success("Afspraak ingepland");
     setForm({ titel: "", type: "thuisbezoek", datum: "", start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile?.id || "" });
+    setBevestigingVersturen(false);
     onOpenChange(false);
     onSuccess?.();
   };
