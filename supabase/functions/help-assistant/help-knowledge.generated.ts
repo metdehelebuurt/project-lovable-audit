@@ -246,6 +246,19 @@ export const MODULE_HELP: ModuleHelp[] = [
     "howTo": "Voorraadoverzicht per product met mutaties, reserveringen en correcties."
   },
   {
+    "key": "inkoop",
+    "label": "Inkoop",
+    "groep": "Logistiek",
+    "roles": [
+      "superadmin",
+      "partner_admin",
+      "backoffice"
+    ],
+    "primaryPath": "/inkoop",
+    "extraPaths": [],
+    "howTo": "Module Inkoop."
+  },
+  {
     "key": "inkoop_ontvangsten",
     "label": "Inkoopontvangsten",
     "groep": "Logistiek",
