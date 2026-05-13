@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Bell, Mail } from "lucide-react";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 
 type Voorkeur = { type: string; in_app: boolean; email: boolean };
 
@@ -24,6 +25,7 @@ export default function NotificatieVoorkeuren() {
   const [voorkeuren, setVoorkeuren] = useState<Record<string, Voorkeur>>({});
   const [laden, setLaden] = useState(true);
   const [opslaan, setOpslaan] = useState(false);
+  const browser = useBrowserNotifications();
 
   useEffect(() => {
     if (!user) return;
@@ -66,6 +68,37 @@ export default function NotificatieVoorkeuren() {
   if (laden) return <p className="text-sm text-muted-foreground">Laden…</p>;
 
   return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Browser-meldingen</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Ontvang notificaties als systeemmelding in Chrome, Edge of Safari, ook wanneer je het tabblad niet actief hebt.
+          </p>
+          {!browser.supported ? (
+            <p className="text-sm text-destructive">Deze browser ondersteunt geen meldingen.</p>
+          ) : browser.permission === "denied" ? (
+            <p className="text-sm text-destructive">
+              Meldingen zijn geblokkeerd. Sta meldingen toe in de site-instellingen van je browser om dit in te schakelen.
+            </p>
+          ) : browser.permission !== "granted" ? (
+            <Button onClick={() => browser.request()}>Browser-meldingen toestaan</Button>
+          ) : (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label className="text-sm font-medium">Browser-meldingen actief</Label>
+                <p className="text-xs text-muted-foreground">
+                  Schakel uit als je geen systeemmeldingen meer wilt ontvangen op dit apparaat.
+                </p>
+              </div>
+              <Switch checked={browser.enabled} onCheckedChange={browser.setEnabled} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
     <Card>
       <CardHeader>
         <CardTitle>Notificatievoorkeuren</CardTitle>
@@ -99,5 +132,6 @@ export default function NotificatieVoorkeuren() {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
