@@ -310,6 +310,26 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
             <Label>Notities</Label>
             <Textarea value={form.notities} onChange={e => update("notities", e.target.value)} rows={3} placeholder="Eventuele notities..." />
           </div>
+          {klantEmail && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium cursor-pointer" htmlFor="bevestiging-switch">
+                    Afspraakbevestiging versturen
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Stuur een bevestiging naar {klantEmail}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="bevestiging-switch"
+                checked={bevestigingVersturen}
+                onCheckedChange={setBevestigingVersturen}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
