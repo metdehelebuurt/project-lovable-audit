@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     try {
       const { data: full } = await admin
         .from("opleverrapporten")
-        .select("rapportnummer, klant_naam")
+        .select("rapportnummer")
         .eq("id", rapport.id)
         .maybeSingle();
       const recipients = await getPartnerNotifyRecipients(admin, rapport.partner_id);
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
           `oplever-ondertekend-${rapport.id}`,
           {
             rapportnummer: full?.rapportnummer ?? undefined,
-            klantNaam: full?.klant_naam ?? naam,
+            klantNaam: naam,
             ondertekendOp: new Date().toLocaleDateString("nl-NL"),
           },
         );
