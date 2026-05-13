@@ -101,7 +101,7 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
       // Klant bevestigd
       const klantOk = !!installatie.bevestiging_verzonden_op && !!installatie.monteur_geaccepteerd_op;
       pushSysteem({
-        key: "klant_bevestigd", label: "Klantbevestiging compleet",
+        key: "klant_bevestigd", label: "Orderbevestiging Klant ",
         status: klantOk ? "ok" : installatie.bevestiging_verzonden_op ? "warn" : "fail",
         details: klantOk ? "Klant + monteur akkoord" : installatie.bevestiging_verzonden_op ? "Klant nog te bevestigen" : "Nog niet verzonden",
       });
