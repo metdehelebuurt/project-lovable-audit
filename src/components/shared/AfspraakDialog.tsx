@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -16,7 +17,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { CalendarIcon, Video, MapPin, Phone, User } from "lucide-react";
+import { CalendarIcon, Video, MapPin, Phone, User, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,8 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
     notities: "",
     adviseur_id: profile?.id || "",
   });
+  const [bevestigingVersturen, setBevestigingVersturen] = useState(false);
+  const [klantEmail, setKlantEmail] = useState<string | null>(null);
 
   // Fetch team users (adviseurs + staff + admin) for partner
   useEffect(() => {
@@ -84,6 +87,23 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
   useEffect(() => {
     if (defaultTitle) setForm(prev => ({ ...prev, titel: defaultTitle }));
   }, [defaultTitle]);
+
+  // Fetch klant email when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    const fetchKlantEmail = async () => {
+      if (klantId) {
+        const { data } = await supabase.from("klanten").select("email").eq("id", klantId).maybeSingle();
+        if (data?.email) setKlantEmail(data.email);
+      } else if (leadId) {
+        const { data } = await supabase.from("leads").select("email").eq("id", leadId).maybeSingle();
+        if (data?.email) setKlantEmail(data.email);
+      } else {
+        setKlantEmail(null);
+      }
+    };
+    fetchKlantEmail();
+  }, [open, klantId, leadId]);
 
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -149,8 +169,36 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
       console.warn("afspraak-ingepland mail kon niet worden verzonden", e);
     }
 
+    // E-mail naar klant/lead als bevestiging is aangevinkt
+    try {
+      if (bevestigingVersturen && klantEmail) {
+        const ingeplandDoor = [profile.voornaam, profile.achternaam].filter(Boolean).join(" ") || undefined;
+        const klantNaam = await resolveKlantNaam(leadId, klantId);
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "afspraak-ingepland",
+            recipientEmail: klantEmail,
+            idempotencyKey: `afspraak-bevestiging-klant-${(inserted as any)?.id}`,
+            templateData: {
+              titel: form.titel,
+              type: form.type,
+              datum: new Date(form.datum).toLocaleDateString("nl-NL"),
+              tijd: form.start_tijd ? form.start_tijd.slice(0, 5) : undefined,
+              locatie: form.locatie || undefined,
+              klantNaam,
+              notities: form.notities || undefined,
+              ingeplandDoor,
+            },
+          },
+        });
+      }
+    } catch (e) {
+      console.warn("afspraak-bevestiging-klant mail kon niet worden verzonden", e);
+    }
+
     toast.success("Afspraak ingepland");
     setForm({ titel: "", type: "thuisbezoek", datum: "", start_tijd: "", eind_tijd: "", locatie: "", notities: "", adviseur_id: profile?.id || "" });
+    setBevestigingVersturen(false);
     onOpenChange(false);
     onSuccess?.();
   };
@@ -262,6 +310,26 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
             <Label>Notities</Label>
             <Textarea value={form.notities} onChange={e => update("notities", e.target.value)} rows={3} placeholder="Eventuele notities..." />
           </div>
+          {klantEmail && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium cursor-pointer" htmlFor="bevestiging-switch">
+                    Afspraakbevestiging versturen
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Stuur een bevestiging naar {klantEmail}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="bevestiging-switch"
+                checked={bevestigingVersturen}
+                onCheckedChange={setBevestigingVersturen}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
