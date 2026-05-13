@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
+import { AfspraakEditDialog } from "@/components/shared/AfspraakEditDialog";
 import {
   QuickStat, TabButton, InfoRow, OffertesLijst, SchouwenLijst, AfsprakenLijst,
   SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
