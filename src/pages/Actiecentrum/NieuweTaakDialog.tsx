@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -27,6 +28,11 @@ export default function NieuweTaakDialog({ open, onOpenChange, onCreated, defaul
   const [prioriteit, setPrioriteit] = useState<Prioriteit>("normaal");
   const [toegewezen, setToegewezen] = useState<string>(user?.id ?? "");
   const [bezig, setBezig] = useState(false);
+  const [inAgenda, setInAgenda] = useState(false);
+  const [datum, setDatum] = useState("");
+  const [start, setStart] = useState("09:00");
+  const [eind, setEind] = useState("09:30");
+  const [herinnering, setHerinnering] = useState(true);
 
   const { data: collegas = [] } = useQuery({
     queryKey: ["ac-collegas", profile?.partner_id],
@@ -45,11 +51,24 @@ export default function NieuweTaakDialog({ open, onOpenChange, onCreated, defaul
   const reset = () => {
     setTitel(""); setOmschrijving(""); setDeadline(""); setPrioriteit("normaal");
     setToegewezen(user?.id ?? "");
+    setInAgenda(false); setDatum(""); setStart("09:00"); setEind("09:30"); setHerinnering(true);
   };
 
   const opslaan = async () => {
     if (!titel.trim() || !user?.id || !profile?.partner_id) return;
+    if (inAgenda && !datum) {
+      toast.error("Kies een datum om de taak in te plannen in de agenda");
+      return;
+    }
     setBezig(true);
+    const agendaPayload = inAgenda ? {
+      inplannen_in_agenda: true,
+      geplande_datum: datum,
+      geplande_starttijd: start || null,
+      geplande_eindtijd: eind || null,
+      agenda_user_id: toegewezen || user.id,
+      herinnering_dag_voor: herinnering,
+    } : { inplannen_in_agenda: false };
     const { error } = await supabase.from("helpdesk_ticket_taken").insert({
       titel: titel.trim(),
       omschrijving: omschrijving.trim() || null,
@@ -59,7 +78,8 @@ export default function NieuweTaakDialog({ open, onOpenChange, onCreated, defaul
       partner_id: profile.partner_id,
       gemaakt_door: user.id,
       toegewezen_aan: toegewezen || user.id,
-    });
+      ...agendaPayload,
+    } as never);
     setBezig(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Taak aangemaakt");
@@ -114,6 +134,38 @@ export default function NieuweTaakDialog({ open, onOpenChange, onCreated, defaul
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="rounded-xl border p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Inplannen in agenda</Label>
+                <p className="text-xs text-muted-foreground">Toont deze taak in de planning-kalender</p>
+              </div>
+              <Switch checked={inAgenda} onCheckedChange={setInAgenda} />
+            </div>
+            {inAgenda && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor="ac-datum">Datum</Label>
+                    <Input id="ac-datum" type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="ac-start">Start</Label>
+                    <Input id="ac-start" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="ac-eind">Eind</Label>
+                    <Input id="ac-eind" type="time" value={eind} onChange={(e) => setEind(e.target.value)} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Herinnering 1 dag van tevoren</Label>
+                  <Switch checked={herinnering} onCheckedChange={setHerinnering} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter>
