@@ -213,7 +213,18 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
   const handleDelete = async () => {
     if (!afspraak) return;
     setSaving(true);
-    const { error } = await supabase.from("afspraken" as any).delete().eq("id", afspraak.id);
+    // Soft-cancel: RLS staat hard delete alleen toe voor partner_admin/superadmin.
+    // Door de status op 'geannuleerd' te zetten verdwijnt de afspraak uit alle lijsten,
+    // maar blijft de historie bewaard.
+    const { error } = await supabase
+      .from("afspraken" as any)
+      .update({
+        status: "geannuleerd",
+        notities: [afspraak.notities, annuleerReden ? `Annulering: ${annuleerReden}` : null]
+          .filter(Boolean)
+          .join("\n\n") || null,
+      } as any)
+      .eq("id", afspraak.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
 
