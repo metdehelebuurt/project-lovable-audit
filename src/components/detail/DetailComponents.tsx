@@ -152,8 +152,13 @@ export const AfsprakenLijst = ({ afspraken, onNew, onEdit }: { afspraken: any[];
                   <div className="flex items-center gap-2 shrink-0">
                     <Badge variant="outline" className="text-xs">{a.status}</Badge>
                     {onEdit && (
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => onEdit(a)} aria-label="Afspraak bewerken">
-                        <Pencil className="h-3.5 w-3.5" />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 rounded-xl gap-1.5 text-xs"
+                        onClick={() => onEdit(a)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Bewerken
                       </Button>
                     )}
                   </div>
