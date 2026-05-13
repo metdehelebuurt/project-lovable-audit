@@ -220,13 +220,17 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
     try {
       const klantNaam = await resolveKlantNaam();
       const geannuleerdDoor = [profile?.voornaam, profile?.achternaam].filter(Boolean).join(" ") || undefined;
-      const email = await adviseurEmail(afspraak.adviseur_id);
-      if (email && afspraak.adviseur_id !== profile?.id) {
+      const recipients = new Set<string>();
+      const advEmail = await adviseurEmail(afspraak.adviseur_id);
+      if (advEmail && afspraak.adviseur_id !== profile?.id) recipients.add(advEmail);
+      const klantEmail = await resolveKlantEmail();
+      if (klantEmail) recipients.add(klantEmail);
+      for (const r of recipients) {
         await supabase.functions.invoke("send-transactional-email", {
           body: {
             templateName: "afspraak-geannuleerd",
-            recipientEmail: email,
-            idempotencyKey: `afspraak-geannuleerd-${afspraak.id}`,
+            recipientEmail: r,
+            idempotencyKey: `afspraak-geannuleerd-${afspraak.id}-${r}`,
             templateData: {
               titel: afspraak.titel,
               datum: fmtDate(afspraak.datum),
