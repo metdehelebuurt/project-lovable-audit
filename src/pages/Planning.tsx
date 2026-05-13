@@ -27,6 +27,7 @@ import {
 } from "date-fns";
 import { nl } from "date-fns/locale";
 import { toast } from "sonner";
+import { AfspraakEditDialog } from "@/components/shared/AfspraakEditDialog";
 
 type ViewMode = "dag" | "week" | "maand" | "jaar";
 
@@ -89,6 +90,7 @@ const Planning = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [editAfspraak, setEditAfspraak] = useState<any | null>(null);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
   const isInstallateur = profile?.rol === "installateur";
@@ -607,12 +609,39 @@ const Planning = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedEvent.type === "afspraak" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 w-full rounded-xl"
+                      onClick={async () => {
+                        const { data } = await supabase.from("afspraken" as any)
+                          .select("*").eq("id", selectedEvent.id).maybeSingle();
+                        if (data) {
+                          setEditAfspraak(data);
+                          setSelectedEvent(null);
+                        }
+                      }}
+                    >
+                      Afspraak bewerken of annuleren
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <AfspraakEditDialog
+        open={!!editAfspraak}
+        onOpenChange={(o) => { if (!o) setEditAfspraak(null); }}
+        afspraak={editAfspraak}
+        onSuccess={() => {
+          // herlaad events
+          setCurrentDate(new Date(currentDate));
+        }}
+      />
     </div>
   );
 };

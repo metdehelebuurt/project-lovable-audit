@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { StickyNote } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
+import { AfspraakEditDialog } from "@/components/shared/AfspraakEditDialog";
 import {
   OffertesLijst, SchouwenLijst, AfsprakenLijst,
   OpdrachtenLijst, InstallatiesLijst, OpleveringenLijst, SnelleActies, SamenvattingCard,
@@ -32,6 +33,7 @@ const KlantDetail = () => {
   useAuth();
   const queryClient = useQueryClient();
   const [afspraakOpen, setAfspraakOpen] = useState(false);
+  const [editAfspraak, setEditAfspraak] = useState<any | null>(null);
   const [retourOpen, setRetourOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
@@ -92,7 +94,8 @@ const KlantDetail = () => {
     queryKey: ["klant-afspraken", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("afspraken" as any)
-        .select("*").eq("klant_id", id!).order("datum", { ascending: false });
+        .select("*, adviseur:users!afspraken_adviseur_id_fkey(voornaam, achternaam)")
+        .eq("klant_id", id!).order("datum", { ascending: false });
       if (error) throw error;
       return data as any[];
     },
@@ -341,7 +344,7 @@ const KlantDetail = () => {
                 email={klant.email}
                 emails={[klant.email, ...(klant.extra_emails || [])].filter(Boolean)}
               />
-              <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />
+              <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} onEdit={setEditAfspraak} />
               <LogContactmomentCard klantId={klant.id} leadId={klant.lead_id} showRecent />
             </div>
           )}
@@ -383,6 +386,13 @@ const KlantDetail = () => {
         onOpenChange={setAfspraakOpen}
         klantId={id}
         defaultTitle={`Afspraak ${klant.voornaam} ${klant.achternaam}`}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["klant-afspraken", id] })}
+      />
+
+      <AfspraakEditDialog
+        open={!!editAfspraak}
+        onOpenChange={(o) => { if (!o) setEditAfspraak(null); }}
+        afspraak={editAfspraak}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["klant-afspraken", id] })}
       />
 

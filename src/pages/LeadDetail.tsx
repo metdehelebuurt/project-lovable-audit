@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
+import { AfspraakEditDialog } from "@/components/shared/AfspraakEditDialog";
 import {
   QuickStat, TabButton, InfoRow, OffertesLijst, SchouwenLijst, AfsprakenLijst,
   SnelleActies, SamenvattingCard, ActiviteitTijdlijn,
@@ -89,6 +90,7 @@ const LeadDetail = () => {
   const [aiSignals, setAiSignals] = useState<AiSignal[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [afspraakOpen, setAfspraakOpen] = useState(false);
+  const [editAfspraak, setEditAfspraak] = useState<any | null>(null);
   const [newNote, setNewNote] = useState("");
   const [newNoteIntern, setNewNoteIntern] = useState(true);
   const [activeTab, setActiveTab] = useState("overzicht");
@@ -859,7 +861,7 @@ const LeadDetail = () => {
           )}
 
           {/* AFSPRAKEN */}
-          {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} />}
+          {activeTab === "afspraken" && <AfsprakenLijst afspraken={afspraken} onNew={() => setAfspraakOpen(true)} onEdit={setEditAfspraak} />}
 
           {/* OFFERTES */}
           {activeTab === "offertes" && <OffertesLijst offertes={offertes} onNew={handleNewOfferte} />}
@@ -974,6 +976,12 @@ const LeadDetail = () => {
         onOpenChange={setAfspraakOpen}
         leadId={id}
         defaultTitle={`Afspraak ${lead.voornaam} ${lead.achternaam}`}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
+      />
+      <AfspraakEditDialog
+        open={!!editAfspraak}
+        onOpenChange={(o) => { if (!o) setEditAfspraak(null); }}
+        afspraak={editAfspraak}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
       />
     </div>

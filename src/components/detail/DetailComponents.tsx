@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText, ClipboardCheck, MapPin, Video, Plus, CalendarIcon,
-  PhoneCall, Wrench, Mail, Phone, HardHat, ShieldCheck, Download,
+  PhoneCall, Wrench, Mail, Phone, HardHat, ShieldCheck, Download, User, Pencil,
 } from "lucide-react";
 
 /* ─── Formatters ─── */
@@ -116,7 +116,7 @@ export const SchouwenLijst = ({ schouwen, onNew }: { schouwen: any[]; onNew?: ()
 );
 
 /* ─── Afspraken List ─── */
-export const AfsprakenLijst = ({ afspraken, onNew }: { afspraken: any[]; onNew?: () => void }) => (
+export const AfsprakenLijst = ({ afspraken, onNew, onEdit }: { afspraken: any[]; onNew?: () => void; onEdit?: (a: any) => void }) => (
   <Card className="rounded-2xl border-0 shadow-sm">
     <CardHeader className="flex flex-row items-center justify-between pb-3">
       <CardTitle className="text-base flex items-center gap-2"><CalendarIcon className="h-4 w-4 text-primary" /> Afspraken</CardTitle>
@@ -127,31 +127,46 @@ export const AfsprakenLijst = ({ afspraken, onNew }: { afspraken: any[]; onNew?:
         <p className="text-sm text-muted-foreground py-4 text-center">Geen afspraken</p>
       ) : (
         <div className="space-y-2">
-          {afspraken.map((a: any) => (
-            <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  {a.type === "belafspraak" ? <PhoneCall className="h-4 w-4 text-primary" /> :
-                   a.type === "op_afstand" ? <Video className="h-4 w-4 text-primary" /> :
-                   <MapPin className="h-4 w-4 text-primary" />}
+          {afspraken.map((a: any) => {
+            const adviseurNaam = a.adviseur && (a.adviseur.voornaam || a.adviseur.achternaam)
+              ? [a.adviseur.voornaam, a.adviseur.achternaam].filter(Boolean).join(" ")
+              : null;
+            return (
+              <div key={a.id} className="flex flex-col gap-2 p-3 rounded-xl border hover:bg-muted/30 transition-colors">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      {a.type === "belafspraak" ? <PhoneCall className="h-4 w-4 text-primary" /> :
+                       a.type === "op_afstand" ? <Video className="h-4 w-4 text-primary" /> :
+                       <MapPin className="h-4 w-4 text-primary" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{a.titel}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(a.datum)}
+                        {a.start_tijd && ` • ${a.start_tijd.slice(0, 5)}`}
+                        {a.eind_tijd && ` - ${a.eind_tijd.slice(0, 5)}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className="text-xs">{a.status}</Badge>
+                    {onEdit && (
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => onEdit(a)} aria-label="Afspraak bewerken">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">{a.titel}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(a.datum)}
-                    {a.start_tijd && ` • ${a.start_tijd.slice(0, 5)}`}
-                    {a.eind_tijd && ` - ${a.eind_tijd.slice(0, 5)}`}
-                  </p>
-                  {a.adviseur && (a.adviseur.voornaam || a.adviseur.achternaam) ? (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Adviseur: {[a.adviseur.voornaam, a.adviseur.achternaam].filter(Boolean).join(" ")}
-                    </p>
-                  ) : null}
+                <div className="flex items-center gap-2 pl-12">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium">
+                    <User className="h-3 w-3" />
+                    {adviseurNaam ? `Adviseur: ${adviseurNaam}` : "Geen adviseur toegewezen"}
+                  </span>
                 </div>
               </div>
-              <Badge variant="outline" className="text-xs">{a.status}</Badge>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </CardContent>
