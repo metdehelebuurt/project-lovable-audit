@@ -46,9 +46,9 @@ const Footer = () => (
             <li className="flex items-center gap-2">
               <Mail size={14} /> info@mijnhuis.nu
             </li>
-            <li className="flex items-center gap-2">
-              <Phone size={14} /> 088 - 123 4567
-            </li>
+             <li className="flex items-center gap-2">
+               <Phone size={14} /> 085-8000272
+             </li>
             <li className="flex items-center gap-2">
               <MapPin size={14} /> Amsterdam, Nederland
             </li>
