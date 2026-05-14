@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 const Footer = () => (
   <footer className="bg-foreground text-background/70 pt-16 pb-8">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+      <div className="grid sm:grid-cols-2 gap-10 mb-12">
         <div>
           <div className="mb-4">
             <Logo variant="white" />
@@ -14,30 +14,6 @@ const Footer = () => (
             Het alles-in-één platform voor installateurs en adviseurs in de
             verduurzamingsbranche.
           </p>
-        </div>
-
-        <div>
-          <h4 className="text-background font-semibold mb-4">Platform</h4>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/features/offertes" className="hover:text-background transition-colors">Offertes op locatie</Link></li>
-            <li><Link to="/features/digitale-schouwen" className="hover:text-background transition-colors">Digitale schouwen</Link></li>
-            <li><Link to="/features/planning" className="hover:text-background transition-colors">Planning & agenda</Link></li>
-            <li><Link to="/features/leadbeheer" className="hover:text-background transition-colors">Klant- & leadbeheer</Link></li>
-            <li><Link to="/features/rapportages" className="hover:text-background transition-colors">Rapportages</Link></li>
-            <li><Link to="/features/webtools" className="hover:text-background transition-colors">Webtools & widgets</Link></li>
-            <li><Link to="/features/energieadvies" className="hover:text-background transition-colors">Energieadvies tools</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-background font-semibold mb-4">Bedrijf</h4>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/over-ons" className="hover:text-background transition-colors">Over ons</Link></li>
-            <li><Link to="/prijzen" className="hover:text-background transition-colors">Prijzen</Link></li>
-            <li><Link to="/partners-worden" className="hover:text-background transition-colors">Partners worden</Link></li>
-            <li><Link to="/partners-worden" className="hover:text-background transition-colors">Affiliate worden</Link></li>
-            <li><Link to="/veelgestelde-vragen" className="hover:text-background transition-colors">Veelgestelde vragen</Link></li>
-          </ul>
         </div>
 
         <div>
