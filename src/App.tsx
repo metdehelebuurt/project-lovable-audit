@@ -132,22 +132,8 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Public website pages with shared layout */}
+            {/* Juridische pagina's met gedeelde layout */}
             <Route element={<WebsiteLayout />}>
-              <Route path="/features" element={<Features />} />
-              <Route path="/hoe-het-werkt" element={<HoeHetWerkt />} />
-              <Route path="/voordelen" element={<Voordelen />} />
-              <Route path="/features/offertes" element={<FeatureOffertes />} />
-              <Route path="/features/digitale-schouwen" element={<FeatureSchouwen />} />
-              <Route path="/features/planning" element={<FeaturePlanning />} />
-              <Route path="/features/leadbeheer" element={<FeatureLeadbeheer />} />
-              <Route path="/features/rapportages" element={<FeatureRapportages />} />
-              <Route path="/features/webtools" element={<FeatureWebtools />} />
-              <Route path="/features/energieadvies" element={<FeatureEnergieadvies />} />
-              <Route path="/over-ons" element={<OverOns />} />
-              <Route path="/prijzen" element={<Prijzen />} />
-              <Route path="/partners-worden" element={<PartnersWorden />} />
-              <Route path="/veelgestelde-vragen" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/voorwaarden" element={<Voorwaarden />} />
               <Route path="/cookies" element={<CookieBeleid />} />
