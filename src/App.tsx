@@ -102,23 +102,9 @@ import PublicCatalogus from "@/pages/public/PublicCatalogus";
 import MerkenBeheer from "@/pages/MerkenBeheer";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
-import FeatureOffertes from "@/pages/website/FeatureOffertes";
-import FeatureSchouwen from "@/pages/website/FeatureSchouwen";
-import FeaturePlanning from "@/pages/website/FeaturePlanning";
-import FeatureLeadbeheer from "@/pages/website/FeatureLeadbeheer";
-import FeatureRapportages from "@/pages/website/FeatureRapportages";
-import FeatureWebtools from "@/pages/website/FeatureWebtools";
-import FeatureEnergieadvies from "@/pages/website/FeatureEnergieadvies";
-import OverOns from "@/pages/website/OverOns";
-import Prijzen from "@/pages/website/Prijzen";
-import PartnersWorden from "@/pages/website/PartnersWorden";
-import FAQ from "@/pages/website/FAQ";
 import Privacy from "@/pages/website/Privacy";
 import Voorwaarden from "@/pages/website/Voorwaarden";
 import CookieBeleid from "@/pages/website/CookieBeleid";
-import Features from "@/pages/website/Features";
-import HoeHetWerkt from "@/pages/website/HoeHetWerkt";
-import Voordelen from "@/pages/website/Voordelen";
 
 const queryClient = new QueryClient();
 
@@ -146,22 +132,8 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Public website pages with shared layout */}
+            {/* Juridische pagina's met gedeelde layout */}
             <Route element={<WebsiteLayout />}>
-              <Route path="/features" element={<Features />} />
-              <Route path="/hoe-het-werkt" element={<HoeHetWerkt />} />
-              <Route path="/voordelen" element={<Voordelen />} />
-              <Route path="/features/offertes" element={<FeatureOffertes />} />
-              <Route path="/features/digitale-schouwen" element={<FeatureSchouwen />} />
-              <Route path="/features/planning" element={<FeaturePlanning />} />
-              <Route path="/features/leadbeheer" element={<FeatureLeadbeheer />} />
-              <Route path="/features/rapportages" element={<FeatureRapportages />} />
-              <Route path="/features/webtools" element={<FeatureWebtools />} />
-              <Route path="/features/energieadvies" element={<FeatureEnergieadvies />} />
-              <Route path="/over-ons" element={<OverOns />} />
-              <Route path="/prijzen" element={<Prijzen />} />
-              <Route path="/partners-worden" element={<PartnersWorden />} />
-              <Route path="/veelgestelde-vragen" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/voorwaarden" element={<Voorwaarden />} />
               <Route path="/cookies" element={<CookieBeleid />} />
