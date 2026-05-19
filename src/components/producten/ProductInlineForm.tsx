@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import ProductImageUpload from "@/components/producten/ProductImageUpload";
 import SpecsEditor from "@/components/producten/SpecsEditor";
 import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
@@ -60,13 +61,10 @@ export default function ProductInlineForm({
   form, setForm, editingProduct, isPending, onClose, onSubmit, categorieLabels, statusLabels, merken = [],
 }: Props) {
   const formProductId = editingProduct?.id || "new-product";
-
-  const handleMerkBlur = () => {
-    const v = form.merk.trim();
-    if (!v) return;
-    const match = merken.find((m) => m.toLowerCase() === v.toLowerCase());
-    setForm((p) => ({ ...p, merk: match ?? v }));
-  };
+  const NONE_VALUE = "__none__";
+  const merkOptions = Array.from(new Set(merken.filter((m) => !!m && m.trim() !== ""))).sort((a, b) => a.localeCompare(b));
+  const currentMerk = form.merk?.trim() ?? "";
+  const merkMissing = currentMerk !== "" && !merkOptions.some((m) => m.toLowerCase() === currentMerk.toLowerCase());
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
@@ -110,20 +108,34 @@ export default function ProductInlineForm({
               </div>
               <div>
                 <Label>Merk</Label>
-                <Input
-                  value={form.merk}
-                  onChange={e => setForm(p => ({ ...p, merk: e.target.value }))}
-                  onBlur={handleMerkBlur}
-                  list="product-merken-list"
-                  placeholder="Bijv. SolarEdge"
-                  className="rounded-xl"
-                />
-                <datalist id="product-merken-list">
-                  {merken.map((m) => <option key={m} value={m} />)}
-                </datalist>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Nieuwe merken worden automatisch toegevoegd aan Merkenbeheer.
-                </p>
+                <Select
+                  value={currentMerk === "" ? NONE_VALUE : currentMerk}
+                  onValueChange={(v) => setForm((p) => ({ ...p, merk: v === NONE_VALUE ? "" : v }))}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Kies een merk" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_VALUE}>— Geen merk —</SelectItem>
+                    {merkMissing && (
+                      <SelectItem value={currentMerk}>{currentMerk} (niet in merkenbeheer)</SelectItem>
+                    )}
+                    {merkOptions.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Merk niet in de lijst? Voeg het eerst toe via Merkenbeheer.
+                  </p>
+                  <Link
+                    to="/producten/merken"
+                    className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1 shrink-0"
+                  >
+                    <Plus className="h-3 w-3" /> Nieuw merk
+                  </Link>
+                </div>
               </div>
               <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="rounded-xl" /></div>
               <div className="col-span-2"><Label>Omschrijving</Label><Textarea value={form.omschrijving} onChange={e => setForm(p => ({ ...p, omschrijving: e.target.value }))} className="rounded-xl" rows={3} /></div>
