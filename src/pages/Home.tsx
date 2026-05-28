@@ -150,12 +150,12 @@ const Home = () => {
 
       <main>
         {/* Hero */}
-        <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+        <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
           <div className="max-w-4xl mx-auto text-center">
             <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6">
               app.mijnhuis.nu
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-foreground tracking-tight mb-6">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-semibold text-foreground tracking-tight mb-6 break-words hyphens-auto" lang="nl">
               Het platform voor verduurzamingsprofessionals
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
