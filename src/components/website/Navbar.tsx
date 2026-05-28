@@ -30,7 +30,7 @@ const Navbar = () => {
             <Logo variant="purple" />
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             {isLoggedIn ? (
               <Button className="rounded-pill px-6 gap-2" asChild>
                 <Link to="/dashboard">
@@ -40,10 +40,10 @@ const Navbar = () => {
               </Button>
             ) : (
               <>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className="hidden sm:inline-flex">
                   <Link to="/login">Inloggen</Link>
                 </Button>
-                <Button className="rounded-pill px-6" asChild>
+                <Button className="rounded-pill px-4 sm:px-6" asChild>
                   <Link to="/signup">Gratis proberen</Link>
                 </Button>
               </>
