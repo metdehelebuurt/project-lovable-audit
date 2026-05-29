@@ -1784,6 +1784,129 @@ export type Database = {
           },
         ]
       }
+      google_calendar_accounts: {
+        Row: {
+          access_token: string
+          actief: boolean
+          calendar_id: string
+          calendar_summary: string | null
+          channel_expiry: string | null
+          channel_id: string | null
+          created_at: string
+          google_email: string
+          id: string
+          laatst_gesynchroniseerd_op: string | null
+          laatste_fout: string | null
+          partner_id: string
+          refresh_token: string
+          resource_id: string | null
+          scope: string | null
+          sync_afspraken: boolean
+          sync_handmatig: boolean
+          sync_installaties: boolean
+          sync_schouwen: boolean
+          sync_taken: boolean
+          sync_token: string | null
+          token_expiry: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          actief?: boolean
+          calendar_id?: string
+          calendar_summary?: string | null
+          channel_expiry?: string | null
+          channel_id?: string | null
+          created_at?: string
+          google_email: string
+          id?: string
+          laatst_gesynchroniseerd_op?: string | null
+          laatste_fout?: string | null
+          partner_id: string
+          refresh_token: string
+          resource_id?: string | null
+          scope?: string | null
+          sync_afspraken?: boolean
+          sync_handmatig?: boolean
+          sync_installaties?: boolean
+          sync_schouwen?: boolean
+          sync_taken?: boolean
+          sync_token?: string | null
+          token_expiry: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          actief?: boolean
+          calendar_id?: string
+          calendar_summary?: string | null
+          channel_expiry?: string | null
+          channel_id?: string | null
+          created_at?: string
+          google_email?: string
+          id?: string
+          laatst_gesynchroniseerd_op?: string | null
+          laatste_fout?: string | null
+          partner_id?: string
+          refresh_token?: string
+          resource_id?: string | null
+          scope?: string | null
+          sync_afspraken?: boolean
+          sync_handmatig?: boolean
+          sync_installaties?: boolean
+          sync_schouwen?: boolean
+          sync_taken?: boolean
+          sync_token?: string | null
+          token_expiry?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_calendar_event_mapping: {
+        Row: {
+          created_at: string
+          entiteit_id: string
+          entiteit_type: string
+          google_etag: string | null
+          google_event_id: string
+          id: string
+          laatste_hash: string | null
+          laatste_sync_op: string
+          partner_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entiteit_id: string
+          entiteit_type: string
+          google_etag?: string | null
+          google_event_id: string
+          id?: string
+          laatste_hash?: string | null
+          laatste_sync_op?: string
+          partner_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entiteit_id?: string
+          entiteit_type?: string
+          google_etag?: string | null
+          google_event_id?: string
+          id?: string
+          laatste_hash?: string | null
+          laatste_sync_op?: string
+          partner_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       helpdesk_csat: {
         Row: {
           created_at: string
