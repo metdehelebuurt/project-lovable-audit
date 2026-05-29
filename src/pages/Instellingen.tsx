@@ -15,6 +15,7 @@ import InkoopInstellingenForm from "@/components/instellingen/InkoopInstellingen
 import WebtoolsApiInstellingen from "@/components/instellingen/WebtoolsApiInstellingen";
 import InstallateurVoorkeurenForm from "@/components/oplever/InstallateurVoorkeurenForm";
 import MijnEmailKoppeling from "@/components/instellingen/MijnEmailKoppeling";
+import GoogleAgendaKoppeling from "@/components/instellingen/GoogleAgendaKoppeling";
 import InboxZichtbaarheidBeheer from "@/components/instellingen/InboxZichtbaarheidBeheer";
 import NotificatieVoorkeuren from "@/pages/instellingen/NotificatieVoorkeuren";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,7 +29,7 @@ import { toast } from "sonner";
 import {
   User, Lock, Shield, Download, Trash2, Sparkles, Palette, FileText,
   Building2, Mail, ClipboardList, Eye, ShieldCheck, Globe, Users, Package, CreditCard, LifeBuoy, KeyRound, Wrench, Bell
-  , Hash, ShoppingCart
+  , Hash, ShoppingCart, Calendar as CalendarIcon
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,7 @@ const Instellingen = () => {
     { id: "beveiliging", label: "Beveiliging", icon: Lock, roles: ALLE_ROLLEN },
     { id: "notificaties", label: "Notificaties", icon: Bell, roles: ALLE_ROLLEN },
     { id: "mijn-email", label: "E-mailkoppeling", icon: Mail, roles: ALLE_ROLLEN },
+    { id: "google-agenda", label: "Google Agenda", icon: CalendarIcon, roles: ALLE_ROLLEN },
     { id: "oplever", label: "Opleverrapport", icon: Wrench, roles: ["superadmin", "partner_admin", "installateur"] },
     { id: "bedrijf", label: "Bedrijfsgegevens", icon: Building2, roles: ADMIN_ROLLEN },
     { id: "huisstijl", label: "Huisstijl", icon: Palette, roles: ADMIN_ROLLEN },
@@ -118,6 +120,7 @@ const Instellingen = () => {
           {activeTab === "beveiliging" && <BeveiligingTab />}
           {activeTab === "notificaties" && <NotificatieVoorkeuren />}
           {activeTab === "mijn-email" && <MijnEmailKoppeling />}
+          {activeTab === "google-agenda" && <GoogleAgendaKoppeling />}
           {activeTab === "oplever" && <InstallateurVoorkeurenForm />}
           {activeTab === "bedrijf" && isPartnerAdmin && profile?.partner_id && <BedrijfsgegevensTab partnerId={profile.partner_id} />}
           {activeTab === "huisstijl" && isPartnerAdmin && profile?.partner_id && <HuisstijlTab partnerId={profile.partner_id} />}
