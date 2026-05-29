@@ -27,6 +27,20 @@ project_id = "xmguipmetciwvzeyxugu"
     verify_jwt = true
   [functions.google-user-provision]
     verify_jwt = false
+  [functions.google-calendar-oauth-start]
+    verify_jwt = false
+  [functions.google-calendar-oauth-callback]
+    verify_jwt = false
+  [functions.google-calendar-sync-push]
+    verify_jwt = false
+  [functions.google-calendar-sync-pull]
+    verify_jwt = false
+  [functions.google-calendar-webhook]
+    verify_jwt = false
+  [functions.google-calendar-disconnect]
+    verify_jwt = false
+  [functions.google-calendar-renew-channels]
+    verify_jwt = false
   [functions.helpdesk-ai-analyze-bijlage]
     verify_jwt = false
   [functions.helpdesk-ai-foutcode]
