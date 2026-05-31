@@ -215,6 +215,14 @@ const SchouwSatellietKaart = ({ adres, plaats, postcode, onSolarData }: Props) =
             {solarLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sun className="h-4 w-4" />}
             Dakgegevens ophalen
           </Button>
+          <Button asChild variant="outline" size="sm" className="gap-2 shrink-0">
+            <Link
+              to={`/tools/daklayout?adres=${encodeURIComponent(adres || "")}&postcode=${encodeURIComponent(postcode || "")}&plaats=${encodeURIComponent(plaats || "")}`}
+              target="_blank"
+            >
+              <MapPin className="h-4 w-4" /> Daklayout intekenen
+            </Link>
+          </Button>
         </div>
 
         <div ref={mapRef} className="w-full h-[400px] rounded-xl overflow-hidden bg-muted" />
