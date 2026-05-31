@@ -1,90 +1,80 @@
-# Google Calendar tweerichtings-sync
 
-Elke gebruiker koppelt zijn/haar eigen Google-account. Schouwen, installaties, afspraken en helpdesk-taken (waar de gebruiker verantwoordelijk/toegewezen is) worden automatisch gesynchroniseerd met zijn Google Agenda. Wijzigingen in Google (tijd verzetten, verwijderen) komen terug in het platform.
+## Doel
+Een gedeelde "Daklayout"-tool waarmee installateurs op de satellietfoto van een adres dakvlakken tekenen, automatisch volgepakt zien met panelen (op basis van een gekozen product uit de catalogus), en daarna individuele panelen kunnen toevoegen/verwijderen/draaien. Resultaat wordt opgeslagen op een schouw of lead en is exporteerbaar als PDF.
 
-## Architectuur
+## Plek in platform
+1. **Gedeelde component** `src/components/daklayout/DaklayoutEditor/` — herbruikbare intekencomponent (canvas op Google Maps satelliet).
+2. **Standalone pagina** `src/pages/Daklayout.tsx` (route `/daklayout`) — toegankelijk vanuit Tools-menu voor installateurs.
+3. **Inbedding in schouw** — knop "Daklayout intekenen" in `SchouwSatellietKaart`/`SchouwUitvoeren`, opent dezelfde editor en slaat op aan de schouw.
 
-```text
-Platform DB ──trigger──► sync queue ──edge fn──► Google Calendar API
-     ▲                                                   │
-     │                                                   ▼
-     └──── edge fn (webhook) ◄──push notification─── Google
-```
+## UX-flow
+1. Adres invoeren (autocomplete via bestaande `google-maps-config` proxy) of meegegeven vanuit schouw/lead.
+2. Satellietkaart centreert + zoomt in (zoom 21, tilt 0).
+3. Optioneel: "Dakgegevens ophalen" → bestaande `solar-building-insights` Edge Function vult dakvlakken automatisch voor.
+4. Paneelproduct kiezen uit catalogus (dropdown gefilterd op categorie "zonnepaneel"); afmetingen (lengte × breedte mm) en Wp worden gelezen uit `products`-parameters.
+5. **Dakvlak tekenen**: polygoon-tool (Google Maps Drawing Library). Per dakvlak ingeven: oriëntatie (kompas), hellingshoek, oost/west of portret/landschap, marge tot dakrand.
+6. **Auto-vullen**: algoritme legt rechthoeken in de polygoon op basis van paneelmaat + oriëntatie + marge. Toont teller en geschat vermogen (aantal × Wp).
+7. **Handmatig bewerken**: paneel aanklikken → verwijderen / verplaatsen / roteren. Klikken in lege ruimte → paneel toevoegen.
+8. **Opslaan** → kiezen: koppelen aan schouw, lead, of standalone bewaren.
+9. **PDF-export** → satellietfoto met overlay van panelen + samenvattingstabel.
 
-## Stap 1 — Per-user OAuth infrastructuur
+## Datamodel (nieuwe tabel)
+`daklayouts`:
+- partner_id, gebruiker_id
+- schouw_id (nullable, FK), lead_id (nullable, FK)
+- adres, postcode, plaats, lat, lng
+- product_id (FK products) — gekozen paneel
+- paneel_breedte_mm, paneel_lengte_mm, paneel_wp (snapshot bij opslag)
+- dakvlakken JSONB — array van `{ id, polygon: [{lat,lng}], orientatie, hellingshoek, modus: 'portret'|'landschap', marge_mm }`
+- panelen JSONB — array van `{ id, dakvlak_id, center: {lat,lng}, rotatie_deg, status: 'auto'|'handmatig' }`
+- aantal_panelen (generated), totaal_wp (generated)
+- snapshot_url (PNG met overlay, in Storage bucket `daklayouts`)
 
-**Eigen Google OAuth credentials** (apart van de bestaande Gmail-koppeling, want andere scopes nodig):
-- Secrets: `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`
-- Scope: `https://www.googleapis.com/auth/calendar.events` + `userinfo.email`
-- Redirect URI: `https://app.mijnhuis.nu/instellingen/google-calendar/callback`
+RLS: standaard partner-scope via `partner_id`, installateur ziet alleen eigen layouts of die van zijn klanten (zelfde patroon als `schouwen`). GRANT's voor `authenticated` + `service_role`. Storage bucket `daklayouts` (private) met partner-scope RLS.
 
-**Nieuwe tabel `google_calendar_accounts`:**
-- `user_id`, `partner_id`, `google_email`, `calendar_id` (target agenda, default 'primary')
-- `access_token`, `refresh_token`, `token_expiry`
-- `sync_token` (voor incremental sync), `channel_id` + `resource_id` + `channel_expiry` (voor webhooks)
-- `sync_schouwen`, `sync_installaties`, `sync_afspraken`, `sync_taken`, `sync_handmatig` (booleans, default true)
-- `laatst_gesynchroniseerd_op`, `laatste_fout`
+## Bestanden
+**Nieuw:**
+- `src/components/daklayout/DaklayoutEditor/index.tsx` — orchestrator (state, opslaan)
+- `src/components/daklayout/DaklayoutEditor/MapCanvas.tsx` — Google Maps + drawing + paneel-overlay
+- `src/components/daklayout/DaklayoutEditor/PaneelLayoutEngine.ts` — pure functie: polygoon + paneelmaat → array van paneel-centers
+- `src/components/daklayout/DaklayoutEditor/PaneelProductPicker.tsx`
+- `src/components/daklayout/DaklayoutEditor/DakvlakPanel.tsx` — instellingen per dakvlak
+- `src/components/daklayout/DaklayoutEditor/SamenvattingKaart.tsx`
+- `src/components/daklayout/useDaklayout.ts` — TanStack Query hook (CRUD)
+- `src/components/daklayout/exportDaklayoutPdf.ts` — gebruikt `html2canvas` + `pdfFromElement`
+- `src/pages/Daklayout.tsx` — standalone pagina
+- `supabase/migrations/...sql` — tabel, RLS, GRANT, storage bucket + policies
 
-**Nieuwe tabel `google_calendar_event_mapping`:**
-- `partner_id`, `user_id`, `entiteit_type` (schouw/installatie/afspraak/taak), `entiteit_id`
-- `google_event_id`, `google_etag`, `laatst_gesynchroniseerd_hash`
-- Unique op (user_id, entiteit_type, entiteit_id)
+**Aangepast:**
+- `src/App.tsx` — route `/daklayout`
+- `src/lib/navigation/navigationModel.ts` — menu-item onder Tools
+- `src/components/schouwen/SchouwSatellietKaart.tsx` — extra knop "Daklayout intekenen"
+- `src/pages/SchouwDetail.tsx` of `SchouwUitvoeren.tsx` — opslag-koppeling
 
-## Stap 2 — Edge functions
+## Technische details
+- **Drawing**: Google Maps `drawing` library (polygoon). Panelen als `google.maps.Polygon` of `Rectangle` met fixed rotatie via geodesic projectie.
+- **Layout-engine** (pure TS, unit-testbaar):
+  1. Polygoon → lokale Cartesische projectie (meters) met dakvlak-centrum als origin.
+  2. Roteer naar oriëntatie van dakvlak.
+  3. Grid op paneelmaat + marge, behoud cellen volledig binnen polygoon (met marge tot rand).
+  4. Roteer terug + reverse-projectie naar lat/lng.
+- **Hellingshoek-correctie**: vlakken op het schuine dak worden in horizontale projectie iets korter; engine compenseert dimensies met `cos(helling)` op de lengte-as.
+- **Snapshot voor PDF**: `html2canvas` op de kaart-container (satelliet + overlay). Gebruikt bestaand `src/lib/pdfFromElement.ts`-patroon.
+- **Product-koppeling**: hook `useZonnepaneelProducten()` filtert `products` op categorie "zonnepaneel" binnen partner-scope. Afmetingen uit `parameters.afmetingen_mm` (bestaand veld).
+- **Disclaimer**: standaard AI-disclaimer in UI + PDF (visuele schatting, geen vervanging voor schouw).
+- **Bestandsgroottes**: respecteer 800-regels regel — split agressief.
 
-1. **`google-calendar-oauth-start`** — genereert OAuth-URL met state token
-2. **`google-calendar-oauth-callback`** — wisselt code in, slaat tokens op, registreert webhook
-3. **`google-calendar-sync-push`** — DB → Google (één entiteit). Aangeroepen door DB-triggers via pg_net
-4. **`google-calendar-sync-pull`** — Google → DB (incremental via syncToken)
-5. **`google-calendar-webhook`** — ontvangt push notifications van Google, triggert pull
-6. **`google-calendar-disconnect`** — verwijdert tokens + webhook channel
-7. **`google-calendar-renew-channel`** — cron, vernieuwt webhook-channels die binnen 24u verlopen
+## Niet in deze iteratie
+- Schaduw-analyse (gebruik bestaande Solar API output voor zonuren).
+- 3D-weergave / tilt.
+- Optimalisatie van string-indeling / omvormer-keuze (kan later los).
+- Embed-widget voor klanten (alleen interne tool nu; widget kan later via `widget-submit`-patroon).
 
-## Stap 3 — DB triggers (push naar Google)
-
-Triggers op `schouwen`, `installaties`, `afspraken`, `helpdesk_ticket_taken`:
-- INSERT/UPDATE van datum/tijd/toewijzing → roep `google-calendar-sync-push` aan via `net.http_post` voor de toegewezen user
-- DELETE → verwijder Google event via mapping
-
-Filteren op: alleen pushen als de toegewezen user een actieve `google_calendar_accounts` row heeft met de relevante sync-toggle aan.
-
-## Stap 4 — UI
-
-**Instellingen → "Google Agenda"** (nieuwe pagina `src/pages/instellingen/GoogleCalendar.tsx`):
-- Status: gekoppeld/niet gekoppeld + email-adres
-- Knop "Koppel Google Agenda" → opent OAuth flow
-- Dropdown: welke agenda als target (lijst via API)
-- Toggles per type (schouwen/installaties/afspraken/taken/handmatige afspraken)
-- Knop "Nu synchroniseren" (handmatige trigger)
-- Sectie "Laatste synchronisatie" + foutmeldingen
-- Knop "Ontkoppelen"
-
-**Optioneel later:** handmatige afspraken module — kan via bestaande `afspraken` tabel met type 'algemeen'.
-
-## Stap 5 — Conflict-afhandeling
-
-- Bij UPDATE: vergelijk `etag` van Google met opgeslagen `google_etag`. Mismatch → Google wint voor datum/tijd; platform pusht overige velden.
-- Bij DELETE in Google: markeer entiteit-status als 'geannuleerd_extern' (geen harde delete in platform).
-
-## Aanpak (volgorde van bouwen)
-
-1. **Vragen om OAuth credentials** (Google Cloud Console) + secrets toevoegen
-2. **Migratie**: 2 nieuwe tabellen + RLS
-3. **OAuth start + callback** edge functions
-4. **UI instellingenpagina** met koppel/ontkoppel flow
-5. **Push sync** (DB → Google) met triggers
-6. **Pull sync + webhooks** (Google → DB)
-7. **Channel-renewal cron** + handmatige sync-knop
-8. **Test end-to-end** met testaccount
-
-## Technisch (intern)
-
-- OAuth state token: HMAC-signed met `user_id` + timestamp om CSRF te voorkomen
-- Token refresh: lazy bij elke API-call als `token_expiry < now()`
-- Rate limits Google Calendar: 1M queries/dag, 600/min per user — ruim genoeg, maar batch waar mogelijk
-- Webhook TTL: max 7 dagen, cron vernieuwt elke 6 dagen
-- Bestandsstructuur respecteert max 800 regels/bestand; edge functions blijven puur en gefocust per verantwoordelijkheid
-
-## Wat ik nu nodig heb van jou
-
-Voordat ik begin: je moet **eigen OAuth credentials** aanmaken in Google Cloud Console (de workspace-connector werkt niet voor per-user OAuth). Stappen volgen zodra je dit plan goedkeurt.
+## Volgorde van uitvoering
+1. Migratie (tabel + RLS + storage bucket).
+2. Layout-engine + unit tests.
+3. MapCanvas met drawing + auto-vul.
+4. Product picker + dakvlak-instellingen.
+5. Save/load hook + integratie standalone pagina.
+6. Schouw-integratie.
+7. PDF-export.
