@@ -260,6 +260,9 @@ const App = () => (
               <Route path="/tools/thuisbatterij" element={
                 <ProtectedRoute moduleKey="tools" allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><ThuisbatterijSelector /></ProtectedRoute>
               } />
+              <Route path="/tools/daklayout" element={
+                <ProtectedRoute moduleKey="tools" allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Daklayout /></ProtectedRoute>
+              } />
               {/* /tools/webtools now redirects to /tools — webtools are integrated */}
               <Route path="/offertes/nieuw" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
