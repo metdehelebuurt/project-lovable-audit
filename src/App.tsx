@@ -51,6 +51,7 @@ import OfferteNieuw from "@/pages/OfferteNieuw";
 import OfferteTemplatePage from "@/pages/OfferteTemplatePage";
 import Tools from "@/pages/Tools";
 import ThuisbatterijSelector from "@/pages/ThuisbatterijSelector";
+import Daklayout from "@/pages/Daklayout";
 import ProductDatasheetPage from "@/pages/ProductDatasheetPage";
 import ProductDetail from "@/pages/ProductDetail";
 import ProductWebsite from "@/pages/ProductWebsite";
@@ -258,6 +259,9 @@ const App = () => (
               } />
               <Route path="/tools/thuisbatterij" element={
                 <ProtectedRoute moduleKey="tools" allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><ThuisbatterijSelector /></ProtectedRoute>
+              } />
+              <Route path="/tools/daklayout" element={
+                <ProtectedRoute moduleKey="tools" allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "installateur"]}><Daklayout /></ProtectedRoute>
               } />
               {/* /tools/webtools now redirects to /tools — webtools are integrated */}
               <Route path="/offertes/nieuw" element={

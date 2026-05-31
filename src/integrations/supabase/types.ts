@@ -829,6 +829,134 @@ export type Database = {
           },
         ]
       }
+      daklayouts: {
+        Row: {
+          aantal_panelen: number
+          adres: string | null
+          created_at: string
+          dakvlakken: Json
+          gebruiker_id: string | null
+          id: string
+          lat: number | null
+          lead_id: string | null
+          lng: number | null
+          naam: string
+          notities: string | null
+          paneel_breedte_mm: number | null
+          paneel_lengte_mm: number | null
+          paneel_wp: number | null
+          panelen: Json
+          partner_id: string
+          plaats: string | null
+          postcode: string | null
+          product_id: string | null
+          schouw_id: string | null
+          snapshot_url: string | null
+          totaal_wp: number
+          updated_at: string
+        }
+        Insert: {
+          aantal_panelen?: number
+          adres?: string | null
+          created_at?: string
+          dakvlakken?: Json
+          gebruiker_id?: string | null
+          id?: string
+          lat?: number | null
+          lead_id?: string | null
+          lng?: number | null
+          naam?: string
+          notities?: string | null
+          paneel_breedte_mm?: number | null
+          paneel_lengte_mm?: number | null
+          paneel_wp?: number | null
+          panelen?: Json
+          partner_id: string
+          plaats?: string | null
+          postcode?: string | null
+          product_id?: string | null
+          schouw_id?: string | null
+          snapshot_url?: string | null
+          totaal_wp?: number
+          updated_at?: string
+        }
+        Update: {
+          aantal_panelen?: number
+          adres?: string | null
+          created_at?: string
+          dakvlakken?: Json
+          gebruiker_id?: string | null
+          id?: string
+          lat?: number | null
+          lead_id?: string | null
+          lng?: number | null
+          naam?: string
+          notities?: string | null
+          paneel_breedte_mm?: number | null
+          paneel_lengte_mm?: number | null
+          paneel_wp?: number | null
+          panelen?: Json
+          partner_id?: string
+          plaats?: string | null
+          postcode?: string | null
+          product_id?: string | null
+          schouw_id?: string | null
+          snapshot_url?: string | null
+          totaal_wp?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daklayouts_gebruiker_id_fkey"
+            columns: ["gebruiker_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daklayouts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daklayouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daklayouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daklayouts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daklayouts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daklayouts_schouw_id_fkey"
+            columns: ["schouw_id"]
+            isOneToOne: false
+            referencedRelation: "schouwen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documenten: {
         Row: {
           beschrijving: string | null

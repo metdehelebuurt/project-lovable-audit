@@ -33,6 +33,14 @@ const adviesTools = [
     color: "text-emerald-500",
     bgColor: "bg-emerald-500/10",
   },
+  {
+    title: "Daklayout — Zonnepanelen intekenen",
+    description: "Teken dakvlakken op de satellietfoto en plaats zonnepanelen automatisch of handmatig. Export naar PDF.",
+    icon: Sun,
+    path: "/tools/daklayout",
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+  },
 ];
 
 /* ── Webtool templates ───────────────────────────── */
