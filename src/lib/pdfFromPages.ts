@@ -1,12 +1,18 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { PDFDocument } from "pdf-lib";
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
+const A4_RATIO = A4_WIDTH_MM / A4_HEIGHT_MM;
 
 /**
- * Rendert een PDF door elke .pdf-page apart te capturen op scale 3 (PNG).
- * Resultaat: scherpe multi-page A4 PDF, één DOM-pagina per PDF-pagina.
+ * Rendert een PDF door elke .pdf-page apart te capturen.
+ * - Behoudt A4-verhouding: canvas wordt proportioneel geschaald op 210mm breed.
+ * - Pagina's die langer zijn dan 297mm worden over meerdere PDF-pagina's verdeeld
+ *   (geen vervorming meer door rekken/persen).
+ * - Pagina's met `data-external-pdf` worden vervangen door de originele PDF
+ *   (fabrikant-datasheet) via pdf-lib merge in plaats van een html2canvas-snapshot.
  */
 export async function renderPagesToPdfBlob(root: HTMLElement): Promise<Blob> {
   const pages = Array.from(root.querySelectorAll<HTMLElement>(".pdf-page"));
@@ -15,9 +21,24 @@ export async function renderPagesToPdfBlob(root: HTMLElement): Promise<Blob> {
   }
 
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  // Verzamel placeholders die later vervangen worden door externe fabrikant-PDFs.
+  // We registreren {pdfPageIndex, externalUrl} en stripen de placeholder-pagina
+  // achteraf met pdf-lib.
+  const externalInjections: { afterPdfPageIndex: number; url: string }[] = [];
+  let pdfPageCursor = 0;
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
+    const externalPdfUrl = page.getAttribute("data-external-pdf");
+
+    if (externalPdfUrl) {
+      // Voeg een lege placeholder-pagina toe (wordt later vervangen).
+      if (pdfPageCursor > 0) pdf.addPage();
+      externalInjections.push({ afterPdfPageIndex: pdfPageCursor, url: externalPdfUrl });
+      pdfPageCursor++;
+      continue;
+    }
+
     const canvas = await html2canvas(page, {
       scale: 3,
       useCORS: true,
@@ -28,11 +49,84 @@ export async function renderPagesToPdfBlob(root: HTMLElement): Promise<Blob> {
     });
 
     const imgData = canvas.toDataURL("image/png");
-    if (i > 0) pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, "FAST");
+    // Proportionele hoogte op basis van canvas-ratio.
+    const proportionalHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
+    const canvasRatio = canvas.width / canvas.height;
+
+    if (pdfPageCursor > 0) pdf.addPage();
+
+    if (Math.abs(canvasRatio - A4_RATIO) < 0.005 && proportionalHeight <= A4_HEIGHT_MM + 0.5) {
+      // Past exact op één A4 → 1-op-1 plaatsen.
+      pdf.addImage(imgData, "PNG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, "FAST");
+      pdfPageCursor++;
+    } else {
+      // Content is langer/korter dan A4 → over meerdere pagina's slicen
+      // met behoud van verhouding (geen vervorming).
+      let heightLeft = proportionalHeight;
+      let position = 0;
+      pdf.addImage(imgData, "PNG", 0, position, A4_WIDTH_MM, proportionalHeight, undefined, "FAST");
+      heightLeft -= A4_HEIGHT_MM;
+      pdfPageCursor++;
+      while (heightLeft > 0) {
+        position -= A4_HEIGHT_MM;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, A4_WIDTH_MM, proportionalHeight, undefined, "FAST");
+        heightLeft -= A4_HEIGHT_MM;
+        pdfPageCursor++;
+      }
+    }
   }
 
-  return pdf.output("blob");
+  const baseBlob = pdf.output("blob");
+  if (externalInjections.length === 0) return baseBlob;
+
+  // Merge fabrikant-PDFs in via pdf-lib.
+  try {
+    return await mergeExternalPdfs(baseBlob, externalInjections);
+  } catch (err) {
+    console.warn("Mergen van fabrikant-PDFs mislukt, fallback op basis-PDF:", err);
+    return baseBlob;
+  }
+}
+
+async function mergeExternalPdfs(
+  baseBlob: Blob,
+  injections: { afterPdfPageIndex: number; url: string }[],
+): Promise<Blob> {
+  const baseBytes = await baseBlob.arrayBuffer();
+  const baseDoc = await PDFDocument.load(baseBytes);
+  const outDoc = await PDFDocument.create();
+
+  // Index van placeholder-pagina's binnen baseDoc (0-based).
+  const placeholderSet = new Set(injections.map((x) => x.afterPdfPageIndex));
+  const injectionMap = new Map(injections.map((x) => [x.afterPdfPageIndex, x.url]));
+
+  const totalBasePages = baseDoc.getPageCount();
+
+  for (let i = 0; i < totalBasePages; i++) {
+    if (placeholderSet.has(i)) {
+      const url = injectionMap.get(i)!;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const extBytes = await res.arrayBuffer();
+        const extDoc = await PDFDocument.load(extBytes);
+        const copied = await outDoc.copyPages(extDoc, extDoc.getPageIndices());
+        copied.forEach((p) => outDoc.addPage(p));
+      } catch (err) {
+        console.warn(`Externe PDF ophalen mislukt (${url}):`, err);
+        // Val terug op de placeholder uit base-doc zodat de PDF niet stuk gaat.
+        const [fallback] = await outDoc.copyPages(baseDoc, [i]);
+        outDoc.addPage(fallback);
+      }
+    } else {
+      const [pg] = await outDoc.copyPages(baseDoc, [i]);
+      outDoc.addPage(pg);
+    }
+  }
+
+  const merged = await outDoc.save();
+  return new Blob([new Uint8Array(merged)], { type: "application/pdf" });
 }
 
 export async function uploadPdfToStorage(
