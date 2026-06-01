@@ -147,7 +147,7 @@ const A4Page: React.FC<{
   isFirstPage?: boolean;
   categorie?: string;
 }> = ({ children, partner, pc, sc, logoUrl, pageNum, totalPages, isFirstPage, categorie }) => (
-  <div style={{
+  <div className="pdf-page" style={{
     width: "210mm", height: "297mm", margin: "0 auto", padding: 0,
     backgroundColor: "#fff", fontFamily: "'Rubik', 'Inter', -apple-system, sans-serif",
     fontSize: 11, color: sc, display: "flex", flexDirection: "column",

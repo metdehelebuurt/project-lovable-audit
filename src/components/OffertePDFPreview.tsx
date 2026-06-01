@@ -303,10 +303,10 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
   );
 
   const pageStyle: React.CSSProperties = {
-    width: "210mm", minHeight: "297mm", margin: "0 auto", padding: "15mm",
+    width: "210mm", height: "297mm", margin: "0 auto", padding: "15mm",
     backgroundColor: "#fff", fontFamily: "'Rubik', sans-serif", fontSize: 13,
     color: "#1a1a2e", display: "flex", flexDirection: "column",
-    boxSizing: "border-box", position: "relative",
+    boxSizing: "border-box", position: "relative", overflow: "hidden",
   };
 
   /* ─── Grouped schouw ─── */
@@ -385,7 +385,11 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
             if (s === "producten" && (!tc.productpagina || producten.length === 0)) return false;
             if (s === "energieadvies" && (!tc.energieadvies || !energieadvies)) return false;
             if (s === "schouwrapport" && (!tc.schouwrapport || !offerte.include_schouw || !schouw)) return false;
-            if (s === "datasheets" && producten.filter(p => p.datasheet_type).length === 0) return false;
+            if (s === "datasheets" && producten.filter(p =>
+              p.datasheet_type === "fabrikant" ||
+              p.datasheet_type === "gegenereerd" ||
+              (p.specs && typeof p.specs === "object" && Object.keys(p.specs as object).length > 0)
+            ).length === 0) return false;
             return true;
           })
           .map(s => sectionLabels[s] || s);
@@ -573,8 +577,19 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
             const dsUrl = p.datasheet_url.startsWith("http") ? p.datasheet_url : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${p.datasheet_url}`;
             pageNum++;
             datasheetPages.push(
-              <div key={`ds-${p.id}`} className="pdf-page" style={{ ...pageStyle, padding: 0 }}>
-                <iframe src={dsUrl} title={`Datasheet ${p.naam}`} style={{ width: "100%", height: "100%", border: "none", minHeight: "297mm" }} />
+              <div
+                key={`ds-${p.id}`}
+                className="pdf-page"
+                data-external-pdf={dsUrl}
+                style={{ ...pageStyle, padding: 0, alignItems: "center", justifyContent: "center", backgroundColor: "#f4f4f6" }}
+              >
+                <div style={{ textAlign: "center", color: "#666", fontSize: 12, padding: 24 }}>
+                  <p style={{ margin: "0 0 8px", fontWeight: 600, color: sc, fontSize: 14 }}>Originele fabrikant-datasheet</p>
+                  <p style={{ margin: 0 }}>{p.merk ? `${p.merk} — ` : ""}{p.naam}</p>
+                  <p style={{ margin: "12px 0 0", fontSize: 10, color: "#888" }}>
+                    Deze pagina wordt vervangen door de originele PDF van de fabrikant in de uiteindelijke export.
+                  </p>
+                </div>
               </div>
             );
           } else {
