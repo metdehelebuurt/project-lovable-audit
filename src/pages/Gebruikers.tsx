@@ -209,9 +209,10 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
         telefoon: form.telefoon || null,
       });
     } else {
-      // Verplichte partner-koppeling voor alle rollen behalve superadmin
+      // Verplichte partner-koppeling alleen voor partner-gebonden rollen
       const effectievePartnerId = form.partner_id || profile?.partner_id || null;
-      if (form.rol !== "superadmin" && !effectievePartnerId) {
+      const heeftPartnerNodig = !["superadmin", "affiliate"].includes(form.rol);
+      if (heeftPartnerNodig && !effectievePartnerId) {
         toast.error("Selecteer een organisatie", {
           description: "Een gebruiker met deze rol moet aan een organisatie gekoppeld zijn.",
         });
@@ -222,7 +223,7 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
   };
 
   const availableRoles: AppRole[] = isSuperadmin
-    ? ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"]
+    ? ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument", "affiliate"]
     : ["backoffice", "partner_staff", "adviseur", "installateur"];
 
   const filtered = users.filter(u =>
@@ -357,7 +358,7 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                 </Select>
               </div>
             )}
-            {!editingUser && isSuperadmin && form.rol !== "superadmin" && (
+            {!editingUser && isSuperadmin && !["superadmin", "affiliate"].includes(form.rol) && (
               <div>
                 <Label>Partner *</Label>
                 <Select value={form.partner_id} onValueChange={v => setForm(p => ({ ...p, partner_id: v }))}>
