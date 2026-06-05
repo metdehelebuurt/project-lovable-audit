@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight } from "lucide-react";
+import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye } from "lucide-react";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
@@ -19,6 +19,7 @@ const AffiliateBeheer = () => {
   const [showCreateCode, setShowCreateCode] = useState(false);
   const [affiliateForm, setAffiliateForm] = useState({ voornaam: "", achternaam: "", email: "", telefoon: "" });
   const [codeForm, setCodeForm] = useState({ affiliate_id: "", code: "", korting_type: "percentage", korting_waarde: "", max_gebruik: "", geldig_tot: "" });
+  const [detailAffiliate, setDetailAffiliate] = useState<any | null>(null);
 
   // Fetch instellingen
   const { data: instellingen } = useQuery({
@@ -234,16 +235,21 @@ const AffiliateBeheer = () => {
               <TableBody>
                 {affiliates.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
                 {affiliates.map((a: any) => (
-                  <TableRow key={a.id}>
+                  <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAffiliate(a)}>
                     <TableCell className="font-medium">{a.voornaam} {a.achternaam}</TableCell>
                     <TableCell>{a.email}</TableCell>
                     <TableCell>{a.telefoon || "—"}</TableCell>
                     <TableCell><Badge variant={a.status === "actief" ? "default" : "secondary"}>{a.status}</Badge></TableCell>
                     <TableCell className="text-muted-foreground">{new Date(a.created_at).toLocaleDateString("nl-NL")}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => toggleStatus.mutate({ id: a.id, currentStatus: a.status })} title={a.status === "actief" ? "Deactiveren" : "Activeren"}>
-                        {a.status === "actief" ? <ToggleRight className="h-4 w-4 text-green-600" /> : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
-                      </Button>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => setDetailAffiliate(a)} title="Statistieken bekijken">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => toggleStatus.mutate({ id: a.id, currentStatus: a.status })} title={a.status === "actief" ? "Deactiveren" : "Activeren"}>
+                          {a.status === "actief" ? <ToggleRight className="h-4 w-4 text-green-600" /> : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -350,7 +356,7 @@ const AffiliateBeheer = () => {
               <TableBody>
                 {payoutsByAffiliate.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
                 {payoutsByAffiliate.map((a: any) => (
-                  <TableRow key={a.id}>
+                  <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAffiliate(a)}>
                     <TableCell className="font-medium">{a.voornaam} {a.achternaam}</TableCell>
                     <TableCell>{a.email}</TableCell>
                     <TableCell>{a.referrals}</TableCell>
