@@ -224,7 +224,7 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
 
   const availableRoles: AppRole[] = isSuperadmin
     ? ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument", "affiliate"]
-    : ["backoffice", "partner_staff", "adviseur", "installateur"];
+    : ["backoffice", "partner_staff", "adviseur", "installateur", "affiliate"];
 
   const filtered = users.filter(u =>
     `${u.voornaam} ${u.achternaam} ${u.email}`.toLowerCase().includes(search.toLowerCase())
