@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight } from "lucide-react";
+import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye } from "lucide-react";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
@@ -19,6 +19,7 @@ const AffiliateBeheer = () => {
   const [showCreateCode, setShowCreateCode] = useState(false);
   const [affiliateForm, setAffiliateForm] = useState({ voornaam: "", achternaam: "", email: "", telefoon: "" });
   const [codeForm, setCodeForm] = useState({ affiliate_id: "", code: "", korting_type: "percentage", korting_waarde: "", max_gebruik: "", geldig_tot: "" });
+  const [detailAffiliate, setDetailAffiliate] = useState<any | null>(null);
 
   // Fetch instellingen
   const { data: instellingen } = useQuery({
@@ -234,16 +235,21 @@ const AffiliateBeheer = () => {
               <TableBody>
                 {affiliates.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
                 {affiliates.map((a: any) => (
-                  <TableRow key={a.id}>
+                  <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAffiliate(a)}>
                     <TableCell className="font-medium">{a.voornaam} {a.achternaam}</TableCell>
                     <TableCell>{a.email}</TableCell>
                     <TableCell>{a.telefoon || "—"}</TableCell>
                     <TableCell><Badge variant={a.status === "actief" ? "default" : "secondary"}>{a.status}</Badge></TableCell>
                     <TableCell className="text-muted-foreground">{new Date(a.created_at).toLocaleDateString("nl-NL")}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => toggleStatus.mutate({ id: a.id, currentStatus: a.status })} title={a.status === "actief" ? "Deactiveren" : "Activeren"}>
-                        {a.status === "actief" ? <ToggleRight className="h-4 w-4 text-green-600" /> : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
-                      </Button>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => setDetailAffiliate(a)} title="Statistieken bekijken">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => toggleStatus.mutate({ id: a.id, currentStatus: a.status })} title={a.status === "actief" ? "Deactiveren" : "Activeren"}>
+                          {a.status === "actief" ? <ToggleRight className="h-4 w-4 text-green-600" /> : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -350,7 +356,7 @@ const AffiliateBeheer = () => {
               <TableBody>
                 {payoutsByAffiliate.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
                 {payoutsByAffiliate.map((a: any) => (
-                  <TableRow key={a.id}>
+                  <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAffiliate(a)}>
                     <TableCell className="font-medium">{a.voornaam} {a.achternaam}</TableCell>
                     <TableCell>{a.email}</TableCell>
                     <TableCell>{a.referrals}</TableCell>
@@ -450,6 +456,72 @@ const AffiliateBeheer = () => {
             <Button variant="outline" onClick={() => setShowCreateCode(false)}>Annuleren</Button>
             <Button onClick={() => createCode.mutate()} disabled={createCode.isPending}>{createCode.isPending ? "Bezig..." : "Aanmaken"}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Affiliate detail / statistieken */}
+      <Dialog open={!!detailAffiliate} onOpenChange={(o) => !o && setDetailAffiliate(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          {detailAffiliate && (() => {
+            const refs = allReferrals.filter((r: any) => r.affiliate_id === detailAffiliate.id);
+            const codes = allCodes.filter((c: any) => c.affiliate_id === detailAffiliate.id);
+            const totaal = refs.reduce((s: number, r: any) => s + (r.commissie_verdiend || 0), 0);
+            const actief = refs.filter((r: any) => r.status === "actief").length;
+            const codeGebruik = codes.reduce((s: number, c: any) => s + (c.aantal_gebruikt || 0), 0);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{detailAffiliate.voornaam} {detailAffiliate.achternaam}</DialogTitle>
+                  <DialogDescription>{detailAffiliate.email} {detailAffiliate.telefoon ? `· ${detailAffiliate.telefoon}` : ""}</DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card><CardContent className="pt-4"><p className="text-2xl font-bold">{refs.length}</p><p className="text-xs text-muted-foreground">Referrals</p></CardContent></Card>
+                  <Card><CardContent className="pt-4"><p className="text-2xl font-bold">{actief}</p><p className="text-xs text-muted-foreground">Actief</p></CardContent></Card>
+                  <Card><CardContent className="pt-4"><p className="text-2xl font-bold text-green-600">€{totaal.toFixed(2)}</p><p className="text-xs text-muted-foreground">Commissie</p></CardContent></Card>
+                  <Card><CardContent className="pt-4"><p className="text-2xl font-bold">{codes.length}</p><p className="text-xs text-muted-foreground">Codes ({codeGebruik}×)</p></CardContent></Card>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold mt-4">Referrals</h3>
+                  {refs.length === 0 ? <p className="text-sm text-muted-foreground">Nog geen referrals</p> : (
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Partner</TableHead><TableHead>Status</TableHead><TableHead>Commissie %</TableHead><TableHead>Verdiend</TableHead><TableHead>Datum</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {refs.map((r: any) => (
+                          <TableRow key={r.id}>
+                            <TableCell className="font-medium">{r.partners?.naam || "—"}</TableCell>
+                            <TableCell><Badge variant={r.status === "actief" ? "default" : "secondary"}>{r.status}</Badge></TableCell>
+                            <TableCell>{r.commissie_percentage}%</TableCell>
+                            <TableCell className="text-green-600 font-medium">€{(r.commissie_verdiend || 0).toFixed(2)}</TableCell>
+                            <TableCell className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString("nl-NL")}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold mt-4">Kortingscodes</h3>
+                  {codes.length === 0 ? <p className="text-sm text-muted-foreground">Nog geen kortingscodes</p> : (
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Korting</TableHead><TableHead>Gebruik</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {codes.map((c: any) => (
+                          <TableRow key={c.id}>
+                            <TableCell className="font-mono font-bold">{c.code}</TableCell>
+                            <TableCell>{c.korting_type === "percentage" ? `${c.korting_waarde}%` : `€${c.korting_waarde}`}</TableCell>
+                            <TableCell>{c.aantal_gebruikt}{c.max_gebruik ? `/${c.max_gebruik}` : ""}</TableCell>
+                            <TableCell><Badge variant={c.actief ? "default" : "secondary"}>{c.actief ? "Actief" : "Inactief"}</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
