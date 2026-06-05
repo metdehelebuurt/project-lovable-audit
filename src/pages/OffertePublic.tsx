@@ -15,6 +15,7 @@ import { Check, FileText, Loader2, AlertCircle, Clock, Send, MessageSquare, Clip
 import { toast } from "sonner";
 import { ensureHtml, formatCurrency, regelSubtotaal, type OfferteRegel } from "@/types/offerte";
 import { buildHandleidingUrl, type Handleiding } from "@/lib/productHandleidingen";
+import DOMPurify from "dompurify";
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
@@ -297,7 +298,7 @@ export default function OffertePublic() {
             {offerte.introductie_tekst && (
               <Card className="rounded-2xl border-0 shadow-sm" style={{ borderLeft: `4px solid ${pc}` }}>
                 <CardContent className="pt-6">
-                  <div className="prose prose-sm max-w-none text-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.introductie_tekst) }} />
+                  <div className="prose prose-sm max-w-none text-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ensureHtml(offerte.introductie_tekst)) }} />
                 </CardContent>
               </Card>
             )}
@@ -355,19 +356,19 @@ export default function OffertePublic() {
                   {offerte.betalingsvoorwaarden && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Betalingstermijn</p>
-                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.betalingsvoorwaarden) }} />
+                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ensureHtml(offerte.betalingsvoorwaarden)) }} />
                     </div>
                   )}
                   {offerte.garantie_voorwaarden && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Garantie</p>
-                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.garantie_voorwaarden) }} />
+                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ensureHtml(offerte.garantie_voorwaarden)) }} />
                     </div>
                   )}
                   {offerte.installatie_termijn && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: pc }}>Installatietermijn</p>
-                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: ensureHtml(offerte.installatie_termijn) }} />
+                      <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ensureHtml(offerte.installatie_termijn)) }} />
                     </div>
                   )}
                 </CardContent>

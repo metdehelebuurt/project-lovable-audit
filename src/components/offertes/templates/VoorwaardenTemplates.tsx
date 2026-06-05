@@ -1,9 +1,10 @@
 import React from "react";
+import DOMPurify from "dompurify";
 
 const isHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s);
 const renderHtmlOrText = (text: string, style: React.CSSProperties) => {
   if (isHtml(text)) {
-    return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: text }} />;
+    return <div style={{ ...style, whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text) }} />;
   }
   return <p style={style}>{text}</p>;
 };

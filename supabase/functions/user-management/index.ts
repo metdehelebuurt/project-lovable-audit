@@ -369,10 +369,18 @@ async function handleSetupSuperadmin(supabaseAdmin: any, corsHeaders: Record<str
 }
 
 function generatePassword(): string {
+  // Cryptografisch veilig wachtwoord (geen Math.random)
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
+  const len = 20;
+  const arr = new Uint32Array(len);
+  crypto.getRandomValues(arr);
   let password = "";
-  for (let i = 0; i < 16; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < len; i++) {
+    password += chars.charAt(arr[i] % chars.length);
   }
+  // Garandeer minimaal 1 hoofdletter, 1 cijfer en 1 symbool
+  if (!/[A-Z]/.test(password)) password = "A" + password.slice(1);
+  if (!/[0-9]/.test(password)) password = password.slice(0, -1) + "7";
+  if (!/[!@#$%&*]/.test(password)) password = password.slice(0, -2) + "!" + password.slice(-1);
   return password;
 }

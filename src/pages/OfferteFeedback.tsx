@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { BarChart3, PieChart as PieChartIcon, TrendingDown, Brain, Loader2, FileText, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import DOMPurify from "dompurify";
 
 const categorieLabels: Record<string, string> = {
   prijs: "Prijs te hoog",
