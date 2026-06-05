@@ -89,9 +89,9 @@ const AffiliateBeheer = () => {
     mutationFn: async () => {
       const { voornaam, achternaam, email, telefoon } = affiliateForm;
       if (!voornaam || !achternaam || !email) throw new Error("Vul alle verplichte velden in");
-      const password = Math.random().toString(36).slice(-10) + "A1!";
+      // Wachtwoord wordt server-side veilig gegenereerd via user-management (crypto.getRandomValues)
       const res = await supabase.functions.invoke("user-management", {
-        body: { action: "create_user", email, password, voornaam, achternaam, telefoon: telefoon || null, rol: "affiliate", partner_id: null },
+        body: { action: "create_user", email, voornaam, achternaam, telefoon: telefoon || null, rol: "affiliate", partner_id: null },
       });
       if (res.error) throw new Error(res.error.message || "Fout bij aanmaken");
       if (res.data?.error) throw new Error(res.data.error);

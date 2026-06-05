@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { BarChart3, PieChart as PieChartIcon, TrendingDown, Brain, Loader2, FileText, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import DOMPurify from "dompurify";
 
 const categorieLabels: Record<string, string> = {
   prijs: "Prijs te hoog",
@@ -223,7 +224,7 @@ export default function OfferteFeedback() {
         </CardHeader>
         <CardContent>
           {aiRapport ? (
-            <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: aiRapport.replace(/\n/g, "<br/>").replace(/## /g, "<h3>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
+            <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(aiRapport.replace(/\n/g, "<br/>").replace(/## /g, "<h3>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")) }} />
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">
               Klik op "Genereer analyse" om een AI-rapport te genereren op basis van de afwijzingsredenen van de laatste 90 dagen.

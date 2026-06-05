@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateOffertePdfViaIframe } from "@/lib/pdfFromPages";
+import DOMPurify from "dompurify";
 import { parseAddressList } from "@/components/email/EmailComposerFields";
 import { Mail, X } from "lucide-react";
 
@@ -176,7 +177,7 @@ export default function OfferteEmailEditor({
       if (error) throw error;
       const text = data?.tekst || data?.introductie;
       if (text && editorRef.current) {
-        editorRef.current.innerHTML = text.replace(/\n/g, "<br/>");
+        editorRef.current.innerHTML = DOMPurify.sanitize(text.replace(/\n/g, "<br/>"));
       }
     } catch {
       toast.error("AI schrijven mislukt");
