@@ -81,9 +81,8 @@ serve(async (req) => {
           });
         }
 
-        // Role cap: partner_admin can only assign partner-gebonden rollen
-        // Affiliate is platformbreed en heeft geen partner_id, dus alleen superadmin mag die aanmaken.
-        const allowedRolesForPartnerAdmin = ["backoffice", "partner_staff", "adviseur", "installateur", "consument"];
+        // Role cap: partner_admin can only assign rollen binnen de eigen organisatie.
+        const allowedRolesForPartnerAdmin = ["backoffice", "partner_staff", "adviseur", "installateur", "consument", "affiliate"];
         const allowedRolesForSuperadmin = ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "affiliate", "consument"];
 
         if (callerProfile.rol === "partner_admin" && !allowedRolesForPartnerAdmin.includes(rol)) {
@@ -100,11 +99,18 @@ serve(async (req) => {
           });
         }
 
-        // Server-side guard: partner-scoped rollen MOETEN aan een partner gekoppeld zijn.
-        // Platformrollen (superadmin, affiliate) hebben geen partner_id.
-        // Voorkomt "wees-users" die door RLS onzichtbaar worden voor platformbeheerders.
-        const platformRollen = ["superadmin", "affiliate"];
-        if (!platformRollen.includes(rol) && !partner_id) {
+        // Bepaal effectieve partner-context.
+        // - superadmin blijft platformbreed
+        // - affiliate mag door superadmin platformbreed worden aangemaakt
+        // - affiliate door partner_admin wordt aan de eigen organisatie gekoppeld
+        const isPlatformAffiliate = rol === "affiliate" && callerProfile.rol === "superadmin" && !partner_id;
+        const resolvedPartnerId = rol === "superadmin"
+          ? null
+          : isPlatformAffiliate
+            ? null
+            : (partner_id ?? callerProfile.partner_id ?? null);
+
+        if (rol !== "superadmin" && !isPlatformAffiliate && !resolvedPartnerId) {
           return new Response(
             JSON.stringify({ error: "partner_id is verplicht voor deze rol" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -112,7 +118,7 @@ serve(async (req) => {
         }
 
         // Partner admin can only create users within their own partner
-        if (callerProfile.rol === "partner_admin" && partner_id !== callerProfile.partner_id) {
+        if (callerProfile.rol === "partner_admin" && resolvedPartnerId !== callerProfile.partner_id) {
           return new Response(JSON.stringify({ error: "Kan alleen gebruikers binnen eigen organisatie aanmaken" }), {
             status: 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -140,7 +146,7 @@ serve(async (req) => {
           voornaam,
           achternaam,
           rol,
-          partner_id: platformRollen.includes(rol) ? null : partner_id,
+          partner_id: resolvedPartnerId,
           telefoon,
           status: "actief",
         });
@@ -164,9 +170,9 @@ serve(async (req) => {
           });
           const setupUrl = linkData?.properties?.action_link ?? `${siteUrl}/login`;
           let partnerNaam: string | undefined;
-          if (partner_id) {
+          if (resolvedPartnerId) {
             const { data: p } = await supabaseAdmin
-              .from("partners").select("naam").eq("id", partner_id).maybeSingle();
+              .from("partners").select("naam").eq("id", resolvedPartnerId).maybeSingle();
             partnerNaam = p?.naam ?? undefined;
           }
           const { data: inviter } = await supabaseAdmin
