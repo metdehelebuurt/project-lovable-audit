@@ -81,8 +81,9 @@ serve(async (req) => {
           });
         }
 
-        // Role cap: partner_admin can only assign limited roles
-        const allowedRolesForPartnerAdmin = ["backoffice", "partner_staff", "adviseur", "installateur", "consument", "affiliate"];
+        // Role cap: partner_admin can only assign partner-gebonden rollen
+        // Affiliate is platformbreed en heeft geen partner_id, dus alleen superadmin mag die aanmaken.
+        const allowedRolesForPartnerAdmin = ["backoffice", "partner_staff", "adviseur", "installateur", "consument"];
         const allowedRolesForSuperadmin = ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "affiliate", "consument"];
 
         if (callerProfile.rol === "partner_admin" && !allowedRolesForPartnerAdmin.includes(rol)) {
