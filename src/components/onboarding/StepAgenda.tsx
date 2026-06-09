@@ -30,7 +30,7 @@ export const StepAgenda = ({ onNext, onPrev }: Props) => {
     setBezig(true);
     try {
       const { data, error } = await supabase.functions.invoke("google-calendar-oauth-start", {
-        body: { redirect_path: "/onboarding" },
+        body: { return_to: "/onboarding" },
       });
       if (error || !data?.url) throw new Error(error?.message || "Geen URL ontvangen");
       window.location.href = data.url;
