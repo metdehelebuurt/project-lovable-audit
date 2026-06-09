@@ -15,6 +15,12 @@ import StepBeveiliging from "@/components/onboarding/StepBeveiliging";
 import StepKlaar from "@/components/onboarding/StepKlaar";
 import StepBetaalmethode from "@/components/onboarding/StepBetaalmethode";
 import StepRondleiding from "@/components/onboarding/StepRondleiding";
+import StepHuisstijl from "@/components/onboarding/StepHuisstijl";
+import StepDoelen from "@/components/onboarding/StepDoelen";
+import StepTeam from "@/components/onboarding/StepTeam";
+import StepAgenda from "@/components/onboarding/StepAgenda";
+import StepNummerreeksen from "@/components/onboarding/StepNummerreeksen";
+import StepBetalingsvoorwaarden from "@/components/onboarding/StepBetalingsvoorwaarden";
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -26,10 +32,14 @@ const Onboarding = () => {
   const steps = useMemo(() => {
     const rol = profile?.rol;
     if (rol === "installateur") {
-      return ["welkom", "profiel", "handtekening", "beveiliging", "rondleiding", "klaar"];
+      return ["welkom", "profiel", "voorkeuren", "agenda", "handtekening", "beveiliging", "rondleiding", "klaar"];
     }
-    const base = ["welkom", "profiel", "email", "handtekening", "voorkeuren"];
-    if (state.isAdmin) base.push("organisatie", "betaalmethode");
+    const base: string[] = ["welkom", "profiel", "voorkeuren"];
+    if (state.isAdmin) base.push("organisatie", "huisstijl");
+    base.push("doelen");
+    if (state.isAdmin) base.push("team");
+    base.push("email", "handtekening", "agenda");
+    if (state.isAdmin) base.push("nummerreeksen", "betalingsvoorwaarden", "betaalmethode");
     base.push("beveiliging", "rondleiding", "klaar");
     return base;
   }, [state.isAdmin, profile?.rol]);
@@ -53,10 +63,15 @@ const Onboarding = () => {
   const summaryItems = [
     { label: "Persoonlijke gegevens ingevuld", done: !!state.user.voornaam && !!state.user.achternaam },
     { label: "Profielfoto toegevoegd", done: !!state.user.avatar_url },
+    { label: "Voorkeuren opgeslagen", done: true },
+    ...(state.isAdmin ? [
+      { label: "Organisatie-gegevens ingevuld", done: !!state.partner?.bedrijfsnaam },
+      { label: "Huisstijl ingesteld", done: !!state.partner?.logo_url },
+    ] : []),
+    { label: "Doelen gekozen", done: !!state.user.voorkeuren?.doelen?.modules?.length },
     { label: "E-mailaccount gekoppeld", done: state.hasEmailAccount },
     { label: "E-mailhandtekening ingesteld", done: !!state.user.handtekening_html },
-    { label: "Voorkeuren opgeslagen", done: true },
-    ...(state.isAdmin ? [{ label: "Organisatie-gegevens ingevuld", done: !!state.partner?.bedrijfsnaam }] : []),
+    { label: "Agenda gekoppeld", done: state.agendaGekoppeld },
     { label: "Tweestapsverificatie", done: !!state.user.mfa_enabled },
   ];
 
@@ -97,6 +112,28 @@ const Onboarding = () => {
           {current === "organisatie" && state.partner && profile.partner_id && (
             <StepOrganisatie partner={state.partner} partnerId={profile.partner_id}
               onSave={state.savePartner} onNext={next} onPrev={prev} />
+          )}
+          {current === "huisstijl" && state.partner && profile.partner_id && (
+            <StepHuisstijl partner={state.partner} partnerId={profile.partner_id}
+              onSave={state.savePartner} onNext={next} onPrev={prev} />
+          )}
+          {current === "doelen" && (
+            <StepDoelen
+              initial={state.user.voorkeuren?.doelen || { modules: [], volume: 25 }}
+              onSave={async (d) => state.saveUser({ voorkeuren: { ...state.user.voorkeuren, doelen: d } })}
+              onNext={next} onPrev={prev} />
+          )}
+          {current === "team" && profile.partner_id && (
+            <StepTeam partnerId={profile.partner_id} onNext={next} onPrev={prev} />
+          )}
+          {current === "agenda" && (
+            <StepAgenda onNext={next} onPrev={prev} />
+          )}
+          {current === "nummerreeksen" && profile.partner_id && (
+            <StepNummerreeksen partnerId={profile.partner_id} onNext={next} onPrev={prev} />
+          )}
+          {current === "betalingsvoorwaarden" && profile.partner_id && (
+            <StepBetalingsvoorwaarden partnerId={profile.partner_id} onNext={next} onPrev={prev} />
           )}
           {current === "betaalmethode" && profile.partner_id && (
             <StepBetaalmethode partnerId={profile.partner_id} onNext={next} onPrev={prev} />
