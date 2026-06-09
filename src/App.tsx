@@ -106,6 +106,8 @@ import WebsiteLayout from "@/components/website/WebsiteLayout";
 import Privacy from "@/pages/website/Privacy";
 import Voorwaarden from "@/pages/website/Voorwaarden";
 import CookieBeleid from "@/pages/website/CookieBeleid";
+import Onboarding from "@/pages/Onboarding";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +135,11 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
+            {/* Onboarding-wizard — protected, geen AppLayout */}
+            <Route path="/onboarding" element={
+              <ProtectedRoute><Onboarding /></ProtectedRoute>
+            } />
+
             {/* Juridische pagina's met gedeelde layout */}
             <Route element={<WebsiteLayout />}>
               <Route path="/privacy" element={<Privacy />} />
@@ -140,7 +147,8 @@ const App = () => (
               <Route path="/cookies" element={<CookieBeleid />} />
             </Route>
 
-            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute><OnboardingGate /></ProtectedRoute>}>
+              <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/vandaag" element={<Vandaag />} />
               <Route path="/partners" element={
@@ -366,6 +374,7 @@ const App = () => (
               <Route path="/retouren/:id" element={
                 <ProtectedRoute moduleKey="retouren" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><RetourDetail /></ProtectedRoute>
               } />
+            </Route>
             </Route>
             <Route path="/offertes/:id/pdf/print" element={<OffertePDFPrint />} />
 
