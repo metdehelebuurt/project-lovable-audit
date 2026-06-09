@@ -14,6 +14,7 @@ import StepOrganisatie from "@/components/onboarding/StepOrganisatie";
 import StepBeveiliging from "@/components/onboarding/StepBeveiliging";
 import StepKlaar from "@/components/onboarding/StepKlaar";
 import StepBetaalmethode from "@/components/onboarding/StepBetaalmethode";
+import StepRondleiding from "@/components/onboarding/StepRondleiding";
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -23,11 +24,15 @@ const Onboarding = () => {
   const [finishing, setFinishing] = useState(false);
 
   const steps = useMemo(() => {
+    const rol = profile?.rol;
+    if (rol === "installateur") {
+      return ["welkom", "profiel", "handtekening", "beveiliging", "rondleiding", "klaar"];
+    }
     const base = ["welkom", "profiel", "email", "handtekening", "voorkeuren"];
     if (state.isAdmin) base.push("organisatie", "betaalmethode");
-    base.push("beveiliging", "klaar");
+    base.push("beveiliging", "rondleiding", "klaar");
     return base;
-  }, [state.isAdmin]);
+  }, [state.isAdmin, profile?.rol]);
 
   if (!profile || state.loading) {
     return <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Laden…</div>;
@@ -98,6 +103,9 @@ const Onboarding = () => {
           )}
           {current === "beveiliging" && (
             <StepBeveiliging user={state.user} onSave={state.saveUser} onNext={next} onPrev={prev} />
+          )}
+          {current === "rondleiding" && (
+            <StepRondleiding onNext={next} onPrev={prev} />
           )}
           {current === "klaar" && <StepKlaar items={summaryItems} onFinish={finish} finishing={finishing} />}
         </div>
