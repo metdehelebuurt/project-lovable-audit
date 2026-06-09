@@ -9,10 +9,12 @@ import { toast } from "sonner";
 import EmailKoppelingWizard from "@/components/gebruikers/EmailKoppelingWizard";
 import HandtekeningEditor from "@/components/gebruikers/HandtekeningEditor";
 import OnboardingChecklist from "@/components/gebruikers/OnboardingChecklist";
-import { User as UserIcon, Save } from "lucide-react";
+import { User as UserIcon, Save, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Profiel = () => {
   const { profile, user } = useAuth();
+  const navigate = useNavigate();
   const [voornaam, setVoornaam] = useState("");
   const [achternaam, setAchternaam] = useState("");
   const [telefoon, setTelefoon] = useState("");
@@ -47,6 +49,15 @@ const Profiel = () => {
     }).eq("id", profile.id);
     if (error) toast.error("Opslaan mislukt", { description: error.message });
     else toast.success("Profiel opgeslagen");
+  };
+
+  const herstartOnboarding = async () => {
+    if (!profile) return;
+    await supabase.from("users").update({
+      onboarding_voltooid_op: null,
+      onboarding_overgeslagen_op: null,
+    } as any).eq("id", profile.id);
+    navigate("/onboarding");
   };
 
   return (
@@ -92,6 +103,9 @@ const Profiel = () => {
             user={{ id: profile.id, avatar_url: extra?.avatar_url, telefoon, mfa_enabled: extra?.mfa_enabled, handtekening_html: extra?.handtekening_html }}
             hasEmailAccount={hasEmail}
           />
+          <Button onClick={herstartOnboarding} variant="outline" className="rounded-pill w-full gap-2">
+            <Sparkles className="h-4 w-4" /> Onboarding opnieuw doorlopen
+          </Button>
         </div>
       </div>
     </div>

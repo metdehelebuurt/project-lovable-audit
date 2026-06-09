@@ -110,7 +110,7 @@ const Signup = () => {
       toast.success("Welkom bij mijnhuis.nu!", {
         description: "Je trial account is aangemaakt.",
       });
-      navigate("/dashboard");
+      navigate("/onboarding");
     }
     setIsLoading(false);
   };
