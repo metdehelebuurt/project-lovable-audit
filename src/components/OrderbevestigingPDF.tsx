@@ -82,8 +82,12 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
   const secondary = partner.secundaire_kleur || "#1a1a2e";
   const regels = opdracht.regels || [];
   const datum = opdracht.bevestiging_verzonden_op || opdracht.created_at;
-  const logoUrl = partner.logo_url
-    ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${partner.logo_url}`
+  // logo_url kan al een volledige URL zijn (nieuwere uploads) of een storage path (legacy).
+  const rawLogo = partner.logo_url;
+  const logoUrl = rawLogo
+    ? /^https?:\/\//i.test(rawLogo)
+      ? rawLogo
+      : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/partner-assets/${rawLogo}`
     : null;
 
   const subtotaal = regels.reduce((s, r) => s + regelSub(r), 0);
