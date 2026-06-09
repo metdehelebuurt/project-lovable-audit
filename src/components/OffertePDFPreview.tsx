@@ -531,7 +531,11 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
         if (!tc.schouwrapport || !offerte.include_schouw || !schouw) return null;
         pageNum++;
         return (
-          <div key="schouwrapport" className="pdf-page" style={pageStyle}>
+          <div
+            key="schouwrapport"
+            className="pdf-page"
+            style={{ ...pageStyle, height: "auto", minHeight: "297mm", overflow: "visible" }}
+          >
             <PageHeader />
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: sc, margin: "0 0 6px" }}>Schouwrapport</h2>
