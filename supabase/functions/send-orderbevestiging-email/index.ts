@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     if (!userRow?.partner_id) return jsonResponse({ error: "Geen partner gekoppeld" }, 400);
 
     const { data: opdracht } = await adminClient.from("opdrachten")
-      .select("id, klant_id, klant_naam, status, partner_id, bevestiging_verzonden_op")
+      .select("id, klant_naam, klant_email, status, partner_id, bevestiging_verzonden_op")
       .eq("id", opdracht_id).eq("partner_id", userRow.partner_id).single();
     if (!opdracht) return jsonResponse({ error: "Opdracht niet gevonden" }, 404);
 
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       cc: Array.isArray(cc) ? cc : [],
       bcc: Array.isArray(bcc) ? bcc : [],
       subject, html, attachment, type: "orderbevestiging",
-      klantId: opdracht.klant_id || null, verzondenDoorId: userId,
+      klantId: null, verzondenDoorId: userId,
     });
 
     if (!opdracht.bevestiging_verzonden_op) {
