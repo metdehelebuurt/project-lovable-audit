@@ -2,6 +2,7 @@ import EmailKoppelingWizard from "@/components/gebruikers/EmailKoppelingWizard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowLeft, Mail, CheckCircle2 } from "lucide-react";
 import { EmailTestKnop } from "./EmailTestKnop";
+import InfoCallout from "./InfoCallout";
 
 interface Props {
   userId: string;
@@ -23,6 +24,10 @@ export const StepEmail = ({ userId, partnerId, email, voornaam, hasEmailAccount,
         Koppel je Gmail- of Outlook-account zodat je vanuit het platform e-mails kunt sturen en ontvangen onder je eigen adres.
       </p>
     </div>
+
+    <InfoCallout title="Waarom koppelen?">
+      E-mails komen aan onder jouw eigen adres (geen 'via …'-melding), antwoorden landen direct bij het juiste dossier en je houdt volledige tracking van openen en klikken.
+    </InfoCallout>
 
     <EmailKoppelingWizard userId={userId} partnerId={partnerId} />
 
