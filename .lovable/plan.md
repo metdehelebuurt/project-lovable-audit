@@ -1,56 +1,99 @@
-## Situatie
+## Doel
 
-De onboarding-module is grotendeels al gebouwd (`src/pages/Onboarding.tsx` + 9 stap-componenten in `src/components/onboarding/` + state-hook `useOnboardingState`). De database heeft al de kolommen `onboarding_voltooid`, `onboarding_stappen`, `onboarding_voltooid_op`, `onboarding_overgeslagen_op` op `users`.
+Een echt complete onboarding bouwen die nieuwe gebruikers (vooral partner_admins) door alle relevante setup-stappen leidt — met duidelijke uitleg per stap, een logische volgorde, koppelingen voor e-mail en agenda, en initiële configuratievragen die het platform meteen goed instellen.
 
-**Wat ontbreekt:** de route `/onboarding` is niet geregistreerd in `App.tsx`, nieuwe gebruikers worden er niet automatisch heen geleid, en er is geen blijvende toegang ("Onboarding opnieuw doen") vanuit het profiel/dashboard. Daarom is de module nu onbereikbaar.
+## Nieuwe stapvolgorde
 
-## Plan
+```text
+1.  Welkom               – wat ga je instellen (overzicht + ~5 min indicatie)
+2.  Persoonlijk profiel  – foto, NAW, functie, telefoon
+3.  Voorkeuren           – taal, tijdzone, thema, notificaties
+4.  Organisatie          – bedrijfsnaam, KvK, BTW, adres, logo (admin)
+5.  Huisstijl            – primaire kleur + logo donker (admin)
+6.  Doelen & focus       – welke modules ga je gebruiken (leads/offertes/schouw/installatie/helpdesk) + maandvolume — bepaalt modules
+7.  Team uitnodigen      – e-mailadressen met rolkeuze (admin, optioneel)
+8.  E-mail koppelen      – Gmail / Outlook OAuth + testmail
+9.  E-mailhandtekening   – gegenereerd voorbeeld + bewerken
+10. Agenda koppelen      – Google Calendar OAuth (uitleg sync schouw/installatie)
+11. Nummerreeksen        – prefix/start voor offerte, factuur, schouw (admin)
+12. Betalingsvoorwaarden – standaard termijn + tekst (admin)
+13. Betaalmethode        – Mollie mandate voor abonnement (admin trial)
+14. Beveiliging          – MFA inschakelen + wachtwoord-tips
+15. Rondleiding          – 4-slide carousel van hoofdmodules op basis van rol
+16. Klaar                – checklist + CTA's (eerste lead / dashboard / docs)
+```
 
-### 1. Route registreren
-- In `src/App.tsx` een nieuwe route `/onboarding` toevoegen achter `ProtectedRoute` (alle ingelogde rollen), die `Onboarding.tsx` rendert. Géén `AppLayout` (full-screen wizard, eigen header met logo + voortgangsbalk — al ingebouwd in de page).
+Voor `installateur`/`monteur` blijft een korte variant: Welkom → Profiel → Voorkeuren → Agenda koppelen → Handtekening → Beveiliging → Klaar.
 
-### 2. Auto-redirect voor nieuwe gebruikers
-- In `AuthContext.tsx` na `loadProfile` extra velden ophalen: `onboarding_voltooid_op`, `onboarding_overgeslagen_op`.
-- Een kleine `OnboardingGate`-wrapper rond `ProtectedRoute` (of in `AppLayout`) die redirect naar `/onboarding` als:
-  - gebruiker is ingelogd, profiel geladen
-  - `onboarding_voltooid_op` IS NULL én `onboarding_overgeslagen_op` IS NULL
-  - huidige route is niet al `/onboarding`, `/login`, `/reset-password`, `/profiel`, of een publieke route (`/offerte/:token`, `/oplever/...`, `/embed/...`, `/feedback/...`).
-- Rol `consument` slaat de wizard over (gaat direct naar klantportaal).
-- Rol `installateur`/`monteur`: korte versie (alleen profiel + handtekening + beveiliging — organisatie-stap wordt al overgeslagen via `isAdmin`).
+## Verbeteringen per bestaande stap
 
-### 3. Inhoud lichte uitbreiding (bestaande stappen blijven)
-De bestaande stappen blijven: Welkom → Profiel → E-mail → Handtekening → Voorkeuren → (Organisatie + Betaalmethode bij admin) → Beveiliging → Klaar. Toevoegen:
+- **StepWelkom**: tijdsindicatie, lijstje "wat we gaan instellen", uitleg waarom (deliverability, branding, samenwerking). Knop "Aan de slag" + "Sla over (kan altijd later)".
+- **StepProfiel**: extra uitleg waarom (zichtbaar op offertes/e-mails), validatie verplicht voor voornaam/achternaam, helperteksten onder elk veld.
+- **StepVoorkeuren**: uitleg per voorkeur, preview van thema-keuze, default `nl` + Europe/Amsterdam.
+- **StepOrganisatie**: KvK-lookup hint, logo preview, helpertekst "verschijnt op offertes/facturen/PDF".
+- **StepEmail**: duidelijke uitleg verschil OAuth vs SMTP, "Waarom koppelen?" callout (verzenden onder eigen adres + tracking + reply-in-platform), testmail-bevestiging.
+- **StepHandtekening**: live preview, optie "auto genereren uit profiel".
+- **StepBeveiliging**: stap-voor-stap MFA QR + recoverycodes, optie "later".
+- **StepKlaar**: visuele checklist met groene vinkjes per voltooide stap, CTA-tegels "Maak eerste lead", "Nodig team uit", "Bekijk dashboard", "Open helpcentrum".
 
-- **StepWelkom**: kort 30-sec uitleg-video / animatie placeholder + 3 highlight-tegels (al aanwezig).
-- **StepRondleiding** (nieuw, vóór "Klaar"): 4-slide carousel die de hoofdmodules introduceert op basis van rol (Leads, Offertes, Schouw, Planning) met "Open module"-knoppen die in nieuw tabblad openen — zo blijft de wizard intact.
-- **StepKlaar**: bij voltooien zet `onboarding_voltooid = true` (boolean) én tijdstempel, en biedt CTA "Eerste lead aanmaken" / "Naar dashboard".
+## Nieuwe stappen (nieuwe bestanden)
 
-### 4. Herhaalbaar maken
-- In `src/pages/Profiel.tsx` een knop "Onboarding opnieuw starten" die de tijdstempels nullt en naar `/onboarding` navigeert.
-- `OnboardingChecklist` (al bestaand) tonen op het dashboard zolang niet alle 5 substappen klaar zijn — link naar `/onboarding` ipv alleen profiel.
+- `src/components/onboarding/StepHuisstijl.tsx` – primaire kleur (color picker met live preview chip), logo licht/donker upload.
+- `src/components/onboarding/StepDoelen.tsx` – multi-select modules + slider verwacht aantal leads/maand → slaat op in `users.voorkeuren.doelen` en gebruikt voor rondleiding-personalisatie.
+- `src/components/onboarding/StepTeam.tsx` – tot 5 rijen (e-mail + rol-select) → roept `user-management` Edge Function aan voor uitnodigingen.
+- `src/components/onboarding/StepAgenda.tsx` – wrapper rond bestaande Google Calendar koppeling (start OAuth via `google-calendar-oauth-start`), status check via `google_calendar_accounts`, uitleg over schouw/installatie sync.
+- `src/components/onboarding/StepNummerreeksen.tsx` – default reeksen tonen, optioneel aanpassen (prefix + startnummer) → schrijft naar `nummerreeks_config`.
+- `src/components/onboarding/StepBetalingsvoorwaarden.tsx` – termijn (14/30/dagen) + tekstblok → `partners.payment_terms` JSONB.
+- `src/components/onboarding/InfoCallout.tsx` – herbruikbare uitleg-component (icon + titel + body + optionele leer-meer link).
 
-### 5. Trial-flow koppelen
-- In `marketing/trial-signup` flow (bestaand) na succesvolle registratie + auto-login: redirect naar `/onboarding` ipv `/dashboard`.
+## Architectuur / state
 
-### 6. QA
-- Nieuwe partner_admin: ziet volledige wizard incl. organisatie + betaalmethode.
-- Bestaande gebruiker met `onboarding_voltooid_op` gevuld: geen redirect.
-- "Later afmaken" zet `onboarding_overgeslagen_op` en gaat naar dashboard; redirect triggert daarna niet meer.
-- Onboarding opnieuw starten vanuit profiel werkt.
+- `useOnboardingState` uitbreiden:
+  - `agendaGekoppeld: boolean` (query `google_calendar_accounts`)
+  - `doelen: { modules: string[]; volume: number }` in `users.voorkeuren.doelen`
+  - `nummerreeksen` snapshot voor admin
+  - `teamUitnodigingen` lokaal
+  - Per-stap autosave (debounce 600 ms) zodat "Later afmaken" nooit data verliest.
+- `progress` tonen als segmented bar met stap-labels (in plaats van enkel %).
+- Skip-knop per stap (rechtsboven binnen wizard) i.p.v. alleen header-skip.
 
-## Technische details
+## Uitleg-laag (consistent in elke stap)
 
-- Geen schemawijziging nodig — kolommen bestaan.
-- Geen nieuwe edge functions.
-- `OnboardingGate` is een dunne client-side guard; security blijft op RLS-niveau (geen vervanging van auth).
-- Rolspecifieke stappenlijst wordt al berekend in `Onboarding.tsx` via `state.isAdmin`; uitbreiden met `profile.rol` check voor consument/installateur.
+Boven de invoer een `InfoCallout`:
+- Titel: wat je gaat doen
+- Body: waarom (1 zin) + wat het oplevert
+- Onderaan stap: link "Meer info" naar relevante helpcentrum-pagina (extern tab).
 
-## Bestanden die wijzigen
+## Edge functions / backend
 
-- `src/App.tsx` — route + gate
-- `src/contexts/AuthContext.tsx` — onboarding-velden in profiel
-- `src/pages/Onboarding.tsx` — rolspecifieke steplist + StepRondleiding
-- `src/components/onboarding/StepRondleiding.tsx` *(nieuw)*
-- `src/pages/Profiel.tsx` — knop "Onboarding opnieuw starten"
-- `src/pages/Dashboard.tsx` — `OnboardingChecklist` integratie (indien nog niet)
-- `src/pages/Signup.tsx` of trial-signup pagina — redirect naar `/onboarding`
+- Geen schema-wijzigingen vereist; `users.voorkeuren` is JSONB en `partners` heeft al kleur/logo/payment_terms.
+- Hergebruik bestaande functies: `user-management` (team), `google-calendar-oauth-start` (agenda), `email-oauth-config` + `email-oauth-callback` (e-mail), `mollie-create-mandate-checkout` (betaalmethode).
+- Geen nieuwe secrets nodig.
+
+## Files die wijzigen
+
+- `src/pages/Onboarding.tsx` – nieuwe steplist + per-rol filter + segmented progress.
+- `src/components/onboarding/useOnboardingState.ts` – velden voor doelen, agenda, team, autosave.
+- `src/components/onboarding/StepWelkom.tsx` – uitleg + tijdsindicatie.
+- `src/components/onboarding/StepProfiel.tsx` – validatie + helpers.
+- `src/components/onboarding/StepVoorkeuren.tsx` – uitleg + theme preview.
+- `src/components/onboarding/StepOrganisatie.tsx` – helpers + logo preview.
+- `src/components/onboarding/StepEmail.tsx` – uitleg-callout.
+- `src/components/onboarding/StepHandtekening.tsx` – live preview + auto-generate.
+- `src/components/onboarding/StepBeveiliging.tsx` – MFA wizard verbeterd.
+- `src/components/onboarding/StepKlaar.tsx` – CTA-tegels + checklist.
+- `src/components/onboarding/StepHuisstijl.tsx` *(nieuw)*
+- `src/components/onboarding/StepDoelen.tsx` *(nieuw)*
+- `src/components/onboarding/StepTeam.tsx` *(nieuw)*
+- `src/components/onboarding/StepAgenda.tsx` *(nieuw)*
+- `src/components/onboarding/StepNummerreeksen.tsx` *(nieuw)*
+- `src/components/onboarding/StepBetalingsvoorwaarden.tsx` *(nieuw)*
+- `src/components/onboarding/InfoCallout.tsx` *(nieuw)*
+
+## QA
+
+- Nieuwe partner_admin doorloopt alle 16 stappen, kan elke stap overslaan, data persist.
+- Installateur ziet korte variant (7 stappen).
+- "Later afmaken" zet `onboarding_overgeslagen_op` en behoudt ingevulde data.
+- Onboarding opnieuw starten vanuit profiel werkt en respecteert reeds ingevulde data (toont als al-voltooid in checklist).
+- Agenda- en e-mail-koppeling tonen status (verbonden / niet verbonden) en kunnen overgeslagen worden.

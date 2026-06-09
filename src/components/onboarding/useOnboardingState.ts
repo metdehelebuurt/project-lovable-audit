@@ -8,6 +8,7 @@ export interface OnboardingVoorkeuren {
   thema?: "light" | "dark" | "system";
   notif_email?: boolean;
   notif_inapp?: boolean;
+  doelen?: { modules: string[]; volume: number; primair_doel?: string };
 }
 
 export interface OnboardingUserData {
@@ -43,6 +44,7 @@ export interface OnboardingState {
   savePartner: (patch: Partial<OnboardingPartnerData>) => Promise<void>;
   markVoltooid: () => Promise<void>;
   markOvergeslagen: () => Promise<void>;
+  agendaGekoppeld: boolean;
 }
 
 const DEFAULT_USER: OnboardingUserData = {
@@ -57,6 +59,7 @@ export function useOnboardingState(): OnboardingState {
   const [user, setUser] = useState<OnboardingUserData>(DEFAULT_USER);
   const [partner, setPartner] = useState<OnboardingPartnerData | null>(null);
   const [hasEmailAccount, setHasEmailAccount] = useState(false);
+  const [agendaGekoppeld, setAgendaGekoppeld] = useState(false);
 
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "superadmin";
 
@@ -84,6 +87,10 @@ export function useOnboardingState(): OnboardingState {
     const { data: acc } = await supabase
       .from("email_accounts").select("id").eq("user_id", profile.id).eq("actief", true).maybeSingle();
     setHasEmailAccount(!!acc);
+
+    const { data: cal } = await supabase
+      .from("google_calendar_accounts").select("id, actief").maybeSingle();
+    setAgendaGekoppeld(!!cal?.actief);
 
     if (isAdmin && profile.partner_id) {
       const { data: p } = await supabase
@@ -142,5 +149,5 @@ export function useOnboardingState(): OnboardingState {
     await supabase.from("users").update({ onboarding_overgeslagen_op: new Date().toISOString() } as any).eq("id", profile.id);
   };
 
-  return { loading, user, partner, hasEmailAccount, isAdmin, refresh: load, saveUser, savePartner, markVoltooid, markOvergeslagen };
+  return { loading, user, partner, hasEmailAccount, agendaGekoppeld, isAdmin, refresh: load, saveUser, savePartner, markVoltooid, markOvergeslagen };
 }
