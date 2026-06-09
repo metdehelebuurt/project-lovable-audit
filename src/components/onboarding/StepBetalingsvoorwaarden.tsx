@@ -25,18 +25,18 @@ export const StepBetalingsvoorwaarden = ({ partnerId, onNext, onPrev }: Props) =
     (async () => {
       const { data } = await supabase
         .from("partners")
-        .select("standaard_betalingstermijn_dagen, betalingsvoorwaarden_tekst")
+        .select("betalingsvoorwaarden_config")
         .eq("id", partnerId).maybeSingle();
-      if (data?.standaard_betalingstermijn_dagen) setTermijn(data.standaard_betalingstermijn_dagen);
-      if ((data as any)?.betalingsvoorwaarden_tekst) setTekst((data as any).betalingsvoorwaarden_tekst);
+      const cfg = (data as any)?.betalingsvoorwaarden_config || {};
+      if (cfg.termijn_dagen) setTermijn(cfg.termijn_dagen);
+      if (cfg.tekst) setTekst(cfg.tekst);
     })();
   }, [partnerId]);
 
   const next = async () => {
     setSaving(true);
     await supabase.from("partners").update({
-      standaard_betalingstermijn_dagen: termijn,
-      betalingsvoorwaarden_tekst: tekst,
+      betalingsvoorwaarden_config: { termijn_dagen: termijn, tekst },
     } as any).eq("id", partnerId);
     setSaving(false);
     toast.success("Betalingsvoorwaarden opgeslagen");
