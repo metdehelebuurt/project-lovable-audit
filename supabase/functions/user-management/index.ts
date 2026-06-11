@@ -287,8 +287,18 @@ serve(async (req) => {
         });
 
         if (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
+          const raw = error.message || "Onbekende fout";
+          const lower = raw.toLowerCase();
+          let friendly = raw;
+          if (lower.includes("pwned") || lower.includes("compromised") || lower.includes("leaked")) {
+            friendly = "Dit wachtwoord is bekend uit een datalek. Kies een uniek, sterker wachtwoord.";
+          } else if (lower.includes("weak") || lower.includes("should be at least") || lower.includes("password")) {
+            friendly = `Wachtwoord voldoet niet aan de vereisten: ${raw}`;
+          }
+          // Return 200 zodat de client de échte boodschap kan tonen
+          // (supabase.functions.invoke verbergt body bij non-2xx).
+          return new Response(JSON.stringify({ error: friendly }), {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
