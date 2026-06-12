@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, Calendar, CheckCircle2, ExternalLink } from "lucide-react";
+import { ArrowRight, ArrowLeft, Calendar, CheckCircle2, ExternalLink, Info, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InfoCallout from "./InfoCallout";
@@ -14,6 +14,9 @@ export const StepAgenda = ({ onNext, onPrev }: Props) => {
   const [gekoppeld, setGekoppeld] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const redirectUri = `${supabaseUrl}/functions/v1/google-calendar-oauth-callback`;
 
   const laad = async () => {
     const { data } = await supabase
@@ -38,6 +41,11 @@ export const StepAgenda = ({ onNext, onPrev }: Props) => {
       toast.error("Koppeling starten mislukt", { description: (e as Error).message });
       setBezig(false);
     }
+  };
+
+  const copyRedirect = async () => {
+    try { await navigator.clipboard.writeText(redirectUri); toast.success("Gekopieerd"); }
+    catch { toast.error("Kopiëren mislukt"); }
   };
 
   return (
@@ -65,6 +73,22 @@ export const StepAgenda = ({ onNext, onPrev }: Props) => {
           <Button onClick={koppel} disabled={bezig} className="rounded-pill gap-2">
             <ExternalLink className="h-4 w-4" /> {bezig ? "Bezig…" : "Koppel Google Agenda"}
           </Button>
+        </div>
+      )}
+
+      {!gekoppeld && (
+        <div className="border rounded-xl p-3 bg-muted/30 flex items-start gap-2">
+          <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0 text-xs">
+            <p className="font-medium text-foreground">Krijg je "redirect_uri_mismatch" / "Toegang geblokkeerd"?</p>
+            <p className="text-muted-foreground mt-0.5">Vraag de beheerder om deze URI toe te voegen aan de Google Cloud OAuth-client (Authorized redirect URIs):</p>
+            <div className="flex items-center gap-2 mt-2">
+              <code className="flex-1 bg-background border rounded px-2 py-1 break-all font-mono">{redirectUri}</code>
+              <Button type="button" size="sm" variant="outline" onClick={copyRedirect} className="gap-1 shrink-0">
+                <Copy className="h-3 w-3" /> Kopieer
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
