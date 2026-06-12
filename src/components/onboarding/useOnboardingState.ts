@@ -95,20 +95,18 @@ export function useOnboardingState(): OnboardingState {
     if (isAdmin && profile.partner_id) {
       const { data: p } = await supabase
         .from("partners")
-        .select("bedrijfsnaam, kvk, btw_nummer, adres, postcode, plaats, logo_url, hoofdkleur")
+        .select("naam, kvk, btw, adres, postcode, plaats, logo_url, primaire_kleur")
         .eq("id", profile.partner_id).maybeSingle();
-      if (p) {
-        setPartner({
-          bedrijfsnaam: (p as any).bedrijfsnaam || "",
+      setPartner({
+          bedrijfsnaam: (p as any)?.naam || "",
           kvk: (p as any).kvk || "",
-          btw_nummer: (p as any).btw_nummer || "",
-          adres: (p as any).adres || "",
-          postcode: (p as any).postcode || "",
-          plaats: (p as any).plaats || "",
-          logo_url: (p as any).logo_url || null,
-          hoofdkleur: (p as any).hoofdkleur || "#7c3aed",
-        });
-      }
+          btw_nummer: (p as any)?.btw || "",
+          adres: (p as any)?.adres || "",
+          postcode: (p as any)?.postcode || "",
+          plaats: (p as any)?.plaats || "",
+          logo_url: (p as any)?.logo_url || null,
+          hoofdkleur: (p as any)?.primaire_kleur || "#7c3aed",
+      });
     }
     setLoading(false);
   };
@@ -136,7 +134,17 @@ export function useOnboardingState(): OnboardingState {
     if (!profile?.partner_id || !partner) return;
     const merged = { ...partner, ...patch };
     setPartner(merged);
-    await supabase.from("partners").update(patch as any).eq("id", profile.partner_id);
+    const dbPatch: Record<string, unknown> = {};
+    if (patch.bedrijfsnaam !== undefined) dbPatch.naam = patch.bedrijfsnaam;
+    if (patch.kvk !== undefined) dbPatch.kvk = patch.kvk;
+    if (patch.btw_nummer !== undefined) dbPatch.btw = patch.btw_nummer;
+    if (patch.adres !== undefined) dbPatch.adres = patch.adres;
+    if (patch.postcode !== undefined) dbPatch.postcode = patch.postcode;
+    if (patch.plaats !== undefined) dbPatch.plaats = patch.plaats;
+    if (patch.logo_url !== undefined) dbPatch.logo_url = patch.logo_url;
+    if (patch.hoofdkleur !== undefined) dbPatch.primaire_kleur = patch.hoofdkleur;
+    if (Object.keys(dbPatch).length === 0) return;
+    await supabase.from("partners").update(dbPatch).eq("id", profile.partner_id);
   };
 
   const markVoltooid = async () => {
