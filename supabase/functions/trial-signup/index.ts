@@ -47,7 +47,7 @@ serve(async (req) => {
         : authError.message;
       return new Response(
         JSON.stringify({ error: msg }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
