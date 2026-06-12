@@ -67,12 +67,26 @@ Deno.serve(async (req) => {
     // Update partner email_provider
     await adminClient.from("partners").update({ email_provider: `oauth_${provider}` }).eq("id", partner_id);
 
-    // Redirect back to app
+    // Sluit de popup en informeer de opener. Als de flow niet in een popup
+    // gebeurde (geen window.opener) valt het script terug op een redirect
+    // naar de oorspronkelijke pagina met ?email_connected=<provider>.
     const returnUrl = redirect_url || "/instellingen";
-    return new Response(null, {
-      status: 302,
-      headers: { Location: `${returnUrl}?email_connected=${provider}` },
-    });
+    const separator = returnUrl.includes("?") ? "&" : "?";
+    const fallback = `${returnUrl}${separator}email_connected=${provider}`;
+    const safeEmail = (tokenData.email || "").replace(/'/g, "\\'");
+    const html = `<!DOCTYPE html><html><body><script>
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ type: 'email-oauth-result', error: false, provider: '${provider}', email: '${safeEmail}', message: 'E-mail gekoppeld' }, '*');
+          window.close();
+        } else {
+          window.location.replace(${JSON.stringify(fallback)});
+        }
+      } catch (e) {
+        window.location.replace(${JSON.stringify(fallback)});
+      }
+    </script><p>E-mail gekoppeld — je kunt dit venster sluiten.</p></body></html>`;
+    return new Response(html, { headers: { "Content-Type": "text/html" } });
 
   } catch (err) {
     console.error("OAuth callback error:", err);
