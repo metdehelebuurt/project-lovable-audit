@@ -253,168 +253,220 @@ export default function FactuurDetail() {
           .no-print { display: none !important; }
         }
       `}</style>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/financieel")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{doc.documentnummer}</h1>
-              <Badge className={statusColors[doc.status] || ""} variant="secondary">
-                {doc.status.replace("_", " ")}
-              </Badge>
-              {doc.factuur_subtype && doc.factuur_subtype !== "regulier" && (
-                <Badge variant="outline" className={subtypeBadgeColors[doc.factuur_subtype] || ""}>
-                  {subtypeLabels[doc.factuur_subtype] || doc.factuur_subtype}
-                  {doc.termijn_volgnummer && doc.termijn_totaal && (
-                    <span className="ml-1">— Termijn {doc.termijn_volgnummer} van {doc.termijn_totaal}</span>
-                  )}
-                </Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground">{typeLabels[doc.type]} — {relatie}</p>
-          </div>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {/* Bewerken knop voor concept documenten */}
-          {doc.status === "concept" && (
-            <Button variant="outline" onClick={() => navigate(`/financieel/bewerken/${doc.type}/${id}`)}>
-              <Pencil className="h-4 w-4 mr-2" /> Bewerken
+      <div className="rounded-2xl border bg-card shadow-sm">
+        <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-start lg:justify-between">
+          {/* Identity */}
+          <div className="flex items-start gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/financieel")} aria-label="Terug">
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-          )}
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {typeLabels[doc.type]}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold text-foreground">{doc.documentnummer}</h1>
+                <Badge variant="secondary" className={statusColors[doc.status] || ""}>
+                  {statusLabels[doc.status] || doc.status.replace("_", " ")}
+                </Badge>
+                {doc.factuur_subtype && doc.factuur_subtype !== "regulier" && (
+                  <Badge variant="outline" className={subtypeBadgeColors[doc.factuur_subtype] || ""}>
+                    {subtypeLabels[doc.factuur_subtype] || doc.factuur_subtype}
+                    {doc.termijn_volgnummer && doc.termijn_totaal && (
+                      <span className="ml-1">— Termijn {doc.termijn_volgnummer}/{doc.termijn_totaal}</span>
+                    )}
+                  </Badge>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground truncate">
+                {relatie}
+                {relatieDetails?.email && <span className="text-muted-foreground/70"> · {relatieDetails.email}</span>}
+              </p>
+            </div>
+          </div>
 
-          {/* Bewerken na verzending — alleen voor admins of gebruikers met expliciete permissie. */}
-          {doc.status !== "concept"
-            && ["verkoopfactuur", "creditnota"].includes(doc.type)
-            && kanBewerkenNaVersturen && (
-              <Button
-                variant="outline"
-                onClick={() => setBewerkConfirmOpen(true)}
-                title="Bewerken na verzending — wordt vastgelegd in historie"
-              >
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end lg:flex-nowrap">
+            <Button variant="outline" size="sm" onClick={() => setPdfOpen(true)}>
+              <FileText className="h-4 w-4 mr-2" /> PDF
+            </Button>
+
+            {/* Bewerken (concept) */}
+            {doc.status === "concept" && (
+              <Button variant="outline" size="sm" onClick={() => navigate(`/financieel/bewerken/${doc.type}/${id}`)}>
                 <Pencil className="h-4 w-4 mr-2" /> Bewerken
               </Button>
-          )}
+            )}
 
-          {/* E-mail versturen: voor alle types behalve inkooporder/inkoopfactuur (die ontvang je) */}
-          {doc.status === "concept" && ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
-            <Button onClick={() => { setPdfOpen(true); setTimeout(() => setEmailOpen(true), 300); }}>
-              <Send className="h-4 w-4 mr-2" /> E-mail versturen
-            </Button>
-          )}
-          {(["verzonden", "verlopen", "betaald"].includes(doc.status) || !!doc.verzonden_op) &&
-            ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
-              <ResendFactuurButton
+            {/* Inkooporder eigen actiebar */}
+            {doc.type === "inkooporder" && (
+              <InkoopOrderActies
                 doc={{
                   id: doc.id,
-                  documentnummer: doc.documentnummer,
-                  partner_id: doc.partner_id,
-                  type: doc.type,
-                  factuur_subtype: doc.factuur_subtype,
+                  status: doc.status,
+                  totaal_bedrag: Number(doc.totaal_bedrag ?? 0),
+                  goedgekeurd_op: doc.goedgekeurd_op ?? null,
+                  verzonden_op: doc.verzonden_op ?? null,
+                  leverancier_id: doc.leverancier_id ?? null,
+                  leveranciers: doc.leveranciers,
                 }}
-                defaultTo={pdfKlant?.email || ""}
-                onSent={() => setDoc({ ...doc, verzonden_op: new Date().toISOString() })}
+                partnerId={doc.partner_id}
+                onUpdated={() => {
+                  supabase
+                    .from("financiele_documenten")
+                    .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), offertes(offertenummer)")
+                    .eq("id", id!)
+                    .single()
+                    .then(({ data }) => { if (data) setDoc(data); });
+                }}
               />
-          )}
-          {doc.status === "concept" && !["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
-            <Button onClick={() => updateStatus("verzonden")}>
-              <Send className="h-4 w-4 mr-2" /> Verzenden
-            </Button>
-          )}
-          {doc.status === "verzonden" && doc.type === "verkoopfactuur" && (
-            <Button onClick={() => updateStatus("betaald")} className="bg-green-600 hover:bg-green-700">
-              <CheckCircle className="h-4 w-4 mr-2" /> Betaald markeren
-            </Button>
-          )}
-          {doc.status === "verzonden" && doc.type === "verkoopfactuur" && (
-            <Button variant="outline" onClick={() => updateStatus("verlopen")}>
-              <XCircle className="h-4 w-4 mr-2" /> Verlopen markeren
-            </Button>
-          )}
+            )}
 
-          {/* Inkoopfactuur flow */}
-          {doc.type === "inkoopfactuur" && doc.status === "concept" && (
-            <Button onClick={() => updateStatus("ontvangen")}>
-              <CheckCircle className="h-4 w-4 mr-2" /> Ontvangen
-            </Button>
-          )}
-          {doc.type === "inkoopfactuur" && doc.status === "ontvangen" && (
-            <Button onClick={() => updateStatus("goedgekeurd")}>
-              <CheckCircle className="h-4 w-4 mr-2" /> Goedkeuren
-            </Button>
-          )}
-          {doc.type === "inkoopfactuur" && doc.status === "goedgekeurd" && (
-            <Button onClick={() => updateStatus("betaald")} className="bg-green-600 hover:bg-green-700">
-              <CheckCircle className="h-4 w-4 mr-2" /> Betaald markeren
-            </Button>
-          )}
+            {/* Primary CTA — contextueel */}
+            {doc.status === "concept" && ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
+              <Button size="sm" onClick={() => { setPdfOpen(true); setTimeout(() => setEmailOpen(true), 300); }}>
+                <Send className="h-4 w-4 mr-2" /> E-mail versturen
+              </Button>
+            )}
+            {doc.status === "concept" && !["verkoopfactuur", "creditnota", "pakbon", "inkooporder"].includes(doc.type) && (
+              <Button size="sm" onClick={() => updateStatus("verzonden")}>
+                <Send className="h-4 w-4 mr-2" /> Verzenden
+              </Button>
+            )}
+            {doc.status === "verzonden" && doc.type === "verkoopfactuur" && (
+              <Button size="sm" onClick={() => updateStatus("betaald")} className="bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle className="h-4 w-4 mr-2" /> Betaald markeren
+              </Button>
+            )}
+            {doc.type === "inkoopfactuur" && doc.status === "concept" && (
+              <Button size="sm" onClick={() => updateStatus("ontvangen")}>
+                <CheckCircle className="h-4 w-4 mr-2" /> Ontvangen
+              </Button>
+            )}
+            {doc.type === "inkoopfactuur" && doc.status === "ontvangen" && (
+              <Button size="sm" onClick={() => updateStatus("goedgekeurd")}>
+                <CheckCircle className="h-4 w-4 mr-2" /> Goedkeuren
+              </Button>
+            )}
+            {doc.type === "inkoopfactuur" && doc.status === "goedgekeurd" && (
+              <Button size="sm" onClick={() => updateStatus("betaald")} className="bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle className="h-4 w-4 mr-2" /> Betaald markeren
+              </Button>
+            )}
+            {doc.type === "pakbon" && doc.status === "aangemaakt" && (
+              <Button size="sm" onClick={() => updateStatus("verzonden")}>
+                <Send className="h-4 w-4 mr-2" /> Verzenden
+              </Button>
+            )}
+            {doc.type === "pakbon" && doc.status === "verzonden" && (
+              <Button size="sm" onClick={() => updateStatus("afgeleverd")} className="bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle className="h-4 w-4 mr-2" /> Afgeleverd
+              </Button>
+            )}
 
-          {/* Inkooporder flow — goedkeuring + verzenden via gebruikers eigen mailbox */}
-          {doc.type === "inkooporder" && (
-            <InkoopOrderActies
-              doc={{
-                id: doc.id,
-                status: doc.status,
-                totaal_bedrag: Number(doc.totaal_bedrag ?? 0),
-                goedgekeurd_op: doc.goedgekeurd_op ?? null,
-                verzonden_op: doc.verzonden_op ?? null,
-                leverancier_id: doc.leverancier_id ?? null,
-                leveranciers: doc.leveranciers,
-              }}
-              partnerId={doc.partner_id}
-              onUpdated={() => {
-                // Refetch single doc
-                supabase
-                  .from("financiele_documenten")
-                  .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), offertes(offertenummer)")
-                  .eq("id", id!)
-                  .single()
-                  .then(({ data }) => { if (data) setDoc(data); });
-              }}
-            />
-          )}
+            {/* Overflow menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" aria-label="Meer acties">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Acties</DropdownMenuLabel>
+                <DropdownMenuSeparator />
 
-          {/* Pakbon flow */}
-          {doc.type === "pakbon" && doc.status === "concept" && (
-            <Button onClick={() => updateStatus("aangemaakt")}>
-              Aanmaken
-            </Button>
-          )}
-          {doc.type === "pakbon" && doc.status === "aangemaakt" && (
-            <Button onClick={() => updateStatus("verzonden")}>
-              <Send className="h-4 w-4 mr-2" /> Verzonden
-            </Button>
-          )}
-          {doc.type === "pakbon" && doc.status === "verzonden" && (
-            <Button onClick={() => updateStatus("afgeleverd")} className="bg-green-600 hover:bg-green-700">
-              <CheckCircle className="h-4 w-4 mr-2" /> Afgeleverd
-            </Button>
-          )}
+                {doc.status !== "concept"
+                  && ["verkoopfactuur", "creditnota"].includes(doc.type)
+                  && kanBewerkenNaVersturen && (
+                  <DropdownMenuItem onSelect={() => setBewerkConfirmOpen(true)}>
+                    <Pencil className="h-4 w-4 mr-2" /> Bewerken na verzending
+                  </DropdownMenuItem>
+                )}
 
-          {/* Creditnota vanuit betaalde verkoopfactuur */}
-          {doc.type === "verkoopfactuur" && doc.status === "betaald" && (
-            <Button variant="outline" onClick={handleCreditnota}>
-              <Copy className="h-4 w-4 mr-2" /> Creditnota
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => setPdfOpen(true)}>
-            <FileText className="h-4 w-4 mr-2" /> PDF Preview
-          </Button>
-          <Button variant="outline" onClick={() => {
-            const params = new URLSearchParams({ bron: "factuur", factuur_id: doc.id });
-            if (doc.klant_id) params.set("klant_id", doc.klant_id);
-            if (doc.opdracht_id) params.set("opdracht_id", doc.opdracht_id);
-            navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
-          }}>
-            <LifeBuoy className="h-4 w-4 mr-2" /> Ticket aanmaken
-          </Button>
-          <DeleteFactuurButton
-            doc={{ id: doc.id, documentnummer: doc.documentnummer, type: doc.type, status: doc.status }}
-            variant="outline"
-            label="Verwijderen"
-            redirectToOverview
-          />
+                {doc.status === "verzonden" && doc.type === "verkoopfactuur" && (
+                  <DropdownMenuItem onSelect={() => updateStatus("verlopen")}>
+                    <XCircle className="h-4 w-4 mr-2" /> Verlopen markeren
+                  </DropdownMenuItem>
+                )}
+
+                {doc.type === "verkoopfactuur" && doc.status === "betaald" && (
+                  <DropdownMenuItem onSelect={handleCreditnota}>
+                    <Copy className="h-4 w-4 mr-2" /> Creditnota maken
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuItem onSelect={() => {
+                  const params = new URLSearchParams({ bron: "factuur", factuur_id: doc.id });
+                  if (doc.klant_id) params.set("klant_id", doc.klant_id);
+                  if (doc.opdracht_id) params.set("opdracht_id", doc.opdracht_id);
+                  navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
+                }}>
+                  <LifeBuoy className="h-4 w-4 mr-2" /> Ticket aanmaken
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+                <div className="px-1 py-0.5 flex flex-col gap-1">
+                  {(["verzonden", "verlopen", "betaald"].includes(doc.status) || !!doc.verzonden_op) &&
+                    ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type) && (
+                      <ResendFactuurButton
+                        doc={{
+                          id: doc.id,
+                          documentnummer: doc.documentnummer,
+                          partner_id: doc.partner_id,
+                          type: doc.type,
+                          factuur_subtype: doc.factuur_subtype,
+                        }}
+                        defaultTo={pdfKlant?.email || ""}
+                        variant="ghost"
+                        size="sm"
+                        onSent={() => setDoc({ ...doc, verzonden_op: new Date().toISOString() })}
+                      />
+                  )}
+                  <DeleteFactuurButton
+                    doc={{ id: doc.id, documentnummer: doc.documentnummer, type: doc.type, status: doc.status }}
+                    variant="ghost"
+                    size="sm"
+                    label="Verwijderen"
+                    redirectToOverview
+                  />
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Stat strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 border-t divide-x divide-border">
+          <div className="p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Euro className="h-3.5 w-3.5" /> Totaal incl. btw
+            </div>
+            <p className="mt-1 text-lg font-semibold text-foreground">
+              {formatCurrency(Number(doc.totaal_bedrag ?? 0))}
+            </p>
+          </div>
+          <div className="p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" /> Factuurdatum
+            </div>
+            <p className="mt-1 text-lg font-semibold text-foreground">
+              {doc.factuurdatum ? new Date(doc.factuurdatum).toLocaleDateString("nl-NL") : "—"}
+            </p>
+          </div>
+          <div className="p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" /> Vervaldatum
+            </div>
+            <p className="mt-1 text-lg font-semibold text-foreground">
+              {doc.vervaldatum ? new Date(doc.vervaldatum).toLocaleDateString("nl-NL") : "—"}
+            </p>
+          </div>
+          <div className="p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <UserIcon className="h-3.5 w-3.5" /> Relatie
+            </div>
+            <p className="mt-1 text-lg font-semibold text-foreground truncate">{relatie}</p>
+          </div>
         </div>
       </div>
 
