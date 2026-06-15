@@ -66,6 +66,11 @@ export default function FactuurNieuw() {
 
   // Existing documentnummer for editing
   const [existingDocNummer, setExistingDocNummer] = useState("");
+  // Bestaande status (om te weten of we een verzonden factuur bewerken — niet downgraden naar concept).
+  const [existingStatus, setExistingStatus] = useState<string | null>(null);
+  const [existingVerzondenOp, setExistingVerzondenOp] = useState<string | null>(null);
+  const isEditingVerzonden =
+    isEdit && existingStatus !== null && existingStatus !== "concept";
 
   // Offerte-context (voor context-card, dubbel-check, termijn)
   const [offerteContext, setOfferteContext] = useState<OfferteConversieResult | null>(null);
@@ -198,6 +203,8 @@ export default function FactuurNieuw() {
         setBetalingstermijn(data.betalingstermijn_dagen || 30);
         setNotities(data.notities || "");
         setExistingDocNummer(data.documentnummer);
+        setExistingStatus((data as any).status ?? null);
+        setExistingVerzondenOp((data as any).verzonden_op ?? null);
         if (data.offerte_id) setBronOfferteId(data.offerte_id);
         // Eenmalige relatie
         const er = data.eenmalige_relatie as any;
