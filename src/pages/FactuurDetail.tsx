@@ -10,8 +10,13 @@ import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor
 import { formatCurrency, type OfferteRegel } from "@/types/offerte";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Send, CheckCircle, XCircle, Copy, FileText, Download, Pencil, LifeBuoy } from "lucide-react";
+import { MoreHorizontal, Calendar, Euro, User as UserIcon, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { FinancieelPDF } from "@/components/financieel/FinancieelPDF";
 import FactuurEmailDialog from "@/components/financieel/FactuurEmailDialog";
 import ResendFactuurButton from "@/components/financieel/ResendFactuurButton";
@@ -44,17 +49,31 @@ const subtypeBadgeColors: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  concept: "bg-muted text-muted-foreground",
-  verzonden: "bg-blue-100 text-blue-800",
-  betaald: "bg-green-100 text-green-800",
-  verlopen: "bg-red-100 text-red-800",
-  gecrediteerd: "bg-orange-100 text-orange-800",
-  ontvangen: "bg-blue-100 text-blue-800",
-  goedgekeurd: "bg-green-100 text-green-800",
-  deels_ontvangen: "bg-yellow-100 text-yellow-800",
-  volledig_ontvangen: "bg-green-100 text-green-800",
-  aangemaakt: "bg-muted text-muted-foreground",
-  afgeleverd: "bg-green-100 text-green-800",
+  concept: "bg-muted text-muted-foreground border border-border",
+  verzonden: "bg-blue-100 text-blue-800 border border-blue-200",
+  betaald: "bg-green-100 text-green-800 border border-green-200",
+  verlopen: "bg-red-100 text-red-800 border border-red-200",
+  gecrediteerd: "bg-orange-100 text-orange-800 border border-orange-200",
+  ontvangen: "bg-blue-100 text-blue-800 border border-blue-200",
+  goedgekeurd: "bg-green-100 text-green-800 border border-green-200",
+  deels_ontvangen: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+  volledig_ontvangen: "bg-green-100 text-green-800 border border-green-200",
+  aangemaakt: "bg-muted text-muted-foreground border border-border",
+  afgeleverd: "bg-green-100 text-green-800 border border-green-200",
+};
+
+const statusLabels: Record<string, string> = {
+  concept: "Concept",
+  verzonden: "Verzonden",
+  betaald: "Betaald",
+  verlopen: "Verlopen",
+  gecrediteerd: "Gecrediteerd",
+  ontvangen: "Ontvangen",
+  goedgekeurd: "Goedgekeurd",
+  deels_ontvangen: "Deels ontvangen",
+  volledig_ontvangen: "Volledig ontvangen",
+  aangemaakt: "Aangemaakt",
+  afgeleverd: "Afgeleverd",
 };
 
 export default function FactuurDetail() {
