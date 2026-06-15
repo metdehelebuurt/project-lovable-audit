@@ -7,6 +7,21 @@ export interface AttachmentInfo {
   contentType: string;
 }
 
+const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46]; // %PDF
+const MIN_PDF_BYTES = 5000;
+
+export function verifyPdfBytes(bytes: Uint8Array | null | undefined): { ok: true } | { ok: false; reason: string } {
+  if (!bytes || bytes.length < MIN_PDF_BYTES) {
+    return { ok: false, reason: `bijlage te klein (${bytes?.length ?? 0} bytes, min ${MIN_PDF_BYTES})` };
+  }
+  for (let i = 0; i < PDF_MAGIC.length; i++) {
+    if (bytes[i] !== PDF_MAGIC[i]) {
+      return { ok: false, reason: "bijlage is geen geldig PDF-bestand (magic bytes ontbreken)" };
+    }
+  }
+  return { ok: true };
+}
+
 export async function fetchAttachment(
   adminClient: any,
   storagePath: string,
