@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { optimaliseerAfbeelding } from "@/lib/imageOptimizer";
 import SchouwInstellingen from "@/components/instellingen/SchouwInstellingen";
@@ -48,6 +49,7 @@ interface SettingsTab {
   label: string;
   icon: React.ElementType;
   roles?: AppRole[];
+  href?: string;
 }
 
 const ALLE_ROLLEN: AppRole[] = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur", "installateur"];
@@ -56,6 +58,7 @@ const UITVOEREND_PLUS_ADMIN: AppRole[] = [...ALLE_ROLLEN];
 
 const Instellingen = () => {
   const { profile, user, signOut } = useAuth();
+  const navigate = useNavigate();
   const isPartnerAdmin = profile?.rol === "partner_admin";
   const isSuperOrPartner = profile?.rol === "partner_admin" || profile?.rol === "superadmin";
 
@@ -79,6 +82,7 @@ const Instellingen = () => {
     { id: "nummerreeksen", label: "Nummerreeksen", icon: Hash, roles: ADMIN_ROLLEN },
     { id: "helpdesk", label: "Helpdesk notificaties", icon: LifeBuoy, roles: ADMIN_ROLLEN },
     { id: "modules", label: "Modules & rollen", icon: KeyRound, roles: ADMIN_ROLLEN },
+    { id: "gebruikers", label: "Gebruikers", icon: Users, roles: ADMIN_ROLLEN, href: "/gebruikers" },
     { id: "abonnement", label: "Abonnement", icon: CreditCard, roles: ADMIN_ROLLEN },
     { id: "privacy", label: "Privacy & Data", icon: Shield, roles: ALLE_ROLLEN },
   ];
@@ -100,7 +104,7 @@ const Instellingen = () => {
           {visibleTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => tab.href ? navigate(tab.href) : setActiveTab(tab.id)}
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm whitespace-nowrap transition-colors",
                 activeTab === tab.id
