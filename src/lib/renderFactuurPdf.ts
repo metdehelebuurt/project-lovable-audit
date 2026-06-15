@@ -110,10 +110,10 @@ export async function renderFactuurPdf(factuurId: string): Promise<RenderedFactu
   const container = document.createElement("div");
   // BELANGRIJK: container MOET zichtbaar gerenderd worden (opacity:1).
   // html2canvas neemt CSS-opacity letterlijk over — opacity:0 = onzichtbare tekst
-  // in de canvas en dus een lege PDF. Plaats hem daarom buiten het viewport
-  // i.p.v. transparant.
+  // in de canvas en dus een lege PDF. Render hem daarom zichtbaar in beeld,
+  // maar achter de dialoog en zonder interactie.
   container.style.cssText =
-    "position:fixed;left:-100000px;top:0;width:210mm;background:#fff;opacity:1;pointer-events:none;z-index:-1;";
+    "position:fixed;left:0;top:0;width:210mm;background:#fff;opacity:1;pointer-events:none;z-index:-1;";
   container.className = "pdf-print-root";
   document.body.appendChild(container);
 
