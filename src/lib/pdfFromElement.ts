@@ -14,6 +14,37 @@ async function captureCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
   });
 }
 
+/**
+ * Detecteert of een canvas effectief leeg/wit is (geen tekst gerenderd).
+ * Pakt een raster van pixels en checkt of er iets niet-wit tussen zit.
+ */
+function isCanvasEffectivelyBlank(canvas: HTMLCanvasElement): boolean {
+  try {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    const w = canvas.width;
+    const h = canvas.height;
+    if (w === 0 || h === 0) return true;
+    // Sample 20x20 grid van pixels.
+    const stepX = Math.max(1, Math.floor(w / 20));
+    const stepY = Math.max(1, Math.floor(h / 20));
+    let nonWhite = 0;
+    for (let y = 0; y < h; y += stepY) {
+      for (let x = 0; x < w; x += stepX) {
+        const d = ctx.getImageData(x, y, 1, 1).data;
+        // Tel iets als "inhoud" als R/G/B < 245 (dus duidelijk niet-wit) en alpha > 0.
+        if (d[3] > 0 && (d[0] < 245 || d[1] < 245 || d[2] < 245)) {
+          nonWhite++;
+          if (nonWhite >= 5) return false; // genoeg inhoud
+        }
+      }
+    }
+    return true;
+  } catch {
+    return false; // bij twijfel: niet blokkeren
+  }
+}
+
 function addCanvasToPdf(pdf: jsPDF, canvas: HTMLCanvasElement) {
   const imgData = canvas.toDataURL("image/jpeg", 0.92);
   const imgWidth = A4_WIDTH_MM;
@@ -34,6 +65,11 @@ function addCanvasToPdf(pdf: jsPDF, canvas: HTMLCanvasElement) {
 
 export async function renderElementToPdfBlob(el: HTMLElement): Promise<Blob> {
   const canvas = await captureCanvas(el);
+  if (isCanvasEffectivelyBlank(canvas)) {
+    throw new Error(
+      "PDF-render is leeg (geen tekst zichtbaar in canvas). Mogelijk is de bron-container niet zichtbaar gerenderd.",
+    );
+  }
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   addCanvasToPdf(pdf, canvas);
   return pdf.output("blob");
