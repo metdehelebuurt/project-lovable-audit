@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     const {
       financieel_document_id, ontvanger_email,
       html_body, subject: customSubject, attachment_path, attachment_filename,
-      is_resend, cc, bcc, extra_attachment_paths, expected_attachment_size,
+      is_resend, cc, bcc, expected_attachment_size,
     } = body;
 
     if (!financieel_document_id || !ontvanger_email) {
@@ -121,7 +121,6 @@ Deno.serve(async (req) => {
     };
 
     let attachment: AttachmentInfo | null = null;
-    const extraAttachments: AttachmentInfo[] = [];
     const usedPaths: string[] = [];
 
     try {
@@ -132,15 +131,6 @@ Deno.serve(async (req) => {
           true,
         );
         usedPaths.push(attachment_path);
-      }
-      if (Array.isArray(extra_attachment_paths)) {
-        for (const p of extra_attachment_paths) {
-          if (!p || typeof p !== "string") continue;
-          const name = p.split("/").pop() || "bijlage.pdf";
-          const att = await validateAndFetch(p, name, false);
-          extraAttachments.push(att);
-          usedPaths.push(p);
-        }
       }
     } catch (validationErr: any) {
       const reason = validationErr?.message || "Bijlage-validatie mislukt";
@@ -158,7 +148,7 @@ Deno.serve(async (req) => {
       adminClient, partnerId: userRow.partner_id, to: ontvanger_email,
       cc: Array.isArray(cc) ? cc : [],
       bcc: Array.isArray(bcc) ? bcc : [],
-      subject, html, attachment, extraAttachments, type: emailType,
+      subject, html, attachment, type: emailType,
       klantId: doc.klant_id || null, verzondenDoorId: userId,
     });
 
@@ -171,7 +161,7 @@ Deno.serve(async (req) => {
         onderwerp: subject,
         heeft_bijlage: !!attachment,
         bijlage_grootte: attachment?.bytes?.length || 0,
-        aantal_bijlagen: (attachment ? 1 : 0) + extraAttachments.length,
+        aantal_bijlagen: attachment ? 1 : 0,
       },
     });
 
@@ -192,7 +182,7 @@ Deno.serve(async (req) => {
     return jsonResponse({
       success: true,
       heeft_bijlage: !!attachment,
-      aantal_bijlagen: (attachment ? 1 : 0) + extraAttachments.length,
+      aantal_bijlagen: attachment ? 1 : 0,
     });
   } catch (err: any) {
     console.error("send-factuur-email error:", err);
