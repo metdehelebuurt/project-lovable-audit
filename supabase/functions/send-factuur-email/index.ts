@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { fetchAttachment } from "../_shared/email-send.ts";
+import { fetchAttachment, verifyPdfBytes, AttachmentInfo } from "../_shared/email-send.ts";
 import { sendPartnerEmail, PartnerEmailError } from "../_shared/partner-email-send.ts";
 
 const corsHeaders = {
@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     const {
       financieel_document_id, ontvanger_email,
       html_body, subject: customSubject, attachment_path, attachment_filename,
-      is_resend, cc, bcc,
+      is_resend, cc, bcc, expected_attachment_size,
     } = body;
 
     if (!financieel_document_id || !ontvanger_email) {
@@ -70,30 +70,79 @@ Deno.serve(async (req) => {
     const fallbackHtml = `<div style="font-family:sans-serif;padding:20px;"><p>Beste relatie,</p><p>Hierbij ontvangt u${is_resend ? " nogmaals" : ""} onze ${docLabel.toLowerCase()} <strong>${doc.documentnummer}</strong>${termijnSuffix}.</p><p>Met vriendelijke groet,<br/>${partner?.afzender_naam || partner?.naam || ""}</p></div>`;
     const html = bodyTrimmed.length > 0 ? html_body : fallbackHtml;
 
-    let attachment = null;
-    if (attachment_path) {
-      attachment = await fetchAttachment(adminClient, attachment_path, attachment_filename || `${doc.documentnummer}.pdf`);
-      if (!attachment) {
-        // Bijlage was opgegeven maar kon niet worden gedownload — NIET stilzwijgend zonder bijlage versturen.
-        await adminClient.from("email_log").insert({
-          partner_id: userRow.partner_id,
-          ontvanger_email,
-          onderwerp: subject,
-          type: doc.factuur_subtype === "voorschot" ? "voorschotfactuur"
-            : doc.factuur_subtype === "eindafrekening" ? "eindafrekening" : "factuur",
-          status: "mislukt",
-          error_message: `Bijlage ${attachment_path} kon niet worden gedownload uit email-bijlagen`,
-          html_body: html,
-          verzonden_door_id: userId,
-        });
-        return jsonResponse({
-          error: "Bijlage kon niet worden opgehaald uit storage. Genereer de PDF opnieuw en probeer het nogmaals.",
-        }, 400);
-      }
-    }
-
     const emailType = doc.factuur_subtype === "voorschot" ? "voorschotfactuur"
       : doc.factuur_subtype === "eindafrekening" ? "eindafrekening" : "factuur";
+
+    // ---- Harde attachment-validatie ----
+    // Voor verkoopfacturen/creditnota's/pakbonnen is een PDF-bijlage VERPLICHT.
+    // Voor inkoopdocumenten (geen klantverzending vanuit dit endpoint) kan het optioneel zijn.
+    const requireAttachment = ["verkoopfactuur", "creditnota", "pakbon"].includes(doc.type);
+
+    const logFailure = async (reason: string) => {
+      await adminClient.from("email_log").insert({
+        partner_id: userRow.partner_id,
+        ontvanger_email,
+        onderwerp: subject,
+        type: emailType,
+        status: "mislukt",
+        error_message: reason,
+        html_body: html,
+        verzonden_door_id: userId,
+      });
+    };
+
+    if (requireAttachment && !attachment_path) {
+      const reason = "Bijlage ontbreekt: PDF-pad is verplicht voor dit documenttype.";
+      await logFailure(reason);
+      return jsonResponse({ error: reason }, 400);
+    }
+
+    const validateAndFetch = async (
+      path: string,
+      filename: string,
+      isMain: boolean,
+    ): Promise<AttachmentInfo> => {
+      const att = await fetchAttachment(adminClient, path, filename);
+      if (!att) {
+        throw new Error(`Bijlage ${path} kon niet worden gedownload uit email-bijlagen.`);
+      }
+      const check = verifyPdfBytes(att.bytes);
+      if (!check.ok) {
+        throw new Error(`Bijlage ${path} ongeldig: ${check.reason}`);
+      }
+      if (isMain && typeof expected_attachment_size === "number" && expected_attachment_size > 0) {
+        if (att.bytes.length !== expected_attachment_size) {
+          throw new Error(
+            `Bijlage-grootte mismatch: server ${att.bytes.length} bytes vs client ${expected_attachment_size} bytes.`,
+          );
+        }
+      }
+      return att;
+    };
+
+    let attachment: AttachmentInfo | null = null;
+    const usedPaths: string[] = [];
+
+    try {
+      if (attachment_path) {
+        attachment = await validateAndFetch(
+          attachment_path,
+          attachment_filename || `${doc.documentnummer}.pdf`,
+          true,
+        );
+        usedPaths.push(attachment_path);
+      }
+    } catch (validationErr: any) {
+      const reason = validationErr?.message || "Bijlage-validatie mislukt";
+      await logFailure(reason);
+      return jsonResponse({ error: reason }, 400);
+    }
+
+    if (requireAttachment && !attachment) {
+      const reason = "Bijlage ontbreekt na validatie — verzending geblokkeerd.";
+      await logFailure(reason);
+      return jsonResponse({ error: reason }, 400);
+    }
 
     await sendPartnerEmail({
       adminClient, partnerId: userRow.partner_id, to: ontvanger_email,
@@ -108,7 +157,12 @@ Deno.serve(async (req) => {
       financieel_document_id, partner_id: userRow.partner_id, actor_id: userId,
       actie: is_resend ? "opnieuw_verzonden" : "verzonden",
       notitie: ontvanger_email,
-      metadata: { onderwerp: subject, heeft_bijlage: !!attachment },
+      metadata: {
+        onderwerp: subject,
+        heeft_bijlage: !!attachment,
+        bijlage_grootte: attachment?.bytes?.length || 0,
+        aantal_bijlagen: attachment ? 1 : 0,
+      },
     });
 
     if (!is_resend && doc.status === "concept") {
@@ -117,15 +171,19 @@ Deno.serve(async (req) => {
         .eq("id", financieel_document_id);
     }
 
-    if (attachment_path) {
+    if (usedPaths.length > 0) {
       try {
-        await adminClient.storage.from("email-bijlagen").remove([attachment_path]);
+        await adminClient.storage.from("email-bijlagen").remove(usedPaths);
       } catch (cleanupErr) {
         console.warn("Cleanup email-bijlagen mislukt (niet kritiek):", cleanupErr);
       }
     }
 
-    return jsonResponse({ success: true, heeft_bijlage: !!attachment });
+    return jsonResponse({
+      success: true,
+      heeft_bijlage: !!attachment,
+      aantal_bijlagen: attachment ? 1 : 0,
+    });
   } catch (err: any) {
     console.error("send-factuur-email error:", err);
     if (err instanceof PartnerEmailError) return jsonResponse({ error: err.message }, err.status);
