@@ -309,6 +309,11 @@ export default function FactuurNieuw() {
 
     if (isEdit) {
       // UPDATE bestaand document
+      // Bij bewerken NA verzending: status nooit downgraden naar concept,
+      // en houd `verzonden_op` intact. Wijziging wordt vastgelegd in factuur_historie.
+      const finalStatus = isEditingVerzonden
+        ? existingStatus!
+        : status;
       const updates: any = {
         klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
         leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
@@ -322,14 +327,36 @@ export default function FactuurNieuw() {
         vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
         notities,
         eenmalige_relatie: eenmaligData,
-        status,
+        status: finalStatus,
       };
+      if (isEditingVerzonden && existingVerzondenOp) {
+        updates.verzonden_op = existingVerzondenOp;
+      }
 
       const { error } = await supabase.from("financiele_documenten").update(updates).eq("id", editId);
-      setSaving(false);
       if (error) {
+        setSaving(false);
         toast({ title: "Fout", description: error.message, variant: "destructive" });
       } else {
+        // Audit-entry voor wijziging na verzending — verplicht voor traceerbaarheid.
+        if (isEditingVerzonden) {
+          try {
+            await supabase.from("factuur_historie").insert({
+              financieel_document_id: editId!,
+              partner_id: profile.partner_id,
+              actor_id: user.id,
+              actie: "gewijzigd_na_verzending",
+              notitie: `Wijziging na verzending — totaal nu €${(subtotaal + btwBedrag).toFixed(2)}`,
+              metadata: {
+                nieuw_totaal: subtotaal + btwBedrag,
+                nieuw_aantal_regels: regels.length,
+              },
+            });
+          } catch (e) {
+            console.warn("Audit-entry kon niet worden toegevoegd:", e);
+          }
+        }
+        setSaving(false);
         toast({ title: "Opgeslagen", description: `${typeLabels[docType]} ${existingDocNummer} bijgewerkt` });
         navigate(`/financieel/${editId}`);
       }
