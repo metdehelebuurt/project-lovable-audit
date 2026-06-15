@@ -5,12 +5,20 @@ const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
 async function captureCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
+  const width = Math.max(el.scrollWidth, el.offsetWidth, 1);
+  const height = Math.max(el.scrollHeight, el.offsetHeight, 1);
+
   return await html2canvas(el, {
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
     logging: false,
-    windowWidth: el.scrollWidth,
+    width,
+    height,
+    windowWidth: Math.max(width, window.innerWidth),
+    windowHeight: Math.max(height, window.innerHeight),
+    scrollX: 0,
+    scrollY: 0,
   });
 }
 
@@ -22,23 +30,25 @@ function isCanvasEffectivelyBlank(canvas: HTMLCanvasElement): boolean {
   try {
     const ctx = canvas.getContext("2d");
     if (!ctx) return false;
-    const w = canvas.width;
-    const h = canvas.height;
-    if (w === 0 || h === 0) return true;
-    // Sample 20x20 grid van pixels.
-    const stepX = Math.max(1, Math.floor(w / 20));
-    const stepY = Math.max(1, Math.floor(h / 20));
+    const width = canvas.width;
+    const height = canvas.height;
+    if (width === 0 || height === 0) return true;
+
+    const pixels = ctx.getImageData(0, 0, width, height).data;
+    const stride = Math.max(4, Math.floor(Math.min(width, height) / 250) * 4);
     let nonWhite = 0;
-    for (let y = 0; y < h; y += stepY) {
-      for (let x = 0; x < w; x += stepX) {
-        const d = ctx.getImageData(x, y, 1, 1).data;
-        // Tel iets als "inhoud" als R/G/B < 245 (dus duidelijk niet-wit) en alpha > 0.
-        if (d[3] > 0 && (d[0] < 245 || d[1] < 245 || d[2] < 245)) {
-          nonWhite++;
-          if (nonWhite >= 5) return false; // genoeg inhoud
-        }
+
+    for (let index = 0; index < pixels.length; index += stride) {
+      const alpha = pixels[index + 3];
+      const isVisiblePixel = alpha > 0;
+      const isNotWhite = pixels[index] < 245 || pixels[index + 1] < 245 || pixels[index + 2] < 245;
+
+      if (isVisiblePixel && isNotWhite) {
+        nonWhite++;
+        if (nonWhite >= 50) return false;
       }
     }
+
     return true;
   } catch {
     return false; // bij twijfel: niet blokkeren
