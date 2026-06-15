@@ -215,7 +215,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
 
       // Harde verificatie: bestand bestaat, juiste grootte, geldige PDF.
       const verify = await verifyUploadedAttachment(path, pdfBlob.size);
-      if (!verify.ok) {
+      if (verify.ok === false) {
         throw new Error(verify.reason);
       }
 
