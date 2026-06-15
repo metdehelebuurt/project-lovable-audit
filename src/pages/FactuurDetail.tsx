@@ -19,6 +19,11 @@ import DeleteFactuurButton from "@/components/financieel/DeleteFactuurButton";
 import InkoopOntvangstenLijst from "@/components/inkoop/InkoopOntvangstenLijst";
 import InkoopOrderActies from "@/components/inkoop/InkoopOrderActies";
 import InkoopFactuurMatchPanel from "@/components/inkoop/InkoopFactuurMatchPanel";
+import { useFactuurEditPermission } from "@/hooks/useFactuurEditPermission";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const typeLabels: Record<string, string> = {
   verkoopfactuur: "Verkoopfactuur",
@@ -63,6 +68,8 @@ export default function FactuurDetail() {
   const [emailOpen, setEmailOpen] = useState(false);
 
   const [installatieData, setInstallatieData] = useState<any>(null);
+  const { kanBewerkenNaVersturen } = useFactuurEditPermission();
+  const [bewerkConfirmOpen, setBewerkConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -256,6 +263,19 @@ export default function FactuurDetail() {
             <Button variant="outline" onClick={() => navigate(`/financieel/bewerken/${doc.type}/${id}`)}>
               <Pencil className="h-4 w-4 mr-2" /> Bewerken
             </Button>
+          )}
+
+          {/* Bewerken na verzending — alleen voor admins of gebruikers met expliciete permissie. */}
+          {doc.status !== "concept"
+            && ["verkoopfactuur", "creditnota"].includes(doc.type)
+            && kanBewerkenNaVersturen && (
+              <Button
+                variant="outline"
+                onClick={() => setBewerkConfirmOpen(true)}
+                title="Bewerken na verzending — wordt vastgelegd in historie"
+              >
+                <Pencil className="h-4 w-4 mr-2" /> Bewerken
+              </Button>
           )}
 
           {/* E-mail versturen: voor alle types behalve inkooporder/inkoopfactuur (die ontvang je) */}
@@ -491,6 +511,31 @@ export default function FactuurDetail() {
           onSent={() => { setDoc({ ...doc, status: "verzonden", verzonden_op: new Date().toISOString() }); setPdfOpen(false); }}
         />
       )}
+
+      <AlertDialog open={bewerkConfirmOpen} onOpenChange={setBewerkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Verzonden {typeLabels[doc.type]?.toLowerCase() || "factuur"} bewerken?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deze {typeLabels[doc.type]?.toLowerCase() || "factuur"} is al verzonden naar de klant.
+              Een wijziging na verzending is administratief gevoelig: stuur de klant daarna
+              altijd een geüpdatete versie of een creditnota. De wijziging wordt vastgelegd
+              in de factuurhistorie met jouw naam en tijdstip.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setBewerkConfirmOpen(false);
+                navigate(`/financieel/bewerken/${doc.type}/${id}?force=1`);
+              }}
+            >
+              Toch bewerken
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

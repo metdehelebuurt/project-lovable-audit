@@ -16,7 +16,7 @@ interface PermissieTogglesProps {
 const PERMS: Array<{ key: string; label: string; beschrijving: string }> = [
   { key: "kan_kortingen_groot_goedkeuren", label: "Mag kortingen >10% goedkeuren", beschrijving: "Override op standaard rol-limiet" },
   { key: "kan_offertes_van_collegas_bewerken", label: "Mag offertes van collega's bewerken", beschrijving: "Toegang tot offertes van anderen binnen partner" },
-  { key: "kan_facturen_bewerken_na_versturen", label: "Mag facturen wijzigen na verzending", beschrijving: "Normaal alleen door beheerder" },
+  { key: "kan_facturen_bewerken_na_versturen", label: "Mag verkoopfacturen wijzigen na verzending", beschrijving: "Naast partner-beheerder en superadmin. Wijzigingen worden in de factuurhistorie vastgelegd." },
   { key: "kan_klanten_verwijderen", label: "Mag klanten verwijderen", beschrijving: "Anders alleen archiveren" },
   { key: "kan_alle_planning_zien", label: "Ziet planning van alle collega's", beschrijving: "Alleen eigen planning is standaard" },
   { key: "kan_export_downloaden", label: "Mag CSV/Excel exports downloaden", beschrijving: "Voor gevoelige rapportages" },

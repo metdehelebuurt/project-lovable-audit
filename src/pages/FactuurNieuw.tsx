@@ -66,6 +66,11 @@ export default function FactuurNieuw() {
 
   // Existing documentnummer for editing
   const [existingDocNummer, setExistingDocNummer] = useState("");
+  // Bestaande status (om te weten of we een verzonden factuur bewerken — niet downgraden naar concept).
+  const [existingStatus, setExistingStatus] = useState<string | null>(null);
+  const [existingVerzondenOp, setExistingVerzondenOp] = useState<string | null>(null);
+  const isEditingVerzonden =
+    isEdit && existingStatus !== null && existingStatus !== "concept";
 
   // Offerte-context (voor context-card, dubbel-check, termijn)
   const [offerteContext, setOfferteContext] = useState<OfferteConversieResult | null>(null);
@@ -198,6 +203,8 @@ export default function FactuurNieuw() {
         setBetalingstermijn(data.betalingstermijn_dagen || 30);
         setNotities(data.notities || "");
         setExistingDocNummer(data.documentnummer);
+        setExistingStatus((data as any).status ?? null);
+        setExistingVerzondenOp((data as any).verzonden_op ?? null);
         if (data.offerte_id) setBronOfferteId(data.offerte_id);
         // Eenmalige relatie
         const er = data.eenmalige_relatie as any;
@@ -302,6 +309,11 @@ export default function FactuurNieuw() {
 
     if (isEdit) {
       // UPDATE bestaand document
+      // Bij bewerken NA verzending: status nooit downgraden naar concept,
+      // en houd `verzonden_op` intact. Wijziging wordt vastgelegd in factuur_historie.
+      const finalStatus = isEditingVerzonden
+        ? existingStatus!
+        : status;
       const updates: any = {
         klant_id: !isInkoop(docType) && klantId && !useEenmalig ? klantId : null,
         leverancier_id: isInkoop(docType) && leverancierId ? leverancierId : null,
@@ -315,14 +327,36 @@ export default function FactuurNieuw() {
         vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
         notities,
         eenmalige_relatie: eenmaligData,
-        status,
+        status: finalStatus,
       };
+      if (isEditingVerzonden && existingVerzondenOp) {
+        updates.verzonden_op = existingVerzondenOp;
+      }
 
       const { error } = await supabase.from("financiele_documenten").update(updates).eq("id", editId);
-      setSaving(false);
       if (error) {
+        setSaving(false);
         toast({ title: "Fout", description: error.message, variant: "destructive" });
       } else {
+        // Audit-entry voor wijziging na verzending — verplicht voor traceerbaarheid.
+        if (isEditingVerzonden) {
+          try {
+            await supabase.from("factuur_historie").insert({
+              financieel_document_id: editId!,
+              partner_id: profile.partner_id,
+              actor_id: user.id,
+              actie: "gewijzigd_na_verzending",
+              notitie: `Wijziging na verzending — totaal nu €${(subtotaal + btwBedrag).toFixed(2)}`,
+              metadata: {
+                nieuw_totaal: subtotaal + btwBedrag,
+                nieuw_aantal_regels: regels.length,
+              },
+            });
+          } catch (e) {
+            console.warn("Audit-entry kon niet worden toegevoegd:", e);
+          }
+        }
+        setSaving(false);
         toast({ title: "Opgeslagen", description: `${typeLabels[docType]} ${existingDocNummer} bijgewerkt` });
         navigate(`/financieel/${editId}`);
       }
@@ -427,6 +461,19 @@ export default function FactuurNieuw() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {isEditingVerzonden && (
+          <div className="lg:col-span-3">
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="font-medium">Je bewerkt een reeds verzonden {typeLabels[docType].toLowerCase()}.</p>
+              <p className="mt-1">
+                De status blijft <span className="font-mono">{existingStatus}</span> en de verzendatum
+                blijft behouden. Wijzigingen worden vastgelegd in de factuurhistorie.
+                Stuur de klant na het opslaan altijd een geüpdatete versie.
+              </p>
+            </div>
+          </div>
+        )}
+
         {offerteContext && (
           <div className="lg:col-span-3">
             <FactuurContextCard
@@ -666,12 +713,20 @@ export default function FactuurNieuw() {
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={() => handleSave("concept")} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" /> Opslaan als concept
-        </Button>
-        <Button onClick={() => handleSave("verzonden")} disabled={saving}>
-          <Send className="h-4 w-4 mr-2" /> {saveLabel}
-        </Button>
+        {isEditingVerzonden ? (
+          <Button onClick={() => handleSave("concept")} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" /> Wijzigingen opslaan
+          </Button>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => handleSave("concept")} disabled={saving}>
+              <Save className="h-4 w-4 mr-2" /> Opslaan als concept
+            </Button>
+            <Button onClick={() => handleSave("verzonden")} disabled={saving}>
+              <Send className="h-4 w-4 mr-2" /> {saveLabel}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
