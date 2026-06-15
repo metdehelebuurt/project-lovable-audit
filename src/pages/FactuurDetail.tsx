@@ -96,7 +96,7 @@ export default function FactuurDetail() {
       .from("financiele_documenten")
       .select("*, klanten(voornaam, achternaam, bedrijfsnaam, email, adres, postcode, plaats, telefoon), leveranciers(naam, email, adres, postcode, plaats, telefoon, btw_nummer, kvk_nummer), offertes(offertenummer)")
       .eq("id", id)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
         if (error) toast({ title: "Fout", description: error.message, variant: "destructive" });
         else {
@@ -105,7 +105,7 @@ export default function FactuurDetail() {
             supabase.from("installaties")
               .select("consument_naam, geplande_startdatum, geplande_einddatum, status")
               .eq("id", data.installatie_id)
-              .single()
+              .maybeSingle()
               .then(({ data: inst }) => setInstallatieData(inst));
           }
         }
