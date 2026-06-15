@@ -461,6 +461,19 @@ export default function FactuurNieuw() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {isEditingVerzonden && (
+          <div className="lg:col-span-3">
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="font-medium">Je bewerkt een reeds verzonden {typeLabels[docType].toLowerCase()}.</p>
+              <p className="mt-1">
+                De status blijft <span className="font-mono">{existingStatus}</span> en de verzendatum
+                blijft behouden. Wijzigingen worden vastgelegd in de factuurhistorie.
+                Stuur de klant na het opslaan altijd een geüpdatete versie.
+              </p>
+            </div>
+          </div>
+        )}
+
         {offerteContext && (
           <div className="lg:col-span-3">
             <FactuurContextCard
