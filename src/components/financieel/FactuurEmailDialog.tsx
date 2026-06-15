@@ -77,6 +77,42 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
       reader.readAsDataURL(blob);
     });
 
+  const MIN_PDF_BYTES = 5000;
+
+  // Controleer dat de blob daadwerkelijk een PDF is door de eerste 4 bytes (%PDF) te lezen.
+  const isPdfBlob = async (blob: Blob): Promise<boolean> => {
+    try {
+      const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+      return head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46;
+    } catch {
+      return false;
+    }
+  };
+
+  // Verifieer dat de geüploade bijlage daadwerkelijk in storage staat met juiste grootte + %PDF header.
+  const verifyUploadedAttachment = async (path: string, expectedSize: number): Promise<{ ok: true } | { ok: false; reason: string }> => {
+    const { data: signed, error: signedErr } = await supabase
+      .storage.from("email-bijlagen").createSignedUrl(path, 60);
+    if (signedErr || !signed?.signedUrl) {
+      return { ok: false, reason: "Bijlage kon niet worden geverifieerd (signed URL mislukt)." };
+    }
+    const resp = await fetch(signed.signedUrl);
+    if (!resp.ok) {
+      return { ok: false, reason: `Bijlage niet leesbaar in storage (HTTP ${resp.status}).` };
+    }
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    if (buf.length !== expectedSize) {
+      return { ok: false, reason: `Bijlage-grootte mismatch: ${buf.length} vs verwacht ${expectedSize}.` };
+    }
+    if (buf.length < MIN_PDF_BYTES) {
+      return { ok: false, reason: `Bijlage te klein (${buf.length} bytes).` };
+    }
+    if (!(buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46)) {
+      return { ok: false, reason: "Bijlage in storage is geen geldig PDF-bestand." };
+    }
+    return { ok: true };
+  };
+
   const tryDownloadArchivedPdf = async (): Promise<Blob | null> => {
     try {
       const path = `${doc.partner_id}/factuur/${doc.id}.pdf`;
@@ -160,8 +196,12 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
       toast.error("PDF is nog niet klaar — wacht tot het voorbeeld is geladen.");
       return;
     }
-    if (pdfBlob.size < 2000) {
-      toast.error("Bijlage lijkt leeg — genereer de PDF opnieuw.");
+    if (pdfBlob.size < MIN_PDF_BYTES) {
+      toast.error(`Bijlage lijkt leeg (${pdfBlob.size} bytes) — genereer de PDF opnieuw.`);
+      return;
+    }
+    if (!(await isPdfBlob(pdfBlob))) {
+      toast.error("Bijlage is geen geldig PDF-bestand — genereer opnieuw.");
       return;
     }
     setSending(true);
@@ -169,18 +209,14 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
     try {
       // Upload naar email-bijlagen bucket (verplicht — geen verzending zonder bijlage).
       path = await uploadPdfToStorage(supabase, doc.partner_id, "factuur", doc.id, pdfBlob);
-
-      // Verifieer dat de upload daadwerkelijk leesbaar is voordat we de Edge Function aanroepen.
-      const { data: signed, error: signedErr } = await supabase
-        .storage
-        .from("email-bijlagen")
-        .createSignedUrl(path, 60);
-      if (signedErr || !signed?.signedUrl) {
-        throw new Error("Bijlage kon niet worden geverifieerd. Probeer het opnieuw.");
+      if (!path) {
+        throw new Error("Upload van bijlage mislukt — geen pad ontvangen.");
       }
-      const verifyResp = await fetch(signed.signedUrl, { method: "HEAD" });
-      if (!verifyResp.ok) {
-        throw new Error("Bijlage is nog niet beschikbaar in storage. Probeer het opnieuw.");
+
+      // Harde verificatie: bestand bestaat, juiste grootte, geldige PDF.
+      const verify = await verifyUploadedAttachment(path, pdfBlob.size);
+      if (!verify.ok) {
+        throw new Error(verify.reason);
       }
 
       // Archiveer parallel in facturen-bucket voor latere "opnieuw versturen".
@@ -194,8 +230,9 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
           ontvanger_email: to.trim(),
           subject,
           html_body: html,
-          attachment_path: path || null,
+          attachment_path: path,
           attachment_filename: `${label.replace(/\s+/g, "")}-${doc.documentnummer}.pdf`,
+          expected_attachment_size: pdfBlob.size,
           is_resend: isResend,
           cc: parseAddressList(cc),
           bcc: parseAddressList(bcc),
