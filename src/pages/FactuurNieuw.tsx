@@ -713,12 +713,20 @@ export default function FactuurNieuw() {
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={() => handleSave("concept")} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" /> Opslaan als concept
-        </Button>
-        <Button onClick={() => handleSave("verzonden")} disabled={saving}>
-          <Send className="h-4 w-4 mr-2" /> {saveLabel}
-        </Button>
+        {isEditingVerzonden ? (
+          <Button onClick={() => handleSave("concept")} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" /> Wijzigingen opslaan
+          </Button>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => handleSave("concept")} disabled={saving}>
+              <Save className="h-4 w-4 mr-2" /> Opslaan als concept
+            </Button>
+            <Button onClick={() => handleSave("verzonden")} disabled={saving}>
+              <Send className="h-4 w-4 mr-2" /> {saveLabel}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
