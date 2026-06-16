@@ -23,6 +23,12 @@ project_id = "xmguipmetciwvzeyxugu"
     verify_jwt = false
   [functions.email-oauth-config]
     verify_jwt = false
+  [functions.email-oauth-callback]
+    verify_jwt = false
+  [functions.email-api-send]
+    verify_jwt = false
+  [functions.email-api-sync]
+    verify_jwt = false
   [functions.genereer-werkomschrijving]
     verify_jwt = true
   [functions.google-user-provision]
