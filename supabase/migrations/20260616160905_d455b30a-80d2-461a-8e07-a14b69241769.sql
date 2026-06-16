@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "break_glass_superadmin_restrict" ON public.feedback_verzoeken;
