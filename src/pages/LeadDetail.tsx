@@ -31,6 +31,7 @@ import EmailTab from "@/components/email/EmailTab";
 import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 import GecombineerdeTijdlijn, { type ExtraEvent } from "@/components/historie/GecombineerdeTijdlijn";
 import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
+import ContactmomentItem from "@/components/contactmomenten/ContactmomentItem";
 import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 
@@ -824,19 +825,7 @@ const LeadDetail = () => {
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contactmomenten</p>
                     {contactmomenten.map((c: any) => (
-                      <div key={c.id} className="p-3 rounded-xl border bg-card">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-[10px]">{c.type}</Badge>
-                          <Badge variant="outline" className="text-[10px]">{c.richting}</Badge>
-                          {c.resultaat && <Badge className="text-[10px] bg-primary/10 text-primary">{c.resultaat.replace(/_/g, " ")}</Badge>}
-                          <span className="text-[10px] text-muted-foreground ml-auto">{formatDateTime(c.created_at)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span>{c.user?.voornaam} {c.user?.achternaam}</span>
-                        </div>
-                        {c.notitie && <p className="text-sm text-foreground mt-1">{c.notitie}</p>}
-                      </div>
+                      <ContactmomentItem key={c.id} contact={c} />
                     ))}
                   </div>
                 )}
