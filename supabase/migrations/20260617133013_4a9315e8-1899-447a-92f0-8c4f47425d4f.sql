@@ -1,0 +1,1 @@
+CREATE POLICY "Partner users bewerken eigen contactmomenten" ON public.lead_contactmomenten FOR UPDATE USING (is_superadmin(auth.uid()) OR user_id = auth.uid()) WITH CHECK (is_superadmin(auth.uid()) OR user_id = auth.uid());
