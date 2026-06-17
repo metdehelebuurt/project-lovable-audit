@@ -20,6 +20,7 @@ import { Plus, Pencil, Trash2, Search, Users, FileText, ClipboardCheck, LayoutLi
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import ImportExportButtons from "@/components/shared/ImportExportButtons";
 import type { Database } from "@/integrations/supabase/types";
+import { DuplicatenBanner } from "@/components/leads/duplicaten/DuplicatenBanner";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
@@ -263,6 +264,7 @@ const Leads = () => {
 
   return (
     <div className="space-y-6">
+      <DuplicatenBanner />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl md:text-2xl font-semibold text-foreground">Leads</h1>

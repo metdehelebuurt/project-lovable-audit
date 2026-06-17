@@ -34,6 +34,7 @@ import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentC
 import ContactmomentItem from "@/components/contactmomenten/ContactmomentItem";
 import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
+import { DuplicaatWaarschuwing } from "@/components/leads/duplicaten/DuplicaatWaarschuwing";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -424,6 +425,7 @@ const LeadDetail = () => {
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto">
       <WerkstroomStepper vanaf="lead" id={lead.id} huidig="lead" />
+      <DuplicaatWaarschuwing leadId={lead.id} />
       {/* Header */}
       <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
         <Button variant="ghost" size="icon" onClick={() => navigate("/leads")} className="rounded-xl mt-1 shrink-0">

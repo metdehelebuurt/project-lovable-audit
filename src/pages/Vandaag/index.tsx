@@ -9,6 +9,7 @@ import { VandaagAgendaKaart } from "./VandaagAgendaKaart";
 import { VandaagActieKaart } from "./VandaagActieKaart";
 import { VandaagRecentKaart } from "./VandaagRecentKaart";
 import { VandaagBegroeting } from "./VandaagBegroeting";
+import { DuplicatenKaart } from "@/components/leads/duplicaten/DuplicatenKaart";
 
 /**
  * /vandaag — persona-dashboard met focus op acties van vandaag.
@@ -25,6 +26,8 @@ export default function Vandaag() {
   return (
     <div className="space-y-5 max-w-[1400px] mx-auto">
       <VandaagBegroeting voornaam={profile?.voornaam} rol={rol} />
+
+      <DuplicatenKaart />
 
       {/* Actiecentrum: hoogste prioriteit bovenaan */}
       {actiecentrum.totaal > 0 ? (
