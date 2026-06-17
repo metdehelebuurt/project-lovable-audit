@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { PhoneCall, Plus, Loader2, Clock } from "lucide-react";
+import ContactmomentItem from "./ContactmomentItem";
 
 const TYPE_OPTIONS = [
   { value: "call", label: "Telefoongesprek" },
@@ -199,26 +200,7 @@ export default function LogContactmomentCard({ leadId, klantId, showRecent = fal
           <div className="space-y-1.5 pt-2 border-t">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Recent</p>
             {recent.map((c: any) => (
-              <div key={c.id} className="text-xs border rounded-lg p-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
-                    {TYPE_OPTIONS.find((t) => t.value === c.type)?.label || c.type}
-                    {" · "}
-                    <span className="text-muted-foreground">{c.richting}</span>
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {new Date(c.gebeurd_op || c.created_at).toLocaleString("nl-NL", {
-                      dateStyle: "short", timeStyle: "short",
-                    })}
-                  </span>
-                </div>
-                {c.resultaat && (
-                  <p className="text-[11px] text-muted-foreground">
-                    {c.resultaat.replace(/_/g, " ")}
-                  </p>
-                )}
-                {c.notitie && <p className="text-[11px] mt-0.5">{c.notitie}</p>}
-              </div>
+              <ContactmomentItem key={c.id} contact={c} compact />
             ))}
           </div>
         )}
