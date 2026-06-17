@@ -265,7 +265,7 @@ const Documenten = () => {
             </div>
             <div>
               <Label>Entiteit type *</Label>
-              <Select value={entityType} onValueChange={v => setEntityType(v as DocumentEntityType)}>
+              <Select value={entityType} onValueChange={v => { setEntityType(v as DocumentEntityType); setEntityId(""); }}>
                 <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(Object.keys(entityTypeLabels) as DocumentEntityType[]).map(t => (
@@ -275,8 +275,17 @@ const Documenten = () => {
               </Select>
             </div>
             <div>
-              <Label>Entiteit ID *</Label>
-              <Input value={entityId} onChange={e => setEntityId(e.target.value)} placeholder="UUID van lead/schouw/offerte/installatie" className="rounded-xl" />
+              <Label>Koppelen aan *</Label>
+              <Select value={entityId} onValueChange={setEntityId} disabled={laadtEntiteiten || entityOpties.length === 0}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder={laadtEntiteiten ? "Laden..." : entityOpties.length === 0 ? `Geen ${entityTypeLabels[entityType].toLowerCase()}en gevonden` : `Kies een ${entityTypeLabels[entityType].toLowerCase()}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {entityOpties.map(e => (
+                    <SelectItem key={e.id ?? ""} value={e.id ?? ""}>{labelVoorEntiteit(e)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Document type</Label>
