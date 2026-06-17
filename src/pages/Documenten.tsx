@@ -38,7 +38,18 @@ const Documenten = () => {
   const [beschrijving, setBeschrijving] = useState("");
   const queryClient = useQueryClient();
 
-  const canEdit = profile?.rol === "superadmin" || profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const canUpload =
+    profile?.rol === "superadmin" ||
+    profile?.rol === "partner_admin" ||
+    profile?.rol === "partner_staff" ||
+    profile?.rol === "backoffice" ||
+    profile?.rol === "adviseur" ||
+    profile?.rol === "installateur";
+  const canDeleteAll =
+    profile?.rol === "superadmin" ||
+    profile?.rol === "partner_admin" ||
+    profile?.rol === "partner_staff" ||
+    profile?.rol === "backoffice";
 
   const { data: documenten = [], isLoading } = useQuery({
     queryKey: ["documenten"],
@@ -48,6 +59,40 @@ const Documenten = () => {
       return data as Document[];
     },
   });
+
+  const entityTable: Record<DocumentEntityType, "leads" | "schouwen" | "offertes" | "installaties"> = {
+    lead: "leads",
+    schouw: "schouwen",
+    offerte: "offertes",
+    installatie: "installaties",
+  };
+
+  const { data: entityOpties = [], isLoading: laadtEntiteiten } = useQuery({
+    queryKey: ["documenten-entiteit-opties", entityType, profile?.partner_id],
+    enabled: dialogOpen,
+    queryFn: async () => {
+      const tabel = entityTable[entityType];
+      const selectCols =
+        entityType === "lead" ? "id,voornaam,achternaam,bedrijfsnaam,created_at"
+        : entityType === "schouw" ? "id,schouwnummer,created_at"
+        : entityType === "offerte" ? "id,offertenummer,created_at"
+        : "id,installatienummer,created_at";
+      const q = supabase.from(tabel).select(selectCols).order("created_at", { ascending: false }).limit(200);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as Array<Record<string, string | null>>;
+    },
+  });
+
+  const labelVoorEntiteit = (e: Record<string, string | null>): string => {
+    if (entityType === "lead") {
+      const naam = [e.voornaam, e.achternaam].filter(Boolean).join(" ").trim();
+      return naam || e.bedrijfsnaam || e.id || "—";
+    }
+    if (entityType === "schouw") return e.schouwnummer || e.id || "—";
+    if (entityType === "offerte") return e.offertenummer || e.id || "—";
+    return e.installatienummer || e.id || "—";
+  };
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -117,7 +162,7 @@ const Documenten = () => {
           <h1 className="text-2xl font-semibold text-foreground">Documenten</h1>
           <p className="text-muted-foreground mt-1">Bestanden gekoppeld aan leads, schouwen, offertes en installaties</p>
         </div>
-        {canEdit && (
+        {canUpload && (
           <Button onClick={() => setDialogOpen(true)} className="rounded-pill gap-2">
             <Upload className="h-4 w-4" /> Upload Document
           </Button>
@@ -172,7 +217,7 @@ const Documenten = () => {
                               <Download className="h-4 w-4" />
                             </a>
                           </Button>
-                          {canEdit && (
+                          {(canDeleteAll || doc.geupload_door_id === profile?.id) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
