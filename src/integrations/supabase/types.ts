@@ -4060,6 +4060,72 @@ export type Database = {
           },
         ]
       }
+      lead_duplicaat_negeerlijst: {
+        Row: {
+          created_at: string
+          genegeerd_door: string | null
+          id: string
+          lead_a_id: string
+          lead_b_id: string
+          partner_id: string
+          reden: string | null
+        }
+        Insert: {
+          created_at?: string
+          genegeerd_door?: string | null
+          id?: string
+          lead_a_id: string
+          lead_b_id: string
+          partner_id: string
+          reden?: string | null
+        }
+        Update: {
+          created_at?: string
+          genegeerd_door?: string | null
+          id?: string
+          lead_a_id?: string
+          lead_b_id?: string
+          partner_id?: string
+          reden?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_duplicaat_negeerlijst_genegeerd_door_fkey"
+            columns: ["genegeerd_door"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_duplicaat_negeerlijst_lead_a_id_fkey"
+            columns: ["lead_a_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_duplicaat_negeerlijst_lead_b_id_fkey"
+            columns: ["lead_b_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_duplicaat_negeerlijst_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_duplicaat_negeerlijst_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_eigenschappen: {
         Row: {
           aantal_panelen: number | null
@@ -7154,6 +7220,16 @@ export type Database = {
           },
         ]
       }
+      v_lead_duplicaten: {
+        Row: {
+          lead_a_id: string | null
+          lead_b_id: string | null
+          match_redenen: string[] | null
+          partner_id: string | null
+          score: number | null
+        }
+        Relationships: []
+      }
       web_widgets_public: {
         Row: {
           actief: boolean | null
@@ -7225,6 +7301,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      extract_huisnummer: { Args: { _adres: string }; Returns: string }
       generate_abonnement_factuurnummer: { Args: never; Returns: string }
       generate_documentnummer_v2: {
         Args: { _partner_id: string; _subtype?: string; _type: string }
@@ -7356,6 +7433,8 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_phone: { Args: { _telefoon: string }; Returns: string }
+      normalize_postcode: { Args: { _postcode: string }; Returns: string }
       purge_system_error_logs: { Args: { _dagen?: number }; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
