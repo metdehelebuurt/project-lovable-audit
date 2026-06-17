@@ -74,13 +74,21 @@ const Documenten = () => {
       const tabel = entityTable[entityType];
       const selectCols =
         entityType === "lead" ? "id,voornaam,achternaam,bedrijfsnaam,created_at"
-        : entityType === "schouw" ? "id,schouwnummer,created_at"
-        : entityType === "offerte" ? "id,offertenummer,created_at"
-        : "id,installatienummer,created_at";
-      const q = supabase.from(tabel).select(selectCols).order("created_at", { ascending: false }).limit(200);
-      const { data, error } = await q;
-      if (error) throw error;
-      return (data ?? []) as Array<Record<string, string | null>>;
+        : entityType === "schouw" ? "id,schouw_nummer,created_at"
+        : entityType === "offerte" ? "id,offertenummer,klant_naam,created_at"
+        : "id,installatienummer,consument_naam,created_at";
+      const client = supabase as unknown as {
+        from: (t: string) => {
+          select: (c: string) => {
+            order: (c: string, o: { ascending: boolean }) => {
+              limit: (n: number) => Promise<{ data: Array<Record<string, string | null>> | null; error: { message: string } | null }>;
+            };
+          };
+        };
+      };
+      const { data, error } = await client.from(tabel).select(selectCols).order("created_at", { ascending: false }).limit(200);
+      if (error) throw new Error(error.message);
+      return data ?? [];
     },
   });
 
@@ -89,9 +97,9 @@ const Documenten = () => {
       const naam = [e.voornaam, e.achternaam].filter(Boolean).join(" ").trim();
       return naam || e.bedrijfsnaam || e.id || "—";
     }
-    if (entityType === "schouw") return e.schouwnummer || e.id || "—";
-    if (entityType === "offerte") return e.offertenummer || e.id || "—";
-    return e.installatienummer || e.id || "—";
+    if (entityType === "schouw") return e.schouw_nummer || e.id || "—";
+    if (entityType === "offerte") return e.offertenummer ? `${e.offertenummer} — ${e.klant_naam ?? ""}`.trim() : (e.id || "—");
+    return e.installatienummer ? `${e.installatienummer} — ${e.consument_naam ?? ""}`.trim() : (e.id || "—");
   };
 
   const uploadMutation = useMutation({
