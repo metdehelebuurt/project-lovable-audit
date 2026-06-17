@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, ThumbsUp, MessageSquareText, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, ThumbsUp, MessageSquareText, Lightbulb, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 
 const categorieBadge: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   ui: { label: "UI/UX", variant: "secondary" },
@@ -30,7 +30,8 @@ const statusLabel: Record<string, string> = {
 };
 
 export default function FeedbackOverzicht() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isSuperadmin = profile?.rol === "superadmin";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filterType, setFilterType] = useState<string>("alle");
@@ -72,9 +73,16 @@ export default function FeedbackOverzicht() {
           <h1 className="text-2xl font-bold">Feedback & Verzoeken</h1>
           <p className="text-muted-foreground">Bekijk en stem op feedback en functieverzoeken</p>
         </div>
-        <Button onClick={() => navigate("/feedback/nieuw")}>
-          <Plus className="h-4 w-4 mr-2" /> Nieuw verzoek
-        </Button>
+        <div className="flex gap-2">
+          {isSuperadmin && (
+            <Button variant="outline" onClick={() => navigate("/feedback/admin")}>
+              <Settings2 className="h-4 w-4 mr-2" /> Beheer
+            </Button>
+          )}
+          <Button onClick={() => navigate("/feedback/nieuw")}>
+            <Plus className="h-4 w-4 mr-2" /> Nieuw verzoek
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">
@@ -110,11 +118,15 @@ export default function FeedbackOverzicht() {
             const isOwn = item.user_id === user?.id;
             const expanded = expandedId === item.id;
             return (
-              <Card key={item.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={item.id}
+                className={`hover:shadow-md transition-shadow ${isSuperadmin ? "cursor-pointer" : ""}`}
+                onClick={isSuperadmin ? () => navigate(`/feedback/admin?id=${item.id}`) : undefined}
+              >
                 <CardContent className="py-4">
                   <div className="flex items-start gap-4">
                     <button
-                      onClick={() => !isOwn && voteMutation.mutate(item.id)}
+                      onClick={(e) => { e.stopPropagation(); if (!isOwn) voteMutation.mutate(item.id); }}
                       disabled={isOwn}
                       className={`flex flex-col items-center gap-1 min-w-[48px] pt-1 ${
                         isOwn ? "text-muted-foreground/40 cursor-not-allowed" : "text-muted-foreground hover:text-primary cursor-pointer"
@@ -151,7 +163,7 @@ export default function FeedbackOverzicht() {
                       )}
 
                       <button
-                        onClick={() => setExpandedId(expanded ? null : item.id)}
+                        onClick={(e) => { e.stopPropagation(); setExpandedId(expanded ? null : item.id); }}
                         className="text-xs text-primary flex items-center gap-1 mt-1"
                       >
                         {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
