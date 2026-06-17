@@ -55,7 +55,10 @@ export default function ContactmomentItem({ contact, compact = false, onChanged 
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const canManage = profile?.id === contact.user_id || profile?.rol === "superadmin";
+  const canManagePartnerWide = profile?.rol === "superadmin"
+    || profile?.rol === "partner_admin"
+    || profile?.rol === "partner_staff";
+  const canManage = canManagePartnerWide || profile?.id === contact.user_id;
 
   const [form, setForm] = useState({
     type: contact.type ?? "call",
