@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Sparkles, MessageSquare, Lightbulb, Bug, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { Sparkles, MessageSquare, Lightbulb, Bug, TrendingUp, AlertCircle, CheckCircle, Wand2, Copy, ExternalLink } from "lucide-react";
 import RichTextEditor from "@/components/shared/RichTextEditor";
+import { Textarea } from "@/components/ui/textarea";
 
 const categorieIcons: Record<string, React.ElementType> = {
   ui: MessageSquare, performance: TrendingUp, nieuwe_functie: Lightbulb,
@@ -42,6 +43,7 @@ export default function FeedbackAdmin() {
   const [newStatus, setNewStatus] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiReport, setAiReport] = useState("");
+  const [implPrompt, setImplPrompt] = useState("");
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["feedback_admin", filterCat, filterStatus],
@@ -109,6 +111,75 @@ export default function FeedbackAdmin() {
     setSelectedItem(item);
     setAdminReactie(item.admin_reactie || "");
     setNewStatus(item.status);
+    setImplPrompt("");
+  };
+
+  const stripHtml = (html: string) => {
+    if (!html) return "";
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || "").trim();
+  };
+
+  const buildImplementatiePrompt = (item: any) => {
+    const beschrijving = stripHtml(item.beschrijving || "");
+    const interview = Array.isArray(item.ai_interview)
+      ? (item.ai_interview as any[])
+          .map((q: any, i: number) => `${i + 1}. ${q.vraag}\n   Antwoord: ${q.antwoord || "(niet beantwoord)"}`)
+          .join("\n")
+      : "";
+    const tags = Array.isArray(item.ai_tags) ? (item.ai_tags as string[]).join(", ") : "";
+
+    const lines = [
+      `Implementeer het volgende ${item.type === "functieverzoek" ? "functieverzoek" : "feedbackpunt"} van een gebruiker in het platform mijnhuis.nu.`,
+      "",
+      `## Titel`,
+      item.titel,
+      "",
+      `## Type & categorie`,
+      `- Type: ${item.type}`,
+      `- Categorie: ${item.categorie}`,
+      `- Prioriteit: ${item.prioriteit}`,
+      `- Stemmen van gebruikers: ${item.stemmen || 0}`,
+      tags ? `- Tags: ${tags}` : "",
+      "",
+      `## Beschrijving van de gebruiker`,
+      beschrijving || "(geen beschrijving)",
+    ];
+
+    if (item.ai_samenvatting) {
+      lines.push("", `## AI-samenvatting`, item.ai_samenvatting);
+    }
+    if (interview) {
+      lines.push("", `## Verduidelijkingsvragen & antwoorden`, interview);
+    }
+
+    lines.push(
+      "",
+      `## Opdracht`,
+      `1. Analyseer waar in de codebase dit verzoek het beste past (bestaande pagina's, modules, componenten).`,
+      `2. Implementeer een nette, professionele oplossing die past bij de bestaande SaaS-look (paars primary, Tailwind + shadcn).`,
+      `3. Houd rekening met multi-tenancy (partner_id), RLS-policies en de bestaande rollen.`,
+      `4. Gebruik Nederlandse termen (bv. 'Offerte' i.p.v. 'Opdrachtbevestiging').`,
+      `5. Werk de UI bij zodat de gebruiker de nieuwe functie eenvoudig kan vinden.`,
+    );
+
+    return lines.filter((l) => l !== undefined).join("\n");
+  };
+
+  const genereerPrompt = () => {
+    if (!selectedItem) return;
+    setImplPrompt(buildImplementatiePrompt(selectedItem));
+  };
+
+  const kopieerPrompt = async () => {
+    if (!implPrompt) return;
+    try {
+      await navigator.clipboard.writeText(implPrompt);
+      toast.success("Prompt gekopieerd naar klembord");
+    } catch {
+      toast.error("Kopiëren mislukt");
+    }
   };
 
   return (
@@ -299,6 +370,42 @@ export default function FeedbackAdmin() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Admin reactie</label>
                   <RichTextEditor value={adminReactie} onChange={setAdminReactie} placeholder="Schrijf een reactie..." />
+                </div>
+
+                <div className="space-y-2 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-1">
+                      <Wand2 className="h-4 w-4 text-primary" /> Implementatieprompt
+                    </label>
+                    <div className="flex gap-2">
+                      <Button type="button" size="sm" variant="outline" onClick={genereerPrompt}>
+                        <Sparkles className="h-3.5 w-3.5 mr-1" />
+                        {implPrompt ? "Opnieuw genereren" : "Genereer prompt"}
+                      </Button>
+                      {implPrompt && (
+                        <Button type="button" size="sm" variant="outline" onClick={kopieerPrompt}>
+                          <Copy className="h-3.5 w-3.5 mr-1" /> Kopieer
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {implPrompt ? (
+                    <>
+                      <Textarea
+                        value={implPrompt}
+                        onChange={(e) => setImplPrompt(e.target.value)}
+                        className="min-h-[220px] font-mono text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <ExternalLink className="h-3 w-3" />
+                        Kopieer deze prompt en plak hem in Lovable om het verzoek direct te verwerken.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Genereer een kant-en-klare prompt op basis van dit verzoek die je in Lovable kunt plakken om het meteen te implementeren.
+                    </p>
+                  )}
                 </div>
               </div>
 
