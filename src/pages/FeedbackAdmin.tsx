@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,7 @@ const prioriteitKleur: Record<string, string> = {
 export default function FeedbackAdmin() {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filterCat, setFilterCat] = useState("alle");
   const [filterStatus, setFilterStatus] = useState("alle");
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -56,6 +58,16 @@ export default function FeedbackAdmin() {
       return data || [];
     },
   });
+
+  // Auto-open item if ?id= present
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id && items.length && !selectedItem) {
+      const item = items.find((i: any) => i.id === id);
+      if (item) openDetail(item);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, searchParams]);
 
   const stats = {
     total: items.length,
@@ -292,7 +304,15 @@ export default function FeedbackAdmin() {
       )}
 
       {/* Detail dialog */}
-      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+      <Dialog open={!!selectedItem} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedItem(null);
+          if (searchParams.get("id")) {
+            searchParams.delete("id");
+            setSearchParams(searchParams, { replace: true });
+          }
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           {selectedItem && (
             <>
