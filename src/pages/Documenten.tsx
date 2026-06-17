@@ -38,7 +38,18 @@ const Documenten = () => {
   const [beschrijving, setBeschrijving] = useState("");
   const queryClient = useQueryClient();
 
-  const canEdit = profile?.rol === "superadmin" || profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const canUpload =
+    profile?.rol === "superadmin" ||
+    profile?.rol === "partner_admin" ||
+    profile?.rol === "partner_staff" ||
+    profile?.rol === "backoffice" ||
+    profile?.rol === "adviseur" ||
+    profile?.rol === "installateur";
+  const canDeleteAll =
+    profile?.rol === "superadmin" ||
+    profile?.rol === "partner_admin" ||
+    profile?.rol === "partner_staff" ||
+    profile?.rol === "backoffice";
 
   const { data: documenten = [], isLoading } = useQuery({
     queryKey: ["documenten"],
@@ -48,6 +59,48 @@ const Documenten = () => {
       return data as Document[];
     },
   });
+
+  const entityTable: Record<DocumentEntityType, "leads" | "schouwen" | "offertes" | "installaties"> = {
+    lead: "leads",
+    schouw: "schouwen",
+    offerte: "offertes",
+    installatie: "installaties",
+  };
+
+  const { data: entityOpties = [], isLoading: laadtEntiteiten } = useQuery({
+    queryKey: ["documenten-entiteit-opties", entityType, profile?.partner_id],
+    enabled: dialogOpen,
+    queryFn: async () => {
+      const tabel = entityTable[entityType];
+      const selectCols =
+        entityType === "lead" ? "id,voornaam,achternaam,bedrijfsnaam,created_at"
+        : entityType === "schouw" ? "id,schouw_nummer,created_at"
+        : entityType === "offerte" ? "id,offertenummer,klant_naam,created_at"
+        : "id,installatienummer,consument_naam,created_at";
+      const client = supabase as unknown as {
+        from: (t: string) => {
+          select: (c: string) => {
+            order: (c: string, o: { ascending: boolean }) => {
+              limit: (n: number) => Promise<{ data: Array<Record<string, string | null>> | null; error: { message: string } | null }>;
+            };
+          };
+        };
+      };
+      const { data, error } = await client.from(tabel).select(selectCols).order("created_at", { ascending: false }).limit(200);
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+  });
+
+  const labelVoorEntiteit = (e: Record<string, string | null>): string => {
+    if (entityType === "lead") {
+      const naam = [e.voornaam, e.achternaam].filter(Boolean).join(" ").trim();
+      return naam || e.bedrijfsnaam || e.id || "—";
+    }
+    if (entityType === "schouw") return e.schouw_nummer || e.id || "—";
+    if (entityType === "offerte") return e.offertenummer ? `${e.offertenummer} — ${e.klant_naam ?? ""}`.trim() : (e.id || "—");
+    return e.installatienummer ? `${e.installatienummer} — ${e.consument_naam ?? ""}`.trim() : (e.id || "—");
+  };
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -117,7 +170,7 @@ const Documenten = () => {
           <h1 className="text-2xl font-semibold text-foreground">Documenten</h1>
           <p className="text-muted-foreground mt-1">Bestanden gekoppeld aan leads, schouwen, offertes en installaties</p>
         </div>
-        {canEdit && (
+        {canUpload && (
           <Button onClick={() => setDialogOpen(true)} className="rounded-pill gap-2">
             <Upload className="h-4 w-4" /> Upload Document
           </Button>
@@ -172,7 +225,7 @@ const Documenten = () => {
                               <Download className="h-4 w-4" />
                             </a>
                           </Button>
-                          {canEdit && (
+                          {(canDeleteAll || doc.geupload_door_id === profile?.id) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
@@ -212,7 +265,7 @@ const Documenten = () => {
             </div>
             <div>
               <Label>Entiteit type *</Label>
-              <Select value={entityType} onValueChange={v => setEntityType(v as DocumentEntityType)}>
+              <Select value={entityType} onValueChange={v => { setEntityType(v as DocumentEntityType); setEntityId(""); }}>
                 <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(Object.keys(entityTypeLabels) as DocumentEntityType[]).map(t => (
@@ -222,8 +275,17 @@ const Documenten = () => {
               </Select>
             </div>
             <div>
-              <Label>Entiteit ID *</Label>
-              <Input value={entityId} onChange={e => setEntityId(e.target.value)} placeholder="UUID van lead/schouw/offerte/installatie" className="rounded-xl" />
+              <Label>Koppelen aan *</Label>
+              <Select value={entityId} onValueChange={setEntityId} disabled={laadtEntiteiten || entityOpties.length === 0}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder={laadtEntiteiten ? "Laden..." : entityOpties.length === 0 ? `Geen ${entityTypeLabels[entityType].toLowerCase()}en gevonden` : `Kies een ${entityTypeLabels[entityType].toLowerCase()}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {entityOpties.map(e => (
+                    <SelectItem key={e.id ?? ""} value={e.id ?? ""}>{labelVoorEntiteit(e)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Document type</Label>
