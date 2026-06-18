@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -12,6 +13,25 @@ import { Upload, Download, Loader2, AlertTriangle, CheckCircle } from "lucide-re
 import type { Database } from "@/integrations/supabase/types";
 
 type Bron = Database["public"]["Enums"]["affiliate_lead_bron"];
+type TargetField = "bedrijfsnaam" | "contactpersoon" | "email" | "telefoon" | "bron" | "trial_startdatum";
+
+const TARGET_FIELDS: { key: TargetField; label: string; required?: boolean }[] = [
+  { key: "bedrijfsnaam", label: "Bedrijfsnaam", required: true },
+  { key: "contactpersoon", label: "Contactpersoon" },
+  { key: "email", label: "E-mail" },
+  { key: "telefoon", label: "Telefoon" },
+  { key: "bron", label: "Bron" },
+  { key: "trial_startdatum", label: "Trial startdatum" },
+];
+
+const SYNONYMS: Record<TargetField, string[]> = {
+  bedrijfsnaam: ["bedrijfsnaam", "bedrijf", "company", "organisatie", "naam_bedrijf"],
+  contactpersoon: ["contactpersoon", "contact", "naam", "name", "fullname", "persoon"],
+  email: ["email", "e_mail", "e-mail", "mail", "emailadres"],
+  telefoon: ["telefoon", "telefoonnummer", "phone", "mobiel", "gsm", "tel"],
+  bron: ["bron", "source", "herkomst"],
+  trial_startdatum: ["trial_startdatum", "trial_start", "trial", "startdatum", "trialdatum", "start_datum"],
+};
 
 interface ParsedRow {
   bedrijfsnaam: string;
@@ -68,47 +88,64 @@ function normaliseDate(input: string): string | null {
   return null;
 }
 
-function parseCsv(text: string): ParsedRow[] {
+interface CsvData {
+  headers: string[];
+  rawHeaders: string[];
+  rows: string[][];
+}
+
+function parseCsv(text: string): CsvData {
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return [];
+  if (lines.length === 0) return { headers: [], rawHeaders: [], rows: [] };
   const delim = detectDelimiter(lines[0]);
-  const headers = splitCsvLine(lines[0], delim).map(normaliseHeader);
-  const idx = (key: string) => headers.indexOf(key);
+  const rawHeaders = splitCsvLine(lines[0], delim);
+  const headers = rawHeaders.map(normaliseHeader);
+  const rows = lines.slice(1).map((line) => splitCsvLine(line, delim));
+  return { headers, rawHeaders, rows };
+}
 
-  const iBedrijf = idx("bedrijfsnaam") >= 0 ? idx("bedrijfsnaam") : idx("bedrijf");
-  const iNaam = idx("contactpersoon") >= 0 ? idx("contactpersoon") : idx("naam");
-  const iEmail = idx("email") >= 0 ? idx("email") : idx("e_mail");
-  const iTel = idx("telefoon") >= 0 ? idx("telefoon") : idx("phone");
-  const iBron = idx("bron");
-  const iTrial = idx("trial_startdatum") >= 0 ? idx("trial_startdatum") : idx("trial_start");
+function autoMap(headers: string[]): Record<TargetField, number> {
+  const mapping = {} as Record<TargetField, number>;
+  for (const { key } of TARGET_FIELDS) {
+    const idx = headers.findIndex((h) => SYNONYMS[key].includes(h));
+    mapping[key] = idx;
+  }
+  return mapping;
+}
 
-  return lines.slice(1).map((line) => {
-    const cells = splitCsvLine(line, delim);
+function applyMapping(csv: CsvData, mapping: Record<TargetField, number>): ParsedRow[] {
+  return csv.rows.map((cells) => {
+    const cell = (key: TargetField) => {
+      const i = mapping[key];
+      return i >= 0 ? (cells[i] ?? "").trim() : "";
+    };
     const warnings: string[] = [];
-    const bedrijfsnaam = (iBedrijf >= 0 ? cells[iBedrijf] : "") || "";
+    const bedrijfsnaam = cell("bedrijfsnaam");
     if (!bedrijfsnaam) warnings.push("Bedrijfsnaam ontbreekt");
 
     let bron: Bron = "platform_pool";
-    if (iBron >= 0 && cells[iBron]) {
-      const v = cells[iBron].toLowerCase() as Bron;
+    const bronRaw = cell("bron");
+    if (bronRaw) {
+      const v = bronRaw.toLowerCase() as Bron;
       if (BRON_VALUES.includes(v)) bron = v;
-      else warnings.push(`Onbekende bron '${cells[iBron]}', valt terug op platform_pool`);
+      else warnings.push(`Onbekende bron '${bronRaw}', valt terug op platform_pool`);
     }
 
     let trial_startdatum: string | null = null;
-    if (iTrial >= 0 && cells[iTrial]) {
-      trial_startdatum = normaliseDate(cells[iTrial]);
-      if (!trial_startdatum) warnings.push(`Ongeldige trial-startdatum '${cells[iTrial]}'`);
+    const trialRaw = cell("trial_startdatum");
+    if (trialRaw) {
+      trial_startdatum = normaliseDate(trialRaw);
+      if (!trial_startdatum) warnings.push(`Ongeldige trial-startdatum '${trialRaw}'`);
     }
 
-    const email = iEmail >= 0 ? cells[iEmail] || null : null;
+    const email = cell("email") || null;
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) warnings.push("Ongeldig e-mailadres");
 
     return {
       bedrijfsnaam,
-      contactpersoon: (iNaam >= 0 ? cells[iNaam] : "") || null,
+      contactpersoon: cell("contactpersoon") || null,
       email,
-      telefoon: (iTel >= 0 ? cells[iTel] : "") || null,
+      telefoon: cell("telefoon") || null,
       bron,
       trial_startdatum,
       warnings,
@@ -132,12 +169,18 @@ interface Props {
 }
 
 export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
+  const [step, setStep] = useState<"upload" | "map" | "preview">("upload");
+  const [csv, setCsv] = useState<CsvData | null>(null);
+  const [mapping, setMapping] = useState<Record<TargetField, number>>({} as Record<TargetField, number>);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
-  const reset = () => { setRows([]); setFileName(""); setSubmitting(false); };
+  const reset = () => {
+    setStep("upload"); setCsv(null); setMapping({} as Record<TargetField, number>);
+    setRows([]); setFileName(""); setSubmitting(false);
+  };
   const close = () => { reset(); onOpenChange(false); };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,18 +195,31 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
     try {
       const text = await file.text();
       const parsed = parseCsv(text);
-      if (parsed.length === 0) {
+      if (parsed.rows.length === 0) {
         toast.error("Geen rijen gevonden");
         return;
       }
-      setRows(parsed);
+      setCsv(parsed);
+      setMapping(autoMap(parsed.headers));
+      setStep("map");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Onbekende fout";
       toast.error("Kon CSV niet lezen", { description: message });
     }
   };
 
+  const goPreview = () => {
+    if (!csv) return;
+    if (mapping.bedrijfsnaam === undefined || mapping.bedrijfsnaam < 0) {
+      toast.error("Koppel een kolom aan 'Bedrijfsnaam' om door te gaan");
+      return;
+    }
+    setRows(applyMapping(csv, mapping));
+    setStep("preview");
+  };
+
   const validRows = rows.filter((r) => r.bedrijfsnaam);
+  const rejectedCount = rows.length - validRows.length;
 
   const handleImport = async () => {
     if (validRows.length === 0) {
@@ -183,6 +239,32 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
       }));
       const { error } = await supabase.from("affiliate_leads").insert(payload);
       if (error) throw error;
+
+      // Log import history (best-effort)
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const mappingForLog: Record<string, string | null> = {};
+        for (const { key } of TARGET_FIELDS) {
+          const i = mapping[key];
+          mappingForLog[key] = i >= 0 && csv ? csv.rawHeaders[i] ?? null : null;
+        }
+        const warningsSummary = rows
+          .map((r, i) => r.warnings.length ? { rij: i + 2, warnings: r.warnings } : null)
+          .filter(Boolean);
+        await supabase.from("affiliate_lead_imports").insert({
+          bestandsnaam: fileName,
+          totaal_rijen: rows.length,
+          geimporteerd: payload.length,
+          afgekeurd: rejectedCount,
+          kolom_mapping: mappingForLog,
+          waarschuwingen: warningsSummary,
+          created_by: auth.user?.id ?? null,
+        });
+        queryClient.invalidateQueries({ queryKey: ["affiliate-lead-imports"] });
+      } catch {
+        // Niet-blokkerend: import is gelukt, alleen log faalde
+      }
+
       toast.success(`${payload.length} koude leads geïmporteerd`);
       queryClient.invalidateQueries({ queryKey: ["affiliate-leads-pool"] });
       queryClient.invalidateQueries({ queryKey: ["affiliate-leads"] });
@@ -201,29 +283,64 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Koude leads importeren</DialogTitle>
           <DialogDescription>
-            CSV met kolommen: bedrijfsnaam, contactpersoon, email, telefoon, bron, trial_startdatum.
-            Bron mag zijn: platform_pool, eigen_import of referral_klik.
+            Upload een CSV (komma, puntkomma of tab). In stap 2 koppel je je kolommen aan de juiste velden — je hoeft de template niet exact te volgen.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2">
-              <Download className="h-4 w-4" /> Template downloaden
-            </Button>
-            <Label htmlFor="koude-leads-csv" className="ml-auto">
-              <span className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-background hover:bg-accent text-sm cursor-pointer">
-                <Upload className="h-4 w-4" /> CSV kiezen
-              </span>
-              <Input id="koude-leads-csv" type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
-            </Label>
+        {step === "upload" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2">
+                <Download className="h-4 w-4" /> Template downloaden
+              </Button>
+              <Label htmlFor="koude-leads-csv" className="ml-auto">
+                <span className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-background hover:bg-accent text-sm cursor-pointer">
+                  <Upload className="h-4 w-4" /> CSV kiezen
+                </span>
+                <Input id="koude-leads-csv" type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Maximaal 5MB. Eerste regel moet kolomnamen bevatten.
+            </p>
           </div>
+        )}
 
-          {fileName && (
-            <p className="text-xs text-muted-foreground">Bestand: {fileName} — {rows.length} rijen, {validRows.length} geldig</p>
-          )}
+        {step === "map" && csv && (
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Bestand: {fileName} — {csv.rows.length} datarijen, {csv.headers.length} kolommen.
+              Kies welke CSV-kolom hoort bij elk veld. Bedrijfsnaam is verplicht.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {TARGET_FIELDS.map(({ key, label, required }) => (
+                <div key={key} className="space-y-1">
+                  <Label className="text-sm">
+                    {label}{required && <span className="text-destructive"> *</span>}
+                  </Label>
+                  <Select
+                    value={mapping[key] >= 0 ? String(mapping[key]) : "__none__"}
+                    onValueChange={(v) => setMapping((m) => ({ ...m, [key]: v === "__none__" ? -1 : Number(v) }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="— niet importeren —" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— niet importeren —</SelectItem>
+                      {csv.rawHeaders.map((h, i) => (
+                        <SelectItem key={i} value={String(i)}>{h || `Kolom ${i + 1}`}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-          {rows.length > 0 && (
+        {step === "preview" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {fileName} — {rows.length} rijen, {validRows.length} geldig, {rejectedCount} afgekeurd.
+            </p>
             <div className="border rounded-xl overflow-x-auto max-h-96">
               <Table>
                 <TableHeader>
@@ -260,14 +377,25 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
                 </TableBody>
               </Table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={close} disabled={submitting}>Annuleren</Button>
-          <Button onClick={handleImport} disabled={submitting || validRows.length === 0} className="gap-2">
-            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren…</> : `${validRows.length} leads importeren`}
-          </Button>
+          {step === "map" && (
+            <>
+              <Button variant="outline" onClick={() => setStep("upload")}>Terug</Button>
+              <Button onClick={goPreview}>Voorbeeld bekijken</Button>
+            </>
+          )}
+          {step === "preview" && (
+            <>
+              <Button variant="outline" onClick={() => setStep("map")} disabled={submitting}>Terug naar mapping</Button>
+              <Button onClick={handleImport} disabled={submitting || validRows.length === 0} className="gap-2">
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren…</> : `${validRows.length} leads importeren`}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
