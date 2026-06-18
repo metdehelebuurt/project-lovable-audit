@@ -125,7 +125,9 @@ serve(async (req) => {
           });
         }
 
-        // Create auth user
+        // Try to create auth user; if email already exists, reuse the existing account
+        let authUserId: string | null = null;
+        let reusedExistingAccount = false;
         const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email,
           password: password || generatePassword(),
@@ -133,31 +135,65 @@ serve(async (req) => {
         });
 
         if (authError) {
-          return new Response(JSON.stringify({ error: authError.message }), {
+          const msg = (authError.message || "").toLowerCase();
+          const isDuplicate = msg.includes("already") || msg.includes("registered") || msg.includes("exists");
+          if (!isDuplicate) {
+            return new Response(JSON.stringify({ error: authError.message }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          // Lookup existing auth user by email
+          const { data: existingByEmail } = await supabaseAdmin
+            .from("users").select("id").eq("email", email).maybeSingle();
+          if (existingByEmail?.id) {
+            authUserId = existingByEmail.id;
+          } else {
+            // Fall back to auth admin list
+            const { data: list } = await supabaseAdmin.auth.admin.listUsers();
+            const match = list?.users?.find((u) => (u.email ?? "").toLowerCase() === email.toLowerCase());
+            authUserId = match?.id ?? null;
+          }
+          if (!authUserId) {
+            return new Response(JSON.stringify({ error: "E-mail is al in gebruik maar account kon niet worden gevonden." }), {
+              status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          reusedExistingAccount = true;
+        } else {
+          authUserId = authUser.user.id;
+        }
+
+        // Upsert profile row — if it exists we promote to the requested rol
+        const profilePayload: Record<string, unknown> = {
+          id: authUserId, email, voornaam, achternaam, rol,
+          partner_id: resolvedPartnerId, telefoon, status: "actief",
+        };
+        const { error: profileError } = await supabaseAdmin
+          .from("users").upsert(profilePayload, { onConflict: "id" });
+
+        if (profileError) {
+          if (!reusedExistingAccount && authUserId) {
+            await supabaseAdmin.auth.admin.deleteUser(authUserId);
+          }
+          return new Response(JSON.stringify({ error: profileError.message }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        // Create profile
-        const { error: profileError } = await supabaseAdmin.from("users").insert({
-          id: authUser.user.id,
-          email,
-          voornaam,
-          achternaam,
-          rol,
-          partner_id: resolvedPartnerId,
-          telefoon,
-          status: "actief",
-        });
-
-        if (profileError) {
-          // Rollback: delete auth user
-          await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
-          return new Response(JSON.stringify({ error: profileError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+        // Seed affiliate link if affiliate
+        if (rol === "affiliate") {
+          const { data: existingLink } = await supabaseAdmin
+            .from("affiliate_links").select("id").eq("user_id", authUserId).maybeSingle();
+          if (!existingLink) {
+            const baseSlug = `${(voornaam || "ref").toLowerCase()}-${(achternaam || "").toLowerCase()}`
+              .replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+            const slug = `${baseSlug || "ref"}-${Math.floor(Math.random() * 9999).toString().padStart(4, "0")}`;
+            await supabaseAdmin.from("affiliate_links").insert({ user_id: authUserId, code: slug });
+          } else {
+            await supabaseAdmin.from("affiliate_links").update({ actief: true }).eq("user_id", authUserId);
+          }
         }
 
         // Welkomstmail met password-reset link
@@ -179,14 +215,14 @@ serve(async (req) => {
             .from("users").select("voornaam, achternaam")
             .eq("id", caller.id).maybeSingle();
           const uitgenodigdDoor = [inviter?.voornaam, inviter?.achternaam].filter(Boolean).join(" ") || undefined;
-          await sendTransactional("gebruiker-welkom", email, `gebruiker-welkom-${authUser.user.id}`, {
+          await sendTransactional("gebruiker-welkom", email, `gebruiker-welkom-${authUserId}`, {
             voornaam, email, rol, partnerNaam, uitgenodigdDoor, setupUrl,
           });
         } catch (e) {
           console.warn("gebruiker-welkom mail kon niet worden verzonden:", e);
         }
 
-        return new Response(JSON.stringify({ user: { id: authUser.user.id, email } }), {
+        return new Response(JSON.stringify({ user: { id: authUserId, email }, reused: reusedExistingAccount }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
