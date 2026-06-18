@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { StickyNote } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
@@ -27,6 +26,8 @@ import KlantTabsNav, { type KlantTab } from "@/components/klanten/detail/KlantTa
 import KlantContactCard from "@/components/klanten/detail/KlantContactCard";
 import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
 import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
+import { MentionTextarea } from "@/components/shared/notes/MentionTextarea";
+import { processNoteMentions } from "@/lib/notes/processMentions";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
