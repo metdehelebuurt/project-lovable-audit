@@ -372,6 +372,26 @@ const AffiliateBeheer = () => {
           </Card>
         </TabsContent>
 
+        {/* Koude leads Tab */}
+        <TabsContent value="koude-leads" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2"><Snowflake className="h-5 w-5 text-primary" /> Koude leads-pool</span>
+                <Button size="sm" onClick={() => setShowImportKoudeLeads(true)} className="gap-2">
+                  <Upload className="h-4 w-4" /> CSV importeren
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Importeer een CSV met naam, bedrijf, contact, bron en trial-startdatum. Niet-toegewezen leads
+                komen direct in de gedeelde pool en kunnen door affiliates worden geclaimd.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Instellingen Tab */}
         <TabsContent value="instellingen" className="space-y-4">
           <Card>
