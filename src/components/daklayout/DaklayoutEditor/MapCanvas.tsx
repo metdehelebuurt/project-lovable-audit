@@ -38,14 +38,16 @@ const MapCanvas = ({
 }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const drawingMgrRef = useRef<google.maps.drawing.DrawingManager | null>(null);
+  const tekenPolyRef = useRef<google.maps.Polygon | null>(null);
+  const tekenVerticesRef = useRef<LatLng[]>([]);
+  const tekenListenersRef = useRef<google.maps.MapsEventListener[]>([]);
   const dakvlakOverlaysRef = useRef<google.maps.Polygon[]>([]);
   const paneelOverlaysRef = useRef<google.maps.Polygon[]>([]);
   const clickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load Google Maps script (incl. drawing library)
+  // Load Google Maps script (places + geometry; drawing-library is verwijderd in v3.65)
   useEffect(() => {
     if ((window as unknown as { google?: { maps?: unknown } }).google?.maps) {
       setLoaded(true);
@@ -58,7 +60,7 @@ const MapCanvas = ({
         return;
       }
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places,drawing,geometry`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places,geometry`;
       script.async = true;
       script.onload = () => setLoaded(true);
       script.onerror = () => setError("Kan Google Maps niet laden");
@@ -92,33 +94,74 @@ const MapCanvas = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded]);
 
-  // Drawing manager: polygoon tekenen
+  // Polygoon tekenen: click = vertex toevoegen, dubbelklik = afronden, Esc = annuleren.
+  // Vervanging voor de verwijderde DrawingManager (Maps JS v3.65+).
   useEffect(() => {
     if (!loaded || !mapRef.current) return;
-    if (!drawingMgrRef.current) {
-      drawingMgrRef.current = new google.maps.drawing.DrawingManager({
-        drawingMode: null,
-        drawingControl: false,
-        polygonOptions: {
-          fillColor: "#9333ea",
-          fillOpacity: 0.2,
-          strokeColor: "#9333ea",
-          strokeWeight: 2,
-          editable: false,
-          clickable: true,
-        },
-      });
-      drawingMgrRef.current.setMap(mapRef.current);
-      google.maps.event.addListener(drawingMgrRef.current, "polygoncomplete", (poly: google.maps.Polygon) => {
-        const path = poly.getPath().getArray().map((p) => ({ lat: p.lat(), lng: p.lng() }));
-        poly.setMap(null); // wordt opnieuw gerenderd vanuit state
-        drawingMgrRef.current?.setDrawingMode(null);
-        onPolygoonGetekend(path);
-      });
+    const map = mapRef.current;
+
+    const cleanup = () => {
+      tekenListenersRef.current.forEach((l) => google.maps.event.removeListener(l));
+      tekenListenersRef.current = [];
+      tekenPolyRef.current?.setMap(null);
+      tekenPolyRef.current = null;
+      tekenVerticesRef.current = [];
+    };
+
+    if (tekenModus !== "polygoon") {
+      cleanup();
+      return;
     }
-    drawingMgrRef.current.setDrawingMode(
-      tekenModus === "polygoon" ? google.maps.drawing.OverlayType.POLYGON : null,
-    );
+
+    // Disable default dblclick zoom while tekenen
+    const prevDblclickZoom = map.get("disableDoubleClickZoom");
+    map.setOptions({ disableDoubleClickZoom: true });
+
+    tekenPolyRef.current = new google.maps.Polygon({
+      paths: [],
+      fillColor: "#9333ea",
+      fillOpacity: 0.2,
+      strokeColor: "#9333ea",
+      strokeWeight: 2,
+      clickable: false,
+      map,
+    });
+
+    const onClick = (e: google.maps.MapMouseEvent) => {
+      if (!e.latLng || !tekenPolyRef.current) return;
+      tekenVerticesRef.current.push({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+      tekenPolyRef.current.setPaths(tekenVerticesRef.current);
+    };
+
+    const finalize = () => {
+      const path = [...tekenVerticesRef.current];
+      cleanup();
+      map.setOptions({ disableDoubleClickZoom: !!prevDblclickZoom });
+      if (path.length >= 3) onPolygoonGetekend(path);
+    };
+
+    const onDblClick = (e: google.maps.MapMouseEvent) => {
+      e.stop?.();
+      finalize();
+    };
+
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Enter") finalize();
+      if (ev.key === "Escape") {
+        cleanup();
+        map.setOptions({ disableDoubleClickZoom: !!prevDblclickZoom });
+      }
+    };
+
+    tekenListenersRef.current.push(map.addListener("click", onClick));
+    tekenListenersRef.current.push(map.addListener("dblclick", onDblClick));
+    window.addEventListener("keydown", onKey);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      cleanup();
+      map.setOptions({ disableDoubleClickZoom: !!prevDblclickZoom });
+    };
   }, [loaded, tekenModus, onPolygoonGetekend]);
 
   // Render dakvlakken
