@@ -248,18 +248,29 @@ const AffiliateBeheer = () => {
                   <TableHead>Naam</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Telefoon</TableHead>
+                  <TableHead>Tier</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aangemeld</TableHead>
                   <TableHead>Acties</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {affiliates.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
+                {affiliates.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
                 {affiliates.map((a: any) => (
                   <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAffiliate(a)}>
                     <TableCell className="font-medium">{a.voornaam} {a.achternaam}</TableCell>
                     <TableCell>{a.email}</TableCell>
                     <TableCell>{a.telefoon || "—"}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Select value={a.affiliate_tier ?? "brons"} onValueChange={(v) => updateTier.mutate({ id: a.id, tier: v as any })}>
+                        <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="brons">Brons</SelectItem>
+                          <SelectItem value="zilver">Zilver</SelectItem>
+                          <SelectItem value="goud">Goud</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell><Badge variant={a.status === "actief" ? "default" : "secondary"}>{a.status}</Badge></TableCell>
                     <TableCell className="text-muted-foreground">{new Date(a.created_at).toLocaleDateString("nl-NL")}</TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
@@ -425,6 +436,30 @@ const AffiliateBeheer = () => {
                     <div className="space-y-2"><Label>Max commissie (%)</Label><Input type="number" value={settings.max_commissie_percentage} onChange={(e) => setSettings((s: any) => ({ ...s, max_commissie_percentage: parseFloat(e.target.value) || 0 }))} /><p className="text-xs text-muted-foreground">Plafond commissiepercentage</p></div>
                     <div className="space-y-2"><Label>Min abonnement maanden</Label><Input type="number" value={settings.min_abonnement_maanden} onChange={(e) => setSettings((s: any) => ({ ...s, min_abonnement_maanden: parseInt(e.target.value) || 0 }))} /><p className="text-xs text-muted-foreground">Minimale looptijd voor commissie-uitkering</p></div>
                     <div className="space-y-2"><Label>Cookie tracking (dagen)</Label><Input type="number" value={settings.cookie_dagen} onChange={(e) => setSettings((s: any) => ({ ...s, cookie_dagen: parseInt(e.target.value) || 0 }))} /><p className="text-xs text-muted-foreground">Hoe lang een affiliate cookie geldig blijft</p></div>
+                  </div>
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Automatische pool-rotatie</Label>
+                        <p className="text-xs text-muted-foreground">Wijs nieuwe pool-leads round-robin toe aan actieve affiliates</p>
+                      </div>
+                      <Switch checked={!!settings.auto_rotatie_actief} onCheckedChange={(v) => setSettings((s: any) => ({ ...s, auto_rotatie_actief: v }))} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(["brons", "zilver", "goud"] as const).map((tier) => (
+                        <div key={tier} className="space-y-1">
+                          <Label className="capitalize">{tier} commissie %</Label>
+                          <Input
+                            type="number"
+                            value={settings.tier_commissies?.[tier] ?? 0}
+                            onChange={(e) => setSettings((s: any) => ({
+                              ...s,
+                              tier_commissies: { ...(s.tier_commissies ?? {}), [tier]: parseFloat(e.target.value) || 0 },
+                            }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}><Save className="h-4 w-4 mr-1" /> Opslaan</Button>
                 </>
