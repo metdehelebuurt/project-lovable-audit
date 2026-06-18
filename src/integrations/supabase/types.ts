@@ -489,6 +489,7 @@ export type Database = {
       }
       affiliate_instellingen: {
         Row: {
+          auto_rotatie_actief: boolean
           cookie_dagen: number
           id: string
           max_commissie_percentage: number
@@ -496,9 +497,11 @@ export type Database = {
           max_korting_vast_bedrag: number
           min_abonnement_maanden: number
           standaard_commissie_percentage: number
+          tier_commissies: Json
           updated_at: string
         }
         Insert: {
+          auto_rotatie_actief?: boolean
           cookie_dagen?: number
           id?: string
           max_commissie_percentage?: number
@@ -506,9 +509,11 @@ export type Database = {
           max_korting_vast_bedrag?: number
           min_abonnement_maanden?: number
           standaard_commissie_percentage?: number
+          tier_commissies?: Json
           updated_at?: string
         }
         Update: {
+          auto_rotatie_actief?: boolean
           cookie_dagen?: number
           id?: string
           max_commissie_percentage?: number
@@ -516,6 +521,7 @@ export type Database = {
           max_korting_vast_bedrag?: number
           min_abonnement_maanden?: number
           standaard_commissie_percentage?: number
+          tier_commissies?: Json
           updated_at?: string
         }
         Relationships: []
@@ -740,6 +746,47 @@ export type Database = {
           },
         ]
       }
+      affiliate_onboarding_taken: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          id: string
+          label: string
+          taak_key: string
+          updated_at: string
+          volgorde: number
+          voltooid_op: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          id?: string
+          label: string
+          taak_key: string
+          updated_at?: string
+          volgorde?: number
+          voltooid_op?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          taak_key?: string
+          updated_at?: string
+          volgorde?: number
+          voltooid_op?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_onboarding_taken_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_referrals: {
         Row: {
           affiliate_id: string
@@ -808,6 +855,95 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_targets: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          id: string
+          jaar: number
+          maand: number
+          target_klanten: number
+          target_omzet: number
+          updated_at: string
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          id?: string
+          jaar: number
+          maand: number
+          target_klanten?: number
+          target_omzet?: number
+          updated_at?: string
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          id?: string
+          jaar?: number
+          maand?: number
+          target_klanten?: number
+          target_omzet?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_targets_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_terugbel_afspraken: {
+        Row: {
+          affiliate_id: string
+          afgehandeld_op: string | null
+          created_at: string
+          geplande_op: string
+          id: string
+          lead_id: string
+          notitie: string | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_id: string
+          afgehandeld_op?: string | null
+          created_at?: string
+          geplande_op: string
+          id?: string
+          lead_id: string
+          notitie?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_id?: string
+          afgehandeld_op?: string | null
+          created_at?: string
+          geplande_op?: string
+          id?: string
+          lead_id?: string
+          notitie?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_terugbel_afspraken_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_terugbel_afspraken_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -6992,6 +7128,7 @@ export type Database = {
       users: {
         Row: {
           achternaam: string
+          affiliate_tier: Database["public"]["Enums"]["affiliate_tier"] | null
           avatar_url: string | null
           berichten_zichtbaarheid: string
           created_at: string
@@ -7025,6 +7162,7 @@ export type Database = {
         }
         Insert: {
           achternaam: string
+          affiliate_tier?: Database["public"]["Enums"]["affiliate_tier"] | null
           avatar_url?: string | null
           berichten_zichtbaarheid?: string
           created_at?: string
@@ -7058,6 +7196,7 @@ export type Database = {
         }
         Update: {
           achternaam?: string
+          affiliate_tier?: Database["public"]["Enums"]["affiliate_tier"] | null
           avatar_url?: string | null
           berichten_zichtbaarheid?: string
           created_at?: string
@@ -7836,6 +7975,7 @@ export type Database = {
         | "voorstel_verstuurd"
         | "gewonnen"
         | "verloren"
+      affiliate_tier: "brons" | "zilver" | "goud"
       app_role:
         | "superadmin"
         | "partner_admin"
@@ -8124,6 +8264,7 @@ export const Constants = {
         "gewonnen",
         "verloren",
       ],
+      affiliate_tier: ["brons", "zilver", "goud"],
       app_role: [
         "superadmin",
         "partner_admin",
