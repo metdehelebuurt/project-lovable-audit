@@ -604,6 +604,32 @@ const AffiliateBeheer = () => {
                     </Table>
                   )}
                 </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold mt-4 flex items-center gap-2"><TargetIcon className="h-4 w-4" /> Target {huidigeMaand}/{huidigJaar}</h3>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Omzet (€)</Label>
+                      <Input type="number" defaultValue={huidigTarget?.target_omzet ?? 0} className="h-9 w-32"
+                        onBlur={(e) => {
+                          const v = parseFloat(e.target.value) || 0;
+                          if (v !== Number(huidigTarget?.target_omzet ?? 0)) {
+                            upsertTarget.mutate({ affiliate_id: detailAffiliate.id, jaar: huidigJaar, maand: huidigeMaand, target_omzet: v, target_klanten: huidigTarget?.target_klanten ?? 0 });
+                          }
+                        }} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Klanten</Label>
+                      <Input type="number" defaultValue={huidigTarget?.target_klanten ?? 0} className="h-9 w-24"
+                        onBlur={(e) => {
+                          const v = parseInt(e.target.value) || 0;
+                          if (v !== (huidigTarget?.target_klanten ?? 0)) {
+                            upsertTarget.mutate({ affiliate_id: detailAffiliate.id, jaar: huidigJaar, maand: huidigeMaand, target_omzet: Number(huidigTarget?.target_omzet ?? 0), target_klanten: v });
+                          }
+                        }} />
+                    </div>
+                  </div>
+                </div>
               </>
             );
           })()}
