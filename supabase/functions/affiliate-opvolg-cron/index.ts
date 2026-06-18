@@ -1,6 +1,46 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 
+const TYPE_NAAR_REGEL: Record<string, string> = {
+  demo: 'demo',
+  trial_check: 'trial',
+  bel: 'terugbel',
+  whatsapp: 'terugbel',
+  mail: 'algemeen',
+  anders: 'algemeen',
+}
+
+interface Regel {
+  actief: boolean
+  aantal_herinneringen: number
+  herinnering_termijnen_uren: number[]
+  escalatie_na_uren: number
+  escalatie_toegestaan: boolean
+}
+
+const DEFAULT_REGEL: Regel = {
+  actief: true,
+  aantal_herinneringen: 1,
+  herinnering_termijnen_uren: [24],
+  escalatie_na_uren: 24,
+  escalatie_toegestaan: true,
+}
+
+async function regelFor(admin: any, cache: Map<string, Regel>, affiliateId: string, taakType: string): Promise<Regel> {
+  const leadType = TYPE_NAAR_REGEL[taakType] ?? 'algemeen'
+  const key = `${affiliateId}:${leadType}`
+  if (cache.has(key)) return cache.get(key)!
+  const { data } = await admin
+    .from('affiliate_opvolg_regels')
+    .select('actief, aantal_herinneringen, herinnering_termijnen_uren, escalatie_na_uren, escalatie_toegestaan')
+    .eq('affiliate_id', affiliateId)
+    .eq('lead_type', leadType)
+    .maybeSingle()
+  const regel: Regel = data ?? DEFAULT_REGEL
+  cache.set(key, regel)
+  return regel
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
@@ -9,36 +49,47 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceKey)
 
     const nu = new Date()
-    const over24u = new Date(nu.getTime() + 86400000).toISOString()
-    const min24u = new Date(nu.getTime() - 86400000).toISOString()
+    const regelCache = new Map<string, Regel>()
+    let herinneringCount = 0
+    let escalatieCount = 0
 
-    // 1. Herinneringen voor taken binnen 24u, nog niet gestuurd
+    // 1. Herinneringen — voor open taken in de toekomst, nog niet gestuurd
     const { data: aankomend } = await admin
       .from('affiliate_opvolg_taken')
       .select('id, affiliate_id, lead_id, titel, notitie, due_op, type, prioriteit')
       .is('voltooid_op', null)
       .is('herinnering_verstuurd_op', null)
-      .lte('due_op', over24u)
       .gte('due_op', nu.toISOString())
-      .limit(50)
+      .limit(200)
 
     for (const t of aankomend ?? []) {
-      await notifyEnMail(admin, t, 'affiliate-opvolg-herinnering', 'Herinnering: ' + t.titel, false)
+      const regel = await regelFor(admin, regelCache, t.affiliate_id, t.type)
+      if (!regel.actief || regel.aantal_herinneringen <= 0) continue
+      const eersteUren = regel.herinnering_termijnen_uren[0] ?? 24
+      const urenTotDue = (new Date(t.due_op).getTime() - nu.getTime()) / 3600000
+      if (urenTotDue > eersteUren) continue
+      await notifyEnMail(admin, t, 'affiliate-opvolg-herinnering', 'Herinnering: ' + t.titel, false, regel)
       await admin.from('affiliate_opvolg_taken').update({ herinnering_verstuurd_op: nu.toISOString() }).eq('id', t.id)
+      herinneringCount++
     }
 
-    // 2. Escalatie voor taken die overdue zijn (>24u)
+    // 2. Escalatie — voor overdue taken volgens de regel
     const { data: overdue } = await admin
       .from('affiliate_opvolg_taken')
       .select('id, affiliate_id, lead_id, titel, notitie, due_op, type, prioriteit')
       .is('voltooid_op', null)
       .is('escalatie_verstuurd_op', null)
-      .lte('due_op', min24u)
-      .limit(50)
+      .lt('due_op', nu.toISOString())
+      .limit(200)
 
     for (const t of overdue ?? []) {
-      await notifyEnMail(admin, t, 'affiliate-opvolg-escalatie', 'Achterstallig: ' + t.titel, true)
+      const regel = await regelFor(admin, regelCache, t.affiliate_id, t.type)
+      if (!regel.actief || !regel.escalatie_toegestaan) continue
+      const urenTeLaat = (nu.getTime() - new Date(t.due_op).getTime()) / 3600000
+      if (urenTeLaat < regel.escalatie_na_uren) continue
+      await notifyEnMail(admin, t, 'affiliate-opvolg-escalatie', 'Achterstallig: ' + t.titel, true, regel)
       await admin.from('affiliate_opvolg_taken').update({ escalatie_verstuurd_op: nu.toISOString() }).eq('id', t.id)
+      escalatieCount++
     }
 
     // 3. Trial-opvolging (T-7, T-3, T-1)
@@ -78,7 +129,7 @@ Deno.serve(async (req) => {
       await admin.from('affiliate_referrals').update({ trial_laatste_herinnering_op: nu.toISOString() }).eq('id', r.id)
     }
 
-    return new Response(JSON.stringify({ ok: true, herinnering: aankomend?.length ?? 0, escalatie: overdue?.length ?? 0 }), {
+    return new Response(JSON.stringify({ ok: true, herinnering: herinneringCount, escalatie: escalatieCount }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (e) {
@@ -87,7 +138,7 @@ Deno.serve(async (req) => {
   }
 })
 
-async function notifyEnMail(admin: any, t: any, templateName: string, titel: string, escalatie: boolean) {
+async function notifyEnMail(admin: any, t: any, templateName: string, titel: string, escalatie: boolean, regel?: Regel) {
   const { data: aff } = await admin.from('users').select('email, voornaam').eq('id', t.affiliate_id).maybeSingle()
   const { data: lead } = t.lead_id
     ? await admin.from('affiliate_leads').select('bedrijfsnaam, contactpersoon, telefoon, email').eq('id', t.lead_id).maybeSingle()
@@ -120,4 +171,20 @@ async function notifyEnMail(admin: any, t: any, templateName: string, titel: str
     entity_type: 'affiliate_opvolg_taak',
     entity_id: t.id,
   })
+  if (t.lead_id) {
+    await admin.from('affiliate_opvolg_log').insert({
+      lead_id: t.lead_id,
+      affiliate_id: t.affiliate_id,
+      taak_id: t.id,
+      actie: escalatie ? 'escalatie_verstuurd' : 'herinnering_verstuurd',
+      bron: 'cron',
+      titel,
+      details: {
+        template: templateName,
+        type: t.type,
+        due_op: t.due_op,
+        regel_lead_type: regel ? Object.keys({ demo:1, trial:1, terugbel:1, algemeen:1 }).find((k) => k) : undefined,
+      },
+    })
+  }
 }
