@@ -215,14 +215,14 @@ serve(async (req) => {
             .from("users").select("voornaam, achternaam")
             .eq("id", caller.id).maybeSingle();
           const uitgenodigdDoor = [inviter?.voornaam, inviter?.achternaam].filter(Boolean).join(" ") || undefined;
-          await sendTransactional("gebruiker-welkom", email, `gebruiker-welkom-${authUser.user.id}`, {
+          await sendTransactional("gebruiker-welkom", email, `gebruiker-welkom-${authUserId}`, {
             voornaam, email, rol, partnerNaam, uitgenodigdDoor, setupUrl,
           });
         } catch (e) {
           console.warn("gebruiker-welkom mail kon niet worden verzonden:", e);
         }
 
-        return new Response(JSON.stringify({ user: { id: authUser.user.id, email } }), {
+        return new Response(JSON.stringify({ user: { id: authUserId, email }, reused: reusedExistingAccount }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
