@@ -131,6 +131,11 @@ export default function FeedbackNieuw() {
         body: { feedback_id: data.id },
       }).catch(console.error);
 
+      // Notificeer platformadmins (e-mail + in-app)
+      supabase.functions.invoke("feedback-notify", {
+        body: { event: "nieuw", feedback_id: data.id },
+      }).catch(console.error);
+
       toast.success(type === "functieverzoek" ? "Functieverzoek ingediend!" : "Feedback verstuurd!");
       navigate("/feedback");
     } catch (e: any) {
