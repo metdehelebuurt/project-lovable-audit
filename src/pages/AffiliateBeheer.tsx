@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye } from "lucide-react";
+import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye, Upload, Snowflake } from "lucide-react";
+import KoudeLeadsImportDialog from "@/components/affiliate/KoudeLeadsImportDialog";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
@@ -20,6 +21,7 @@ const AffiliateBeheer = () => {
   const [affiliateForm, setAffiliateForm] = useState({ voornaam: "", achternaam: "", email: "", telefoon: "" });
   const [codeForm, setCodeForm] = useState({ affiliate_id: "", code: "", korting_type: "percentage", korting_waarde: "", max_gebruik: "", geldig_tot: "" });
   const [detailAffiliate, setDetailAffiliate] = useState<any | null>(null);
+  const [showImportKoudeLeads, setShowImportKoudeLeads] = useState(false);
 
   // Fetch instellingen
   const { data: instellingen } = useQuery({
@@ -210,6 +212,7 @@ const AffiliateBeheer = () => {
           <TabsTrigger value="affiliates">Affiliates</TabsTrigger>
           <TabsTrigger value="referrals">Referrals</TabsTrigger>
           <TabsTrigger value="codes">Kortingscodes</TabsTrigger>
+          <TabsTrigger value="koude-leads">Koude leads</TabsTrigger>
           <TabsTrigger value="uitbetalingen">Uitbetalingen</TabsTrigger>
           <TabsTrigger value="instellingen">Instellingen</TabsTrigger>
         </TabsList>
@@ -369,6 +372,26 @@ const AffiliateBeheer = () => {
           </Card>
         </TabsContent>
 
+        {/* Koude leads Tab */}
+        <TabsContent value="koude-leads" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2"><Snowflake className="h-5 w-5 text-primary" /> Koude leads-pool</span>
+                <Button size="sm" onClick={() => setShowImportKoudeLeads(true)} className="gap-2">
+                  <Upload className="h-4 w-4" /> CSV importeren
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Importeer een CSV met naam, bedrijf, contact, bron en trial-startdatum. Niet-toegewezen leads
+                komen direct in de gedeelde pool en kunnen door affiliates worden geclaimd.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Instellingen Tab */}
         <TabsContent value="instellingen" className="space-y-4">
           <Card>
@@ -391,6 +414,9 @@ const AffiliateBeheer = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <KoudeLeadsImportDialog open={showImportKoudeLeads} onOpenChange={setShowImportKoudeLeads} />
+
 
       {/* Create Affiliate Dialog */}
       <Dialog open={showCreateAffiliate} onOpenChange={setShowCreateAffiliate}>
