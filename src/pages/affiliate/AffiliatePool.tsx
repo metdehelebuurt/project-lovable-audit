@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Hand, Layers } from "lucide-react";
+import { Hand, Layers, Plus } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
+import { NieuweLeadDialog } from "@/components/affiliate/NieuweLeadDialog";
 import { useAffiliateLeads, useClaimAffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ const AffiliatePool = () => {
   const { data: pool = [], isLoading } = useAffiliateLeads("pool");
   const claim = useClaimAffiliateLead();
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
+  const [openNieuw, setOpenNieuw] = useState(false);
 
   const toggle = (id: string) => setSelectie((s) => {
     const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n;
@@ -35,13 +37,18 @@ const AffiliatePool = () => {
       <div className="mb-4 flex items-end justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Koude leads pool</h1>
-          <p className="text-sm text-muted-foreground">Claim leads om ze toe te voegen aan jouw pijplijn. {pool.length} beschikbaar.</p>
+          <p className="text-sm text-muted-foreground">Claim leads uit de pool of voeg zelf een koude lead toe aan jouw pijplijn. {pool.length} in pool.</p>
         </div>
-        {selectie.size > 0 && (
-          <Button onClick={bulkClaim} disabled={claim.isPending}>
-            <Layers className="h-4 w-4 mr-1" /> {selectie.size} leads claimen
+        <div className="flex gap-2">
+          {selectie.size > 0 && (
+            <Button variant="outline" onClick={bulkClaim} disabled={claim.isPending}>
+              <Layers className="h-4 w-4 mr-1" /> {selectie.size} leads claimen
+            </Button>
+          )}
+          <Button onClick={() => setOpenNieuw(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Nieuwe koude lead
           </Button>
-        )}
+        </div>
       </div>
 
       <Card>
@@ -80,6 +87,7 @@ const AffiliatePool = () => {
           </TableBody>
         </Table>
       </Card>
+      <NieuweLeadDialog open={openNieuw} onOpenChange={setOpenNieuw} />
     </div>
   );
 };
