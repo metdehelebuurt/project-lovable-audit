@@ -16,6 +16,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   defaultTo?: string;
   defaultSubject?: string;
+  defaultBody?: string;
   availableTo?: string[];
   leadId?: string;
   klantId?: string;
@@ -24,10 +25,10 @@ interface Props {
   onSent?: () => void;
 }
 
-const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "", availableTo, leadId, klantId, affiliateLeadId, offerteId, onSent }: Props) => {
+const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "", defaultBody = "", availableTo, leadId, klantId, affiliateLeadId, offerteId, onSent }: Props) => {
   const [to, setTo] = useState(defaultTo);
   const [subject, setSubject] = useState(defaultSubject);
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(defaultBody);
   const [sending, setSending] = useState(false);
   const [useTemplate, setUseTemplate] = useState<boolean>(!!affiliateLeadId);
   const [senderName, setSenderName] = useState("");
