@@ -327,16 +327,16 @@ async function autoMatch(adminClient: any, partnerId: string | null, userId: str
       }
     }
 
-    if (userId && !affiliate_lead_id) {
-      const { data: aLead } = await adminClient
-        .from("affiliate_leads")
-        .select("id")
-        .eq("affiliate_id", userId)
-        .ilike("email", email)
-        .limit(1)
-        .maybeSingle();
-      if (aLead) affiliate_lead_id = aLead.id;
-    }
+      if (userId && !affiliate_lead_id) {
+        const { data: aLead } = await adminClient
+          .from("affiliate_leads")
+          .select("id")
+          .eq("eigenaar_id", userId)
+          .ilike("email", email)
+          .limit(1)
+          .maybeSingle();
+        if (aLead) affiliate_lead_id = aLead.id;
+      }
   }
 
   return { lead_id, klant_id, affiliate_lead_id };
