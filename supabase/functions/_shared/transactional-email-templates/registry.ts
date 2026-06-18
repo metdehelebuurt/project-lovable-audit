@@ -29,6 +29,7 @@ import { template as afspraakGeannuleerd } from './afspraak-geannuleerd.tsx'
 import { template as feedbackNieuwPlatform } from './feedback-nieuw-platform.tsx'
 import { template as feedbackStatusUpdate } from './feedback-status-update.tsx'
 import { template as notitieMention } from './notitie-mention.tsx'
+import { template as consumentSchouwVoltooid } from './consument-schouw-voltooid.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'trial-welkom': trialWelkom,
@@ -51,4 +52,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'feedback-nieuw-platform': feedbackNieuwPlatform,
   'feedback-status-update': feedbackStatusUpdate,
   'notitie-mention': notitieMention,
+  'consument-schouw-voltooid': consumentSchouwVoltooid,
 }

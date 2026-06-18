@@ -13,6 +13,7 @@ import SolarPotentieCheck from "@/components/schouwen/SolarPotentieCheck";
 import type { Database } from "@/integrations/supabase/types";
 import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
+import SelfServiceLinkCard from "@/components/schouwen/SelfServiceLinkCard";
 
 type SchouwCategorie = Database["public"]["Enums"]["schouw_categorie"];
 
@@ -57,6 +58,7 @@ const SchouwDetail = () => {
   const gegevens = (schouw.gegevens as Record<string, any>) || {};
   const checklist = (schouw.checklist as Record<string, boolean>) || {};
   const fotos = (schouw.fotos as any[]) || [];
+  const selfServiceFotos = fotos.filter((f) => typeof f?.label === "string" && f.label.startsWith("self:"));
   const fields = categoryFields[schouw.categorie] || [];
   const checklistItems = categoryChecklists[schouw.categorie] || [];
   const clusters = gegevens.paneel_clusters || [];
@@ -130,6 +132,15 @@ const SchouwDetail = () => {
 
       {/* Basis info */}
       <div className="grid md:grid-cols-2 gap-6">
+        <div className="md:col-span-2">
+          <SelfServiceLinkCard
+            schouwId={schouw.id}
+            token={(schouw as any).self_service_token}
+            isSelfService={(schouw as any).is_self_service ?? true}
+            voltooidOp={(schouw as any).self_service_completed_at ?? null}
+            aantalSelfServiceFotos={selfServiceFotos.length}
+          />
+        </div>
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Basisgegevens</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">

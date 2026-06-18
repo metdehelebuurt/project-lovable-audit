@@ -94,6 +94,7 @@ import Opleveringen from "@/pages/Opleveringen";
 import OpleverNieuw from "@/pages/OpleverNieuw";
 import OpleverDetail from "@/pages/OpleverDetail";
 import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
+import ConsumerSchouw from "@/pages/public/ConsumerSchouw";
 import Keuringen from "@/pages/Keuringen";
 import KeuringNieuw from "@/pages/KeuringNieuw";
 import KeuringDetail from "@/pages/KeuringDetail";
@@ -128,6 +129,7 @@ const App = () => (
             {/* Public embed routes — no auth, no layout */}
             <Route path="/offerte/:token" element={<OffertePublic />} />
             <Route path="/oplevering/:token" element={<OpleverKlantOndertekenen />} />
+            <Route path="/public/schouw/:token" element={<ConsumerSchouw />} />
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
             <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
             <Route path="/embed/catalogus/:widgetId" element={<EmbedCatalogus />} />
