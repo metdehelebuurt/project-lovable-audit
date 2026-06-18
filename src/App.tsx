@@ -68,6 +68,7 @@ import OffertePublic from "@/pages/OffertePublic";
 import FeedbackNieuw from "@/pages/FeedbackNieuw";
 import FeedbackOverzicht from "@/pages/FeedbackOverzicht";
 import FeedbackAdmin from "@/pages/FeedbackAdmin";
+import FeedbackDetail from "@/pages/FeedbackDetail";
 import FeedbackNotificatieInstellingen from "@/pages/FeedbackNotificatieInstellingen";
 import AdminAbonnementen from "@/pages/AdminAbonnementen";
 import Financieel from "@/pages/Financieel";
@@ -286,6 +287,9 @@ const App = () => (
               <Route path="/feedback/nieuw" element={<FeedbackNieuw />} />
               <Route path="/feedback/admin" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><FeedbackAdmin /></ProtectedRoute>
+              } />
+              <Route path="/feedback/admin/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin"]}><FeedbackDetail /></ProtectedRoute>
               } />
               <Route path="/feedback/notificatie-instellingen" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><FeedbackNotificatieInstellingen /></ProtectedRoute>
