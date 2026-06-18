@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import EmailTab from "@/components/email/EmailTab";
 import EmailCompose from "@/components/email/EmailCompose";
 import { AiOpvolgKaart } from "./AiOpvolgKaart";
+import { OpvolgLogLijst } from "./OpvolgLogLijst";
 
 interface Props {
   lead: AffiliateLead;
@@ -117,6 +118,10 @@ export function LeadDetailBody({ lead }: Props) {
       </Button>
 
       <AiOpvolgKaart lead={lead} />
+
+      <div className="border-t pt-4">
+        <OpvolgLogLijst leadId={lead.id} />
+      </div>
 
       <div className="border-t pt-4 space-y-2">
         <Label className="flex items-center gap-2"><MessageSquarePlus className="h-4 w-4" /> Gespreksnotitie loggen</Label>
