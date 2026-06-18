@@ -9,6 +9,7 @@ import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useOpvolgTaken, useVoltooiOpvolgTaak, useVerzetOpvolgTaak, type OpvolgTaak } from "@/hooks/affiliate/useOpvolgTaken";
 import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink } from "@/lib/affiliate/contact";
+import { OpvolgRegelsKaart } from "@/components/affiliate/OpvolgRegelsKaart";
 
 const prioKleur: Record<string, string> = {
   hoog: "bg-rose-100 text-rose-800 border-rose-300",
@@ -127,6 +128,8 @@ const AffiliateOpvolging = () => {
           <Link to="/affiliates/pipeline" className="inline-flex items-center text-primary hover:underline">Naar pipeline <ChevronRight className="h-3 w-3" /></Link>
         </CardContent>
       </Card>
+
+      <OpvolgRegelsKaart />
     </div>
   );
 };
