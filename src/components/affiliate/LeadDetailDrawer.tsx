@@ -12,6 +12,10 @@ import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/us
 import { useLeadContactmomenten, useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "./TerugbelDialog";
+import { TrialStartenButton } from "./TrialStartenButton";
+import { TrialStatusBadge } from "./TrialStatusBadge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   lead: AffiliateLead | null;
@@ -40,6 +44,16 @@ export function LeadDetailDrawer({ lead, onClose }: Props) {
   if (!lead) return null;
   const tel = telLink(lead.telefoon);
   const wa = whatsappLink(lead.telefoon);
+  const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
+
+  const { data: partnerInfo } = useQuery({
+    queryKey: ["affiliate-lead-partner", gewonnenPartnerId],
+    enabled: !!gewonnenPartnerId,
+    queryFn: async () => {
+      const { data } = await supabase.from("partners").select("trial_einddatum").eq("id", gewonnenPartnerId!).maybeSingle();
+      return data;
+    },
+  });
 
   const opslaan = async () => {
     await update.mutateAsync({
@@ -62,6 +76,16 @@ export function LeadDetailDrawer({ lead, onClose }: Props) {
         </SheetHeader>
         <div className="space-y-5 mt-4">
           {lead.contactpersoon && <Badge variant="outline">{lead.contactpersoon}</Badge>}
+          {gewonnenPartnerId && <TrialStatusBadge trialEinddatum={partnerInfo?.trial_einddatum ?? null} />}
+          {!gewonnenPartnerId && (
+            <div className="rounded-md border border-primary/20 bg-primary/5 p-3 flex items-center justify-between gap-3">
+              <div className="text-sm">
+                <p className="font-medium">Klaar om te starten?</p>
+                <p className="text-xs text-muted-foreground">Start direct een 30-daagse trial voor deze klant.</p>
+              </div>
+              <TrialStartenButton lead={lead} size="sm" />
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             {tel && <Button asChild size="sm" variant="outline"><a href={tel}><Phone className="h-4 w-4 mr-1" />{lead.telefoon}</a></Button>}
             {wa && <Button asChild size="sm" variant="outline" className="text-emerald-700 border-emerald-300"><a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</a></Button>}

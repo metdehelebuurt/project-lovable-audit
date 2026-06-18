@@ -1,90 +1,67 @@
 ## Doel
+Een affiliate kan vanuit zijn dashboard (lead-drawer of pipeline-kaart) met één klik een 30-daagse trial starten voor een koude lead. De nieuwe partner wordt automatisch gekoppeld aan de affiliate (referral + commissie), de lead krijgt status `gewonnen`, en elke stap wordt gelogd.
 
-Superadmin krijgt knoppen om bestaande gebruikers tot **affiliate** te promoveren (of weer te degraderen) en het affiliate-portaal wordt uitgebouwd tot een volwaardig sales-CRM met eigen pipeline, klantbeheer, trial-opvolging en koude-leads belmodule.
+## UX-flow
+1. In `LeadDetailDrawer` (en als secundaire knop op `PipelineKaart`) komt een primaire knop **"Trial starten voor klant"**, alleen zichtbaar als status ≠ `gewonnen` en email + bedrijfsnaam aanwezig zijn.
+2. Klik opent `TrialStartenDialog` met voor-ingevulde velden uit de lead:
+   - Bedrijfsnaam, contactpersoon (voornaam/achternaam split), email, telefoon — bewerkbaar.
+   - Tijdelijk wachtwoord (auto-gegenereerd, kopieerbaar) — affiliate kan ook "verstuur magic link i.p.v. wachtwoord" kiezen (v2, voor nu wachtwoord).
+   - Verplichte checkbox: *"De klant heeft mondeling toestemming gegeven voor het aanmaken van een trial-account op zijn naam."*
+3. Bij submit → loading-state, daarna toast met "Trial gestart, klant ontvangt welkomstmail" en de lead wordt zichtbaar gemarkeerd als *Trial actief — verloopt op DD-MM-JJJJ* (badge in drawer + kaart).
 
-## Wat er nu al staat
+## Backend
+Nieuwe Edge Function `affiliate-start-trial` (verify_jwt impliciet via in-code check):
+- Input (Zod): `lead_id`, `bedrijfsnaam`, `voornaam`, `achternaam`, `email`, `telefoon?`, `password`, `toestemming: true`.
+- Verifieert ingelogde user heeft rol `affiliate` en is eigenaar van de lead.
+- Zorgt dat affiliate een `affiliate_links` rij heeft; pakt/creëert `code`.
+- Roept intern dezelfde logica aan als `trial-signup` (partner + user + referral + abonnement + demo data + welkomstmail) met `ref_code` van de affiliate.
+- Bij succes:
+  - Update `affiliate_leads`: `status='gewonnen'`, `gewonnen_partner_id = nieuwe partner_id`.
+  - Insert `affiliate_lead_contactmomenten`: `type='systeem'`, `uitkomst='trial_gestart'`, notitie met partnernaam + trial einddatum.
+  - Insert `entiteit_historie` voor zowel de lead als de nieuwe partner ("Trial gestart door affiliate X").
+  - Insert `audit_log` regel.
+- Foutpaden retourneren `{ error: { code, message } }`; duplicate email → vriendelijke melding "Dit e-mailadres is al in gebruik — vraag de klant of hij al een account heeft."
 
-- Rol `affiliate` bestaat, navigatie + pagina `/affiliates` (links, kortingscodes, eigen offertes, referrals).
-- `/affiliate-beheer` (superadmin) kan affiliates aanmaken, codes beheren, instellingen zetten.
-- Tabellen: `affiliate_links`, `affiliate_referrals`, `affiliate_instellingen`, `affiliate_commissies`, `kortingscodes`.
-- Edge function `user-management` voor user-aanmaak.
+Refactor: `trial-signup/index.ts` business-logica wordt verplaatst naar `_shared/trial/createTrialPartner.ts` zodat zowel `trial-signup` als `affiliate-start-trial` hem aanroepen — geen code-duplicatie.
 
-## Wat ontbreekt en wordt toegevoegd
+## Frontend
+- Nieuwe componenten:
+  - `src/components/affiliate/TrialStartenDialog.tsx` — formulier + RHF + Zod.
+  - `src/components/affiliate/TrialStartenButton.tsx` — knop die de dialog opent.
+  - `src/components/affiliate/TrialStatusBadge.tsx` — toont trial-status op lead.
+- Nieuwe hook: `src/hooks/affiliate/useStartTrialVoorLead.ts` — wrapper rond `supabase.functions.invoke('affiliate-start-trial')` met TanStack mutation + invalidates `affiliate-leads` en `affiliate-trials`.
+- Integratie in `LeadDetailDrawer.tsx` (boven status-blok) en `PipelineKaart.tsx` (kleine secundaire knop).
+- Na succes: drawer ververst, badge zichtbaar, knop verdwijnt.
 
-### 1. Promoveren bestaande gebruikers naar affiliate (superadmin)
-- Knop **"Maak affiliate"** in `Gebruikers` lijst en `GebruikerDetail` (alleen superadmin) — wijzigt `users.rol` naar `affiliate`, ontkoppelt `partner_id`, seedt een default `affiliate_link` (slug op basis van naam) en stuurt welkomstmail.
-- Knop **"Affiliate-rol intrekken"** om terug te draaien (kiest fallback-rol, behoudt historie van referrals/commissies).
-- Wordt afgehandeld door uitbreiding van `user-management` edge function met `promote_to_affiliate` en `revoke_affiliate` acties (service-role, audit-log).
+## Logging-overzicht (alles vindbaar)
+| Waar | Wat |
+|------|-----|
+| `affiliate_lead_contactmomenten` | systeem-regel "Trial gestart" |
+| `affiliate_referrals` | gekoppeld via ref_code (bestaande logica) |
+| `entiteit_historie` | regel op lead + partner |
+| `audit_log` | actor=affiliate, actie=`trial.start_voor_lead`, target=partner_id |
+| `email_send_log` | welkomstmail (bestaande flow) |
 
-### 2. Affiliate Sales CRM — nieuwe tabel `affiliate_leads`
-Aparte koude-leads-pool, los van het normale `leads`-systeem (dat is partner-scoped).
-Velden: bedrijfsnaam, contactpersoon, email, telefoon, branche, regio, status (`nieuw`, `gebeld_geen_gehoor`, `gesprek_gepland`, `in_gesprek`, `voorstel_verstuurd`, `gewonnen`, `verloren`), pipeline-fase, geschatte waarde, eigenaar (affiliate_id), bron (`platform_pool` / `eigen_import` / `referral_klik`), volgende_actie_datum, notities (rich text), gewonnen_partner_id.
-- RLS: affiliate ziet alleen leads die aan hem zijn toegewezen of die nog in de "platform_pool" zitten en claim-baar zijn; superadmin ziet alles.
-- Edge function `affiliate-lead-claim` om een pool-lead te claimen (atomic).
+## Beveiliging
+- Edge Function valideert: ingelogde rol == affiliate, lead behoort tot deze affiliate, toestemming-vinkje aanwezig.
+- Wachtwoord komt nooit in logs; wel in de welkomstmail naar de klant (bestaand template `trial-welkom` krijgt optioneel `tijdelijkWachtwoord` veld + zinnetje "wijzig dit na eerste login").
+- Rate limit: max 5 trial-starts per affiliate per uur (check via `partner_api_rate_log` of simpele count op `affiliate_referrals` in laatste uur).
 
-### 3. Affiliate Pipeline UI (`/affiliates/pipeline`)
-Kanban-bord met de 7 statussen hierboven, drag-and-drop tussen kolommen (zoals bestaande leads-kanban). Quick-actions per kaart: bellen (`tel:`), e-mail, notitie toevoegen, status veranderen, omzetten naar referral wanneer "gewonnen".
+## Bestanden
+**Nieuw**
+- `supabase/functions/affiliate-start-trial/index.ts`
+- `supabase/functions/_shared/trial/createTrialPartner.ts` (extractie)
+- `src/components/affiliate/TrialStartenDialog.tsx`
+- `src/components/affiliate/TrialStartenButton.tsx`
+- `src/components/affiliate/TrialStatusBadge.tsx`
+- `src/hooks/affiliate/useStartTrialVoorLead.ts`
 
-### 4. Affiliate Bel-werkbank (`/affiliates/bellen`)
-Focus-modus die één-voor-één koude leads presenteert die "nieuw" of "gebeld_geen_gehoor" zijn met `volgende_actie_datum <= vandaag`. Per lead: contactgegevens, vorige notities, snelle bel-knop, uitkomst-knoppen (geen gehoor / niet interessant / terugbellen / gesprek gepland). Auto-doorloop naar volgende lead. Mini-timer per gesprek.
+**Aangepast**
+- `supabase/functions/trial-signup/index.ts` (gebruikt shared helper)
+- `supabase/functions/_shared/transactional-email-templates/trial-welkom.tsx` (optioneel wachtwoord-veld)
+- `src/components/affiliate/LeadDetailDrawer.tsx`
+- `src/components/affiliate/PipelineKaart.tsx`
+- `supabase/config.toml` (registratie nieuwe functie indien nodig)
 
-### 5. Aangebrachte klanten — uitbreiding
-- Tab "Mijn klanten" toont nu ook `partners` met `subscription.status`, MRR, laatste login.
-- Aparte sectie **"Trials die hulp nodig hebben"**: partners met trial-status waar `laatste_login < 7 dagen geleden` of `aantal_leads === 0` na 5 dagen — affiliate kan deze proactief benaderen, met direct bel/mail knop en logveld.
-
-### 6. Affiliate Dashboard rework (`/affiliates`)
-Nieuwe topnavigatie met sub-tabs: **Dashboard, Pipeline, Bellen, Mijn klanten, Trials, Links & codes, Offertes, Commissies**.
-Dashboard-tegels: open pipeline-waarde, deze maand gewonnen, te bellen vandaag, openstaande trials, MTD commissie.
-
-### 7. Navigatie & rechten
-- Sidebargroep "Sales" voor rol `affiliate`: Dashboard, Pipeline, Bellen, Klanten, Trials, Links, Offertes, Commissies.
-- `permissions.ts`: helper `isAffiliate`, `canManageAffiliateLeads`.
-- `ProtectedRoute` op de nieuwe routes met `allowedRoles=["affiliate","superadmin"]`.
-
-### 8. Superadmin uitbreiding (`/affiliate-beheer`)
-- Nieuwe tab "Koude leads-pool": superadmin/import-knop (CSV) om leads toe te voegen aan de gedeelde pool die affiliates kunnen claimen.
-- Per affiliate kpi-rij: pipeline-waarde, win-rate, gesprekken deze week, omzet.
-
-## Technische details
-
-**Migratie (nieuwe tabel + helpers):**
-```
-affiliate_leads (id, bedrijfsnaam, contactpersoon, email, telefoon, branche, regio,
-                 status, pipeline_fase, geschatte_waarde, eigenaar_id NULL,
-                 bron, volgende_actie_datum, notities, gewonnen_partner_id,
-                 created_at, updated_at, created_by)
-affiliate_lead_contactmomenten (id, lead_id, affiliate_id, type, uitkomst, notitie, duur_seconden, created_at)
-```
-- GRANTs voor authenticated + service_role.
-- RLS: SELECT door eigenaar of `eigenaar_id IS NULL`-pool door affiliates, full access superadmin.
-- Trigger `updated_at`.
-
-**Edge functions:**
-- Uitbreiding `user-management` → `promote_to_affiliate` / `revoke_affiliate` (audit-log + welkomstmail).
-- Nieuw: `affiliate-lead-claim` (transactional update `eigenaar_id = auth.uid()` where IS NULL).
-
-**Frontend:**
-- Nieuwe componenten onder `src/components/affiliate/`:
-  - `pipeline/PipelineBoard.tsx`, `pipeline/PipelineCard.tsx`, `pipeline/useAffiliatePipeline.ts`
-  - `bellen/BelWerkbank.tsx`, `bellen/useBelQueue.ts`
-  - `klanten/TrialOpvolgingLijst.tsx`
-  - `leads/AffiliateLeadDialog.tsx`
-- Nieuwe pagina's `src/pages/affiliate/`: `Pipeline.tsx`, `Bellen.tsx`, `MijnKlanten.tsx`, `Trials.tsx`.
-- Hook `useAffiliateLeads.ts` met TanStack Query.
-- `/affiliates` blijft als landing (dashboard) en krijgt subroutering via React Router nested routes.
-- Promoot/intrek knop in `Gebruikers.tsx` rij-action en `GebruikerDetail.tsx` header.
-
-**Bestandsdiscipline:** elke nieuwe component < 800 regels, helpers gesplitst per file conform projectregels. Geen `any` in nieuwe code.
-
-## Volgorde van werken
-1. DB-migratie (`affiliate_leads` + `affiliate_lead_contactmomenten` + RLS + GRANTs).
-2. Edge functions uitbreiden / nieuw.
-3. Hooks + types.
-4. Pipeline, Bellen, Klanten, Trials pagina's + routing + sidebar.
-5. Promoot-knoppen in gebruikersbeheer + superadmin pool-tab.
-6. Dashboard rework.
-
-## Vragen aan jou voordat ik begin
-1. **Koude leads-pool**: mag elke affiliate vrij leads claimen uit de gedeelde pool, of moet superadmin handmatig leads aan affiliates toewijzen?
-2. **Demo data**: wil je dat ik een paar voorbeeld-koude-leads seed zodat het bel-CRM direct iets toont?
-3. **Trials-criterium**: gebruik ik "geen login > 7 dagen" + "0 leads na 5 dagen" als signaal, of heb je een andere definitie van "trial die hulp nodig heeft"?
+## Vragen vóór ik bouw
+Geen — bestaande conventies (Nederlandse UI, paarse primary, geen any, ≤800 regels/bestand) zijn duidelijk. Ik start na akkoord.
