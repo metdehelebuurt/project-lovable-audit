@@ -802,6 +802,87 @@ export type Database = {
           },
         ]
       }
+      affiliate_opvolg_log: {
+        Row: {
+          actie: string
+          affiliate_id: string
+          bron: string
+          created_at: string
+          details: Json
+          id: string
+          lead_id: string
+          taak_id: string | null
+          titel: string
+        }
+        Insert: {
+          actie: string
+          affiliate_id: string
+          bron?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          lead_id: string
+          taak_id?: string | null
+          titel: string
+        }
+        Update: {
+          actie?: string
+          affiliate_id?: string
+          bron?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          lead_id?: string
+          taak_id?: string | null
+          titel?: string
+        }
+        Relationships: []
+      }
+      affiliate_opvolg_regels: {
+        Row: {
+          aantal_herinneringen: number
+          actief: boolean
+          affiliate_id: string
+          ai_herbereken_na_uren: number
+          created_at: string
+          escalatie_na_uren: number
+          escalatie_toegestaan: boolean
+          herinnering_termijnen_uren: number[]
+          id: string
+          lead_type: string
+          notitie: string | null
+          updated_at: string
+        }
+        Insert: {
+          aantal_herinneringen?: number
+          actief?: boolean
+          affiliate_id: string
+          ai_herbereken_na_uren?: number
+          created_at?: string
+          escalatie_na_uren?: number
+          escalatie_toegestaan?: boolean
+          herinnering_termijnen_uren?: number[]
+          id?: string
+          lead_type: string
+          notitie?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aantal_herinneringen?: number
+          actief?: boolean
+          affiliate_id?: string
+          ai_herbereken_na_uren?: number
+          created_at?: string
+          escalatie_na_uren?: number
+          escalatie_toegestaan?: boolean
+          herinnering_termijnen_uren?: number[]
+          id?: string
+          lead_type?: string
+          notitie?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       affiliate_opvolg_taken: {
         Row: {
           affiliate_id: string
