@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye, Upload, Snowflake } from "lucide-react";
 import KoudeLeadsImportDialog from "@/components/affiliate/KoudeLeadsImportDialog";
+import KoudeLeadsImportHistorie from "@/components/affiliate/KoudeLeadsImportHistorie";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
@@ -390,6 +391,7 @@ const AffiliateBeheer = () => {
               </p>
             </CardContent>
           </Card>
+          <KoudeLeadsImportHistorie />
         </TabsContent>
 
         {/* Instellingen Tab */}

@@ -571,6 +571,42 @@ export type Database = {
           },
         ]
       }
+      affiliate_lead_imports: {
+        Row: {
+          afgekeurd: number
+          bestandsnaam: string
+          created_at: string
+          created_by: string | null
+          geimporteerd: number
+          id: string
+          kolom_mapping: Json | null
+          totaal_rijen: number
+          waarschuwingen: Json | null
+        }
+        Insert: {
+          afgekeurd?: number
+          bestandsnaam: string
+          created_at?: string
+          created_by?: string | null
+          geimporteerd?: number
+          id?: string
+          kolom_mapping?: Json | null
+          totaal_rijen?: number
+          waarschuwingen?: Json | null
+        }
+        Update: {
+          afgekeurd?: number
+          bestandsnaam?: string
+          created_at?: string
+          created_by?: string | null
+          geimporteerd?: number
+          id?: string
+          kolom_mapping?: Json | null
+          totaal_rijen?: number
+          waarschuwingen?: Json | null
+        }
+        Relationships: []
+      }
       affiliate_leads: {
         Row: {
           bedrijfsnaam: string
