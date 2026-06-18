@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -7,6 +7,7 @@ const items = [
   { to: "/affiliates/pipeline", label: "Pipeline", icon: Kanban },
   { to: "/affiliates/bellen", label: "Bellen", icon: PhoneCall },
   { to: "/affiliates/agenda", label: "Agenda", icon: Calendar },
+  { to: "/affiliates/opvolging", label: "Opvolging", icon: Sparkles },
   { to: "/affiliates/pool", label: "Koude leads", icon: Users },
   { to: "/affiliates/klanten", label: "Mijn klanten", icon: Users },
   { to: "/affiliates/trials", label: "Trials", icon: AlertCircle },
