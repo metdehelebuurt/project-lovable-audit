@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
 export type TerugbelAfspraak = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Row"];
-type Insert = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Insert"];
+type InsertBase = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Insert"];
+type Insert = InsertBase & { type?: "terugbel" | "demo" };
 
 const KEY = ["affiliate-terugbel"] as const;
 
@@ -35,7 +36,7 @@ export function useCreateTerugbel() {
     mutationFn: async (input: Omit<Insert, "affiliate_id">) => {
       const { data, error } = await supabase
         .from("affiliate_terugbel_afspraken")
-        .insert({ ...input, affiliate_id: user!.id })
+        .insert({ ...input, affiliate_id: user!.id } as InsertBase)
         .select()
         .single();
       if (error) throw error;

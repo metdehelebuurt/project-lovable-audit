@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus } from "lucide-react";
+import { Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus, Presentation, FileCheck2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { STATUS_LABEL, STATUS_VOLGORDE, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
@@ -16,6 +16,7 @@ import { TrialStatusBadge } from "./TrialStatusBadge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import EmailTab from "@/components/email/EmailTab";
+import EmailCompose from "@/components/email/EmailCompose";
 
 interface Props {
   lead: AffiliateLead;
@@ -30,6 +31,8 @@ export function LeadDetailBody({ lead }: Props) {
   const [notitie, setNotitie] = useState(lead.notities ?? "");
   const [contactNotitie, setContactNotitie] = useState("");
   const [openTerugbel, setOpenTerugbel] = useState(false);
+  const [openDemo, setOpenDemo] = useState(false);
+  const [openOrder, setOpenOrder] = useState(false);
 
   useEffect(() => {
     setStatus(lead.status as AffiliateLeadStatus);
@@ -83,6 +86,8 @@ export function LeadDetailBody({ lead }: Props) {
         {lead.email && <Button asChild size="sm" variant="outline"><a href={`mailto:${lead.email}`}><Mail className="h-4 w-4 mr-1" />{lead.email}</a></Button>}
         {lead.website && <Button asChild size="sm" variant="outline"><a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer"><Globe className="h-4 w-4 mr-1" />Website</a></Button>}
         <Button size="sm" variant="outline" onClick={() => setOpenTerugbel(true)}><CalendarPlus className="h-4 w-4 mr-1" /> Terugbel plannen</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpenDemo(true)}><Presentation className="h-4 w-4 mr-1" /> Demo inplannen</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpenOrder(true)} disabled={!lead.email}><FileCheck2 className="h-4 w-4 mr-1" /> Orderbevestiging sturen</Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -139,6 +144,15 @@ export function LeadDetailBody({ lead }: Props) {
         <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
       </div>
       <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={lead.id} leadNaam={lead.bedrijfsnaam} />
+      <TerugbelDialog open={openDemo} onOpenChange={setOpenDemo} leadId={lead.id} leadNaam={lead.bedrijfsnaam} afspraakType="demo" />
+      <EmailCompose
+        open={openOrder}
+        onOpenChange={setOpenOrder}
+        defaultTo={lead.email ?? ""}
+        defaultSubject={`Orderbevestiging mijnhuis.nu — ${lead.bedrijfsnaam}`}
+        defaultBody={`Beste ${lead.contactpersoon ?? "klant"},\n\nHartelijk dank voor je vertrouwen in mijnhuis.nu. Hierbij bevestigen we je order voor ${lead.bedrijfsnaam}.\n\nWat je kunt verwachten:\n- Onze 30-daagse trial start direct na activatie\n- Je ontvangt persoonlijke onboarding via je affiliate\n- Bij vragen ben ik je vaste contactpersoon\n\nWelkom bij mijnhuis.nu!`}
+        affiliateLeadId={lead.id}
+      />
     </div>
   );
 }

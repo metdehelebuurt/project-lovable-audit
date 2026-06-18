@@ -909,6 +909,7 @@ export type Database = {
           id: string
           lead_id: string
           notitie: string | null
+          type: string
           updated_at: string
         }
         Insert: {
@@ -919,6 +920,7 @@ export type Database = {
           id?: string
           lead_id: string
           notitie?: string | null
+          type?: string
           updated_at?: string
         }
         Update: {
@@ -929,6 +931,7 @@ export type Database = {
           id?: string
           lead_id?: string
           notitie?: string | null
+          type?: string
           updated_at?: string
         }
         Relationships: [

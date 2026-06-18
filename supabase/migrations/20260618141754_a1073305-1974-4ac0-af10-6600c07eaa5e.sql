@@ -1,0 +1,1 @@
+ALTER TABLE public.affiliate_terugbel_afspraken ADD COLUMN IF NOT EXISTS type text NOT NULL DEFAULT 'terugbel' CHECK (type IN ('terugbel','demo'));
