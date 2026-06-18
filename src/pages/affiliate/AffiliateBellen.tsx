@@ -10,6 +10,7 @@ import { useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
 import { CONTACT_UITKOMST_OPTIES } from "@/lib/affiliate/leadStatus";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "@/components/affiliate/TerugbelDialog";
+import { TrialStartenButton } from "@/components/affiliate/TrialStartenButton";
 
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
@@ -55,6 +56,18 @@ const AffiliateBellen = () => {
       duur_seconden: seconden,
     });
     await update.mutateAsync({ id: current.id, patch: { status: uitkomst.nextStatus } });
+    next();
+  };
+
+  const handleTrialGestart = async () => {
+    if (!current) return;
+    await log.mutateAsync({
+      lead_id: current.id,
+      type: "telefoon",
+      uitkomst: "Trial gestart",
+      notitie: notitie || null,
+      duur_seconden: seconden,
+    });
     next();
   };
 
@@ -118,6 +131,14 @@ const AffiliateBellen = () => {
                   </Button>
                 );
               })}
+              {current && (
+                <TrialStartenButton
+                  lead={current}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onStarted={handleTrialGestart}
+                />
+              )}
               <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={next}>
                 <SkipForward className="h-4 w-4 mr-2" /> Overslaan
               </Button>

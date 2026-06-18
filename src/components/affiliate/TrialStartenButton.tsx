@@ -9,9 +9,10 @@ interface Props {
   size?: "sm" | "default";
   variant?: "default" | "outline" | "secondary";
   className?: string;
+  onStarted?: () => void;
 }
 
-export function TrialStartenButton({ lead, size = "default", variant = "default", className }: Props) {
+export function TrialStartenButton({ lead, size = "default", variant = "default", className, onStarted }: Props) {
   const [open, setOpen] = useState(false);
   const al = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id;
   if (al) return null;
@@ -21,7 +22,7 @@ export function TrialStartenButton({ lead, size = "default", variant = "default"
       <Button size={size} variant={variant} className={className} onClick={(e) => { e.stopPropagation(); setOpen(true); }}>
         <Rocket className="h-4 w-4 mr-2" /> Trial starten
       </Button>
-      <TrialStartenDialog open={open} onOpenChange={setOpen} lead={lead} />
+      <TrialStartenDialog open={open} onOpenChange={setOpen} lead={lead} onStarted={onStarted} />
     </>
   );
 }
