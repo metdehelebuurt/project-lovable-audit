@@ -86,7 +86,7 @@ const Instellingen = () => {
     { id: "modules", label: "Modules & rollen", icon: KeyRound, roles: ADMIN_ROLLEN },
     { id: "gebruikers", label: "Gebruikers", icon: Users, roles: ADMIN_ROLLEN, href: "/gebruikers" },
     { id: "abonnement", label: "Abonnement", icon: CreditCard, roles: ADMIN_ROLLEN },
-    { id: "privacy", label: "Privacy & Data", icon: Shield, roles: ALLE_ROLLEN },
+    { id: "privacy", label: "Privacy & Data", icon: Shield, roles: ALLE_ROLLEN_MET_AFFILIATE },
   ];
 
   const currentRol = (profile?.rol ?? "consument") as AppRole;
