@@ -11,9 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye, Upload, Snowflake } from "lucide-react";
+import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye, Upload, Snowflake, Target as TargetIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import KoudeLeadsImportDialog from "@/components/affiliate/KoudeLeadsImportDialog";
 import KoudeLeadsImportHistorie from "@/components/affiliate/KoudeLeadsImportHistorie";
+import { useAffiliateTargets, useUpsertTarget } from "@/hooks/affiliate/useAffiliateTargets";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
@@ -23,6 +25,11 @@ const AffiliateBeheer = () => {
   const [codeForm, setCodeForm] = useState({ affiliate_id: "", code: "", korting_type: "percentage", korting_waarde: "", max_gebruik: "", geldig_tot: "" });
   const [detailAffiliate, setDetailAffiliate] = useState<any | null>(null);
   const [showImportKoudeLeads, setShowImportKoudeLeads] = useState(false);
+  const { data: targets = [] } = useAffiliateTargets(detailAffiliate?.id);
+  const upsertTarget = useUpsertTarget();
+  const huidigJaar = new Date().getFullYear();
+  const huidigeMaand = new Date().getMonth() + 1;
+  const huidigTarget = targets.find((t) => t.jaar === huidigJaar && t.maand === huidigeMaand);
 
   // Fetch instellingen
   const { data: instellingen } = useQuery({
@@ -78,6 +85,8 @@ const AffiliateBeheer = () => {
         max_commissie_percentage: settings.max_commissie_percentage,
         min_abonnement_maanden: settings.min_abonnement_maanden,
         cookie_dagen: settings.cookie_dagen,
+        auto_rotatie_actief: settings.auto_rotatie_actief,
+        tier_commissies: settings.tier_commissies,
       }).eq("id", instellingen.id);
       if (error) throw error;
     },
@@ -86,6 +95,19 @@ const AffiliateBeheer = () => {
       toast.success("Instellingen opgeslagen");
     },
     onError: (e: any) => toast.error("Fout: " + e.message),
+  });
+
+  // Tier wijzigen
+  const updateTier = useMutation({
+    mutationFn: async ({ id, tier }: { id: string; tier: "brons" | "zilver" | "goud" }) => {
+      const { error } = await supabase.from("users").update({ affiliate_tier: tier }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-affiliates"] });
+      toast.success("Tier aangepast");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   // Create affiliate
@@ -231,18 +253,29 @@ const AffiliateBeheer = () => {
                   <TableHead>Naam</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Telefoon</TableHead>
+                  <TableHead>Tier</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aangemeld</TableHead>
                   <TableHead>Acties</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {affiliates.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
+                {affiliates.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
                 {affiliates.map((a: any) => (
                   <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAffiliate(a)}>
                     <TableCell className="font-medium">{a.voornaam} {a.achternaam}</TableCell>
                     <TableCell>{a.email}</TableCell>
                     <TableCell>{a.telefoon || "—"}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Select value={a.affiliate_tier ?? "brons"} onValueChange={(v) => updateTier.mutate({ id: a.id, tier: v as any })}>
+                        <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="brons">Brons</SelectItem>
+                          <SelectItem value="zilver">Zilver</SelectItem>
+                          <SelectItem value="goud">Goud</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell><Badge variant={a.status === "actief" ? "default" : "secondary"}>{a.status}</Badge></TableCell>
                     <TableCell className="text-muted-foreground">{new Date(a.created_at).toLocaleDateString("nl-NL")}</TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
@@ -409,6 +442,30 @@ const AffiliateBeheer = () => {
                     <div className="space-y-2"><Label>Min abonnement maanden</Label><Input type="number" value={settings.min_abonnement_maanden} onChange={(e) => setSettings((s: any) => ({ ...s, min_abonnement_maanden: parseInt(e.target.value) || 0 }))} /><p className="text-xs text-muted-foreground">Minimale looptijd voor commissie-uitkering</p></div>
                     <div className="space-y-2"><Label>Cookie tracking (dagen)</Label><Input type="number" value={settings.cookie_dagen} onChange={(e) => setSettings((s: any) => ({ ...s, cookie_dagen: parseInt(e.target.value) || 0 }))} /><p className="text-xs text-muted-foreground">Hoe lang een affiliate cookie geldig blijft</p></div>
                   </div>
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Automatische pool-rotatie</Label>
+                        <p className="text-xs text-muted-foreground">Wijs nieuwe pool-leads round-robin toe aan actieve affiliates</p>
+                      </div>
+                      <Switch checked={!!settings.auto_rotatie_actief} onCheckedChange={(v) => setSettings((s: any) => ({ ...s, auto_rotatie_actief: v }))} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(["brons", "zilver", "goud"] as const).map((tier) => (
+                        <div key={tier} className="space-y-1">
+                          <Label className="capitalize">{tier} commissie %</Label>
+                          <Input
+                            type="number"
+                            value={settings.tier_commissies?.[tier] ?? 0}
+                            onChange={(e) => setSettings((s: any) => ({
+                              ...s,
+                              tier_commissies: { ...(s.tier_commissies ?? {}), [tier]: parseFloat(e.target.value) || 0 },
+                            }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}><Save className="h-4 w-4 mr-1" /> Opslaan</Button>
                 </>
               )}
@@ -546,6 +603,32 @@ const AffiliateBeheer = () => {
                       </TableBody>
                     </Table>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold mt-4 flex items-center gap-2"><TargetIcon className="h-4 w-4" /> Target {huidigeMaand}/{huidigJaar}</h3>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Omzet (€)</Label>
+                      <Input type="number" defaultValue={huidigTarget?.target_omzet ?? 0} className="h-9 w-32"
+                        onBlur={(e) => {
+                          const v = parseFloat(e.target.value) || 0;
+                          if (v !== Number(huidigTarget?.target_omzet ?? 0)) {
+                            upsertTarget.mutate({ affiliate_id: detailAffiliate.id, jaar: huidigJaar, maand: huidigeMaand, target_omzet: v, target_klanten: huidigTarget?.target_klanten ?? 0 });
+                          }
+                        }} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Klanten</Label>
+                      <Input type="number" defaultValue={huidigTarget?.target_klanten ?? 0} className="h-9 w-24"
+                        onBlur={(e) => {
+                          const v = parseInt(e.target.value) || 0;
+                          if (v !== (huidigTarget?.target_klanten ?? 0)) {
+                            upsertTarget.mutate({ affiliate_id: detailAffiliate.id, jaar: huidigJaar, maand: huidigeMaand, target_omzet: Number(huidigTarget?.target_omzet ?? 0), target_klanten: v });
+                          }
+                        }} />
+                    </div>
+                  </div>
                 </div>
               </>
             );

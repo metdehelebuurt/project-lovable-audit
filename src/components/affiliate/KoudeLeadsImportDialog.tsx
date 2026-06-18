@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Upload, Download, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
+import { useEffect } from "react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Bron = Database["public"]["Enums"]["affiliate_lead_bron"];
@@ -41,6 +42,7 @@ interface ParsedRow {
   bron: Bron;
   trial_startdatum: string | null;
   warnings: string[];
+  duplicaat?: boolean;
 }
 
 const BRON_VALUES: Bron[] = ["platform_pool", "eigen_import", "referral_klik"];
@@ -220,15 +222,48 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
 
   const validRows = rows.filter((r) => r.bedrijfsnaam);
   const rejectedCount = rows.length - validRows.length;
+  const duplicaten = rows.filter((r) => r.duplicaat).length;
+
+  // Duplicate-check tegen bestaande affiliate_leads op email/telefoon
+  useEffect(() => {
+    if (step !== "preview" || rows.length === 0) return;
+    let active = true;
+    (async () => {
+      const emails = rows.map((r) => r.email?.toLowerCase()).filter(Boolean) as string[];
+      const telefoons = rows.map((r) => r.telefoon?.replace(/\D/g, "")).filter(Boolean) as string[];
+      if (emails.length === 0 && telefoons.length === 0) return;
+
+      const { data } = await supabase
+        .from("affiliate_leads")
+        .select("email, telefoon")
+        .or([
+          emails.length ? `email.in.(${emails.map((e) => `"${e}"`).join(",")})` : "",
+          telefoons.length ? `telefoon.in.(${telefoons.map((t) => `"${t}"`).join(",")})` : "",
+        ].filter(Boolean).join(","));
+
+      if (!active || !data) return;
+      const dupEmails = new Set(data.map((d) => d.email?.toLowerCase()).filter(Boolean));
+      const dupTel = new Set(data.map((d) => d.telefoon?.replace(/\D/g, "")).filter(Boolean));
+      setRows((rs) => rs.map((r) => {
+        const hit = (r.email && dupEmails.has(r.email.toLowerCase()))
+          || (r.telefoon && dupTel.has(r.telefoon.replace(/\D/g, "")));
+        if (!hit || r.duplicaat) return r;
+        return { ...r, duplicaat: true, warnings: [...r.warnings, "Bestaat al in de pool"] };
+      }));
+    })();
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const handleImport = async () => {
-    if (validRows.length === 0) {
+    const importeerbaar = validRows.filter((r) => !r.duplicaat);
+    if (importeerbaar.length === 0) {
       toast.error("Geen geldige rijen om te importeren");
       return;
     }
     setSubmitting(true);
     try {
-      const payload = validRows.map((r) => ({
+      const payload = importeerbaar.map((r) => ({
         bedrijfsnaam: r.bedrijfsnaam,
         contactpersoon: r.contactpersoon,
         email: r.email,
@@ -255,7 +290,7 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
           bestandsnaam: fileName,
           totaal_rijen: rows.length,
           geimporteerd: payload.length,
-          afgekeurd: rejectedCount,
+          afgekeurd: rejectedCount + duplicaten,
           kolom_mapping: mappingForLog,
           waarschuwingen: warningsSummary,
           created_by: auth.user?.id ?? null,
@@ -339,7 +374,7 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
         {step === "preview" && (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              {fileName} — {rows.length} rijen, {validRows.length} geldig, {rejectedCount} afgekeurd.
+              {fileName} — {rows.length} rijen, {validRows.length - duplicaten} import-klaar, {rejectedCount} afgekeurd, {duplicaten} duplicaat.
             </p>
             <div className="border rounded-xl overflow-x-auto max-h-96">
               <Table>

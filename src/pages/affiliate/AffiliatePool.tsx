@@ -1,26 +1,56 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Hand } from "lucide-react";
+import { Hand, Layers } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads, useClaimAffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
+import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
+import { toast } from "sonner";
 
 const AffiliatePool = () => {
+  useRealtimeAffiliateLeads();
   const { data: pool = [], isLoading } = useAffiliateLeads("pool");
   const claim = useClaimAffiliateLead();
+  const [selectie, setSelectie] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) => setSelectie((s) => {
+    const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+  const toggleAll = () => setSelectie((s) => s.size === pool.length ? new Set() : new Set(pool.map((p) => p.id)));
+
+  const bulkClaim = async () => {
+    let gelukt = 0;
+    for (const id of selectie) {
+      try { await claim.mutateAsync(id); gelukt++; } catch { /* skip */ }
+    }
+    setSelectie(new Set());
+    if (gelukt) toast.success(`${gelukt} leads geclaimd`);
+  };
 
   return (
     <div className="p-6">
       <AffiliateSubnav />
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">Koude leads pool</h1>
-        <p className="text-sm text-muted-foreground">Claim leads om ze toe te voegen aan jouw pijplijn. {pool.length} beschikbaar.</p>
+      <div className="mb-4 flex items-end justify-between gap-2 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Koude leads pool</h1>
+          <p className="text-sm text-muted-foreground">Claim leads om ze toe te voegen aan jouw pijplijn. {pool.length} beschikbaar.</p>
+        </div>
+        {selectie.size > 0 && (
+          <Button onClick={bulkClaim} disabled={claim.isPending}>
+            <Layers className="h-4 w-4 mr-1" /> {selectie.size} leads claimen
+          </Button>
+        )}
       </div>
 
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox checked={pool.length > 0 && selectie.size === pool.length} onCheckedChange={toggleAll} />
+              </TableHead>
               <TableHead>Bedrijf</TableHead>
               <TableHead>Branche</TableHead>
               <TableHead>Regio</TableHead>
@@ -30,10 +60,11 @@ const AffiliatePool = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Laden...</TableCell></TableRow>}
-            {!isLoading && pool.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Geen leads in de pool. Vraag de platformbeheerder om nieuwe leads toe te voegen.</TableCell></TableRow>}
+            {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">Laden...</TableCell></TableRow>}
+            {!isLoading && pool.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Geen leads in de pool. Vraag de platformbeheerder om nieuwe leads toe te voegen.</TableCell></TableRow>}
             {pool.map((l) => (
               <TableRow key={l.id}>
+                <TableCell><Checkbox checked={selectie.has(l.id)} onCheckedChange={() => toggle(l.id)} /></TableCell>
                 <TableCell className="font-medium">{l.bedrijfsnaam}</TableCell>
                 <TableCell>{l.branche ?? "—"}</TableCell>
                 <TableCell>{l.regio ?? "—"}</TableCell>
