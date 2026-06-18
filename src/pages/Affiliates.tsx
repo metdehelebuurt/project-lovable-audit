@@ -16,6 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Link2, Tag, Users, Euro, Copy, Plus, Trash2, TrendingUp, FileText, Eye, Save, Loader2, X } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
+import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
+import { OnboardingChecklist } from "@/components/affiliate/OnboardingChecklist";
 
 interface OfferteRegel {
   omschrijving: string;
@@ -188,10 +190,12 @@ const Affiliates = () => {
 
   return (
     <div className="space-y-6">
+      <AffiliateSubnav />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Affiliate Dashboard</h1>
         <p className="text-muted-foreground">Beheer je links, offertes en volg je commissies</p>
       </div>
+      <OnboardingChecklist />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -63,6 +63,8 @@ import AffiliateBellen from "@/pages/affiliate/AffiliateBellen";
 import AffiliatePool from "@/pages/affiliate/AffiliatePool";
 import AffiliateMijnKlanten from "@/pages/affiliate/AffiliateMijnKlanten";
 import AffiliateTrials from "@/pages/affiliate/AffiliateTrials";
+import AffiliateAgenda from "@/pages/affiliate/AffiliateAgenda";
+import AffiliateAnalytics from "@/pages/affiliate/AffiliateAnalytics";
 import LeadDetail from "@/pages/LeadDetail";
 import OfferteFeedback from "@/pages/OfferteFeedback";
 import AfspraakNieuw from "@/pages/AfspraakNieuw";
@@ -319,6 +321,12 @@ const App = () => (
               } />
               <Route path="/affiliates/trials" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateTrials /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/agenda" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateAgenda /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/analytics" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateAnalytics /></ProtectedRoute>
               } />
               <Route path="/affiliate-beheer" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><AffiliateBeheer /></ProtectedRoute>
