@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, Search, Users, KeyRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import { PromoteToAffiliateButton } from "@/components/affiliate/PromoteToAffiliateButton";
 
 type UserRow = Database["public"]["Tables"]["users"]["Row"];
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -295,6 +296,9 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                             <Button variant="ghost" size="icon" onClick={() => openPasswordDialog(user)} title="Wachtwoord wijzigen">
                               <KeyRound className="h-4 w-4" />
                             </Button>
+                          )}
+                          {user.id !== profile?.id && profile?.rol === "superadmin" && (
+                            <PromoteToAffiliateButton userId={user.id} currentRol={user.rol} variant="ghost" size="sm" />
                           )}
                           {user.id !== profile?.id && (
                             <AlertDialog>

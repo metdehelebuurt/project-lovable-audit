@@ -19,6 +19,7 @@ import PermissieToggles from "@/components/gebruikers/PermissieToggles";
 import HandtekeningEditor from "@/components/gebruikers/HandtekeningEditor";
 import UserModuleOverrides from "@/components/gebruikers/UserModuleOverrides";
 import type { Database } from "@/integrations/supabase/types";
+import { PromoteToAffiliateButton } from "@/components/affiliate/PromoteToAffiliateButton";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -122,6 +123,9 @@ const GebruikerDetail = () => {
         <Badge className={user.status === "actief" ? "bg-success-light text-success" : "bg-muted text-muted-foreground"}>
           {user.status}
         </Badge>
+        {me?.rol === "superadmin" && me.id !== user.id && (
+          <PromoteToAffiliateButton userId={user.id} currentRol={user.rol} />
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

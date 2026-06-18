@@ -4,7 +4,7 @@ import {
   RotateCcw, Receipt, Building2, UserCheck, FolderOpen, BarChart3, PenTool, Stethoscope,
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
   Lightbulb, Link2, Home, ShieldAlert, ShoppingCart, type LucideIcon,
-  ScrollText,
+  ScrollText, PhoneCall, Kanban, AlertCircle,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
@@ -93,6 +93,14 @@ const ITEMS = {
   affiliateBeheer: { id: "affiliate-beheer", label: "Affiliate beheer", icon: Handshake, url: "/affiliate-beheer" } as NavigatieItem,
   abonnementen: { id: "abonnementen", label: "Abonnementen", icon: CreditCard, url: "/admin/abonnementen" } as NavigatieItem,
   affiliateLinks: { id: "affiliate-links", label: "Affiliate links", icon: Link2, url: "/affiliates" } as NavigatieItem,
+  affiliatePipeline: { id: "affiliate-pipeline", label: "Pipeline", icon: Kanban, url: "/affiliates/pipeline",
+    synoniemen: ["sales", "kanban"] } as NavigatieItem,
+  affiliateBellen: { id: "affiliate-bellen", label: "Bellen", icon: PhoneCall, url: "/affiliates/bellen",
+    synoniemen: ["belwerkbank", "cold calling"] } as NavigatieItem,
+  affiliatePool: { id: "affiliate-pool", label: "Koude leads", icon: Users, url: "/affiliates/pool",
+    synoniemen: ["leadpool", "claim"] } as NavigatieItem,
+  affiliateMijnKlanten: { id: "affiliate-klanten", label: "Mijn klanten", icon: UserCheck2, url: "/affiliates/klanten" } as NavigatieItem,
+  affiliateTrials: { id: "affiliate-trials", label: "Trials", icon: AlertCircle, url: "/affiliates/trials" } as NavigatieItem,
   feedback: { id: "feedback", label: "Feedback", icon: MessageSquareHeart, url: "/feedback" } as NavigatieItem,
   functieverzoek: { id: "functieverzoek", label: "Functieverzoek", icon: Lightbulb,
     url: "/feedback/nieuw?type=functieverzoek", synoniemen: ["wens", "feature request"] } as NavigatieItem,
@@ -203,8 +211,11 @@ function consumentNav(): NavigatieGroep[] {
 
 function affiliateNav(): NavigatieGroep[] {
   return [
-    { id: "werk", label: "Werk", items: [ITEMS.vandaag] },
-    { id: "verkoop", label: "Verkoop", items: [ITEMS.affiliateLinks, ITEMS.offertes] },
+    { id: "werk", label: "Werk", items: [ITEMS.affiliateLinks] },
+    { id: "sales", label: "Sales CRM", items: [
+      ITEMS.affiliatePipeline, ITEMS.affiliateBellen, ITEMS.affiliatePool,
+      ITEMS.affiliateMijnKlanten, ITEMS.affiliateTrials, ITEMS.offertes,
+    ] },
     { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
     { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
   ];
