@@ -59,6 +59,18 @@ const AffiliateBellen = () => {
     next();
   };
 
+  const handleTrialGestart = async () => {
+    if (!current) return;
+    await log.mutateAsync({
+      lead_id: current.id,
+      type: "telefoon",
+      uitkomst: "Trial gestart",
+      notitie: notitie || null,
+      duur_seconden: seconden,
+    });
+    next();
+  };
+
   const formatTimer = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   const tel = current ? telLink(current.telefoon) : null;
   const wa = current ? whatsappLink(current.telefoon) : null;
