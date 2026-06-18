@@ -6486,11 +6486,14 @@ export type Database = {
           handtekening_data: string | null
           id: string
           installateur_id: string | null
+          is_self_service: boolean
           klant_email: string | null
           lead_id: string
           notities: string | null
           partner_id: string
           schouw_nummer: string
+          self_service_completed_at: string | null
+          self_service_token: string
           status: Database["public"]["Enums"]["schouw_status"]
           updated_at: string
         }
@@ -6508,11 +6511,14 @@ export type Database = {
           handtekening_data?: string | null
           id?: string
           installateur_id?: string | null
+          is_self_service?: boolean
           klant_email?: string | null
           lead_id: string
           notities?: string | null
           partner_id: string
           schouw_nummer: string
+          self_service_completed_at?: string | null
+          self_service_token?: string
           status?: Database["public"]["Enums"]["schouw_status"]
           updated_at?: string
         }
@@ -6530,11 +6536,14 @@ export type Database = {
           handtekening_data?: string | null
           id?: string
           installateur_id?: string | null
+          is_self_service?: boolean
           klant_email?: string | null
           lead_id?: string
           notities?: string | null
           partner_id?: string
           schouw_nummer?: string
+          self_service_completed_at?: string | null
+          self_service_token?: string
           status?: Database["public"]["Enums"]["schouw_status"]
           updated_at?: string
         }
