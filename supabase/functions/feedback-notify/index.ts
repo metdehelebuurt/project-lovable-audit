@@ -183,7 +183,9 @@ async function handleLog(
   const { data: emails } = await supa
     .from("email_send_log")
     .select("id, message_id, template_name, recipient_email, status, error_message, created_at")
-    .or(`message_id.like.feedback-nieuw-${feedbackId},message_id.like.feedback-status-${feedbackId}-%`)
+    .or(
+      `message_id.eq.feedback-nieuw-${feedbackId},message_id.like.feedback-status-${feedbackId}-%`,
+    )
     .order("created_at", { ascending: false })
     .limit(200);
 
