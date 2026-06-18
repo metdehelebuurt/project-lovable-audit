@@ -26,6 +26,7 @@ import KlantStatsRow from "@/components/klanten/detail/KlantStatsRow";
 import KlantTabsNav, { type KlantTab } from "@/components/klanten/detail/KlantTabsNav";
 import KlantContactCard from "@/components/klanten/detail/KlantContactCard";
 import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
+import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -213,6 +214,7 @@ const KlantDetail = () => {
     { key: "verkoop", label: "Verkoop", count: offertes.length + opdrachten.length },
     { key: "uitvoering", label: "Uitvoering", count: schouwen.length + installaties.length + opleveringen.length },
     { key: "communicatie", label: "Communicatie", count: afspraken.length },
+    { key: "documenten", label: "Documenten" },
     { key: "activiteit", label: "Activiteit" },
   ];
 
@@ -354,6 +356,18 @@ const KlantDetail = () => {
           {/* ACTIVITEIT */}
           {activeTab === "activiteit" && (
             <GecombineerdeTijdlijn entiteitType="klant" entiteitId={klant.id} extraEvents={timelineEvents} />
+          )}
+
+          {/* DOCUMENTEN */}
+          {activeTab === "documenten" && klant.lead_id && (
+            <EntiteitDocumenten entityType="lead" entityId={klant.lead_id} />
+          )}
+          {activeTab === "documenten" && !klant.lead_id && (
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                Deze klant heeft geen gekoppelde lead. Documenten kunnen pas worden toegevoegd zodra er een lead aan deze klant gekoppeld is.
+              </CardContent>
+            </Card>
           )}
         </div>
 
