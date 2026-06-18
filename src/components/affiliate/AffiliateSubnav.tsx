@@ -12,7 +12,7 @@ const items = [
   { to: "/affiliates/trials", label: "Trials", icon: AlertCircle },
   { to: "/affiliates/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/affiliates/links", label: "Links & codes", icon: Link2 },
-  { to: "/affiliates/offertes", label: "Offertes", icon: FileText },
+  { to: "/offertes", label: "Offertes", icon: FileText },
 ];
 
 export function AffiliateSubnav() {
