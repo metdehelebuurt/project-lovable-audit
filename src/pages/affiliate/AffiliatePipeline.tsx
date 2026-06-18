@@ -89,7 +89,7 @@ const AffiliatePipeline = () => {
       </div>
 
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActief(null)}>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 overflow-x-auto">
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 snap-x">
           {ZICHTBARE_STATUSSEN.map((status) => (
             <KanbanKolom
               key={status}
@@ -129,22 +129,30 @@ function KanbanKolom({
   return (
     <div
       ref={setNodeRef}
-      className={`min-w-[220px] rounded-xl p-2 space-y-2 transition-colors ${isOver ? "bg-primary/10 ring-2 ring-primary/40" : "bg-muted/30"}`}
+      className={`w-[280px] shrink-0 snap-start rounded-xl border bg-muted/30 transition-colors ${isOver ? "bg-primary/10 ring-2 ring-primary/40 border-primary/40" : "border-border"}`}
     >
-      <div className="flex items-center justify-between px-1 py-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{STATUS_LABEL[status]}</h3>
-        <span className="text-xs text-muted-foreground">{leads.length}</span>
+      <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b bg-background/60 rounded-t-xl">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground/80 truncate">
+          {STATUS_LABEL[status]}
+        </h3>
+        <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0">
+          {leads.length}
+        </span>
       </div>
-      {leads.length === 0 && <p className="text-xs text-muted-foreground px-1 py-4 text-center">Leeg</p>}
-      {leads.map((lead) => (
-        <PipelineKaart
-          key={lead.id}
-          lead={lead}
-          draggable
-          onOpen={() => onOpen(lead)}
-          onAdvance={() => onAdvance(lead)}
-        />
-      ))}
+      <div className="p-2 space-y-2 min-h-[120px]">
+        {leads.length === 0 && (
+          <p className="text-xs text-muted-foreground/70 px-1 py-6 text-center italic">Sleep hierheen</p>
+        )}
+        {leads.map((lead) => (
+          <PipelineKaart
+            key={lead.id}
+            lead={lead}
+            draggable
+            onOpen={() => onOpen(lead)}
+            onAdvance={() => onAdvance(lead)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
