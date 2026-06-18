@@ -4849,6 +4849,108 @@ export type Database = {
           },
         ]
       }
+      offerte_auto_herinnering_config: {
+        Row: {
+          actief: boolean
+          alleen_werkdagen: boolean
+          created_at: string
+          dagen_na_verloop: number[]
+          dagen_voor_verloop: number[]
+          email_template_id: string | null
+          id: string
+          partner_id: string
+          updated_at: string
+        }
+        Insert: {
+          actief?: boolean
+          alleen_werkdagen?: boolean
+          created_at?: string
+          dagen_na_verloop?: number[]
+          dagen_voor_verloop?: number[]
+          email_template_id?: string | null
+          id?: string
+          partner_id: string
+          updated_at?: string
+        }
+        Update: {
+          actief?: boolean
+          alleen_werkdagen?: boolean
+          created_at?: string
+          dagen_na_verloop?: number[]
+          dagen_voor_verloop?: number[]
+          email_template_id?: string | null
+          id?: string
+          partner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offerte_auto_herinnering_config_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offerte_auto_herinnering_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offerte_auto_herinnering_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offerte_auto_herinnering_log: {
+        Row: {
+          created_at: string
+          dag_offset: number
+          fase: string
+          fout: string | null
+          id: string
+          offerte_id: string
+          ontvanger_email: string | null
+          partner_id: string
+          verzonden_op: string
+        }
+        Insert: {
+          created_at?: string
+          dag_offset: number
+          fase: string
+          fout?: string | null
+          id?: string
+          offerte_id: string
+          ontvanger_email?: string | null
+          partner_id: string
+          verzonden_op?: string
+        }
+        Update: {
+          created_at?: string
+          dag_offset?: number
+          fase?: string
+          fout?: string | null
+          id?: string
+          offerte_id?: string
+          ontvanger_email?: string | null
+          partner_id?: string
+          verzonden_op?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offerte_auto_herinnering_log_offerte_id_fkey"
+            columns: ["offerte_id"]
+            isOneToOne: false
+            referencedRelation: "offertes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offerte_berichten: {
         Row: {
           afzender_naam: string

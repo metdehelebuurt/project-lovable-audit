@@ -8,6 +8,7 @@ import AbonnementZichtbaarheid from "@/components/abonnementen/AbonnementZichtba
 import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
 import BetalingsvoorwaardenConfig from "@/components/instellingen/BetalingsvoorwaardenConfig";
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
+import OfferteAutoHerinneringConfig from "@/components/instellingen/OfferteAutoHerinneringConfig";
 import EmailTemplatesBeheer from "@/components/instellingen/EmailTemplatesBeheer";
 import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
@@ -133,6 +134,7 @@ const Instellingen = () => {
           {activeTab === "offertes" && isPartnerAdmin && profile?.partner_id && (
             <div className="space-y-6">
               <BetalingsvoorwaardenConfig partnerId={profile.partner_id} />
+              <OfferteAutoHerinneringConfig partnerId={profile.partner_id} />
               <OfferteTemplateInstellingen partnerId={profile.partner_id} />
             </div>
           )}
