@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       const eersteUren = regel.herinnering_termijnen_uren[0] ?? 24
       const urenTotDue = (new Date(t.due_op).getTime() - nu.getTime()) / 3600000
       if (urenTotDue > eersteUren) continue
-      await notifyEnMail(admin, t, 'affiliate-opvolg-herinnering', 'Herinnering: ' + t.titel, false, regel)
+      await notifyEnMail(admin, t, 'affiliate-opvolg-herinnering', 'Herinnering: ' + t.titel, false, TYPE_NAAR_REGEL[t.type] ?? 'algemeen')
       await admin.from('affiliate_opvolg_taken').update({ herinnering_verstuurd_op: nu.toISOString() }).eq('id', t.id)
       herinneringCount++
     }
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       if (!regel.actief || !regel.escalatie_toegestaan) continue
       const urenTeLaat = (nu.getTime() - new Date(t.due_op).getTime()) / 3600000
       if (urenTeLaat < regel.escalatie_na_uren) continue
-      await notifyEnMail(admin, t, 'affiliate-opvolg-escalatie', 'Achterstallig: ' + t.titel, true, regel)
+      await notifyEnMail(admin, t, 'affiliate-opvolg-escalatie', 'Achterstallig: ' + t.titel, true, TYPE_NAAR_REGEL[t.type] ?? 'algemeen')
       await admin.from('affiliate_opvolg_taken').update({ escalatie_verstuurd_op: nu.toISOString() }).eq('id', t.id)
       escalatieCount++
     }
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
   }
 })
 
-async function notifyEnMail(admin: any, t: any, templateName: string, titel: string, escalatie: boolean, regel?: Regel) {
+async function notifyEnMail(admin: any, t: any, templateName: string, titel: string, escalatie: boolean, regelLeadType?: string) {
   const { data: aff } = await admin.from('users').select('email, voornaam').eq('id', t.affiliate_id).maybeSingle()
   const { data: lead } = t.lead_id
     ? await admin.from('affiliate_leads').select('bedrijfsnaam, contactpersoon, telefoon, email').eq('id', t.lead_id).maybeSingle()
@@ -183,7 +183,7 @@ async function notifyEnMail(admin: any, t: any, templateName: string, titel: str
         template: templateName,
         type: t.type,
         due_op: t.due_op,
-        regel_lead_type: regel ? Object.keys({ demo:1, trial:1, terugbel:1, algemeen:1 }).find((k) => k) : undefined,
+        regel_lead_type: regelLeadType,
       },
     })
   }
