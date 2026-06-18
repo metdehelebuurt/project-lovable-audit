@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
 export type TerugbelAfspraak = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Row"];
-type Insert = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Insert"];
+type InsertBase = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Insert"];
+type Insert = InsertBase & { type?: "terugbel" | "demo" };
 
 const KEY = ["affiliate-terugbel"] as const;
 
