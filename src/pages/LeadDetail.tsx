@@ -35,6 +35,7 @@ import ContactmomentItem from "@/components/contactmomenten/ContactmomentItem";
 import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 import { DuplicaatWaarschuwing } from "@/components/leads/duplicaten/DuplicaatWaarschuwing";
+import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -864,31 +865,7 @@ const LeadDetail = () => {
 
           {/* DOCUMENTEN */}
           {activeTab === "documenten" && (
-            <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Documenten</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {documenten.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Geen documenten gekoppeld.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {documenten.map((d: any) => (
-                      <a key={d.id} href={d.bestand_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center"><FileText className="h-4 w-4 text-primary" /></div>
-                          <div>
-                            <p className="text-sm font-medium">{d.naam}</p>
-                            <p className="text-xs text-muted-foreground">{formatDate(d.created_at)}</p>
-                          </div>
-                        </div>
-                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <EntiteitDocumenten entityType="lead" entityId={id!} />
           )}
 
           {/* E-MAIL */}
