@@ -25,6 +25,11 @@ const AffiliateBeheer = () => {
   const [codeForm, setCodeForm] = useState({ affiliate_id: "", code: "", korting_type: "percentage", korting_waarde: "", max_gebruik: "", geldig_tot: "" });
   const [detailAffiliate, setDetailAffiliate] = useState<any | null>(null);
   const [showImportKoudeLeads, setShowImportKoudeLeads] = useState(false);
+  const { data: targets = [] } = useAffiliateTargets(detailAffiliate?.id);
+  const upsertTarget = useUpsertTarget();
+  const huidigJaar = new Date().getFullYear();
+  const huidigeMaand = new Date().getMonth() + 1;
+  const huidigTarget = targets.find((t) => t.jaar === huidigJaar && t.maand === huidigeMaand);
 
   // Fetch instellingen
   const { data: instellingen } = useQuery({
