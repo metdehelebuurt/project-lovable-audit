@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, ArrowRight, Euro, MessageCircle, GripVertical } from "lucide-react";
+import { Phone, Mail, ArrowRight, MessageCircle, GripVertical } from "lucide-react";
 import { STATUS_KLEUR, STATUS_LABEL, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
@@ -33,29 +33,31 @@ export function PipelineKaart({ lead, onOpen, onAdvance, draggable = false }: Pr
       className={`p-3 space-y-2 hover:shadow-md transition-shadow ${draggable ? "cursor-grab active:cursor-grabbing touch-none" : ""}`}
       {...dragProps}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2 min-w-0">
         {draggable && (
-          <span
-            aria-hidden
-            className="text-muted-foreground -ml-1 mt-0.5"
-          >
+          <span aria-hidden className="text-muted-foreground/60 -ml-1 mt-0.5 shrink-0">
             <GripVertical className="h-4 w-4" />
           </span>
         )}
-        <div className="min-w-0">
-          <button type="button" onClick={onOpen} className="text-left hover:underline">
+        <div className="min-w-0 flex-1">
+          <button type="button" onClick={onOpen} className="text-left hover:underline w-full">
             <p className="font-semibold text-sm truncate">{lead.bedrijfsnaam}</p>
           </button>
           {lead.contactpersoon && <p className="text-xs text-muted-foreground truncate">{lead.contactpersoon}</p>}
         </div>
-        <Badge variant="secondary" className={STATUS_KLEUR[lead.status as AffiliateLeadStatus]}>{STATUS_LABEL[lead.status as AffiliateLeadStatus]}</Badge>
       </div>
+      <Badge
+        variant="secondary"
+        className={`${STATUS_KLEUR[lead.status as AffiliateLeadStatus]} text-[10px] font-medium w-fit`}
+      >
+        {STATUS_LABEL[lead.status as AffiliateLeadStatus]}
+      </Badge>
       {gewonnenPartnerId && (
         <TrialStatusBadge compact />
       )}
       {lead.geschatte_waarde ? (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Euro className="h-3 w-3" /> {Number(lead.geschatte_waarde).toLocaleString("nl-NL", { style: "currency", currency: "EUR" })}
+        <div className="text-xs text-muted-foreground tabular-nums">
+          {Number(lead.geschatte_waarde).toLocaleString("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
         </div>
       ) : null}
       <div className="flex gap-1 pt-1">
