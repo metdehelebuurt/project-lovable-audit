@@ -35,7 +35,8 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return err("Niet ingelogd", 401, "unauthorized");
+    console.log("authHeader present:", !!authHeader, "starts with Bearer:", authHeader?.startsWith("Bearer "));
+    if (!authHeader?.startsWith("Bearer ")) return err("Niet ingelogd (geen header)", 401, "unauthorized");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -45,6 +46,7 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: userError } = await userClient.auth.getUser();
+    console.log("getUser result:", userData?.user?.id, "error:", userError?.message);
     if (userError || !userData?.user?.id) {
       return err("Niet ingelogd: " + (userError?.message ?? "geen gebruiker"), 401, "unauthorized");
     }
