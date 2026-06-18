@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock } from "lucide-react";
+import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock, MessageCircle, CalendarPlus } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
 import { CONTACT_UITKOMST_OPTIES } from "@/lib/affiliate/leadStatus";
+import { telLink, whatsappLink } from "@/lib/affiliate/contact";
+import { TerugbelDialog } from "@/components/affiliate/TerugbelDialog";
 
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
@@ -17,6 +19,7 @@ const AffiliateBellen = () => {
   const [idx, setIdx] = useState(0);
   const [seconden, setSeconden] = useState(0);
   const tickRef = useRef<number | null>(null);
+  const [openTerugbel, setOpenTerugbel] = useState(false);
 
   const belQueue = useMemo(() => {
     const vandaag = new Date(); vandaag.setHours(23, 59, 59, 999);
@@ -56,6 +59,8 @@ const AffiliateBellen = () => {
   };
 
   const formatTimer = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const tel = current ? telLink(current.telefoon) : null;
+  const wa = current ? whatsappLink(current.telefoon) : null;
 
   return (
     <div className="p-6">
@@ -79,8 +84,10 @@ const AffiliateBellen = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                {current.telefoon && <Button asChild className="bg-emerald-600 hover:bg-emerald-700"><a href={`tel:${current.telefoon}`}><Phone className="h-4 w-4 mr-2" /> {current.telefoon}</a></Button>}
+                {tel && <Button asChild className="bg-emerald-600 hover:bg-emerald-700"><a href={tel}><Phone className="h-4 w-4 mr-2" /> {current.telefoon}</a></Button>}
+                {wa && <Button asChild variant="outline" className="text-emerald-700 border-emerald-300"><a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-2" /> WhatsApp</a></Button>}
                 {current.email && <Button asChild variant="outline"><a href={`mailto:${current.email}`}><Mail className="h-4 w-4 mr-2" /> E-mail</a></Button>}
+                <Button variant="outline" onClick={() => setOpenTerugbel(true)}><CalendarPlus className="h-4 w-4 mr-2" /> Terugbel plannen</Button>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {current.branche && <div><span className="text-muted-foreground">Branche:</span> {current.branche}</div>}
@@ -118,6 +125,9 @@ const AffiliateBellen = () => {
             </CardContent>
           </Card>
         </div>
+      )}
+      {current && (
+        <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={current.id} leadNaam={current.bedrijfsnaam} />
       )}
     </div>
   );

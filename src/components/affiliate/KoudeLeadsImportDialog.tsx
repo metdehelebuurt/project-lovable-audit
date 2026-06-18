@@ -374,7 +374,7 @@ export default function KoudeLeadsImportDialog({ open, onOpenChange }: Props) {
         {step === "preview" && (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              {fileName} — {rows.length} rijen, {validRows.length} geldig, {rejectedCount} afgekeurd.
+              {fileName} — {rows.length} rijen, {validRows.length - duplicaten} import-klaar, {rejectedCount} afgekeurd, {duplicaten} duplicaat.
             </p>
             <div className="border rounded-xl overflow-x-auto max-h-96">
               <Table>
