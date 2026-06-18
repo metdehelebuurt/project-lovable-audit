@@ -520,6 +520,155 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_lead_contactmomenten: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          duur_seconden: number | null
+          id: string
+          lead_id: string
+          notitie: string | null
+          type: Database["public"]["Enums"]["affiliate_contact_type"]
+          uitkomst: string | null
+          volgende_actie_datum: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          duur_seconden?: number | null
+          id?: string
+          lead_id: string
+          notitie?: string | null
+          type?: Database["public"]["Enums"]["affiliate_contact_type"]
+          uitkomst?: string | null
+          volgende_actie_datum?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          duur_seconden?: number | null
+          id?: string
+          lead_id?: string
+          notitie?: string | null
+          type?: Database["public"]["Enums"]["affiliate_contact_type"]
+          uitkomst?: string | null
+          volgende_actie_datum?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_lead_contactmomenten_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_lead_contactmomenten_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_leads: {
+        Row: {
+          bedrijfsnaam: string
+          branche: string | null
+          bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          claimed_at: string | null
+          contactpersoon: string | null
+          created_at: string
+          created_by: string | null
+          eigenaar_id: string | null
+          email: string | null
+          geschatte_waarde: number | null
+          gewonnen_partner_id: string | null
+          id: string
+          notities: string | null
+          regio: string | null
+          status: Database["public"]["Enums"]["affiliate_lead_status"]
+          telefoon: string | null
+          updated_at: string
+          verloren_reden: string | null
+          volgende_actie_datum: string | null
+          website: string | null
+        }
+        Insert: {
+          bedrijfsnaam: string
+          branche?: string | null
+          bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
+          claimed_at?: string | null
+          contactpersoon?: string | null
+          created_at?: string
+          created_by?: string | null
+          eigenaar_id?: string | null
+          email?: string | null
+          geschatte_waarde?: number | null
+          gewonnen_partner_id?: string | null
+          id?: string
+          notities?: string | null
+          regio?: string | null
+          status?: Database["public"]["Enums"]["affiliate_lead_status"]
+          telefoon?: string | null
+          updated_at?: string
+          verloren_reden?: string | null
+          volgende_actie_datum?: string | null
+          website?: string | null
+        }
+        Update: {
+          bedrijfsnaam?: string
+          branche?: string | null
+          bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
+          claimed_at?: string | null
+          contactpersoon?: string | null
+          created_at?: string
+          created_by?: string | null
+          eigenaar_id?: string | null
+          email?: string | null
+          geschatte_waarde?: number | null
+          gewonnen_partner_id?: string | null
+          id?: string
+          notities?: string | null
+          regio?: string | null
+          status?: Database["public"]["Enums"]["affiliate_lead_status"]
+          telefoon?: string | null
+          updated_at?: string
+          verloren_reden?: string | null
+          volgende_actie_datum?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_leads_eigenaar_id_fkey"
+            columns: ["eigenaar_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_leads_gewonnen_partner_id_fkey"
+            columns: ["gewonnen_partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_leads_gewonnen_partner_id_fkey"
+            columns: ["gewonnen_partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_links: {
         Row: {
           actief: boolean
@@ -7426,6 +7575,37 @@ export type Database = {
         Args: { _partner_id: string }
         Returns: number
       }
+      claim_affiliate_lead: {
+        Args: { _lead_id: string }
+        Returns: {
+          bedrijfsnaam: string
+          branche: string | null
+          bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          claimed_at: string | null
+          contactpersoon: string | null
+          created_at: string
+          created_by: string | null
+          eigenaar_id: string | null
+          email: string | null
+          geschatte_waarde: number | null
+          gewonnen_partner_id: string | null
+          id: string
+          notities: string | null
+          regio: string | null
+          status: Database["public"]["Enums"]["affiliate_lead_status"]
+          telefoon: string | null
+          updated_at: string
+          verloren_reden: string | null
+          volgende_actie_datum: string | null
+          website: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_leads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cleanup_partner_api_rate_log: { Args: never; Returns: undefined }
       current_actor_meta: {
         Args: { _user_id: string }
@@ -7530,6 +7710,7 @@ export type Database = {
         }[]
       }
       is_admin_tier: { Args: { _user_id: string }; Returns: boolean }
+      is_affiliate: { Args: { _user_id: string }; Returns: boolean }
       is_partner_admin_or_higher: {
         Args: { _user_id: string }
         Returns: boolean
@@ -7609,6 +7790,16 @@ export type Database = {
       }
     }
     Enums: {
+      affiliate_contact_type: "telefoon" | "email" | "notitie" | "afspraak"
+      affiliate_lead_bron: "platform_pool" | "eigen_import" | "referral_klik"
+      affiliate_lead_status:
+        | "nieuw"
+        | "gebeld_geen_gehoor"
+        | "gesprek_gepland"
+        | "in_gesprek"
+        | "voorstel_verstuurd"
+        | "gewonnen"
+        | "verloren"
       app_role:
         | "superadmin"
         | "partner_admin"
@@ -7886,6 +8077,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      affiliate_contact_type: ["telefoon", "email", "notitie", "afspraak"],
+      affiliate_lead_bron: ["platform_pool", "eigen_import", "referral_klik"],
+      affiliate_lead_status: [
+        "nieuw",
+        "gebeld_geen_gehoor",
+        "gesprek_gepland",
+        "in_gesprek",
+        "voorstel_verstuurd",
+        "gewonnen",
+        "verloren",
+      ],
       app_role: [
         "superadmin",
         "partner_admin",

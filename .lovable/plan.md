@@ -1,77 +1,90 @@
-# Automatische herinneringen voor (bijna) verlopen offertes
+## Doel
 
-Partners kunnen per organisatie instellen dat klanten automatisch een herinneringsmail krijgen X dagen vóór en/of Y dagen ná de verloopdatum van hun offerte. Een dagelijkse cronjob doet het werk, mét logging om dubbele verzending te voorkomen.
+Superadmin krijgt knoppen om bestaande gebruikers tot **affiliate** te promoveren (of weer te degraderen) en het affiliate-portaal wordt uitgebouwd tot een volwaardig sales-CRM met eigen pipeline, klantbeheer, trial-opvolging en koude-leads belmodule.
 
-## 1. Database (migratie)
+## Wat er nu al staat
 
-**Nieuwe tabel `public.offerte_auto_herinnering_config`** (één rij per partner)
-- `partner_id` (uuid, unique, FK partners)
-- `actief` (bool, default false)
-- `dagen_voor_verloop` (int[], default `{2}`) — meerdere momenten mogelijk
-- `dagen_na_verloop` (int[], default `{1,7}`)
-- `email_template_id` (uuid, FK `email_templates`, nullable)
-- `alleen_werkdagen` (bool, default true)
-- standaard timestamps
+- Rol `affiliate` bestaat, navigatie + pagina `/affiliates` (links, kortingscodes, eigen offertes, referrals).
+- `/affiliate-beheer` (superadmin) kan affiliates aanmaken, codes beheren, instellingen zetten.
+- Tabellen: `affiliate_links`, `affiliate_referrals`, `affiliate_instellingen`, `affiliate_commissies`, `kortingscodes`.
+- Edge function `user-management` voor user-aanmaak.
 
-**Nieuwe tabel `public.offerte_auto_herinnering_log`**
-- `offerte_id` (uuid, FK offertes)
-- `partner_id` (uuid)
-- `fase` (text: `voor_verloop` / `na_verloop`)
-- `dag_offset` (int) — bv. -2 of +7
-- `verzonden_op` (timestamptz)
-- unique `(offerte_id, fase, dag_offset)` voorkomt dubbele sends
+## Wat ontbreekt en wordt toegevoegd
 
-**RLS + GRANTs**
-- config: partner_admin/backoffice (= `is_admin_tier`) van eigen partner read/write; service_role full
-- log: lezen door partner-medewerkers van eigen partner; insert alleen service_role
-- Beide met `GRANT` voor authenticated + service_role
+### 1. Promoveren bestaande gebruikers naar affiliate (superadmin)
+- Knop **"Maak affiliate"** in `Gebruikers` lijst en `GebruikerDetail` (alleen superadmin) — wijzigt `users.rol` naar `affiliate`, ontkoppelt `partner_id`, seedt een default `affiliate_link` (slug op basis van naam) en stuurt welkomstmail.
+- Knop **"Affiliate-rol intrekken"** om terug te draaien (kiest fallback-rol, behoudt historie van referrals/commissies).
+- Wordt afgehandeld door uitbreiding van `user-management` edge function met `promote_to_affiliate` en `revoke_affiliate` acties (service-role, audit-log).
 
-Bestaande tabel `offerte_herinneringen` (handmatige opvolg-taken) blijft ongemoeid — andere functie.
+### 2. Affiliate Sales CRM — nieuwe tabel `affiliate_leads`
+Aparte koude-leads-pool, los van het normale `leads`-systeem (dat is partner-scoped).
+Velden: bedrijfsnaam, contactpersoon, email, telefoon, branche, regio, status (`nieuw`, `gebeld_geen_gehoor`, `gesprek_gepland`, `in_gesprek`, `voorstel_verstuurd`, `gewonnen`, `verloren`), pipeline-fase, geschatte waarde, eigenaar (affiliate_id), bron (`platform_pool` / `eigen_import` / `referral_klik`), volgende_actie_datum, notities (rich text), gewonnen_partner_id.
+- RLS: affiliate ziet alleen leads die aan hem zijn toegewezen of die nog in de "platform_pool" zitten en claim-baar zijn; superadmin ziet alles.
+- Edge function `affiliate-lead-claim` om een pool-lead te claimen (atomic).
 
-## 2. Edge Function `cron-send-quote-reminders`
+### 3. Affiliate Pipeline UI (`/affiliates/pipeline`)
+Kanban-bord met de 7 statussen hierboven, drag-and-drop tussen kolommen (zoals bestaande leads-kanban). Quick-actions per kaart: bellen (`tel:`), e-mail, notitie toevoegen, status veranderen, omzetten naar referral wanneer "gewonnen".
 
-Dagelijks om 09:00 via pg_cron (`pg_cron` + `pg_net` aanzetten, cron via `supabase--insert` zodat anon key niet in migratie staat).
+### 4. Affiliate Bel-werkbank (`/affiliates/bellen`)
+Focus-modus die één-voor-één koude leads presenteert die "nieuw" of "gebeld_geen_gehoor" zijn met `volgende_actie_datum <= vandaag`. Per lead: contactgegevens, vorige notities, snelle bel-knop, uitkomst-knoppen (geen gehoor / niet interessant / terugbellen / gesprek gepland). Auto-doorloop naar volgende lead. Mini-timer per gesprek.
 
-Logica:
-1. Loop partners met `actief = true`.
-2. Voor elk geconfigureerd `dagen_voor_verloop` / `dagen_na_verloop`-offset bereken doel-`geldig_tot` = `current_date + offset` (voor) of `current_date - offset` (na).
-3. Selecteer offertes: `partner_id` match, `status IN ('verzonden','openstaand')` (NIET `geaccepteerd`/`afgewezen`/`geconverteerd_extern`/`concept`), `geldig_tot` matcht, klant heeft e-mail.
-4. Skip als regel bestaat in `offerte_auto_herinnering_log` voor `(offerte_id, fase, dag_offset)`.
-5. Indien `alleen_werkdagen` en vandaag weekend → skip.
-6. Roep bestaande `send-offerte-email` (of `send-transactional-email` indien template-based) aan met het geconfigureerde sjabloon.
-7. Insert log-rij + `log_entity_change('offerte', …, 'herinnering_verzonden', …)` voor de tijdlijn.
-8. Foutafhandeling per offerte: catch + `system_error_logs`, doorgaan met rest.
+### 5. Aangebrachte klanten — uitbreiding
+- Tab "Mijn klanten" toont nu ook `partners` met `subscription.status`, MRR, laatste login.
+- Aparte sectie **"Trials die hulp nodig hebben"**: partners met trial-status waar `laatste_login < 7 dagen geleden` of `aantal_leads === 0` na 5 dagen — affiliate kan deze proactief benaderen, met direct bel/mail knop en logveld.
 
-## 3. Frontend
+### 6. Affiliate Dashboard rework (`/affiliates`)
+Nieuwe topnavigatie met sub-tabs: **Dashboard, Pipeline, Bellen, Mijn klanten, Trials, Links & codes, Offertes, Commissies**.
+Dashboard-tegels: open pipeline-waarde, deze maand gewonnen, te bellen vandaag, openstaande trials, MTD commissie.
 
-**Nieuw `src/pages/instellingen/OfferteHerinneringen.tsx`** (route + sidebar-link in instellingen)
-- shadcn `Card` met:
-  - `Switch` "Automatische herinneringen inschakelen"
-  - Tag-input / multi-number voor dagen vóór en ná verloop
-  - `Select` e-mail template (verplicht vóór activatie — validatie via Zod + React Hook Form)
-  - `Switch` "Alleen op werkdagen versturen"
-  - Opslaan-knop, toasts in NL
-- Data via TanStack Query (`useQuery` + `useMutation`), Supabase client, partner_id via `useAuth().profile.partner_id`
+### 7. Navigatie & rechten
+- Sidebargroep "Sales" voor rol `affiliate`: Dashboard, Pipeline, Bellen, Klanten, Trials, Links, Offertes, Commissies.
+- `permissions.ts`: helper `isAffiliate`, `canManageAffiliateLeads`.
+- `ProtectedRoute` op de nieuwe routes met `allowedRoles=["affiliate","superadmin"]`.
 
-**Offerte-detail (`src/pages/OfferteDetail.tsx`)**
-- In bestaande historie/tijdlijn-sectie tonen automatische herinneringen (komt gratis uit `entiteit_historie` door `log_entity_change`).
-- Kleine "Herinnering verzonden op …"-badge (`src/components/offertes/AutoHerinneringBadge.tsx`) op basis van laatste log-rij.
-- Bestaande handmatige "Stuur herinnering"-knop blijft.
+### 8. Superadmin uitbreiding (`/affiliate-beheer`)
+- Nieuwe tab "Koude leads-pool": superadmin/import-knop (CSV) om leads toe te voegen aan de gedeelde pool die affiliates kunnen claimen.
+- Per affiliate kpi-rij: pipeline-waarde, win-rate, gesprekken deze week, omzet.
 
-Geen wijziging aan handmatige `OfferteHerinneringen` component.
+## Technische details
 
-## 4. Edge cases
-- Geen `geldig_tot` → niet meegenomen door query.
-- Status geaccepteerd/afgewezen → uitgesloten in WHERE.
-- Klant zonder e-mail → skip + log waarschuwing.
-- Switch kan alleen aan met geldig template (frontend + DB-trigger-validatie).
-- Dubbele cron-run zelfde dag → unique index op log blokkeert tweede insert.
+**Migratie (nieuwe tabel + helpers):**
+```
+affiliate_leads (id, bedrijfsnaam, contactpersoon, email, telefoon, branche, regio,
+                 status, pipeline_fase, geschatte_waarde, eigenaar_id NULL,
+                 bron, volgende_actie_datum, notities, gewonnen_partner_id,
+                 created_at, updated_at, created_by)
+affiliate_lead_contactmomenten (id, lead_id, affiliate_id, type, uitkomst, notitie, duur_seconden, created_at)
+```
+- GRANTs voor authenticated + service_role.
+- RLS: SELECT door eigenaar of `eigenaar_id IS NULL`-pool door affiliates, full access superadmin.
+- Trigger `updated_at`.
 
-## 5. Oplevering
-Eén zin voor de gebruiker na implementatie:
-"Je kunt nu automatische offerte-herinneringen instellen via Instellingen → Offerte herinneringen; klanten ontvangen automatisch een mail vóór of na het verlopen van hun offerte."
+**Edge functions:**
+- Uitbreiding `user-management` → `promote_to_affiliate` / `revoke_affiliate` (audit-log + welkomstmail).
+- Nieuw: `affiliate-lead-claim` (transactional update `eigenaar_id = auth.uid()` where IS NULL).
 
-## Niet in scope
-- Per-offerte override van schema (kan later)
-- A/B varianten van templates
-- SMS/WhatsApp kanalen
+**Frontend:**
+- Nieuwe componenten onder `src/components/affiliate/`:
+  - `pipeline/PipelineBoard.tsx`, `pipeline/PipelineCard.tsx`, `pipeline/useAffiliatePipeline.ts`
+  - `bellen/BelWerkbank.tsx`, `bellen/useBelQueue.ts`
+  - `klanten/TrialOpvolgingLijst.tsx`
+  - `leads/AffiliateLeadDialog.tsx`
+- Nieuwe pagina's `src/pages/affiliate/`: `Pipeline.tsx`, `Bellen.tsx`, `MijnKlanten.tsx`, `Trials.tsx`.
+- Hook `useAffiliateLeads.ts` met TanStack Query.
+- `/affiliates` blijft als landing (dashboard) en krijgt subroutering via React Router nested routes.
+- Promoot/intrek knop in `Gebruikers.tsx` rij-action en `GebruikerDetail.tsx` header.
+
+**Bestandsdiscipline:** elke nieuwe component < 800 regels, helpers gesplitst per file conform projectregels. Geen `any` in nieuwe code.
+
+## Volgorde van werken
+1. DB-migratie (`affiliate_leads` + `affiliate_lead_contactmomenten` + RLS + GRANTs).
+2. Edge functions uitbreiden / nieuw.
+3. Hooks + types.
+4. Pipeline, Bellen, Klanten, Trials pagina's + routing + sidebar.
+5. Promoot-knoppen in gebruikersbeheer + superadmin pool-tab.
+6. Dashboard rework.
+
+## Vragen aan jou voordat ik begin
+1. **Koude leads-pool**: mag elke affiliate vrij leads claimen uit de gedeelde pool, of moet superadmin handmatig leads aan affiliates toewijzen?
+2. **Demo data**: wil je dat ik een paar voorbeeld-koude-leads seed zodat het bel-CRM direct iets toont?
+3. **Trials-criterium**: gebruik ik "geen login > 7 dagen" + "0 leads na 5 dagen" als signaal, of heb je een andere definitie van "trial die hulp nodig heeft"?
