@@ -288,7 +288,7 @@ const App = () => (
               } />
               {/* /tools/webtools now redirects to /tools — webtools are integrated */}
               <Route path="/offertes/nieuw" element={
-                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteNieuw /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur", "affiliate"]}><OfferteNieuw /></ProtectedRoute>
               } />
               <Route path="/offertes/template" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "partner_staff", "adviseur"]}><OfferteTemplatePage /></ProtectedRoute>
