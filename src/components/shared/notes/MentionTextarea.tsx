@@ -83,12 +83,16 @@ export function MentionTextarea({ value, onChange, placeholder, rows = 3, classN
         className="rounded-xl"
       />
       {trigger && (
-        <div className="absolute z-50 left-3 bottom-full mb-1 w-72 rounded-xl border bg-popover shadow-lg overflow-hidden">
+        <div className="absolute z-[60] left-3 top-full mt-1 w-72 rounded-xl border bg-popover shadow-lg overflow-hidden">
           <div className="px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-1.5 border-b">
             <AtSign className="h-3 w-3" /> Collega taggen
           </div>
           {matches.length === 0 ? (
-            <div className="px-3 py-3 text-xs text-muted-foreground">Geen collega's gevonden</div>
+            <div className="px-3 py-3 text-xs text-muted-foreground">
+              {colleagues.length === 0
+                ? "Er zijn nog geen collega's binnen je organisatie om te taggen."
+                : `Geen collega's gevonden voor "${trigger.query}"`}
+            </div>
           ) : (
             <ul className="max-h-60 overflow-y-auto">
               {matches.map((c, i) => (
