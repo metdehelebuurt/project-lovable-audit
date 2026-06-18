@@ -44,10 +44,11 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claims?.claims?.sub) return err("Niet ingelogd", 401, "unauthorized");
-    const userId = claims.claims.sub as string;
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData?.user?.id) {
+      return err("Niet ingelogd: " + (userError?.message ?? "geen gebruiker"), 401, "unauthorized");
+    }
+    const userId = userData.user.id;
 
     const admin = createClient(supabaseUrl, serviceKey);
 
