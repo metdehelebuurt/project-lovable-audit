@@ -25,23 +25,22 @@ export function PipelineKaart({ lead, onOpen, onAdvance, draggable = false }: Pr
   const style = drag.transform
     ? { transform: CSS.Translate.toString(drag.transform), opacity: drag.isDragging ? 0.4 : 1 }
     : undefined;
+  const dragProps = draggable ? { ...drag.listeners, ...drag.attributes } : {};
   return (
     <Card
       ref={draggable ? drag.setNodeRef : undefined}
       style={style}
-      className="p-3 space-y-2 hover:shadow-md transition-shadow"
+      className={`p-3 space-y-2 hover:shadow-md transition-shadow ${draggable ? "cursor-grab active:cursor-grabbing touch-none" : ""}`}
+      {...dragProps}
     >
       <div className="flex items-start justify-between gap-2">
         {draggable && (
-          <button
-            type="button"
-            aria-label="Sleep om status te wijzigen"
-            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground -ml-1 mt-0.5 touch-none"
-            {...drag.listeners}
-            {...drag.attributes}
+          <span
+            aria-hidden
+            className="text-muted-foreground -ml-1 mt-0.5"
           >
             <GripVertical className="h-4 w-4" />
-          </button>
+          </span>
         )}
         <div className="min-w-0">
           <button type="button" onClick={onOpen} className="text-left hover:underline">
