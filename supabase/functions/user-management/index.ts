@@ -310,6 +310,81 @@ serve(async (req) => {
 
 
       default:
+      case "promote_to_affiliate": {
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen affiliates aanmaken" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { user_id } = payload as { user_id: string };
+        if (!user_id) {
+          return new Response(JSON.stringify({ error: "user_id ontbreekt" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: target, error: targetErr } = await supabaseAdmin
+          .from("users").select("id, email, voornaam, achternaam, rol").eq("id", user_id).single();
+        if (targetErr || !target) {
+          return new Response(JSON.stringify({ error: "Gebruiker niet gevonden" }), {
+            status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { error: updErr } = await supabaseAdmin
+          .from("users").update({ rol: "affiliate", partner_id: null }).eq("id", user_id);
+        if (updErr) {
+          return new Response(JSON.stringify({ error: updErr.message }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Seed een default affiliate-link
+        const baseSlug = `${(target.voornaam || "ref").toLowerCase()}-${(target.achternaam || "").toLowerCase()}`
+          .replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+        const slug = `${baseSlug || "ref"}-${Math.floor(Math.random() * 9999).toString().padStart(4, "0")}`;
+        await supabaseAdmin.from("affiliate_links")
+          .insert({ user_id, code: slug })
+          .then((r: { error: { message: string } | null }) => {
+            if (r.error) console.warn("affiliate_links seed failed", r.error.message);
+          });
+        // Audit
+        await supabaseAdmin.from("audit_log").insert({
+          actor_id: caller.id, actie: "promote_to_affiliate",
+          entiteit_type: "user", entiteit_id: user_id,
+          beschrijving: `Gebruiker ${target.email} gepromoveerd naar affiliate`,
+        }).then((r: { error: { message: string } | null }) => {
+          if (r.error) console.warn("audit log failed", r.error.message);
+        });
+        return new Response(JSON.stringify({ success: true, slug }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "revoke_affiliate": {
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen dit uitvoeren" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { user_id, new_rol, partner_id } = payload as { user_id: string; new_rol?: string; partner_id?: string };
+        const fallbackRol = new_rol || "partner_staff";
+        const { error: updErr } = await supabaseAdmin
+          .from("users").update({ rol: fallbackRol, partner_id: partner_id ?? null }).eq("id", user_id);
+        if (updErr) {
+          return new Response(JSON.stringify({ error: updErr.message }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        await supabaseAdmin.from("affiliate_links").update({ actief: false }).eq("user_id", user_id);
+        await supabaseAdmin.from("audit_log").insert({
+          actor_id: caller.id, actie: "revoke_affiliate",
+          entiteit_type: "user", entiteit_id: user_id,
+          beschrijving: `Affiliate-rol ingetrokken, nieuwe rol: ${fallbackRol}`,
+        });
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      default:
         return new Response(JSON.stringify({ error: "Onbekende actie" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
