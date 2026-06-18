@@ -1576,6 +1576,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_notificatie_voorkeuren: {
+        Row: {
+          created_at: string
+          email_bug: boolean
+          email_functieverzoek: boolean
+          inapp_bug: boolean
+          inapp_functieverzoek: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_bug?: boolean
+          email_functieverzoek?: boolean
+          inapp_bug?: boolean
+          inapp_functieverzoek?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_bug?: boolean
+          email_functieverzoek?: boolean
+          inapp_bug?: boolean
+          inapp_functieverzoek?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedback_verzoeken: {
         Row: {
           admin_reactie: string | null
