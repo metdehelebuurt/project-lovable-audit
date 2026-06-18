@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { wrapInMijnhuisTemplate } from "./mijnhuisTemplate";
 
 interface Props {
   open: boolean;
@@ -27,6 +29,8 @@ const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "",
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [useTemplate, setUseTemplate] = useState<boolean>(!!affiliateLeadId);
+  const [senderName, setSenderName] = useState("");
 
   const handleSend = async () => {
     if (!to.trim() || !subject.trim() || !body.trim()) {
@@ -37,12 +41,13 @@ const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "",
     setSending(true);
     try {
       const htmlBody = body.split("\n").map(line => `<p>${line || "&nbsp;"}</p>`).join("");
+      const finalHtml = useTemplate ? wrapInMijnhuisTemplate(htmlBody, senderName) : htmlBody;
 
       const { data, error } = await supabase.functions.invoke("email-api-send", {
         body: {
           to: to.trim(),
           subject: subject.trim(),
-          html_body: htmlBody,
+          html_body: finalHtml,
           lead_id: leadId || null,
           klant_id: klantId || null,
           affiliate_lead_id: affiliateLeadId || null,
@@ -97,6 +102,26 @@ const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "",
           <div>
             <Label>Bericht</Label>
             <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={10} placeholder="Typ uw bericht..." className="mt-1" />
+          </div>
+          <div className="rounded-md border bg-muted/30 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="use-template" className="cursor-pointer">Verstuur in mijnhuis.nu huisstijl</Label>
+                <p className="text-xs text-muted-foreground">Wikkelt je bericht in een nette branded e-mailtemplate.</p>
+              </div>
+              <Switch id="use-template" checked={useTemplate} onCheckedChange={setUseTemplate} />
+            </div>
+            {useTemplate && (
+              <div>
+                <Label className="text-xs">Afzendernaam (voor ondertekening)</Label>
+                <Input
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Bijv. Bas de Vries"
+                  className="mt-1"
+                />
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
