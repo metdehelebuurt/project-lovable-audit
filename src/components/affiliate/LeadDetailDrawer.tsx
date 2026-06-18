@@ -5,11 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, Mail, Globe, Save, MessageSquarePlus } from "lucide-react";
+import { Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { STATUS_LABEL, STATUS_VOLGORDE, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLeadContactmomenten, useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
+import { telLink, whatsappLink } from "@/lib/affiliate/contact";
+import { TerugbelDialog } from "./TerugbelDialog";
 
 interface Props {
   lead: AffiliateLead | null;
@@ -24,6 +26,7 @@ export function LeadDetailDrawer({ lead, onClose }: Props) {
   const [waarde, setWaarde] = useState("");
   const [notitie, setNotitie] = useState("");
   const [contactNotitie, setContactNotitie] = useState("");
+  const [openTerugbel, setOpenTerugbel] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -35,6 +38,8 @@ export function LeadDetailDrawer({ lead, onClose }: Props) {
   }, [lead]);
 
   if (!lead) return null;
+  const tel = telLink(lead.telefoon);
+  const wa = whatsappLink(lead.telefoon);
 
   const opslaan = async () => {
     await update.mutateAsync({
@@ -58,9 +63,11 @@ export function LeadDetailDrawer({ lead, onClose }: Props) {
         <div className="space-y-5 mt-4">
           {lead.contactpersoon && <Badge variant="outline">{lead.contactpersoon}</Badge>}
           <div className="flex flex-wrap gap-2">
-            {lead.telefoon && <Button asChild size="sm" variant="outline"><a href={`tel:${lead.telefoon}`}><Phone className="h-4 w-4 mr-1" />{lead.telefoon}</a></Button>}
+            {tel && <Button asChild size="sm" variant="outline"><a href={tel}><Phone className="h-4 w-4 mr-1" />{lead.telefoon}</a></Button>}
+            {wa && <Button asChild size="sm" variant="outline" className="text-emerald-700 border-emerald-300"><a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</a></Button>}
             {lead.email && <Button asChild size="sm" variant="outline"><a href={`mailto:${lead.email}`}><Mail className="h-4 w-4 mr-1" />{lead.email}</a></Button>}
             {lead.website && <Button asChild size="sm" variant="outline"><a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer"><Globe className="h-4 w-4 mr-1" />Website</a></Button>}
+            <Button size="sm" variant="outline" onClick={() => setOpenTerugbel(true)}><CalendarPlus className="h-4 w-4 mr-1" /> Terugbel plannen</Button>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -109,6 +116,7 @@ export function LeadDetailDrawer({ lead, onClose }: Props) {
             </div>
           )}
         </div>
+        <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={lead.id} leadNaam={lead.bedrijfsnaam} />
       </SheetContent>
     </Sheet>
   );

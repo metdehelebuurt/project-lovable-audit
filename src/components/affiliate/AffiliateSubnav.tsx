@@ -1,14 +1,16 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText } from "lucide-react";
+import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/affiliates", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/affiliates/pipeline", label: "Pipeline", icon: Kanban },
   { to: "/affiliates/bellen", label: "Bellen", icon: PhoneCall },
+  { to: "/affiliates/agenda", label: "Agenda", icon: Calendar },
   { to: "/affiliates/pool", label: "Koude leads", icon: Users },
   { to: "/affiliates/klanten", label: "Mijn klanten", icon: Users },
   { to: "/affiliates/trials", label: "Trials", icon: AlertCircle },
+  { to: "/affiliates/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/affiliates/links", label: "Links & codes", icon: Link2 },
   { to: "/affiliates/offertes", label: "Offertes", icon: FileText },
 ];
