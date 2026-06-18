@@ -1,72 +1,77 @@
+# Automatische herinneringen voor (bijna) verlopen offertes
 
-# Duplicate-leads detectie & samenvoegen
+Partners kunnen per organisatie instellen dat klanten automatisch een herinneringsmail krijgen X dagen vóór en/of Y dagen ná de verloopdatum van hun offerte. Een dagelijkse cronjob doet het werk, mét logging om dubbele verzending te voorkomen.
 
-## Wat de partner straks ziet
+## 1. Database (migratie)
 
-1. **Dashboard / Vandaag** — een kaart "Mogelijke dubbele leads (N)" met de eerste paar paren en knop "Bekijken".
-2. **Leads-overzicht** — een banner bovenaan "N mogelijke duplicaten gevonden — bekijken".
-3. **Lead-detailpagina** — inline waarschuwing "Mogelijk duplicaat van Jan Jansen (scan 12-03-2026)" met knoppen *Samenvoegen* en *Geen duplicaat*.
-4. **Samenvoegen-dialog** — twee leads naast elkaar; per veld (naam, e-mail, telefoon, adres, bron, notities, status, eigenaar, lead_eigenschappen-velden) een radio-keuze welke waarde behouden blijft. Alle gekoppelde records (afspraken, schouwen, offertes, opdrachten, klanten, contactmomenten, notities, daklayouts, e-mails, installaties) worden overgezet naar de behouden lead, de andere lead wordt daarna verwijderd.
-5. **Geen-duplicaat-knop** — paar wordt onthouden in een nieuwe tabel `lead_duplicaat_negeerlijst` en verschijnt niet meer.
+**Nieuwe tabel `public.offerte_auto_herinnering_config`** (één rij per partner)
+- `partner_id` (uuid, unique, FK partners)
+- `actief` (bool, default false)
+- `dagen_voor_verloop` (int[], default `{2}`) — meerdere momenten mogelijk
+- `dagen_na_verloop` (int[], default `{1,7}`)
+- `email_template_id` (uuid, FK `email_templates`, nullable)
+- `alleen_werkdagen` (bool, default true)
+- standaard timestamps
 
-## Detectie-criteria
+**Nieuwe tabel `public.offerte_auto_herinnering_log`**
+- `offerte_id` (uuid, FK offertes)
+- `partner_id` (uuid)
+- `fase` (text: `voor_verloop` / `na_verloop`)
+- `dag_offset` (int) — bv. -2 of +7
+- `verzonden_op` (timestamptz)
+- unique `(offerte_id, fase, dag_offset)` voorkomt dubbele sends
 
-Een paar `(lead_a, lead_b)` binnen dezelfde `partner_id` is verdacht wanneer **één van deze** matcht:
-- Genormaliseerd e-mailadres (lowercase, trim) gelijk.
-- Laatste 8 cijfers van het telefoonnummer (alleen digits) gelijk.
-- Postcode (zonder spaties, uppercase) + huisnummer (eerste getallen uit `adres`) gelijk.
+**RLS + GRANTs**
+- config: partner_admin/backoffice (= `is_admin_tier`) van eigen partner read/write; service_role full
+- log: lezen door partner-medewerkers van eigen partner; insert alleen service_role
+- Beide met `GRANT` voor authenticated + service_role
 
-Paren die in `lead_duplicaat_negeerlijst` staan worden uitgesloten.
+Bestaande tabel `offerte_herinneringen` (handmatige opvolg-taken) blijft ongemoeid — andere functie.
 
-## Technische uitwerking
+## 2. Edge Function `cron-send-quote-reminders`
 
-### Database (migratie)
+Dagelijks om 09:00 via pg_cron (`pg_cron` + `pg_net` aanzetten, cron via `supabase--insert` zodat anon key niet in migratie staat).
 
-- **View `v_lead_duplicaten`** (security invoker) die per partner duplicaat-paren oplevert met kolommen `partner_id, lead_a_id, lead_b_id, match_reden text[], score int`. Implementatie: drie subqueries (email/telefoon/postcode+huisnr) `UNION` op `least(id)`/`greatest(id)` om dubbele paren te voorkomen; `score` = aantal match-redenen.
-- **Tabel `lead_duplicaat_negeerlijst`**: `id`, `partner_id`, `lead_a_id`, `lead_b_id` (genormaliseerd zodat a<b), `genegeerd_door`, `created_at`. Unique op `(partner_id, lead_a_id, lead_b_id)`. RLS: partner-scoped lezen/aanmaken/verwijderen. GRANT op `authenticated` + `service_role`.
-- **Helper-functie `public.normalize_phone(text)`** en `public.extract_huisnummer(text)` (SQL, immutable) zodat de view dezelfde logica gebruikt als de frontend.
+Logica:
+1. Loop partners met `actief = true`.
+2. Voor elk geconfigureerd `dagen_voor_verloop` / `dagen_na_verloop`-offset bereken doel-`geldig_tot` = `current_date + offset` (voor) of `current_date - offset` (na).
+3. Selecteer offertes: `partner_id` match, `status IN ('verzonden','openstaand')` (NIET `geaccepteerd`/`afgewezen`/`geconverteerd_extern`/`concept`), `geldig_tot` matcht, klant heeft e-mail.
+4. Skip als regel bestaat in `offerte_auto_herinnering_log` voor `(offerte_id, fase, dag_offset)`.
+5. Indien `alleen_werkdagen` en vandaag weekend → skip.
+6. Roep bestaande `send-offerte-email` (of `send-transactional-email` indien template-based) aan met het geconfigureerde sjabloon.
+7. Insert log-rij + `log_entity_change('offerte', …, 'herinnering_verzonden', …)` voor de tijdlijn.
+8. Foutafhandeling per offerte: catch + `system_error_logs`, doorgaan met rest.
 
-### Edge Function `lead-merge`
+## 3. Frontend
 
-- Input: `{ keep_lead_id, merge_lead_id, field_choices: Record<string,'keep'|'merge'> }`.
-- Auth: JWT verifiëren, partner_id ophalen, beide leads moeten binnen dezelfde partner vallen.
-- Stappen in één transactie (via `rpc('lead_merge_tx', …)` of sequentieel met service-role client):
-  1. Bouw update-payload voor `leads` op basis van `field_choices`.
-  2. `UPDATE leads SET … WHERE id = keep_lead_id`.
-  3. Voor elke gerelateerde tabel met `lead_id`: `UPDATE … SET lead_id = keep WHERE lead_id = merge`. Lijst: `afspraken`, `schouwen`, `offertes`, `opdrachten`, `installaties`, `klanten`, `daklayouts`, `email_berichten`, `lead_contactmomenten`, `lead_notities`, `lead_eigenschappen`.
-  4. Voor `lead_eigenschappen`: indien beide rijen bestaan → veld-voor-veld mergen volgens `field_choices`, anders simpel `UPDATE lead_id`.
-  5. `DELETE FROM leads WHERE id = merge_lead_id`.
-  6. Log naar `entiteit_historie` ("Lead samengevoegd met …").
-- Output: `{ ok: true, kept_lead_id }`.
+**Nieuw `src/pages/instellingen/OfferteHerinneringen.tsx`** (route + sidebar-link in instellingen)
+- shadcn `Card` met:
+  - `Switch` "Automatische herinneringen inschakelen"
+  - Tag-input / multi-number voor dagen vóór en ná verloop
+  - `Select` e-mail template (verplicht vóór activatie — validatie via Zod + React Hook Form)
+  - `Switch` "Alleen op werkdagen versturen"
+  - Opslaan-knop, toasts in NL
+- Data via TanStack Query (`useQuery` + `useMutation`), Supabase client, partner_id via `useAuth().profile.partner_id`
 
-### Frontend
+**Offerte-detail (`src/pages/OfferteDetail.tsx`)**
+- In bestaande historie/tijdlijn-sectie tonen automatische herinneringen (komt gratis uit `entiteit_historie` door `log_entity_change`).
+- Kleine "Herinnering verzonden op …"-badge (`src/components/offertes/AutoHerinneringBadge.tsx`) op basis van laatste log-rij.
+- Bestaande handmatige "Stuur herinnering"-knop blijft.
 
-Nieuwe module `src/components/leads/duplicaten/`:
-- `useDuplicaten.ts` — TanStack Query hook naar `v_lead_duplicaten` (+ filtert genegeerde paren via join).
-- `DuplicatenBanner.tsx` — banner voor Leads-overzicht.
-- `DuplicatenKaart.tsx` — kaart voor Dashboard/Vandaag.
-- `DuplicaatWaarschuwing.tsx` — inline alert op LeadDetail.
-- `MergeDialog/`
-  - `index.tsx` — orchestrator, opent dialog, roept Edge Function aan.
-  - `FieldRow.tsx` — één regel met label + 2 radio-opties (waarde A / waarde B), highlight bij verschil, "identiek" badge bij gelijke waardes.
-  - `useMergeForm.ts` — bouwt initiële keuzes (default = niet-leeg veld), valideert.
-- `useNegeerDuplicaat.ts` — mutation die rij in `lead_duplicaat_negeerlijst` insert + query invalideert.
+Geen wijziging aan handmatige `OfferteHerinneringen` component.
 
-Integratie:
-- `src/pages/Leads.tsx`: `<DuplicatenBanner />` bovenaan.
-- `src/pages/Vandaag/index.tsx`: `<DuplicatenKaart />` in de actie-kolom.
-- `src/pages/LeadDetail.tsx`: `<DuplicaatWaarschuwing leadId={id} />` direct onder de header.
+## 4. Edge cases
+- Geen `geldig_tot` → niet meegenomen door query.
+- Status geaccepteerd/afgewezen → uitgesloten in WHERE.
+- Klant zonder e-mail → skip + log waarschuwing.
+- Switch kan alleen aan met geldig template (frontend + DB-trigger-validatie).
+- Dubbele cron-run zelfde dag → unique index op log blokkeert tweede insert.
 
-### Kwaliteit & regels
+## 5. Oplevering
+Eén zin voor de gebruiker na implementatie:
+"Je kunt nu automatische offerte-herinneringen instellen via Instellingen → Offerte herinneringen; klanten ontvangen automatisch een mail vóór of na het verlopen van hun offerte."
 
-- Eén component per bestand, hooks in eigen bestand (workspace-regels).
-- Edge Function valideert input met Zod en gebruikt service-role alleen na partner-check.
-- RLS op nieuwe tabel + GRANTs in dezelfde migratie.
-- Loading- en error-states in elke nieuwe component.
-- Nederlandstalige microcopy, geen emoji's.
-
-## Out of scope
-
-- Automatisch samenvoegen zonder bevestiging.
-- Cross-partner duplicaten.
-- Bulk-merge van meer dan 2 leads tegelijk (eerst paar-voor-paar, kan later).
+## Niet in scope
+- Per-offerte override van schema (kan later)
+- A/B varianten van templates
+- SMS/WhatsApp kanalen
