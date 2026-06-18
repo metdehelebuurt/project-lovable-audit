@@ -32,7 +32,7 @@ import { processNoteMentions } from "@/lib/notes/processMentions";
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  useAuth();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [afspraakOpen, setAfspraakOpen] = useState(false);
   const [editAfspraak, setEditAfspraak] = useState<any | null>(null);
@@ -298,14 +298,13 @@ const KlantDetail = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
-                    defaultValue={klant.notities || ""}
-                    rows={4}
-                    className="rounded-xl"
-                    placeholder="Notities over deze klant..."
-                    onBlur={(e) => {
-                      if (e.target.value !== (klant.notities || "")) saveNotities(e.target.value);
-                    }}
+                  <KlantNotitieEditor
+                    klantId={klant.id}
+                    initialValue={klant.notities || ""}
+                    klantNaam={`${klant.voornaam ?? ""} ${klant.achternaam ?? ""}`.trim()}
+                    partnerId={profile?.partner_id}
+                    senderId={profile?.id}
+                    onSave={async (v) => { await saveNotities(v); }}
                   />
                 </CardContent>
               </Card>
