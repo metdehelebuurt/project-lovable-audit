@@ -7,6 +7,7 @@ import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Cl
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
+import { useTerugbelAfspraken } from "@/hooks/affiliate/useTerugbelAfspraken";
 import { CONTACT_UITKOMST_OPTIES } from "@/lib/affiliate/leadStatus";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "@/components/affiliate/TerugbelDialog";
@@ -14,6 +15,7 @@ import { TrialStartenButton } from "@/components/affiliate/TrialStartenButton";
 
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
+  const { data: terugbelAfspraken = [] } = useTerugbelAfspraken("open");
   const update = useUpdateAffiliateLead();
   const log = useLogContactmoment();
   const [notitie, setNotitie] = useState("");
@@ -24,12 +26,18 @@ const AffiliateBellen = () => {
 
   const belQueue = useMemo(() => {
     const vandaag = new Date(); vandaag.setHours(23, 59, 59, 999);
+    const dueLeadIds = new Set(
+      terugbelAfspraken
+        .filter((a) => new Date(a.geplande_op) <= vandaag)
+        .map((a) => a.lead_id),
+    );
     return leads.filter((l) => {
+      if (dueLeadIds.has(l.id)) return true;
       if (l.status !== "nieuw" && l.status !== "gebeld_geen_gehoor") return false;
       if (!l.volgende_actie_datum) return true;
       return new Date(l.volgende_actie_datum) <= vandaag;
     });
-  }, [leads]);
+  }, [leads, terugbelAfspraken]);
 
   const current: AffiliateLead | undefined = belQueue[idx];
 
