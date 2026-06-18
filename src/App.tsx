@@ -60,6 +60,7 @@ import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import AffiliatePipeline from "@/pages/affiliate/AffiliatePipeline";
+import AffiliateLeadDetail from "@/pages/affiliate/AffiliateLeadDetail";
 import AffiliateBellen from "@/pages/affiliate/AffiliateBellen";
 import AffiliatePool from "@/pages/affiliate/AffiliatePool";
 import AffiliateMijnKlanten from "@/pages/affiliate/AffiliateMijnKlanten";
