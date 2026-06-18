@@ -10,9 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Sparkles, MessageSquare, Lightbulb, Bug, TrendingUp, AlertCircle, CheckCircle, Wand2, Copy, ExternalLink } from "lucide-react";
+import { Sparkles, MessageSquare, Lightbulb, Bug, TrendingUp, AlertCircle, CheckCircle, Wand2, Copy, ExternalLink, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import RichTextEditor from "@/components/shared/RichTextEditor";
 import { Textarea } from "@/components/ui/textarea";
+import FeedbackNotificatieLog from "@/components/feedback/FeedbackNotificatieLog";
 
 const categorieIcons: Record<string, React.ElementType> = {
   ui: MessageSquare, performance: TrendingUp, nieuwe_functie: Lightbulb,
@@ -217,6 +219,12 @@ export default function FeedbackAdmin() {
         <Button onClick={generateAiReport} disabled={aiLoading} variant="outline">
           <Sparkles className="h-4 w-4 mr-2" />
           {aiLoading ? "Analyseren..." : "AI Rapport"}
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/feedback/notificatie-instellingen">
+            <Settings className="h-4 w-4 mr-2" />
+            Meldinginstellingen
+          </Link>
         </Button>
       </div>
 
@@ -440,6 +448,8 @@ export default function FeedbackAdmin() {
                     </p>
                   )}
                 </div>
+
+                <FeedbackNotificatieLog feedbackId={selectedItem.id} />
               </div>
 
               <DialogFooter>
