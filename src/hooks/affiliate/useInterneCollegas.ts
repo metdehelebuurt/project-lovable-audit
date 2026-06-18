@@ -10,7 +10,7 @@ export interface InterneCollega {
   rol: string | null;
 }
 
-const TOEGESTANE_ROLLEN = ["partner_admin", "partner_staff", "adviseur", "affiliate"];
+const TOEGESTANE_ROLLEN = ["partner_admin", "partner_staff", "adviseur", "affiliate"] as const;
 
 export function useInterneCollegas() {
   const { user } = useAuth();
@@ -30,7 +30,7 @@ export function useInterneCollegas() {
         .from("users")
         .select("id, voornaam, achternaam, email, rol, status")
         .eq("partner_id", me.partner_id)
-        .in("rol", TOEGESTANE_ROLLEN)
+        .in("rol", TOEGESTANE_ROLLEN as unknown as string[])
         .order("voornaam", { ascending: true });
       if (error) throw error;
       return (data ?? []).filter((u: any) => u.status !== "inactief");
