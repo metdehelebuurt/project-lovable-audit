@@ -58,6 +58,11 @@ import ProductWebsite from "@/pages/ProductWebsite";
 import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
+import AffiliatePipeline from "@/pages/affiliate/AffiliatePipeline";
+import AffiliateBellen from "@/pages/affiliate/AffiliateBellen";
+import AffiliatePool from "@/pages/affiliate/AffiliatePool";
+import AffiliateMijnKlanten from "@/pages/affiliate/AffiliateMijnKlanten";
+import AffiliateTrials from "@/pages/affiliate/AffiliateTrials";
 import LeadDetail from "@/pages/LeadDetail";
 import OfferteFeedback from "@/pages/OfferteFeedback";
 import AfspraakNieuw from "@/pages/AfspraakNieuw";
@@ -299,6 +304,21 @@ const App = () => (
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/affiliates" element={
                 <ProtectedRoute allowedRoles={["affiliate"]}><Affiliates /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/pipeline" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliatePipeline /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/bellen" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateBellen /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/pool" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliatePool /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/klanten" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateMijnKlanten /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/trials" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateTrials /></ProtectedRoute>
               } />
               <Route path="/affiliate-beheer" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><AffiliateBeheer /></ProtectedRoute>
