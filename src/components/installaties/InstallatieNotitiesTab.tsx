@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
+import { MentionTextarea } from "@/components/shared/notes/MentionTextarea";
+import RenderedNote from "@/components/shared/notes/RenderedNote";
+import { processNoteMentions } from "@/lib/notes/processMentions";
 import {
   fetchInstallatieNotities, addInstallatieNotitie, deleteInstallatieNotitie,
 } from "./api/installatieApi";
@@ -41,12 +43,20 @@ export default function InstallatieNotitiesTab({ installatieId, partnerId }: Pro
     if (!nieuweInhoud.trim() || !user?.id) return;
     setBusy(true);
     try {
-      await addInstallatieNotitie({
+      const created = await addInstallatieNotitie({
         installatie_id: installatieId,
         partner_id: partnerId,
         auteur_id: user.id,
         inhoud: nieuweInhoud.trim(),
         intern,
+      });
+      await processNoteMentions({
+        noteId: (created as any)?.id,
+        inhoud: nieuweInhoud.trim(),
+        resourceType: "installatie",
+        resourceId: installatieId,
+        partnerId,
+        senderId: user.id,
       });
       setNieuweInhoud("");
       await laden();
@@ -75,7 +85,7 @@ export default function InstallatieNotitiesTab({ installatieId, partnerId }: Pro
           <CardTitle className="text-base flex items-center gap-2"><StickyNote className="h-4 w-4 text-primary" /> Nieuwe notitie</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Textarea value={nieuweInhoud} onChange={(e) => setNieuweInhoud(e.target.value)} rows={3} placeholder="Schrijf een notitie..." />
+          <MentionTextarea value={nieuweInhoud} onChange={setNieuweInhoud} rows={3} placeholder="Schrijf een notitie… gebruik @ om een collega te taggen" />
           <div className="flex items-center justify-between">
             <NotitieZichtbaarheidToggle intern={intern} onChange={setIntern} id="installatie-note-intern" />
             <Button onClick={toevoegen} disabled={busy || !nieuweInhoud.trim()}>
@@ -101,7 +111,7 @@ export default function InstallatieNotitiesTab({ installatieId, partnerId }: Pro
                 </Button>
               )}
             </div>
-            <p className="text-sm whitespace-pre-wrap">{n.inhoud}</p>
+            <p className="text-sm"><RenderedNote inhoud={n.inhoud} /></p>
           </CardContent>
         </Card>
       ))}

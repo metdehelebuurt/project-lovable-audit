@@ -27,6 +27,9 @@ import DOMPurify from "dompurify";
 import GecombineerdeTijdlijn from "@/components/historie/GecombineerdeTijdlijn";
 import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import OfferteHerinneringen from "@/components/offertes/OfferteHerinneringen";
+import { MentionTextarea } from "@/components/shared/notes/MentionTextarea";
+import RenderedNote from "@/components/shared/notes/RenderedNote";
+import { processNoteMentions } from "@/lib/notes/processMentions";
 import TermijnschemaCard from "@/components/financieel/TermijnschemaCard";
 import SignaturePad from "@/components/schouwen/SignaturePad";
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
@@ -243,6 +246,14 @@ const OfferteDetail = () => {
       const newNotitie = `[${timestamp} — ${author}]\n${text}\n\n${existing}`;
       const { error } = await supabase.from("offertes").update({ notities: newNotitie }).eq("id", id!);
       if (error) throw error;
+      await processNoteMentions({
+        inhoud: text,
+        resourceType: "offerte",
+        resourceId: id!,
+        resourceTitel: offerte?.offertenummer ?? "",
+        partnerId: profile?.partner_id,
+        senderId: profile?.id,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offerte", id] });
@@ -752,27 +763,28 @@ const OfferteDetail = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <Textarea
+              <div className="space-y-2">
+                <MentionTextarea
                   value={notitieText}
-                  onChange={e => setNotitieText(e.target.value)}
-                  placeholder="Notitie toevoegen..."
-                  className="rounded-xl flex-1"
+                  onChange={setNotitieText}
+                  placeholder="Notitie toevoegen… gebruik @ om een collega te taggen"
                   rows={2}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-pill self-end"
-                  disabled={!notitieText.trim() || saveNotitieMutation.isPending}
-                  onClick={() => saveNotitieMutation.mutate(notitieText.trim())}
-                >
-                  Opslaan
-                </Button>
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-pill"
+                    disabled={!notitieText.trim() || saveNotitieMutation.isPending}
+                    onClick={() => saveNotitieMutation.mutate(notitieText.trim())}
+                  >
+                    Opslaan
+                  </Button>
+                </div>
               </div>
               {offerte.notities && (
-                <div className="bg-muted/30 rounded-xl p-3 text-sm whitespace-pre-wrap max-h-64 overflow-y-auto">
-                  {offerte.notities}
+                <div className="bg-muted/30 rounded-xl p-3 text-sm max-h-64 overflow-y-auto">
+                  <RenderedNote inhoud={offerte.notities} />
                 </div>
               )}
             </CardContent>

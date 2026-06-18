@@ -76,8 +76,13 @@ export async function addInstallatieNotitie(payload: {
   inhoud: string;
   intern: boolean;
 }) {
-  const { error } = await supabase.from("installatie_notities").insert(payload);
+  const { data, error } = await supabase
+    .from("installatie_notities")
+    .insert(payload)
+    .select("id")
+    .single();
   if (error) throw error;
+  return data;
 }
 
 export async function deleteInstallatieNotitie(id: string) {

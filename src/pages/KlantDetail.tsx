@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { StickyNote } from "lucide-react";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
@@ -27,11 +26,12 @@ import KlantTabsNav, { type KlantTab } from "@/components/klanten/detail/KlantTa
 import KlantContactCard from "@/components/klanten/detail/KlantContactCard";
 import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
 import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
+import KlantNotitieEditor from "@/components/klanten/detail/KlantNotitieEditor";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  useAuth();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [afspraakOpen, setAfspraakOpen] = useState(false);
   const [editAfspraak, setEditAfspraak] = useState<any | null>(null);
@@ -297,14 +297,13 @@ const KlantDetail = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
-                    defaultValue={klant.notities || ""}
-                    rows={4}
-                    className="rounded-xl"
-                    placeholder="Notities over deze klant..."
-                    onBlur={(e) => {
-                      if (e.target.value !== (klant.notities || "")) saveNotities(e.target.value);
-                    }}
+                  <KlantNotitieEditor
+                    klantId={klant.id}
+                    initialValue={klant.notities || ""}
+                    klantNaam={`${klant.voornaam ?? ""} ${klant.achternaam ?? ""}`.trim()}
+                    partnerId={profile?.partner_id}
+                    senderId={profile?.id}
+                    onSave={async (v) => { await saveNotities(v); }}
                   />
                 </CardContent>
               </Card>
