@@ -70,7 +70,7 @@ const MijnEmailKoppeling = () => {
   };
 
   const startOAuth = (provider: "google" | "microsoft") => {
-    if (!user || !profile?.partner_id) {
+    if (!user) {
       toast.error("Je moet ingelogd zijn");
       return;
     }
@@ -80,7 +80,7 @@ const MijnEmailKoppeling = () => {
       return;
     }
     const state = btoa(JSON.stringify({
-      partner_id: profile.partner_id,
+      partner_id: profile?.partner_id ?? null,
       user_id: user.id,
       provider,
       redirect_url: window.location.href,
