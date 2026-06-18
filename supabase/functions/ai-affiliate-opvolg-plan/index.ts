@@ -69,6 +69,15 @@ Extra context: ${context ?? '-'}`
       })))
     }
 
+    await admin.from('affiliate_opvolg_log').insert({
+      lead_id: leadId,
+      affiliate_id: userData.user.id,
+      actie: 'ai_plan',
+      bron: 'ai',
+      titel: `AI-opvolgplan voorgesteld (${taken.length} taken)`,
+      details: { aantal_taken: taken.length, commit: !!commit, types: taken.map((t: any) => t.type) },
+    })
+
     return json({ ok: true, taken })
   } catch (e) {
     console.error('ai-affiliate-opvolg-plan', e)
