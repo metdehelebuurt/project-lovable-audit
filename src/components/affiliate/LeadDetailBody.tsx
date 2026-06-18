@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import EmailTab from "@/components/email/EmailTab";
 import EmailCompose from "@/components/email/EmailCompose";
+import { AiOpvolgKaart } from "./AiOpvolgKaart";
 
 interface Props {
   lead: AffiliateLead;
@@ -114,6 +115,8 @@ export function LeadDetailBody({ lead }: Props) {
       <Button onClick={opslaan} disabled={update.isPending} className="w-full">
         <Save className="h-4 w-4 mr-2" /> Opslaan
       </Button>
+
+      <AiOpvolgKaart lead={lead} />
 
       <div className="border-t pt-4 space-y-2">
         <Label className="flex items-center gap-2"><MessageSquarePlus className="h-4 w-4" /> Gespreksnotitie loggen</Label>

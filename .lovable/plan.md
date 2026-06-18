@@ -1,81 +1,91 @@
 ## Doel
 
-Bij het inplannen van een terugbelafspraak of demo kan de affiliate kiezen voor welke interne collega de afspraak is. Daarna krijgen **zowel de klant als de gekozen collega** automatisch een bevestigingsmail in de mijnhuis.nu-huisstijl, via de ingebouwde Lovable-mailinfrastructuur (`send-transactional-email`).
+Affiliates krijgen een proactief opvolg-systeem: één centrale plek met **AI-gestuurde lead-score, suggesties voor de volgende actie en automatische herinneringen** voor demo's, terugbelafspraken en trials. Eén-klik om opvolging in te stellen, plus mail- en in-app notificaties die vooraf afgaan en bij stilte automatisch eskaleren.
 
 ## Wat er gebouwd wordt
 
-### 1. Database — kolom toevoegen aan `affiliate_terugbel_afspraken`
+### 1. Datamodel — kleine uitbreidingen
 
-Eén nieuwe kolom:
-- `collega_user_id uuid null` — referentie naar `auth.users.id`; wie de afspraak uitvoert.
+`affiliate_leads`:
+- `ai_score int null` (0-100) — kans op deal.
+- `ai_score_reden text null` — korte AI-uitleg.
+- `ai_volgende_actie text null` + `ai_volgende_actie_op timestamptz null` — voorstel.
+- `laatst_gescoord_op timestamptz null`.
 
-Migratie zet ook een index op `collega_user_id` voor latere weergave ("mijn afspraken") en update geen bestaande rijen (blijft `null`).
+Nieuwe tabel `affiliate_opvolg_taken`:
+- `lead_id`, `affiliate_id`, `type` (`bel`/`mail`/`demo`/`trial_check`/`whatsapp`/`anders`),
+- `titel`, `notitie`, `due_op timestamptz`, `voltooid_op timestamptz null`,
+- `bron` (`handmatig`/`ai`/`automatisch`), `prioriteit` (`laag`/`normaal`/`hoog`).
+- RLS: affiliate ziet alleen eigen taken; service_role voor edge functions.
 
-### 2. Hook collega's
+Velden op `affiliate_referrals` (trial-opvolging):
+- `trial_check_uitgevoerd_op timestamptz null`,
+- `trial_laatste_herinnering_op timestamptz null`.
 
-Nieuwe hook `src/hooks/affiliate/useInterneCollegas.ts` die actieve gebruikers binnen dezelfde partner ophaalt uit `users` (naam, email, id). Filter op rollen die afspraken kunnen oppakken: `partner_admin`, `partner_staff`, `adviseur`. Affiliate zelf staat ook in de lijst (handig als hij zichzelf wil toewijzen).
+### 2. Edge Functions
 
-### 3. UI — `TerugbelDialog.tsx` uitbreiden
+a. **`ai-affiliate-lead-score`** — input `leadId`. Pakt lead + contactmomenten + terugbelhistorie, vraagt Lovable AI (`google/gemini-3-flash-preview`) om JSON: `{ score, reden, volgende_actie, volgende_actie_op_offset_dagen }`. Schrijft terug op de lead. Gebruikt bestaande gateway-helper.
 
-Veld toevoegen tussen "Datum en tijd" en "Notitie":
-- Label: **"Voor welke collega?"**
-- shadcn `Select` met de lijst uit de hook, default leeg ("Kies een collega").
-- Verplicht voor zowel terugbel als demo (anders geen mailbevestiging mogelijk).
+b. **`ai-affiliate-opvolg-plan`** — input `leadId`, optioneel `context`. Genereert 2–4 concrete opvolg-taken (titel, type, due-datum, notitie) in NL en slaat ze op in `affiliate_opvolg_taken` met `bron='ai'`. Returnt de taken voor preview-bevestiging in UI.
 
-`useCreateTerugbel` krijgt het extra veld `collega_user_id` door. Na opslaan triggert dezelfde mutation de mailfunctie (één edge-call die intern beide mails verstuurt — zie 5).
+c. **`affiliate-opvolg-cron`** — draait elke 15 min via pg_cron:
+   - Vindt taken met `due_op` tussen nu en +24u zonder verstuurde herinnering → maakt `notificaties`-rij **en** stuurt mail via bestaande `send-transactional-email` met nieuwe template `affiliate-opvolg-herinnering`.
+   - Vindt taken die >24u over tijd zijn → escalatie-mail + push naar `notificaties` (prioriteit hoog).
+   - Trial-opvolging: voor elke `affiliate_referrals` met `partners.trial_einddatum` op T-7, T-3, T-1 en T+0 → mail `affiliate-trial-opvolging` aan de affiliate met klantgegevens + 1-klik knoppen.
+   - Re-score: alle leads met `laatst_gescoord_op` ouder dan 48u en `status` actief → roept `ai-affiliate-lead-score` aan (gebatcht, max 25 per run).
 
-### 4. E-mailtemplates (huisstijl mijnhuis.nu)
+### 3. UI — affiliate-zijde
 
-Twee nieuwe React-Email templates onder `supabase/functions/_shared/transactional-email-templates/`:
+a. **Lead-detail (`LeadDetailBody.tsx`)** krijgt een **"AI-opvolging"-kaart**:
+   - Toont `ai_score` als badge + voortgangsbalk en `ai_score_reden`.
+   - Knop **"Maak opvolgplan"** → roept `ai-affiliate-opvolg-plan` aan, toont gegenereerde taken in een dialog; affiliate vinkt aan welke hij wil overnemen → opslaan.
+   - Knop **"Herbereken score"** (handmatig forceren).
 
-- `affiliate-afspraak-klant.tsx` — naar de klant.
-  Onderwerp dynamisch: *"Bevestiging terugbelafspraak"* of *"Bevestiging demo-afspraak"*.
-  Props: `klantNaam`, `type` (`terugbel`|`demo`), `gepland` (ISO), `collegaNaam`, `notitie`.
-- `affiliate-afspraak-collega.tsx` — naar de collega.
-  Onderwerp: *"Nieuwe terugbelafspraak voor jou"* / *"Nieuwe demo voor jou"*.
-  Props: `collegaNaam`, `klantNaam`, `klantEmail`, `klantTelefoon`, `type`, `gepland`, `notitie`, `affiliateNaam`.
+b. **Nieuwe pagina `/affiliates/opvolging`** (subnav-link "Opvolging"):
+   - Drie tabs: *Vandaag*, *Achterstallig*, *Komende 7 dagen*.
+   - Lijst van `affiliate_opvolg_taken` + openstaande terugbelafspraken (gemerged), gegroepeerd per lead.
+   - Bulk-acties: "Markeer afgehandeld", "Verzet 1 dag", "Bel nu".
+   - Per item: AI-uitleg waarom het belangrijk is (kleine sparkline-tag).
 
-Beide templates gebruiken dezelfde mijnhuis-stijl als de bestaande `afspraak-ingepland.tsx` (kleuren, logo, button, footer). Datum/tijd weergegeven in `Europe/Amsterdam` via `Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", … })` — sluit aan op bestaande tijdzone-aanpak.
+c. **Snelle "+ Opvolging"-actieknop** in `LeadDetailBody` en op pipeline-kaart:
+   - Mini-dialog: type, datum/tijd (default = AI-voorstel), notitie, prioriteit, *"AI laat een notitie voor mij achter"* (auto-fill).
 
-Beide templates worden geregistreerd in `_shared/transactional-email-templates/registry.ts`.
+d. **Trial-pagina (`AffiliateTrials.tsx`)**: per trial-card extra:
+   - Eén-klik knoppen "Stuur check-in mail" (template `affiliate-trial-checkin`), "Plan demo", "Voeg opvolg-taak toe" — koppelt direct aan dezelfde taken-tabel zodat de cron erop kan reageren.
 
-### 5. Edge Function — `affiliate-afspraak-notify`
+### 4. E-mailtemplates (mijnhuis.nu-huisstijl, React-Email)
 
-Nieuwe functie die de hele notify-flow encapsuleert (zodat de client maar één call doet):
+Drie nieuwe in `_shared/transactional-email-templates/`:
+- `affiliate-opvolg-herinnering.tsx` — "Vandaag op je lijstje: {{titel}}".
+- `affiliate-opvolg-escalatie.tsx` — "Achterstallig: {{titel}}".
+- `affiliate-trial-opvolging.tsx` — "Trial van {{klant}} loopt over {{dagen}} dagen af".
+- `affiliate-trial-checkin.tsx` — outbound, naar de klant; vraag of hulp nodig is.
 
-Input (JSON):
-```
-{ afspraakId: string }
-```
+Registreren in `registry.ts`.
 
-Stappen:
-1. JWT valideren via Supabase client met user-token.
-2. Afspraak ophalen (`affiliate_terugbel_afspraken` join `leads` join `users` voor collega + affiliate).
-3. Idempotency-key = `affiliate-afspraak-${afspraakId}` (zo voorkomen we dubbele mails bij retry).
-4. Twee `supabase.functions.invoke("send-transactional-email", …)` calls:
-   - naar klant met `affiliate-afspraak-klant`
-   - naar collega met `affiliate-afspraak-collega`
-5. Korte JSON-response `{ ok: true }`.
+### 5. In-app notificaties
 
-Geen mail wanneer klant geen e-mailadres heeft (alleen collega), idem omgekeerd — en duidelijke log/toast richting de affiliate als één van beide mist.
+Hergebruik bestaande `notificaties`-tabel. Cron-edge en taakcreatie schrijven rijen met `type='affiliate_opvolging'`, link naar lead. Realtime-subscriber zit al in app — toast + bel-icoon updaten vanzelf.
 
-### 6. Client-aanroep
+### 6. Cron
 
-In `useCreateTerugbel` na succesvolle insert: `supabase.functions.invoke("affiliate-afspraak-notify", { body: { afspraakId } })`. Failure van de mail blokkeert de UI-flow niet, maar toont een waarschuwings-toast ("Afspraak opgeslagen, maar mailbevestiging mislukt").
+Via `supabase--insert` één `cron.schedule` voor `affiliate-opvolg-cron` (elke 15 min). Aparte SQL omdat het project-URL bevat (mag niet in migratie).
 
-### 7. Deploy
+### 7. Failsafe & idempotentie
 
-Na alle bestand-wijzigingen `deploy_edge_functions` voor:
-- `affiliate-afspraak-notify` (nieuw)
-- `send-transactional-email` (template-registry is veranderd)
+- Cron gebruikt `idempotencyKey = affiliate-opvolg-${taak.id}-${fase}` om dubbele mails te voorkomen.
+- Tijdvensters in **Europe/Amsterdam** (sluit aan op eerdere tijdzone-aanpak).
+- AI-calls in try/catch; failures loggen naar `system_error_logs`, blokkeren UI niet.
+- Lovable AI 402/429: nette toast richting affiliate met "AI even niet beschikbaar — voorstel later".
 
-## Aannames (graag bevestigen indien anders)
+## Aannames
 
-- Klant-e-mail staat al op `leads` (kolom `email` of vergelijkbaar) — anders gebruik ik wat er is.
-- "Interne collega" = actieve `users`-rij binnen dezelfde `partner_id` als de affiliate.
-- Afzender = bestaande email-domein (mijnhuis.nu) dat al voor app-emails is geconfigureerd.
+- Bestaande `notificaties`-tabel + realtime kanaal is bruikbaar (project memory bevestigt dit).
+- Klant-mailbox voor `affiliate-trial-checkin` is `partners.email`.
+- Gebruiker wil dat de AI géén mail aan klanten stuurt zonder bevestiging — alleen de **check-in template** stuurt door op expliciete klik; opvolg-mails gaan naar de affiliate zelf.
 
-## Out of scope
+## Out of scope (nu niet)
 
-- Kalender-uitnodiging (.ics) — kan in vervolg.
-- Wijzigen/annuleren van afspraak met nieuwe mails — kan in vervolg.
+- SMS/WhatsApp herinneringen — kan later via GatewayAPI.
+- Volledige AI-conversaties met klant (auto-reply); we beperken AI tot scoren + plannen.
+- Drag-and-drop kalenderweergave van taken.

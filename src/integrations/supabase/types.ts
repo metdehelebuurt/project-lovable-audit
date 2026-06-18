@@ -615,6 +615,10 @@ export type Database = {
       }
       affiliate_leads: {
         Row: {
+          ai_score: number | null
+          ai_score_reden: string | null
+          ai_volgende_actie: string | null
+          ai_volgende_actie_op: string | null
           bedrijfsnaam: string
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
@@ -627,6 +631,7 @@ export type Database = {
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
           id: string
+          laatst_gescoord_op: string | null
           notities: string | null
           regio: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -637,6 +642,10 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          ai_score?: number | null
+          ai_score_reden?: string | null
+          ai_volgende_actie?: string | null
+          ai_volgende_actie_op?: string | null
           bedrijfsnaam: string
           branche?: string | null
           bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
@@ -649,6 +658,7 @@ export type Database = {
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
           id?: string
+          laatst_gescoord_op?: string | null
           notities?: string | null
           regio?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -659,6 +669,10 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          ai_score?: number | null
+          ai_score_reden?: string | null
+          ai_volgende_actie?: string | null
+          ai_volgende_actie_op?: string | null
           bedrijfsnaam?: string
           branche?: string | null
           bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
@@ -671,6 +685,7 @@ export type Database = {
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
           id?: string
+          laatst_gescoord_op?: string | null
           notities?: string | null
           regio?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -787,6 +802,72 @@ export type Database = {
           },
         ]
       }
+      affiliate_opvolg_taken: {
+        Row: {
+          affiliate_id: string
+          bron: string
+          created_at: string
+          due_op: string
+          escalatie_verstuurd_op: string | null
+          herinnering_verstuurd_op: string | null
+          id: string
+          lead_id: string | null
+          notitie: string | null
+          prioriteit: string
+          titel: string
+          type: string
+          updated_at: string
+          voltooid_op: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          bron?: string
+          created_at?: string
+          due_op: string
+          escalatie_verstuurd_op?: string | null
+          herinnering_verstuurd_op?: string | null
+          id?: string
+          lead_id?: string | null
+          notitie?: string | null
+          prioriteit?: string
+          titel: string
+          type?: string
+          updated_at?: string
+          voltooid_op?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          bron?: string
+          created_at?: string
+          due_op?: string
+          escalatie_verstuurd_op?: string | null
+          herinnering_verstuurd_op?: string | null
+          id?: string
+          lead_id?: string | null
+          notitie?: string | null
+          prioriteit?: string
+          titel?: string
+          type?: string
+          updated_at?: string
+          voltooid_op?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_opvolg_taken_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_opvolg_taken_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_referrals: {
         Row: {
           affiliate_id: string
@@ -798,6 +879,8 @@ export type Database = {
           kortingscode_id: string | null
           partner_id: string | null
           status: string
+          trial_check_uitgevoerd_op: string | null
+          trial_laatste_herinnering_op: string | null
         }
         Insert: {
           affiliate_id: string
@@ -809,6 +892,8 @@ export type Database = {
           kortingscode_id?: string | null
           partner_id?: string | null
           status?: string
+          trial_check_uitgevoerd_op?: string | null
+          trial_laatste_herinnering_op?: string | null
         }
         Update: {
           affiliate_id?: string
@@ -820,6 +905,8 @@ export type Database = {
           kortingscode_id?: string | null
           partner_id?: string | null
           status?: string
+          trial_check_uitgevoerd_op?: string | null
+          trial_laatste_herinnering_op?: string | null
         }
         Relationships: [
           {
@@ -7785,6 +7872,10 @@ export type Database = {
       claim_affiliate_lead: {
         Args: { _lead_id: string }
         Returns: {
+          ai_score: number | null
+          ai_score_reden: string | null
+          ai_volgende_actie: string | null
+          ai_volgende_actie_op: string | null
           bedrijfsnaam: string
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
@@ -7797,6 +7888,7 @@ export type Database = {
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
           id: string
+          laatst_gescoord_op: string | null
           notities: string | null
           regio: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
