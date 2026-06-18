@@ -11,13 +11,19 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   leadId: string;
   leadNaam: string;
+  afspraakType?: "terugbel" | "demo";
 }
 
-export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam }: Props) {
+export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, afspraakType = "terugbel" }: Props) {
   const create = useCreateTerugbel();
   const morgen = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
   const [moment, setMoment] = useState(morgen);
   const [notitie, setNotitie] = useState("");
+  const isDemo = afspraakType === "demo";
+  const titel = isDemo ? "Demo inplannen" : "Terugbelafspraak plannen";
+  const placeholder = isDemo
+    ? "Bijv. demo van schouwmodule, met wie, link naar meeting..."
+    : "Waar bel je over terug?";
 
   const opslaan = async () => {
     if (!moment) return;
@@ -25,6 +31,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam }: Props) 
       lead_id: leadId,
       geplande_op: new Date(moment).toISOString(),
       notitie: notitie || null,
+      type: afspraakType,
     });
     setNotitie("");
     onOpenChange(false);
@@ -34,7 +41,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam }: Props) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Terugbelafspraak plannen</DialogTitle>
+          <DialogTitle>{titel}</DialogTitle>
           <DialogDescription>Voor {leadNaam}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -44,7 +51,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam }: Props) 
           </div>
           <div className="space-y-1">
             <Label>Notitie (optioneel)</Label>
-            <Textarea rows={3} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder="Waar bel je over terug?" />
+            <Textarea rows={3} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder={placeholder} />
           </div>
         </div>
         <DialogFooter>
