@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, Download } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { NieuweLeadDialog } from "@/components/affiliate/NieuweLeadDialog";
 import { PipelineKaart } from "@/components/affiliate/PipelineKaart";
-import { LeadDetailDrawer } from "@/components/affiliate/LeadDetailDrawer";
 import { STATUS_VOLGORDE, STATUS_LABEL, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
@@ -25,8 +25,8 @@ const AffiliatePipeline = () => {
   useRealtimeAffiliateLeads();
   const { data: leads = [] } = useAffiliateLeads("mine");
   const update = useUpdateAffiliateLead();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<AffiliateLead | null>(null);
   const [actief, setActief] = useState<AffiliateLead | null>(null);
 
   const sensors = useSensors(
@@ -95,7 +95,7 @@ const AffiliatePipeline = () => {
               key={status}
               status={status}
               leads={grouped.get(status) ?? []}
-              onOpen={(l) => setSelected(l)}
+              onOpen={(l) => navigate(`/affiliates/leads/${l.id}`)}
               onAdvance={advance}
             />
           ))}
@@ -110,7 +110,6 @@ const AffiliatePipeline = () => {
       </DndContext>
 
       <NieuweLeadDialog open={open} onOpenChange={setOpen} />
-      <LeadDetailDrawer lead={selected} onClose={() => setSelected(null)} />
     </div>
   );
 };
