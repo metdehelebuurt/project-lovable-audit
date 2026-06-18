@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye } from "lucide-react";
+import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye, Upload, Snowflake } from "lucide-react";
+import KoudeLeadsImportDialog from "@/components/affiliate/KoudeLeadsImportDialog";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
@@ -20,6 +21,7 @@ const AffiliateBeheer = () => {
   const [affiliateForm, setAffiliateForm] = useState({ voornaam: "", achternaam: "", email: "", telefoon: "" });
   const [codeForm, setCodeForm] = useState({ affiliate_id: "", code: "", korting_type: "percentage", korting_waarde: "", max_gebruik: "", geldig_tot: "" });
   const [detailAffiliate, setDetailAffiliate] = useState<any | null>(null);
+  const [showImportKoudeLeads, setShowImportKoudeLeads] = useState(false);
 
   // Fetch instellingen
   const { data: instellingen } = useQuery({
@@ -210,6 +212,7 @@ const AffiliateBeheer = () => {
           <TabsTrigger value="affiliates">Affiliates</TabsTrigger>
           <TabsTrigger value="referrals">Referrals</TabsTrigger>
           <TabsTrigger value="codes">Kortingscodes</TabsTrigger>
+          <TabsTrigger value="koude-leads">Koude leads</TabsTrigger>
           <TabsTrigger value="uitbetalingen">Uitbetalingen</TabsTrigger>
           <TabsTrigger value="instellingen">Instellingen</TabsTrigger>
         </TabsList>
