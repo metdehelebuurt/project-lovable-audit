@@ -40,6 +40,14 @@ export function useCreateTerugbel() {
         .select()
         .single();
       if (error) throw error;
+      // Synchroniseer volgende_actie_datum op de lead zodat de afspraak
+      // ook in de belwerkbank en in 'mine' lijsten opduikt.
+      if (input.lead_id && input.geplande_op) {
+        await supabase
+          .from("affiliate_leads")
+          .update({ volgende_actie_datum: input.geplande_op })
+          .eq("id", input.lead_id);
+      }
       // Verstuur bevestigingsmails (klant + collega). Niet blokkerend.
       try {
         const { error: mailErr } = await supabase.functions.invoke("affiliate-afspraak-notify", {
@@ -57,6 +65,7 @@ export function useCreateTerugbel() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["affiliate-leads"] });
       toast.success("Terugbelafspraak gepland");
     },
     onError: (e: Error) => toast.error(e.message),
