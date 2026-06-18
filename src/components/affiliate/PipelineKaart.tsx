@@ -5,6 +5,8 @@ import { Phone, Mail, ArrowRight, Euro, MessageCircle } from "lucide-react";
 import { STATUS_KLEUR, STATUS_LABEL, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
+import { TrialStatusBadge } from "./TrialStatusBadge";
+import { TrialStartenButton } from "./TrialStartenButton";
 
 interface Props {
   lead: AffiliateLead;
@@ -15,6 +17,7 @@ interface Props {
 export function PipelineKaart({ lead, onOpen, onAdvance }: Props) {
   const tel = telLink(lead.telefoon);
   const wa = whatsappLink(lead.telefoon);
+  const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
   return (
     <Card className="p-3 space-y-2 hover:shadow-md transition-shadow cursor-pointer" onClick={onOpen}>
       <div className="flex items-start justify-between gap-2">
@@ -24,6 +27,11 @@ export function PipelineKaart({ lead, onOpen, onAdvance }: Props) {
         </div>
         <Badge variant="secondary" className={STATUS_KLEUR[lead.status as AffiliateLeadStatus]}>{STATUS_LABEL[lead.status as AffiliateLeadStatus]}</Badge>
       </div>
+      {gewonnenPartnerId && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <TrialStatusBadge compact />
+        </div>
+      )}
       {lead.geschatte_waarde ? (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Euro className="h-3 w-3" /> {Number(lead.geschatte_waarde).toLocaleString("nl-NL", { style: "currency", currency: "EUR" })}
@@ -51,6 +59,11 @@ export function PipelineKaart({ lead, onOpen, onAdvance }: Props) {
           </Button>
         )}
       </div>
+      {!gewonnenPartnerId && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <TrialStartenButton lead={lead} size="sm" variant="outline" className="w-full h-7 text-xs" />
+        </div>
+      )}
     </Card>
   );
 }
