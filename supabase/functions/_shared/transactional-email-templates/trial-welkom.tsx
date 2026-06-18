@@ -12,9 +12,11 @@ interface TrialWelkomProps {
   voornaam?: string
   bedrijfsnaam?: string
   loginUrl?: string
+  tijdelijkWachtwoord?: string
+  aangemaaktDoor?: string
 }
 
-const TrialWelkomEmail = ({ voornaam, bedrijfsnaam, loginUrl }: TrialWelkomProps) => {
+const TrialWelkomEmail = ({ voornaam, bedrijfsnaam, loginUrl, tijdelijkWachtwoord, aangemaaktDoor }: TrialWelkomProps) => {
   const naam = voornaam ?? 'daar'
   const bedrijf = bedrijfsnaam ?? 'je organisatie'
   const url = loginUrl ?? `${SITE_URL}/login`
@@ -31,6 +33,27 @@ const TrialWelkomEmail = ({ voornaam, bedrijfsnaam, loginUrl }: TrialWelkomProps
             Je kunt direct aan de slag met leads, schouwen, offertes, planning,
             installaties en meer.
           </Text>
+          {tijdelijkWachtwoord && (
+            <Section style={loginBlok}>
+              <Text style={{ ...text, margin: '0 0 8px', color: '#111' }}>
+                <strong>Inloggegevens</strong>
+              </Text>
+              <Text style={{ ...text, margin: '0 0 4px' }}>
+                E‑mail: <strong>{/* recipient */}je e‑mailadres</strong>
+              </Text>
+              <Text style={{ ...text, margin: '0 0 4px' }}>
+                Tijdelijk wachtwoord: <code style={code}>{tijdelijkWachtwoord}</code>
+              </Text>
+              <Text style={{ fontSize: '12px', color: '#666', margin: '8px 0 0' }}>
+                Wijzig dit wachtwoord direct na je eerste login.
+              </Text>
+            </Section>
+          )}
+          {aangemaaktDoor && (
+            <Text style={{ ...text, fontStyle: 'italic' }}>
+              Dit account is voor je aangemaakt door {aangemaaktDoor}.
+            </Text>
+          )}
           <Section style={{ textAlign: 'center', margin: '24px 0' }}>
             <Button style={button} href={url}>Ga naar mijn dashboard</Button>
           </Section>
@@ -70,3 +93,5 @@ const button = {
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#888888', margin: '24px 0 0', lineHeight: '1.5' }
+const loginBlok = { background: '#f6f6fb', border: '1px solid #e7e7f0', borderRadius: '12px', padding: '14px 16px', margin: '0 0 16px' }
+const code = { background: '#fff', border: '1px solid #ddd', borderRadius: '6px', padding: '2px 8px', fontFamily: 'Menlo, monospace' as const, fontSize: '13px' }
