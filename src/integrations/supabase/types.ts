@@ -6259,6 +6259,7 @@ export type Database = {
           abonnement_type: string | null
           adres: string | null
           adviseurs_delen_schouwen: boolean
+          affiliate_sinds: string | null
           afzender_email: string | null
           afzender_naam: string | null
           bedrijfsslogan: string | null
@@ -6285,6 +6286,7 @@ export type Database = {
           imap_port: number | null
           imap_use_ssl: boolean | null
           imap_user: string | null
+          is_affiliate: boolean
           kvk: string | null
           lead_bronnen: Json | null
           licentie_adviseurs: number | null
@@ -6316,6 +6318,7 @@ export type Database = {
           abonnement_type?: string | null
           adres?: string | null
           adviseurs_delen_schouwen?: boolean
+          affiliate_sinds?: string | null
           afzender_email?: string | null
           afzender_naam?: string | null
           bedrijfsslogan?: string | null
@@ -6342,6 +6345,7 @@ export type Database = {
           imap_port?: number | null
           imap_use_ssl?: boolean | null
           imap_user?: string | null
+          is_affiliate?: boolean
           kvk?: string | null
           lead_bronnen?: Json | null
           licentie_adviseurs?: number | null
@@ -6373,6 +6377,7 @@ export type Database = {
           abonnement_type?: string | null
           adres?: string | null
           adviseurs_delen_schouwen?: boolean
+          affiliate_sinds?: string | null
           afzender_email?: string | null
           afzender_naam?: string | null
           bedrijfsslogan?: string | null
@@ -6399,6 +6404,7 @@ export type Database = {
           imap_port?: number | null
           imap_use_ssl?: boolean | null
           imap_user?: string | null
+          is_affiliate?: boolean
           kvk?: string | null
           lead_bronnen?: Json | null
           licentie_adviseurs?: number | null

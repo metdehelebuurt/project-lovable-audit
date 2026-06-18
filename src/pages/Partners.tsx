@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Pencil, Search, Building2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { PromotePartnerToAffiliateButton } from "@/components/affiliate/PromotePartnerToAffiliateButton";
 
 type Partner = Database["public"]["Tables"]["partners"]["Row"];
 type PartnerInsert = Database["public"]["Tables"]["partners"]["Insert"];
@@ -144,6 +145,7 @@ const Partners = () => {
                     <TableHead>Plaats</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Abonnement</TableHead>
+                    <TableHead>Affiliate</TableHead>
                     <TableHead className="text-right">Acties</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -167,6 +169,13 @@ const Partners = () => {
                         </Select>
                       </TableCell>
                       <TableCell className="capitalize">{partner.abonnement_type || "—"}</TableCell>
+                      <TableCell>
+                        <PromotePartnerToAffiliateButton
+                          partnerId={partner.id}
+                          partnerNaam={partner.naam}
+                          isAffiliate={!!partner.is_affiliate}
+                        />
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(partner)}>
                           <Pencil className="h-4 w-4" />

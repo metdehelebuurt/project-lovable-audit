@@ -383,6 +383,104 @@ serve(async (req) => {
         });
       }
 
+      case "promote_partner_to_affiliate": {
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen partners promoveren" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { partner_id } = payload as { partner_id: string };
+        if (!partner_id) {
+          return new Response(JSON.stringify({ error: "partner_id ontbreekt" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: partner, error: partnerErr } = await supabaseAdmin
+          .from("partners").select("id, naam, contactpersoon_email, email").eq("id", partner_id).single();
+        if (partnerErr || !partner) {
+          return new Response(JSON.stringify({ error: "Partner niet gevonden" }), {
+            status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Mark partner as affiliate
+        const { error: flagErr } = await supabaseAdmin
+          .from("partners")
+          .update({ is_affiliate: true, affiliate_sinds: new Date().toISOString() })
+          .eq("id", partner_id);
+        if (flagErr) {
+          return new Response(JSON.stringify({ error: flagErr.message }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Pick representative user: partner_admin first, otherwise eldest active user
+        const { data: candidates } = await supabaseAdmin
+          .from("users")
+          .select("id, email, voornaam, achternaam, rol, status, created_at")
+          .eq("partner_id", partner_id)
+          .order("created_at", { ascending: true });
+        const target = (candidates ?? []).find((u) => u.rol === "partner_admin" && u.status === "actief")
+          ?? (candidates ?? []).find((u) => u.status === "actief")
+          ?? (candidates ?? [])[0]
+          ?? null;
+        let seededSlug: string | null = null;
+        if (target) {
+          await supabaseAdmin.from("users")
+            .update({ rol: "affiliate" })
+            .eq("id", target.id);
+          const baseSlug = (partner.naam || "partner").toLowerCase()
+            .replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+          seededSlug = `${baseSlug || "partner"}-${Math.floor(Math.random() * 9999).toString().padStart(4, "0")}`;
+          await supabaseAdmin.from("affiliate_links")
+            .insert({ user_id: target.id, code: seededSlug })
+            .then((r: { error: { message: string } | null }) => {
+              if (r.error) console.warn("affiliate_links seed failed", r.error.message);
+            });
+        }
+        await supabaseAdmin.from("audit_log").insert({
+          actor_id: caller.id, actie: "promote_partner_to_affiliate",
+          entity_type: "partner", entity_id: partner_id,
+          target_user_id: target?.id ?? null,
+          nieuwe_waarde: { partner_id, partner_naam: partner.naam, user_id: target?.id ?? null, slug: seededSlug } as Record<string, unknown>,
+        }).then((r: { error: { message: string } | null }) => {
+          if (r.error) console.warn("audit log failed", r.error.message);
+        });
+        return new Response(JSON.stringify({ success: true, slug: seededSlug, user_id: target?.id ?? null }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "revoke_partner_affiliate": {
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen dit uitvoeren" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { partner_id, new_rol } = payload as { partner_id: string; new_rol?: string };
+        if (!partner_id) {
+          return new Response(JSON.stringify({ error: "partner_id ontbreekt" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const fallbackRol = new_rol || "partner_admin";
+        await supabaseAdmin.from("partners")
+          .update({ is_affiliate: false, affiliate_sinds: null })
+          .eq("id", partner_id);
+        const { data: linked } = await supabaseAdmin
+          .from("users").select("id").eq("partner_id", partner_id).eq("rol", "affiliate");
+        for (const u of linked ?? []) {
+          await supabaseAdmin.from("users").update({ rol: fallbackRol }).eq("id", u.id);
+          await supabaseAdmin.from("affiliate_links").update({ actief: false }).eq("user_id", u.id);
+        }
+        await supabaseAdmin.from("audit_log").insert({
+          actor_id: caller.id, actie: "revoke_partner_affiliate",
+          entity_type: "partner", entity_id: partner_id,
+          nieuwe_waarde: { partner_id, gedemoveerde_users: (linked ?? []).map((u) => u.id), nieuwe_rol: fallbackRol } as Record<string, unknown>,
+        });
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Onbekende actie" }), {
           status: 400,
