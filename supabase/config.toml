@@ -77,6 +77,8 @@ project_id = "xmguipmetciwvzeyxugu"
     verify_jwt = false
   [functions.trial-signup]
     verify_jwt = false
+  [functions.affiliate-start-trial]
+    verify_jwt = false
   [functions.user-management]
     verify_jwt = false
   [functions.widget-submit]
