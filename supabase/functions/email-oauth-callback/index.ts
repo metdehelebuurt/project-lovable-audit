@@ -24,8 +24,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing code or state" }), { status: 400, headers: corsHeaders });
     }
 
-    // Decode state: base64 encoded JSON { partner_id, user_id, provider, redirect_url }
-    let stateData: { partner_id: string; user_id: string; provider: string; redirect_url: string };
+    // Decode state: base64 encoded JSON { partner_id?, user_id, provider, redirect_url }
+    let stateData: { partner_id?: string | null; user_id: string; provider: string; redirect_url: string };
     try {
       stateData = JSON.parse(atob(state));
     } catch {
@@ -45,9 +45,10 @@ Deno.serve(async (req) => {
       return redirectWithMessage("Unknown provider", true);
     }
 
-    // Upsert email account
+    // Upsert email account — unique op (user_id, provider) zodat ook gebruikers
+    // zonder partner (affiliates) hun account kunnen koppelen.
     const { error: dbError } = await adminClient.from("email_accounts").upsert({
-      partner_id,
+      partner_id: partner_id || null,
       user_id,
       provider,
       email_adres: tokenData.email,
@@ -57,15 +58,17 @@ Deno.serve(async (req) => {
       scopes: tokenData.scopes,
       actief: true,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "partner_id,provider" });
+    }, { onConflict: "user_id,provider" });
 
     if (dbError) {
       console.error("DB error:", dbError);
       return redirectWithMessage("Database error: " + dbError.message, true);
     }
 
-    // Update partner email_provider
-    await adminClient.from("partners").update({ email_provider: `oauth_${provider}` }).eq("id", partner_id);
+    // Update partner email_provider — alleen als de gebruiker bij een partner hoort
+    if (partner_id) {
+      await adminClient.from("partners").update({ email_provider: `oauth_${provider}` }).eq("id", partner_id);
+    }
 
     // Sluit de popup en informeer de opener. Als de flow niet in een popup
     // gebeurde (geen window.opener) valt het script terug op een redirect

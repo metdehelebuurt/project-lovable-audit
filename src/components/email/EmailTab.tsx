@@ -14,11 +14,12 @@ import EmailCompose from "@/components/email/EmailCompose";
 interface Props {
   leadId?: string;
   klantId?: string;
+  affiliateLeadId?: string;
   email?: string;
   emails?: string[];
 }
 
-const EmailTab = ({ leadId, klantId, email, emails }: Props) => {
+const EmailTab = ({ leadId, klantId, affiliateLeadId, email, emails }: Props) => {
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
 
@@ -28,7 +29,7 @@ const EmailTab = ({ leadId, klantId, email, emails }: Props) => {
     .filter(Boolean);
 
   const { data: berichten = [], refetch } = useQuery({
-    queryKey: ["email-berichten", leadId, klantId, allEmails.join(",")],
+    queryKey: ["email-berichten", leadId, klantId, affiliateLeadId, allEmails.join(",")],
     queryFn: async () => {
       let query = supabase
         .from("email_berichten" as any)
@@ -38,6 +39,11 @@ const EmailTab = ({ leadId, klantId, email, emails }: Props) => {
 
       if (leadId) {
         query = query.eq("lead_id", leadId);
+      } else if (affiliateLeadId && allEmails.length > 0) {
+        const quoted = allEmails.map(e => `"${e}"`).join(",");
+        query = query.or(`affiliate_lead_id.eq.${affiliateLeadId},van.in.(${quoted}),aan.in.(${quoted})`);
+      } else if (affiliateLeadId) {
+        query = query.eq("affiliate_lead_id", affiliateLeadId);
       } else if (klantId && allEmails.length > 0) {
         const quoted = allEmails.map(e => `"${e}"`).join(",");
         query = query.or(`klant_id.eq.${klantId},van.in.(${quoted}),aan.in.(${quoted})`);
@@ -48,7 +54,7 @@ const EmailTab = ({ leadId, klantId, email, emails }: Props) => {
       const { data } = await query;
       return (data || []) as any[];
     },
-    enabled: !!(leadId || klantId),
+    enabled: !!(leadId || klantId || affiliateLeadId),
   });
 
   if (berichten.length === 0 && !selectedEmail) {
@@ -74,6 +80,7 @@ const EmailTab = ({ leadId, klantId, email, emails }: Props) => {
             availableTo={allEmails}
             leadId={leadId}
             klantId={klantId}
+            affiliateLeadId={affiliateLeadId}
             onSent={() => refetch()}
           />
         </CardContent>
@@ -162,6 +169,7 @@ const EmailTab = ({ leadId, klantId, email, emails }: Props) => {
         availableTo={allEmails}
         leadId={leadId}
         klantId={klantId}
+        affiliateLeadId={affiliateLeadId}
         onSent={() => refetch()}
       />
     </div>

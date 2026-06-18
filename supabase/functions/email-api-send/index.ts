@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub as string;
     const body = await req.json();
-    const { to, subject, html_body, offerte_id, lead_id, klant_id } = body;
+    const { to, subject, html_body, offerte_id, lead_id, klant_id, affiliate_lead_id } = body;
 
     if (!to || !subject || !html_body) {
       return new Response(JSON.stringify({ error: "to, subject, html_body zijn verplicht" }), { status: 400, headers: corsHeaders });
@@ -37,18 +37,27 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { data: userRow } = await adminClient.from("users").select("partner_id").eq("id", userId).single();
-    if (!userRow?.partner_id) {
-      return new Response(JSON.stringify({ error: "Geen partner gekoppeld" }), { status: 400, headers: corsHeaders });
-    }
+    const { data: userRow } = await adminClient.from("users").select("partner_id").eq("id", userId).maybeSingle();
+    const partnerId: string | null = userRow?.partner_id ?? null;
 
-    // Get email account
-    const { data: emailAccount } = await adminClient
+    // Zoek e-mailaccount: eerst per gebruiker (werkt ook voor affiliates zonder partner),
+    // anders val terug op het partneraccount (legacy).
+    let { data: emailAccount } = await adminClient
       .from("email_accounts")
       .select("*")
-      .eq("partner_id", userRow.partner_id)
+      .eq("user_id", userId)
       .eq("actief", true)
-      .single();
+      .maybeSingle();
+
+    if (!emailAccount && partnerId) {
+      const fallback = await adminClient
+        .from("email_accounts")
+        .select("*")
+        .eq("partner_id", partnerId)
+        .eq("actief", true)
+        .maybeSingle();
+      emailAccount = fallback.data;
+    }
 
     if (!emailAccount) {
       return new Response(JSON.stringify({ error: "Geen e-mailaccount gekoppeld" }), { status: 400, headers: corsHeaders });
@@ -70,7 +79,8 @@ Deno.serve(async (req) => {
     // Save to email_berichten
     await adminClient.from("email_berichten").insert({
       email_account_id: emailAccount.id,
-      partner_id: userRow.partner_id,
+      partner_id: partnerId,
+      user_id: userId,
       richting: "uitgaand",
       van: emailAccount.email_adres,
       aan: to,
@@ -80,20 +90,23 @@ Deno.serve(async (req) => {
       is_gelezen: true,
       lead_id: lead_id || null,
       klant_id: klant_id || null,
+      affiliate_lead_id: affiliate_lead_id || null,
       offerte_id: offerte_id || null,
     });
 
-    // Also log in email_log
-    await adminClient.from("email_log").insert({
-      partner_id: userRow.partner_id,
-      offerte_id: offerte_id || null,
-      ontvanger_email: to,
-      onderwerp: subject,
-      html_body: html_body,
-      status: "verzonden",
-      type: offerte_id ? "offerte" : "algemeen",
-      verzonden_door_id: userId,
-    });
+    // Also log in email_log (alleen wanneer er een partner-context is)
+    if (partnerId) {
+      await adminClient.from("email_log").insert({
+        partner_id: partnerId,
+        offerte_id: offerte_id || null,
+        ontvanger_email: to,
+        onderwerp: subject,
+        html_body: html_body,
+        status: "verzonden",
+        type: offerte_id ? "offerte" : "algemeen",
+        verzonden_door_id: userId,
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

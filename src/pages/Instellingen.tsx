@@ -54,6 +54,7 @@ interface SettingsTab {
 }
 
 const ALLE_ROLLEN: AppRole[] = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur", "installateur"];
+const ALLE_ROLLEN_MET_AFFILIATE: AppRole[] = [...ALLE_ROLLEN, "affiliate"];
 const ADMIN_ROLLEN: AppRole[] = ["superadmin", "partner_admin"];
 const UITVOEREND_PLUS_ADMIN: AppRole[] = [...ALLE_ROLLEN];
 
@@ -64,11 +65,11 @@ const Instellingen = () => {
   const isSuperOrPartner = profile?.rol === "partner_admin" || profile?.rol === "superadmin";
 
   const tabs: SettingsTab[] = [
-    { id: "profiel", label: "Profiel", icon: User, roles: ALLE_ROLLEN },
-    { id: "beveiliging", label: "Beveiliging", icon: Lock, roles: ALLE_ROLLEN },
-    { id: "notificaties", label: "Notificaties", icon: Bell, roles: ALLE_ROLLEN },
-    { id: "mijn-email", label: "E-mailkoppeling", icon: Mail, roles: ALLE_ROLLEN },
-    { id: "google-agenda", label: "Google Agenda", icon: CalendarIcon, roles: ALLE_ROLLEN },
+    { id: "profiel", label: "Profiel", icon: User, roles: ALLE_ROLLEN_MET_AFFILIATE },
+    { id: "beveiliging", label: "Beveiliging", icon: Lock, roles: ALLE_ROLLEN_MET_AFFILIATE },
+    { id: "notificaties", label: "Notificaties", icon: Bell, roles: ALLE_ROLLEN_MET_AFFILIATE },
+    { id: "mijn-email", label: "E-mailkoppeling", icon: Mail, roles: ALLE_ROLLEN_MET_AFFILIATE },
+    { id: "google-agenda", label: "Google Agenda", icon: CalendarIcon, roles: ALLE_ROLLEN_MET_AFFILIATE },
     { id: "oplever", label: "Opleverrapport", icon: Wrench, roles: ["superadmin", "partner_admin", "installateur"] },
     { id: "bedrijf", label: "Bedrijfsgegevens", icon: Building2, roles: ADMIN_ROLLEN },
     { id: "huisstijl", label: "Huisstijl", icon: Palette, roles: ADMIN_ROLLEN },
@@ -85,7 +86,7 @@ const Instellingen = () => {
     { id: "modules", label: "Modules & rollen", icon: KeyRound, roles: ADMIN_ROLLEN },
     { id: "gebruikers", label: "Gebruikers", icon: Users, roles: ADMIN_ROLLEN, href: "/gebruikers" },
     { id: "abonnement", label: "Abonnement", icon: CreditCard, roles: ADMIN_ROLLEN },
-    { id: "privacy", label: "Privacy & Data", icon: Shield, roles: ALLE_ROLLEN },
+    { id: "privacy", label: "Privacy & Data", icon: Shield, roles: ALLE_ROLLEN_MET_AFFILIATE },
   ];
 
   const currentRol = (profile?.rol ?? "consument") as AppRole;

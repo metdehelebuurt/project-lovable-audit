@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     
     // Check if called with auth (manual sync) or without (cron)
     const authHeader = req.headers.get("Authorization");
-    let partnerFilter: string | null = null;
+    let userFilter: string | null = null;
 
     if (authHeader?.startsWith("Bearer ")) {
       const supabase = createClient(
@@ -25,14 +25,14 @@ Deno.serve(async (req) => {
       const token = authHeader.replace("Bearer ", "");
       const { data: claimsData } = await supabase.auth.getClaims(token);
       if (claimsData?.claims?.sub) {
-        const { data: userRow } = await adminClient.from("users").select("partner_id").eq("id", claimsData.claims.sub).single();
-        partnerFilter = userRow?.partner_id || null;
+        userFilter = claimsData.claims.sub as string;
       }
     }
 
-    // Get active email accounts
+    // Get active email accounts — bij manual sync alleen die van de ingelogde
+    // gebruiker (werkt zowel voor partner-medewerkers als affiliates).
     let query = adminClient.from("email_accounts").select("*").eq("actief", true);
-    if (partnerFilter) query = query.eq("partner_id", partnerFilter);
+    if (userFilter) query = query.eq("user_id", userFilter);
     const { data: accounts } = await query;
 
     if (!accounts || accounts.length === 0) {
@@ -66,12 +66,15 @@ Deno.serve(async (req) => {
 
         // Insert messages
         for (const msg of messages) {
-          // Auto-match to lead/klant
-          const { lead_id, klant_id } = await autoMatch(adminClient, account.partner_id, msg.from, msg.to);
+          // Auto-match to lead/klant (partner) of affiliate_lead (affiliate)
+          const { lead_id, klant_id, affiliate_lead_id } = await autoMatch(
+            adminClient, account.partner_id, account.user_id, msg.from, msg.to,
+          );
 
           await adminClient.from("email_berichten").upsert({
             email_account_id: account.id,
             partner_id: account.partner_id,
+            user_id: account.user_id,
             provider_message_id: msg.id,
             richting: msg.from.toLowerCase().includes(account.email_adres.toLowerCase()) ? "uitgaand" : "inkomend",
             van: msg.from,
@@ -84,6 +87,7 @@ Deno.serve(async (req) => {
             labels: msg.labels || [],
             lead_id,
             klant_id,
+            affiliate_lead_id,
             thread_id: msg.thread_id || null,
             bijlagen: msg.attachments || [],
           }, { onConflict: "email_account_id,provider_message_id" });
@@ -289,38 +293,51 @@ async function syncMsGraph(accessToken: string, cursor: string | null) {
   return { messages, cursor: newCursor };
 }
 
-async function autoMatch(adminClient: any, partnerId: string, from: string, to: string) {
+async function autoMatch(adminClient: any, partnerId: string | null, userId: string | null, from: string, to: string) {
   const emailRegex = /[\w.-]+@[\w.-]+/g;
   const allEmails = [...(from.match(emailRegex) || []), ...(to.match(emailRegex) || [])];
 
   let lead_id: string | null = null;
   let klant_id: string | null = null;
+  let affiliate_lead_id: string | null = null;
 
   for (const email of allEmails) {
-    if (lead_id && klant_id) break;
+    if (lead_id && klant_id && affiliate_lead_id) break;
 
-    if (!lead_id) {
-      const { data: lead } = await adminClient
-        .from("leads")
-        .select("id")
-        .eq("partner_id", partnerId)
-        .ilike("email", email)
-        .limit(1)
-        .single();
-      if (lead) lead_id = lead.id;
+    if (partnerId) {
+      if (!lead_id) {
+        const { data: lead } = await adminClient
+          .from("leads")
+          .select("id")
+          .eq("partner_id", partnerId)
+          .ilike("email", email)
+          .limit(1)
+          .maybeSingle();
+        if (lead) lead_id = lead.id;
+      }
+      if (!klant_id) {
+        const { data: klant } = await adminClient
+          .from("klanten")
+          .select("id")
+          .eq("partner_id", partnerId)
+          .ilike("email", email)
+          .limit(1)
+          .maybeSingle();
+        if (klant) klant_id = klant.id;
+      }
     }
 
-    if (!klant_id) {
-      const { data: klant } = await adminClient
-        .from("klanten")
-        .select("id")
-        .eq("partner_id", partnerId)
-        .ilike("email", email)
-        .limit(1)
-        .single();
-      if (klant) klant_id = klant.id;
-    }
+      if (userId && !affiliate_lead_id) {
+        const { data: aLead } = await adminClient
+          .from("affiliate_leads")
+          .select("id")
+          .eq("eigenaar_id", userId)
+          .ilike("email", email)
+          .limit(1)
+          .maybeSingle();
+        if (aLead) affiliate_lead_id = aLead.id;
+      }
   }
 
-  return { lead_id, klant_id };
+  return { lead_id, klant_id, affiliate_lead_id };
 }

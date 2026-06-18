@@ -16,6 +16,7 @@ import { TrialStartenButton } from "./TrialStartenButton";
 import { TrialStatusBadge } from "./TrialStatusBadge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import EmailTab from "@/components/email/EmailTab";
 
 interface Props {
   lead: AffiliateLead | null;
@@ -139,6 +140,14 @@ export function LeadDetailDrawer({ lead, onClose }: Props) {
               ))}
             </div>
           )}
+
+          <div className="border-t pt-4 space-y-2">
+            <Label>E-mails</Label>
+            <p className="text-xs text-muted-foreground">
+              In- en uitgaande mails vanuit jouw gekoppelde Gmail/Outlook worden hier automatisch getoond.
+            </p>
+            <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
+          </div>
         </div>
         <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={lead.id} leadNaam={lead.bedrijfsnaam} />
       </SheetContent>
