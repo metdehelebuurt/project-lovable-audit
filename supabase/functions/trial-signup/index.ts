@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode } = await req.json();
+    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode, tijdelijk_wachtwoord, aangemaakt_door } = await req.json();
 
     // Validation
     if (!bedrijfsnaam || !voornaam || !achternaam || !email || !password) {
@@ -226,7 +226,13 @@ serve(async (req) => {
           templateName: "trial-welkom",
           recipientEmail: email,
           idempotencyKey: `trial-welkom-${partner.id}`,
-          templateData: { voornaam, bedrijfsnaam, loginUrl: "https://mijnhuis.nu/login" },
+          templateData: {
+            voornaam,
+            bedrijfsnaam,
+            loginUrl: "https://app.mijnhuis.nu/login",
+            tijdelijkWachtwoord: tijdelijk_wachtwoord ?? undefined,
+            aangemaaktDoor: aangemaakt_door ?? undefined,
+          },
         },
       });
     } catch (mailErr) {

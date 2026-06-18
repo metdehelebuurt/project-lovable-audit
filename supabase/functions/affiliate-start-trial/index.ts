@@ -44,10 +44,11 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claims?.claims?.sub) return err("Niet ingelogd", 401, "unauthorized");
-    const userId = claims.claims.sub as string;
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData?.user?.id) {
+      return err("Niet ingelogd: " + (userError?.message ?? "geen gebruiker"), 401, "unauthorized");
+    }
+    const userId = userData.user.id;
 
     const admin = createClient(supabaseUrl, serviceKey);
 
@@ -57,7 +58,9 @@ serve(async (req) => {
       .eq("id", userId)
       .maybeSingle();
     if (profileError || !profile) return err("Profiel niet gevonden", 404, "no_profile");
-    if (profile.rol !== "affiliate") return err("Alleen affiliates kunnen deze actie uitvoeren", 403, "forbidden");
+    if (profile.rol !== "affiliate" && profile.rol !== "superadmin") {
+      return err("Alleen affiliates of superadmins kunnen deze actie uitvoeren", 403, "forbidden");
+    }
 
     const raw = await req.json().catch(() => ({}));
     const parsed = BodySchema.safeParse(raw);
@@ -73,7 +76,9 @@ serve(async (req) => {
       .eq("id", body.lead_id)
       .maybeSingle();
     if (leadError || !lead) return err("Lead niet gevonden", 404, "no_lead");
-    if (lead.eigenaar_id !== userId) return err("Deze lead is niet van jou", 403, "forbidden");
+    if (lead.eigenaar_id !== userId && profile.rol !== "superadmin") {
+      return err("Deze lead is niet van jou", 403, "forbidden");
+    }
     if (lead.gewonnen_partner_id) return err("Voor deze lead is al een trial gestart", 409, "already_started");
 
     // Rate limit: max 5 trials per affiliate per uur
@@ -114,6 +119,8 @@ serve(async (req) => {
         password: body.password,
         telefoon: body.telefoon ?? null,
         ref_code: link!.code,
+        tijdelijk_wachtwoord: body.password,
+        aangemaakt_door: `${profile.voornaam ?? ""} ${profile.achternaam ?? ""}`.trim() || profile.email,
       },
     });
     if (signupRes.error) {
