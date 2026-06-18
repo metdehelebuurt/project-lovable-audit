@@ -36,6 +36,9 @@ import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/compone
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 import { DuplicaatWaarschuwing } from "@/components/leads/duplicaten/DuplicaatWaarschuwing";
 import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
+import { MentionTextarea } from "@/components/shared/notes/MentionTextarea";
+import RenderedNote from "@/components/shared/notes/RenderedNote";
+import { processNoteMentions } from "@/lib/notes/processMentions";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -267,10 +270,19 @@ const LeadDetail = () => {
 
   const addNoteMutation = useMutation({
     mutationFn: async ({ inhoud, intern }: { inhoud: string; intern: boolean }) => {
-      const { error } = await supabase.from("lead_notities" as any).insert({
+      const { data, error } = await supabase.from("lead_notities" as any).insert({
         lead_id: id!, user_id: profile!.id, partner_id: profile!.partner_id, inhoud, intern,
-      } as any);
+      } as any).select("id").single();
       if (error) throw error;
+      await processNoteMentions({
+        noteId: (data as any)?.id,
+        inhoud,
+        resourceType: "lead",
+        resourceId: id!,
+        resourceTitel: lead ? `${lead.voornaam ?? ""} ${lead.achternaam ?? ""}`.trim() : "",
+        partnerId: profile!.partner_id,
+        senderId: profile!.id,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead-notities", id] });
@@ -782,7 +794,7 @@ const LeadDetail = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Schrijf een notitie..." className="rounded-xl min-h-[60px]" rows={2} />
+                  <MentionTextarea value={newNote} onChange={setNewNote} placeholder="Schrijf een notitie… gebruik @ om een collega te taggen" rows={2} />
                   <div className="flex items-center justify-between">
                     <NotitieZichtbaarheidToggle intern={newNoteIntern} onChange={setNewNoteIntern} id="lead-note-intern" />
                     <Button size="sm" className="rounded-xl gap-1.5" disabled={!newNote.trim() || addNoteMutation.isPending}
@@ -808,7 +820,7 @@ const LeadDetail = () => {
                             </Button>
                           )}
                         </div>
-                        <p className="text-sm text-foreground whitespace-pre-wrap pl-8">{n.inhoud}</p>
+                        <p className="text-sm text-foreground pl-8"><RenderedNote inhoud={n.inhoud} /></p>
                       </div>
                     ))}
                   </div>
