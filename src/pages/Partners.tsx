@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ const Partners = () => {
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [form, setForm] = useState<Partial<PartnerInsert>>(emptyPartner);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: partners = [], isLoading } = useQuery({
     queryKey: ["partners"],
@@ -151,12 +153,16 @@ const Partners = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(partner => (
-                    <TableRow key={partner.id}>
+                    <TableRow
+                      key={partner.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/partners/${partner.id}`)}
+                    >
                       <TableCell className="font-medium">{partner.naam}</TableCell>
                       <TableCell>{[partner.contactpersoon_voornaam, partner.contactpersoon_achternaam].filter(Boolean).join(" ") || "—"}</TableCell>
                       <TableCell>{partner.email || partner.contactpersoon_email || "—"}</TableCell>
                       <TableCell>{partner.plaats || "—"}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Select value={partner.status} onValueChange={(v) => statusMutation.mutate({ id: partner.id, status: v as PartnerStatus })}>
                           <SelectTrigger className="w-32 h-8">
                             <Badge className={statusColors[partner.status]}>{statusLabels[partner.status]}</Badge>
@@ -169,14 +175,14 @@ const Partners = () => {
                         </Select>
                       </TableCell>
                       <TableCell className="capitalize">{partner.abonnement_type || "—"}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <PromotePartnerToAffiliateButton
                           partnerId={partner.id}
                           partnerNaam={partner.naam}
                           isAffiliate={!!partner.is_affiliate}
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" onClick={() => openEdit(partner)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
