@@ -969,6 +969,16 @@ const LeadDetail = () => {
         afspraak={editAfspraak}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lead-afspraken", id] })}
       />
+      <QuickSelfServiceSchouwDialog
+        open={snelleSchouwOpen}
+        onOpenChange={setSnelleSchouwOpen}
+        leadId={id}
+        partnerId={profile?.partner_id}
+        adviseurId={profile?.id}
+        consumentNaam={`${lead.voornaam ?? ""} ${lead.achternaam ?? ""}`.trim()}
+        klantEmail={lead.email}
+        klantTelefoon={lead.telefoon}
+      />
     </div>
   );
 };
