@@ -40,6 +40,19 @@ export function useCreateTerugbel() {
         .select()
         .single();
       if (error) throw error;
+      // Verstuur bevestigingsmails (klant + collega). Niet blokkerend.
+      try {
+        const { error: mailErr } = await supabase.functions.invoke("affiliate-afspraak-notify", {
+          body: { afspraakId: data.id },
+        });
+        if (mailErr) {
+          console.error("affiliate-afspraak-notify", mailErr);
+          toast.warning("Afspraak opgeslagen, maar mailbevestiging mislukt");
+        }
+      } catch (e) {
+        console.error("affiliate-afspraak-notify", e);
+        toast.warning("Afspraak opgeslagen, maar mailbevestiging mislukt");
+      }
       return data;
     },
     onSuccess: () => {

@@ -1,67 +1,81 @@
 ## Doel
-Een affiliate kan vanuit zijn dashboard (lead-drawer of pipeline-kaart) met één klik een 30-daagse trial starten voor een koude lead. De nieuwe partner wordt automatisch gekoppeld aan de affiliate (referral + commissie), de lead krijgt status `gewonnen`, en elke stap wordt gelogd.
 
-## UX-flow
-1. In `LeadDetailDrawer` (en als secundaire knop op `PipelineKaart`) komt een primaire knop **"Trial starten voor klant"**, alleen zichtbaar als status ≠ `gewonnen` en email + bedrijfsnaam aanwezig zijn.
-2. Klik opent `TrialStartenDialog` met voor-ingevulde velden uit de lead:
-   - Bedrijfsnaam, contactpersoon (voornaam/achternaam split), email, telefoon — bewerkbaar.
-   - Tijdelijk wachtwoord (auto-gegenereerd, kopieerbaar) — affiliate kan ook "verstuur magic link i.p.v. wachtwoord" kiezen (v2, voor nu wachtwoord).
-   - Verplichte checkbox: *"De klant heeft mondeling toestemming gegeven voor het aanmaken van een trial-account op zijn naam."*
-3. Bij submit → loading-state, daarna toast met "Trial gestart, klant ontvangt welkomstmail" en de lead wordt zichtbaar gemarkeerd als *Trial actief — verloopt op DD-MM-JJJJ* (badge in drawer + kaart).
+Bij het inplannen van een terugbelafspraak of demo kan de affiliate kiezen voor welke interne collega de afspraak is. Daarna krijgen **zowel de klant als de gekozen collega** automatisch een bevestigingsmail in de mijnhuis.nu-huisstijl, via de ingebouwde Lovable-mailinfrastructuur (`send-transactional-email`).
 
-## Backend
-Nieuwe Edge Function `affiliate-start-trial` (verify_jwt impliciet via in-code check):
-- Input (Zod): `lead_id`, `bedrijfsnaam`, `voornaam`, `achternaam`, `email`, `telefoon?`, `password`, `toestemming: true`.
-- Verifieert ingelogde user heeft rol `affiliate` en is eigenaar van de lead.
-- Zorgt dat affiliate een `affiliate_links` rij heeft; pakt/creëert `code`.
-- Roept intern dezelfde logica aan als `trial-signup` (partner + user + referral + abonnement + demo data + welkomstmail) met `ref_code` van de affiliate.
-- Bij succes:
-  - Update `affiliate_leads`: `status='gewonnen'`, `gewonnen_partner_id = nieuwe partner_id`.
-  - Insert `affiliate_lead_contactmomenten`: `type='systeem'`, `uitkomst='trial_gestart'`, notitie met partnernaam + trial einddatum.
-  - Insert `entiteit_historie` voor zowel de lead als de nieuwe partner ("Trial gestart door affiliate X").
-  - Insert `audit_log` regel.
-- Foutpaden retourneren `{ error: { code, message } }`; duplicate email → vriendelijke melding "Dit e-mailadres is al in gebruik — vraag de klant of hij al een account heeft."
+## Wat er gebouwd wordt
 
-Refactor: `trial-signup/index.ts` business-logica wordt verplaatst naar `_shared/trial/createTrialPartner.ts` zodat zowel `trial-signup` als `affiliate-start-trial` hem aanroepen — geen code-duplicatie.
+### 1. Database — kolom toevoegen aan `affiliate_terugbel_afspraken`
 
-## Frontend
-- Nieuwe componenten:
-  - `src/components/affiliate/TrialStartenDialog.tsx` — formulier + RHF + Zod.
-  - `src/components/affiliate/TrialStartenButton.tsx` — knop die de dialog opent.
-  - `src/components/affiliate/TrialStatusBadge.tsx` — toont trial-status op lead.
-- Nieuwe hook: `src/hooks/affiliate/useStartTrialVoorLead.ts` — wrapper rond `supabase.functions.invoke('affiliate-start-trial')` met TanStack mutation + invalidates `affiliate-leads` en `affiliate-trials`.
-- Integratie in `LeadDetailDrawer.tsx` (boven status-blok) en `PipelineKaart.tsx` (kleine secundaire knop).
-- Na succes: drawer ververst, badge zichtbaar, knop verdwijnt.
+Eén nieuwe kolom:
+- `collega_user_id uuid null` — referentie naar `auth.users.id`; wie de afspraak uitvoert.
 
-## Logging-overzicht (alles vindbaar)
-| Waar | Wat |
-|------|-----|
-| `affiliate_lead_contactmomenten` | systeem-regel "Trial gestart" |
-| `affiliate_referrals` | gekoppeld via ref_code (bestaande logica) |
-| `entiteit_historie` | regel op lead + partner |
-| `audit_log` | actor=affiliate, actie=`trial.start_voor_lead`, target=partner_id |
-| `email_send_log` | welkomstmail (bestaande flow) |
+Migratie zet ook een index op `collega_user_id` voor latere weergave ("mijn afspraken") en update geen bestaande rijen (blijft `null`).
 
-## Beveiliging
-- Edge Function valideert: ingelogde rol == affiliate, lead behoort tot deze affiliate, toestemming-vinkje aanwezig.
-- Wachtwoord komt nooit in logs; wel in de welkomstmail naar de klant (bestaand template `trial-welkom` krijgt optioneel `tijdelijkWachtwoord` veld + zinnetje "wijzig dit na eerste login").
-- Rate limit: max 5 trial-starts per affiliate per uur (check via `partner_api_rate_log` of simpele count op `affiliate_referrals` in laatste uur).
+### 2. Hook collega's
 
-## Bestanden
-**Nieuw**
-- `supabase/functions/affiliate-start-trial/index.ts`
-- `supabase/functions/_shared/trial/createTrialPartner.ts` (extractie)
-- `src/components/affiliate/TrialStartenDialog.tsx`
-- `src/components/affiliate/TrialStartenButton.tsx`
-- `src/components/affiliate/TrialStatusBadge.tsx`
-- `src/hooks/affiliate/useStartTrialVoorLead.ts`
+Nieuwe hook `src/hooks/affiliate/useInterneCollegas.ts` die actieve gebruikers binnen dezelfde partner ophaalt uit `users` (naam, email, id). Filter op rollen die afspraken kunnen oppakken: `partner_admin`, `partner_staff`, `adviseur`. Affiliate zelf staat ook in de lijst (handig als hij zichzelf wil toewijzen).
 
-**Aangepast**
-- `supabase/functions/trial-signup/index.ts` (gebruikt shared helper)
-- `supabase/functions/_shared/transactional-email-templates/trial-welkom.tsx` (optioneel wachtwoord-veld)
-- `src/components/affiliate/LeadDetailDrawer.tsx`
-- `src/components/affiliate/PipelineKaart.tsx`
-- `supabase/config.toml` (registratie nieuwe functie indien nodig)
+### 3. UI — `TerugbelDialog.tsx` uitbreiden
 
-## Vragen vóór ik bouw
-Geen — bestaande conventies (Nederlandse UI, paarse primary, geen any, ≤800 regels/bestand) zijn duidelijk. Ik start na akkoord.
+Veld toevoegen tussen "Datum en tijd" en "Notitie":
+- Label: **"Voor welke collega?"**
+- shadcn `Select` met de lijst uit de hook, default leeg ("Kies een collega").
+- Verplicht voor zowel terugbel als demo (anders geen mailbevestiging mogelijk).
+
+`useCreateTerugbel` krijgt het extra veld `collega_user_id` door. Na opslaan triggert dezelfde mutation de mailfunctie (één edge-call die intern beide mails verstuurt — zie 5).
+
+### 4. E-mailtemplates (huisstijl mijnhuis.nu)
+
+Twee nieuwe React-Email templates onder `supabase/functions/_shared/transactional-email-templates/`:
+
+- `affiliate-afspraak-klant.tsx` — naar de klant.
+  Onderwerp dynamisch: *"Bevestiging terugbelafspraak"* of *"Bevestiging demo-afspraak"*.
+  Props: `klantNaam`, `type` (`terugbel`|`demo`), `gepland` (ISO), `collegaNaam`, `notitie`.
+- `affiliate-afspraak-collega.tsx` — naar de collega.
+  Onderwerp: *"Nieuwe terugbelafspraak voor jou"* / *"Nieuwe demo voor jou"*.
+  Props: `collegaNaam`, `klantNaam`, `klantEmail`, `klantTelefoon`, `type`, `gepland`, `notitie`, `affiliateNaam`.
+
+Beide templates gebruiken dezelfde mijnhuis-stijl als de bestaande `afspraak-ingepland.tsx` (kleuren, logo, button, footer). Datum/tijd weergegeven in `Europe/Amsterdam` via `Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", … })` — sluit aan op bestaande tijdzone-aanpak.
+
+Beide templates worden geregistreerd in `_shared/transactional-email-templates/registry.ts`.
+
+### 5. Edge Function — `affiliate-afspraak-notify`
+
+Nieuwe functie die de hele notify-flow encapsuleert (zodat de client maar één call doet):
+
+Input (JSON):
+```
+{ afspraakId: string }
+```
+
+Stappen:
+1. JWT valideren via Supabase client met user-token.
+2. Afspraak ophalen (`affiliate_terugbel_afspraken` join `leads` join `users` voor collega + affiliate).
+3. Idempotency-key = `affiliate-afspraak-${afspraakId}` (zo voorkomen we dubbele mails bij retry).
+4. Twee `supabase.functions.invoke("send-transactional-email", …)` calls:
+   - naar klant met `affiliate-afspraak-klant`
+   - naar collega met `affiliate-afspraak-collega`
+5. Korte JSON-response `{ ok: true }`.
+
+Geen mail wanneer klant geen e-mailadres heeft (alleen collega), idem omgekeerd — en duidelijke log/toast richting de affiliate als één van beide mist.
+
+### 6. Client-aanroep
+
+In `useCreateTerugbel` na succesvolle insert: `supabase.functions.invoke("affiliate-afspraak-notify", { body: { afspraakId } })`. Failure van de mail blokkeert de UI-flow niet, maar toont een waarschuwings-toast ("Afspraak opgeslagen, maar mailbevestiging mislukt").
+
+### 7. Deploy
+
+Na alle bestand-wijzigingen `deploy_edge_functions` voor:
+- `affiliate-afspraak-notify` (nieuw)
+- `send-transactional-email` (template-registry is veranderd)
+
+## Aannames (graag bevestigen indien anders)
+
+- Klant-e-mail staat al op `leads` (kolom `email` of vergelijkbaar) — anders gebruik ik wat er is.
+- "Interne collega" = actieve `users`-rij binnen dezelfde `partner_id` als de affiliate.
+- Afzender = bestaande email-domein (mijnhuis.nu) dat al voor app-emails is geconfigureerd.
+
+## Out of scope
+
+- Kalender-uitnodiging (.ics) — kan in vervolg.
+- Wijzigen/annuleren van afspraak met nieuwe mails — kan in vervolg.

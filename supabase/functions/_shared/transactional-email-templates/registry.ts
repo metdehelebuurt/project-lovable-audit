@@ -30,6 +30,8 @@ import { template as feedbackNieuwPlatform } from './feedback-nieuw-platform.tsx
 import { template as feedbackStatusUpdate } from './feedback-status-update.tsx'
 import { template as notitieMention } from './notitie-mention.tsx'
 import { template as consumentSchouwVoltooid } from './consument-schouw-voltooid.tsx'
+import { template as affiliateAfspraakKlant } from './affiliate-afspraak-klant.tsx'
+import { template as affiliateAfspraakCollega } from './affiliate-afspraak-collega.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'trial-welkom': trialWelkom,
@@ -53,4 +55,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'feedback-status-update': feedbackStatusUpdate,
   'notitie-mention': notitieMention,
   'consument-schouw-voltooid': consumentSchouwVoltooid,
+  'affiliate-afspraak-klant': affiliateAfspraakKlant,
+  'affiliate-afspraak-collega': affiliateAfspraakCollega,
 }

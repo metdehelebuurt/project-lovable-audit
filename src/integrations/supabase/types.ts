@@ -904,6 +904,7 @@ export type Database = {
         Row: {
           affiliate_id: string
           afgehandeld_op: string | null
+          collega_user_id: string | null
           created_at: string
           geplande_op: string
           id: string
@@ -915,6 +916,7 @@ export type Database = {
         Insert: {
           affiliate_id: string
           afgehandeld_op?: string | null
+          collega_user_id?: string | null
           created_at?: string
           geplande_op: string
           id?: string
@@ -926,6 +928,7 @@ export type Database = {
         Update: {
           affiliate_id?: string
           afgehandeld_op?: string | null
+          collega_user_id?: string | null
           created_at?: string
           geplande_op?: string
           id?: string
@@ -938,6 +941,13 @@ export type Database = {
           {
             foreignKeyName: "affiliate_terugbel_afspraken_affiliate_id_fkey"
             columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_terugbel_afspraken_collega_user_id_fkey"
+            columns: ["collega_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
