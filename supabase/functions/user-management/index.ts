@@ -309,7 +309,6 @@ serve(async (req) => {
       }
 
 
-      default:
       case "promote_to_affiliate": {
         if (callerProfile.rol !== "superadmin") {
           return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen affiliates aanmaken" }), {
