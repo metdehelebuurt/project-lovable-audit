@@ -31,10 +31,15 @@ export function useCreateAffiliateLead() {
   const qc = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async (input: Omit<AffiliateLeadInsert, "eigenaar_id" | "bron" | "created_by">) => {
+    mutationFn: async (
+      input: Omit<AffiliateLeadInsert, "eigenaar_id" | "bron" | "created_by"> & {
+        _bestemming?: "mine" | "pool";
+      },
+    ) => {
+      const { _bestemming, ...rest } = input;
       const { data, error } = await supabase.from("affiliate_leads").insert({
-        ...input,
-        eigenaar_id: user!.id,
+        ...rest,
+        eigenaar_id: _bestemming === "pool" ? null : user!.id,
         created_by: user!.id,
         bron: "eigen_import",
       }).select().single();
@@ -43,7 +48,6 @@ export function useCreateAffiliateLead() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY });
-      toast.success("Lead toegevoegd");
     },
     onError: (e: Error) => toast.error(e.message),
   });
