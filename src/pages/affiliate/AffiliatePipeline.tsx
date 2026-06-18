@@ -1,16 +1,18 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { NieuweLeadDialog } from "@/components/affiliate/NieuweLeadDialog";
 import { PipelineKaart } from "@/components/affiliate/PipelineKaart";
 import { LeadDetailDrawer } from "@/components/affiliate/LeadDetailDrawer";
 import { STATUS_VOLGORDE, STATUS_LABEL, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
+import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
 
 const ZICHTBARE_STATUSSEN: AffiliateLeadStatus[] = STATUS_VOLGORDE;
 
 const AffiliatePipeline = () => {
+  useRealtimeAffiliateLeads();
   const { data: leads = [] } = useAffiliateLeads("mine");
   const update = useUpdateAffiliateLead();
   const [open, setOpen] = useState(false);
@@ -29,6 +31,20 @@ const AffiliatePipeline = () => {
     if (next) update.mutate({ id: lead.id, patch: { status: next } });
   };
 
+  const exportCsv = () => {
+    const headers = ["bedrijfsnaam", "contactpersoon", "email", "telefoon", "status", "geschatte_waarde", "volgende_actie_datum"];
+    const rows = leads.map((l) => headers.map((h) => {
+      const v = (l as Record<string, unknown>)[h];
+      const s = v == null ? "" : String(v);
+      return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(";"));
+    const csv = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `pipeline-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-6">
       <AffiliateSubnav />
@@ -37,7 +53,10 @@ const AffiliatePipeline = () => {
           <h1 className="text-2xl font-bold">Sales pipeline</h1>
           <p className="text-sm text-muted-foreground">{leads.length} leads in jouw pijplijn</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" /> Nieuwe lead</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCsv} disabled={leads.length === 0}><Download className="h-4 w-4 mr-1" /> Export</Button>
+          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" /> Nieuwe lead</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 overflow-x-auto">
