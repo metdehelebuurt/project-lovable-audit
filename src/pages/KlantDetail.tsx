@@ -27,6 +27,7 @@ import KlantContactCard from "@/components/klanten/detail/KlantContactCard";
 import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
 import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
 import KlantNotitieEditor from "@/components/klanten/detail/KlantNotitieEditor";
+import QuickSelfServiceSchouwDialog from "@/components/schouwen/QuickSelfServiceSchouwDialog";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,7 @@ const KlantDetail = () => {
   const [afspraakOpen, setAfspraakOpen] = useState(false);
   const [editAfspraak, setEditAfspraak] = useState<any | null>(null);
   const [retourOpen, setRetourOpen] = useState(false);
+  const [snelleSchouwOpen, setSnelleSchouwOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -256,6 +258,7 @@ const KlantDetail = () => {
           navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
         }}
         onOfferte={handleNewOfferte}
+        onSnelleSchouw={() => setSnelleSchouwOpen(true)}
       />
 
       <KlantStatsRow
@@ -390,6 +393,7 @@ const KlantDetail = () => {
             onAfspraak={() => setAfspraakOpen(true)}
             onOfferte={handleNewOfferte}
             onSchouw={() => navigate("/schouwen")}
+            onSnelleSchouw={() => setSnelleSchouwOpen(true)}
             email={klant.email}
             telefoon={klant.telefoon}
           />
@@ -416,6 +420,17 @@ const KlantDetail = () => {
         onOpenChange={setRetourOpen}
         defaultType="klant_retour"
         context={{ klant_id: klant.id }}
+      />
+
+      <QuickSelfServiceSchouwDialog
+        open={snelleSchouwOpen}
+        onOpenChange={setSnelleSchouwOpen}
+        leadId={klant.lead_id}
+        partnerId={profile?.partner_id}
+        adviseurId={profile?.id}
+        consumentNaam={`${klant.voornaam ?? ""} ${klant.achternaam ?? ""}`.trim()}
+        klantEmail={klant.email}
+        klantTelefoon={klant.telefoon}
       />
     </div>
   );

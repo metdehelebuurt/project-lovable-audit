@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText, ClipboardCheck, MapPin, Video, Plus, CalendarIcon,
-  PhoneCall, Wrench, Mail, Phone, HardHat, ShieldCheck, Download, User, Pencil,
+  PhoneCall, Wrench, Mail, Phone, HardHat, ShieldCheck, Download, User, Pencil, Camera,
 } from "lucide-react";
 
 /* ─── Formatters ─── */
@@ -387,11 +387,12 @@ export const OpleveringenLijst = ({
 
 /* ─── Snelle Acties Sidebar ─── */
 export const SnelleActies = ({
-  onAfspraak, onOfferte, onSchouw, email, telefoon,
+  onAfspraak, onOfferte, onSchouw, onSnelleSchouw, email, telefoon,
 }: {
   onAfspraak: () => void;
   onOfferte: () => void;
   onSchouw: () => void;
+  onSnelleSchouw?: () => void;
   email?: string | null;
   telefoon?: string | null;
 }) => (
@@ -407,6 +408,11 @@ export const SnelleActies = ({
       <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" onClick={onSchouw}>
         <ClipboardCheck className="h-3.5 w-3.5" /> Schouw inplannen
       </Button>
+      {onSnelleSchouw && (
+        <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" onClick={onSnelleSchouw}>
+          <Camera className="h-3.5 w-3.5" /> Snelle schouw door klant
+        </Button>
+      )}
       {email && (
         <Button variant="outline" size="sm" className="w-full justify-start rounded-xl gap-2 text-xs" asChild>
           <a href={`mailto:${email}`}><Mail className="h-3.5 w-3.5" /> E-mail versturen</a>

@@ -39,6 +39,7 @@ import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
 import { MentionTextarea } from "@/components/shared/notes/MentionTextarea";
 import RenderedNote from "@/components/shared/notes/RenderedNote";
 import { processNoteMentions } from "@/lib/notes/processMentions";
+import QuickSelfServiceSchouwDialog from "@/components/schouwen/QuickSelfServiceSchouwDialog";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
@@ -97,6 +98,7 @@ const LeadDetail = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [afspraakOpen, setAfspraakOpen] = useState(false);
   const [editAfspraak, setEditAfspraak] = useState<any | null>(null);
+  const [snelleSchouwOpen, setSnelleSchouwOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [newNoteIntern, setNewNoteIntern] = useState(true);
   const [activeTab, setActiveTab] = useState("overzicht");
@@ -947,6 +949,7 @@ const LeadDetail = () => {
             onAfspraak={() => setAfspraakOpen(true)}
             onOfferte={handleNewOfferte}
             onSchouw={() => navigate("/schouwen")}
+            onSnelleSchouw={() => setSnelleSchouwOpen(true)}
             email={lead.email}
             telefoon={lead.telefoon}
           />
