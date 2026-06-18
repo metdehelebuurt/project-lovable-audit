@@ -395,6 +395,8 @@ const AffiliateBeheer = () => {
         </TabsContent>
       </Tabs>
 
+      <KoudeLeadsImportDialog open={showImportKoudeLeads} onOpenChange={setShowImportKoudeLeads} />
+
 
       {/* Create Affiliate Dialog */}
       <Dialog open={showCreateAffiliate} onOpenChange={setShowCreateAffiliate}>
