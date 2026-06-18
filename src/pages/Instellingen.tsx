@@ -134,6 +134,7 @@ const Instellingen = () => {
           {activeTab === "offertes" && isPartnerAdmin && profile?.partner_id && (
             <div className="space-y-6">
               <BetalingsvoorwaardenConfig partnerId={profile.partner_id} />
+              <OfferteAutoHerinneringConfig partnerId={profile.partner_id} />
               <OfferteTemplateInstellingen partnerId={profile.partner_id} />
             </div>
           )}
