@@ -5,14 +5,19 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateAffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Bestemming: 'mine' (jouw pipeline) of 'pool' (gedeelde pool, geen eigenaar). Default: 'mine'. */
+  bestemming?: "mine" | "pool";
 }
 
-export function NieuweLeadDialog({ open, onOpenChange }: Props) {
+export function NieuweLeadDialog({ open, onOpenChange, bestemming = "mine" }: Props) {
   const create = useCreateAffiliateLead();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     bedrijfsnaam: "",
     contactpersoon: "",
@@ -27,7 +32,7 @@ export function NieuweLeadDialog({ open, onOpenChange }: Props) {
 
   const submit = async () => {
     if (!form.bedrijfsnaam.trim()) return;
-    await create.mutateAsync({
+    const lead = await create.mutateAsync({
       bedrijfsnaam: form.bedrijfsnaam.trim(),
       contactpersoon: form.contactpersoon || null,
       email: form.email || null,
@@ -37,9 +42,17 @@ export function NieuweLeadDialog({ open, onOpenChange }: Props) {
       website: form.website || null,
       notities: form.notities || null,
       geschatte_waarde: form.geschatte_waarde ? parseFloat(form.geschatte_waarde) : 0,
-    });
+      _bestemming: bestemming,
+    } as never);
     setForm({ bedrijfsnaam: "", contactpersoon: "", email: "", telefoon: "", branche: "", regio: "", website: "", geschatte_waarde: "", notities: "" });
     onOpenChange(false);
+    if (bestemming === "mine") {
+      toast.message("Lead staat in jouw pipeline", {
+        action: { label: "Bekijken", onClick: () => navigate("/affiliates/pipeline") },
+      });
+    } else {
+      toast.message("Lead toegevoegd aan de pool");
+    }
   };
 
   return (

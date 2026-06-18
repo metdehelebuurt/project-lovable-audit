@@ -87,7 +87,7 @@ const AffiliatePool = () => {
           </TableBody>
         </Table>
       </Card>
-      <NieuweLeadDialog open={openNieuw} onOpenChange={setOpenNieuw} />
+      <NieuweLeadDialog open={openNieuw} onOpenChange={setOpenNieuw} bestemming="pool" />
     </div>
   );
 };
