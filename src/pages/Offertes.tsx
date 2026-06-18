@@ -119,7 +119,11 @@ const Offertes = () => {
   const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
   const isConsument = profile?.rol === "consument";
   const canDelete = isSuperadmin || isAdmin;
-  const canCreate = isSuperadmin || isAdmin || profile?.rol === "adviseur";
+  const canCreate =
+    isSuperadmin ||
+    isAdmin ||
+    profile?.rol === "adviseur" ||
+    profile?.rol === "affiliate";
   // Auto-open edit dialog from Schouw link or redirect new to dedicated page
   useEffect(() => {
     const schouwId = searchParams.get("schouw_id");
