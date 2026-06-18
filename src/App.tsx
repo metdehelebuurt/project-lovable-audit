@@ -315,6 +315,9 @@ const App = () => (
               <Route path="/affiliates/pipeline" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliatePipeline /></ProtectedRoute>
               } />
+              <Route path="/affiliates/leads/:id" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateLeadDetail /></ProtectedRoute>
+              } />
               <Route path="/affiliates/bellen" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateBellen /></ProtectedRoute>
               } />
