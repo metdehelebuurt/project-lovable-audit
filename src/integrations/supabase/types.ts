@@ -1370,7 +1370,7 @@ export type Database = {
           id: string
           is_default_voor_partner: boolean | null
           last_sync_at: string | null
-          partner_id: string
+          partner_id: string | null
           provider: string
           refresh_token: string | null
           scopes: string[] | null
@@ -1387,7 +1387,7 @@ export type Database = {
           id?: string
           is_default_voor_partner?: boolean | null
           last_sync_at?: string | null
-          partner_id: string
+          partner_id?: string | null
           provider: string
           refresh_token?: string | null
           scopes?: string[] | null
@@ -1404,7 +1404,7 @@ export type Database = {
           id?: string
           is_default_voor_partner?: boolean | null
           last_sync_at?: string | null
-          partner_id?: string
+          partner_id?: string | null
           provider?: string
           refresh_token?: string | null
           scopes?: string[] | null
@@ -1433,6 +1433,7 @@ export type Database = {
       email_berichten: {
         Row: {
           aan: string
+          affiliate_lead_id: string | null
           bijlagen: Json | null
           body_html: string | null
           body_text: string | null
@@ -1446,14 +1447,16 @@ export type Database = {
           lead_id: string | null
           offerte_id: string | null
           onderwerp: string
-          partner_id: string
+          partner_id: string | null
           provider_message_id: string | null
           richting: string
           thread_id: string | null
+          user_id: string | null
           van: string
         }
         Insert: {
           aan: string
+          affiliate_lead_id?: string | null
           bijlagen?: Json | null
           body_html?: string | null
           body_text?: string | null
@@ -1467,14 +1470,16 @@ export type Database = {
           lead_id?: string | null
           offerte_id?: string | null
           onderwerp?: string
-          partner_id: string
+          partner_id?: string | null
           provider_message_id?: string | null
           richting: string
           thread_id?: string | null
+          user_id?: string | null
           van: string
         }
         Update: {
           aan?: string
+          affiliate_lead_id?: string | null
           bijlagen?: Json | null
           body_html?: string | null
           body_text?: string | null
@@ -1488,13 +1493,21 @@ export type Database = {
           lead_id?: string | null
           offerte_id?: string | null
           onderwerp?: string
-          partner_id?: string
+          partner_id?: string | null
           provider_message_id?: string | null
           richting?: string
           thread_id?: string | null
+          user_id?: string | null
           van?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "email_berichten_affiliate_lead_id_fkey"
+            columns: ["affiliate_lead_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "email_berichten_email_account_id_fkey"
             columns: ["email_account_id"]
