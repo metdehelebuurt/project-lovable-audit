@@ -11,9 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye, Upload, Snowflake } from "lucide-react";
+import { Settings, Users, Euro, TrendingUp, Save, Plus, Trash2, UserPlus, ToggleLeft, ToggleRight, Eye, Upload, Snowflake, Target as TargetIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import KoudeLeadsImportDialog from "@/components/affiliate/KoudeLeadsImportDialog";
 import KoudeLeadsImportHistorie from "@/components/affiliate/KoudeLeadsImportHistorie";
+import { useAffiliateTargets, useUpsertTarget } from "@/hooks/affiliate/useAffiliateTargets";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
@@ -78,9 +80,24 @@ const AffiliateBeheer = () => {
         max_commissie_percentage: settings.max_commissie_percentage,
         min_abonnement_maanden: settings.min_abonnement_maanden,
         cookie_dagen: settings.cookie_dagen,
+        auto_rotatie_actief: settings.auto_rotatie_actief,
+        tier_commissies: settings.tier_commissies,
       }).eq("id", instellingen.id);
       if (error) throw error;
     },
+  // Tier wijzigen
+  const updateTier = useMutation({
+    mutationFn: async ({ id, tier }: { id: string; tier: "brons" | "zilver" | "goud" }) => {
+      const { error } = await supabase.from("users").update({ affiliate_tier: tier }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-affiliates"] });
+      toast.success("Tier aangepast");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["affiliate-instellingen"] });
       toast.success("Instellingen opgeslagen");
