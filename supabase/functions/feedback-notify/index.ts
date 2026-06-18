@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 type Payload = {
-  event: "nieuw" | "status_wijziging";
+  event: "nieuw" | "status_wijziging" | "log";
   feedback_id: string;
   oude_status?: string;
   nieuwe_status?: string;
@@ -41,6 +41,10 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  if (body.event === "log") {
+    return await handleLog(supa, req, body.feedback_id);
+  }
 
   const { data: fb, error } = await supa
     .from("feedback_verzoeken")
@@ -79,11 +83,34 @@ async function handleNieuw(supa: ReturnType<typeof createClient>, fb: FeedbackRo
     .eq("rol", "superadmin");
 
   const actieve = (admins ?? []).filter((u) => (u.status ?? "actief") === "actief");
-  const emails = Array.from(new Set(actieve.map((u) => u.email).filter(Boolean) as string[]));
+  const adminIds = actieve.map((u) => u.id).filter(Boolean) as string[];
+
+  // Voorkeuren ophalen (default: alles aan als geen rij bestaat)
+  const { data: voorkeuren } = await supa
+    .from("feedback_notificatie_voorkeuren")
+    .select("user_id, email_bug, inapp_bug, email_functieverzoek, inapp_functieverzoek")
+    .in("user_id", adminIds);
+  const prefMap = new Map<string, any>();
+  (voorkeuren ?? []).forEach((v: any) => prefMap.set(v.user_id, v));
+
+  const isBug = (fb.type ?? "").toLowerCase() === "bug" || (fb.categorie ?? "").toLowerCase() === "bug";
+  const wantsEmail = (userId: string) => {
+    const p = prefMap.get(userId);
+    if (!p) return true;
+    return isBug ? !!p.email_bug : !!p.email_functieverzoek;
+  };
+  const wantsInapp = (userId: string) => {
+    const p = prefMap.get(userId);
+    if (!p) return true;
+    return isBug ? !!p.inapp_bug : !!p.inapp_functieverzoek;
+  };
+
+  const emailOntvangers = actieve.filter((u) => u.id && u.email && wantsEmail(u.id as string));
+  const emails = Array.from(new Set(emailOntvangers.map((u) => u.email).filter(Boolean) as string[]));
 
   const titelKort = (fb.titel || "feedback").slice(0, 80);
   const notifRows = actieve
-    .filter((u) => u.id)
+    .filter((u) => u.id && wantsInapp(u.id as string))
     .map((u) => ({
       user_id: u.id as string,
       type: "feedback_nieuw",
@@ -133,6 +160,59 @@ async function handleNieuw(supa: ReturnType<typeof createClient>, fb: FeedbackRo
   }
 
   return json({ ok: true, emails_sent: emails.length, notifs: notifRows.length });
+}
+
+async function handleLog(
+  supa: ReturnType<typeof createClient>,
+  req: Request,
+  feedbackId: string,
+) {
+  // Auth: alleen ingelogde superadmin
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  if (!token) return json({ error: "Niet geautoriseerd" }, 401);
+  const { data: userRes, error: userErr } = await supa.auth.getUser(token);
+  if (userErr || !userRes?.user) return json({ error: "Niet geautoriseerd" }, 401);
+  const { data: me } = await supa
+    .from("users")
+    .select("rol")
+    .eq("id", userRes.user.id)
+    .maybeSingle();
+  if (me?.rol !== "superadmin") return json({ error: "Alleen superadmin" }, 403);
+
+  const { data: emails } = await supa
+    .from("email_send_log")
+    .select("id, message_id, template_name, recipient_email, status, error_message, created_at")
+    .or(
+      `message_id.eq.feedback-nieuw-${feedbackId},message_id.like.feedback-status-${feedbackId}-%`,
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const { data: notifs } = await supa
+    .from("notificaties")
+    .select("id, user_id, type, titel, bericht, gelezen, created_at")
+    .eq("entity_type", "feedback_verzoeken")
+    .eq("entity_id", feedbackId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  // Verrijk notificaties met gebruikersnaam/email
+  const userIds = Array.from(new Set((notifs ?? []).map((n: any) => n.user_id).filter(Boolean)));
+  let userMap = new Map<string, any>();
+  if (userIds.length > 0) {
+    const { data: usrs } = await supa
+      .from("users")
+      .select("id, voornaam, achternaam, email")
+      .in("id", userIds);
+    (usrs ?? []).forEach((u: any) => userMap.set(u.id, u));
+  }
+  const notifsVerrijkt = (notifs ?? []).map((n: any) => ({
+    ...n,
+    ontvanger: userMap.get(n.user_id) ?? null,
+  }));
+
+  return json({ emails: emails ?? [], notifs: notifsVerrijkt });
 }
 
 async function handleStatusWijziging(
