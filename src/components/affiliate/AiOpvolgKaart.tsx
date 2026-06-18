@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Sparkles, RefreshCw, ListChecks, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -78,7 +77,9 @@ export function AiOpvolgKaart({ lead }: { lead: AffiliateLead }) {
               <span className="text-muted-foreground">Kans op deal</span>
               <Badge variant="secondary">{score ?? "—"}/100</Badge>
             </div>
-            <Progress value={score ?? 0} className="h-2" indicatorClassName={scoreKleur} />
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div className={`h-full ${scoreKleur} transition-all`} style={{ width: `${score ?? 0}%` }} />
+            </div>
           </div>
           {lead.ai_score_reden && <p className="text-sm text-muted-foreground italic">"{lead.ai_score_reden}"</p>}
           {lead.ai_volgende_actie && (
