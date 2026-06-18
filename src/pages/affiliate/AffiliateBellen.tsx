@@ -10,6 +10,7 @@ import { useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
 import { CONTACT_UITKOMST_OPTIES } from "@/lib/affiliate/leadStatus";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "@/components/affiliate/TerugbelDialog";
+import { TrialStartenButton } from "@/components/affiliate/TrialStartenButton";
 
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
