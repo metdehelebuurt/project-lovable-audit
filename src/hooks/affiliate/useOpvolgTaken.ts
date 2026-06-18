@@ -56,9 +56,24 @@ export function useCreateOpvolgTaak() {
         .select()
         .single();
       if (error) throw error;
+      if (data?.lead_id) {
+        await supabase.from("affiliate_opvolg_log").insert({
+          lead_id: data.lead_id,
+          affiliate_id: user!.id,
+          taak_id: data.id,
+          actie: "taak_aangemaakt",
+          bron: input.bron === "ai" ? "ai" : "affiliate",
+          titel: `Taak aangemaakt: ${data.titel}`,
+          details: { type: data.type, prioriteit: data.prioriteit, due_op: data.due_op },
+        });
+      }
       return data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success("Opvolg-taak toegevoegd"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["affiliate-opvolg-log"] });
+      toast.success("Opvolg-taak toegevoegd");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
@@ -77,24 +92,49 @@ export function useUpdateOpvolgTaak() {
 
 export function useVoltooiOpvolgTaak() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (id: string) => {
+      const { data: taak } = await supabase
+        .from("affiliate_opvolg_taken")
+        .select("lead_id, titel")
+        .eq("id", id)
+        .maybeSingle();
       const { error } = await supabase
         .from("affiliate_opvolg_taken")
         .update({ voltooid_op: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      if (taak?.lead_id && user?.id) {
+        await supabase.from("affiliate_opvolg_log").insert({
+          lead_id: taak.lead_id,
+          affiliate_id: user.id,
+          taak_id: id,
+          actie: "taak_voltooid",
+          bron: "affiliate",
+          titel: `Taak voltooid: ${taak.titel}`,
+          details: {},
+        });
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["affiliate-opvolg-log"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
 
 export function useVerzetOpvolgTaak() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ id, dagen }: { id: string; dagen: number }) => {
-      const { data: huidig } = await supabase.from("affiliate_opvolg_taken").select("due_op").eq("id", id).maybeSingle();
+      const { data: huidig } = await supabase
+        .from("affiliate_opvolg_taken")
+        .select("due_op, lead_id, titel")
+        .eq("id", id)
+        .maybeSingle();
       const basis = huidig?.due_op ? new Date(huidig.due_op) : new Date();
       const nieuw = new Date(basis.getTime() + dagen * 86400000).toISOString();
       const { error } = await supabase
@@ -102,8 +142,22 @@ export function useVerzetOpvolgTaak() {
         .update({ due_op: nieuw, herinnering_verstuurd_op: null, escalatie_verstuurd_op: null })
         .eq("id", id);
       if (error) throw error;
+      if (huidig?.lead_id && user?.id) {
+        await supabase.from("affiliate_opvolg_log").insert({
+          lead_id: huidig.lead_id,
+          affiliate_id: user.id,
+          taak_id: id,
+          actie: "taak_verzet",
+          bron: "affiliate",
+          titel: `Taak verzet met ${dagen} dag(en): ${huidig.titel}`,
+          details: { nieuwe_due_op: nieuw, dagen },
+        });
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["affiliate-opvolg-log"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
