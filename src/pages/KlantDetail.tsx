@@ -26,8 +26,7 @@ import KlantTabsNav, { type KlantTab } from "@/components/klanten/detail/KlantTa
 import KlantContactCard from "@/components/klanten/detail/KlantContactCard";
 import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
 import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
-import { MentionTextarea } from "@/components/shared/notes/MentionTextarea";
-import { processNoteMentions } from "@/lib/notes/processMentions";
+import KlantNotitieEditor from "@/components/klanten/detail/KlantNotitieEditor";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
