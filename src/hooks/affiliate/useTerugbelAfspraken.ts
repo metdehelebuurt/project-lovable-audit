@@ -36,7 +36,7 @@ export function useCreateTerugbel() {
     mutationFn: async (input: Omit<Insert, "affiliate_id">) => {
       const { data, error } = await supabase
         .from("affiliate_terugbel_afspraken")
-        .insert({ ...input, affiliate_id: user!.id })
+        .insert({ ...input, affiliate_id: user!.id } as InsertBase)
         .select()
         .single();
       if (error) throw error;
