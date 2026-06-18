@@ -509,6 +509,12 @@ export default function FeedbackAdmin() {
                           <Copy className="h-3.5 w-3.5 mr-1" /> Kopieer
                         </Button>
                       )}
+                      {implPrompt && (
+                        <Button type="button" size="sm" variant="outline" onClick={aiVerrijkPrompt} disabled={aiVerrijkLoading}>
+                          <Sparkles className="h-3.5 w-3.5 mr-1" />
+                          {aiVerrijkLoading ? "Uitbreiden…" : "AI uitbreiden"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                   {implPrompt ? (
