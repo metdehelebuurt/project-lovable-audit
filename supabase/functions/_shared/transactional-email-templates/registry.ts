@@ -32,6 +32,9 @@ import { template as notitieMention } from './notitie-mention.tsx'
 import { template as consumentSchouwVoltooid } from './consument-schouw-voltooid.tsx'
 import { template as affiliateAfspraakKlant } from './affiliate-afspraak-klant.tsx'
 import { template as affiliateAfspraakCollega } from './affiliate-afspraak-collega.tsx'
+import { template as affiliateOpvolgHerinnering } from './affiliate-opvolg-herinnering.tsx'
+import { template as affiliateOpvolgEscalatie } from './affiliate-opvolg-escalatie.tsx'
+import { template as affiliateTrialOpvolging } from './affiliate-trial-opvolging.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'trial-welkom': trialWelkom,
@@ -57,4 +60,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'consument-schouw-voltooid': consumentSchouwVoltooid,
   'affiliate-afspraak-klant': affiliateAfspraakKlant,
   'affiliate-afspraak-collega': affiliateAfspraakCollega,
+  'affiliate-opvolg-herinnering': affiliateOpvolgHerinnering,
+  'affiliate-opvolg-escalatie': affiliateOpvolgEscalatie,
+  'affiliate-trial-opvolging': affiliateTrialOpvolging,
 }
