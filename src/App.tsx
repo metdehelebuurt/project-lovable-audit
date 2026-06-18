@@ -60,6 +60,7 @@ import WebTools from "@/pages/WebTools";
 import Affiliates from "@/pages/Affiliates";
 import AffiliateBeheer from "@/pages/AffiliateBeheer";
 import AffiliatePipeline from "@/pages/affiliate/AffiliatePipeline";
+import AffiliateLeadDetail from "@/pages/affiliate/AffiliateLeadDetail";
 import AffiliateBellen from "@/pages/affiliate/AffiliateBellen";
 import AffiliatePool from "@/pages/affiliate/AffiliatePool";
 import AffiliateMijnKlanten from "@/pages/affiliate/AffiliateMijnKlanten";
@@ -313,6 +314,9 @@ const App = () => (
               } />
               <Route path="/affiliates/pipeline" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliatePipeline /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/leads/:id" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateLeadDetail /></ProtectedRoute>
               } />
               <Route path="/affiliates/bellen" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateBellen /></ProtectedRoute>
