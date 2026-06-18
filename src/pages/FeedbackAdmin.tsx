@@ -83,15 +83,28 @@ export default function FeedbackAdmin() {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, status, admin_reactie }: { id: string; status: string; admin_reactie?: string }) => {
+    mutationFn: async ({ id, status, admin_reactie, oude_status }: { id: string; status: string; admin_reactie?: string; oude_status?: string }) => {
       const update: any = { status };
       if (admin_reactie !== undefined) update.admin_reactie = admin_reactie;
       const { error } = await supabase.from("feedback_verzoeken").update(update).eq("id", id);
       if (error) throw error;
+
+      const statusChanged = oude_status && oude_status !== status;
+      const reactieChanged = admin_reactie !== undefined && admin_reactie.trim().length > 0;
+      if (statusChanged || reactieChanged) {
+        supabase.functions.invoke("feedback-notify", {
+          body: {
+            event: "status_wijziging",
+            feedback_id: id,
+            oude_status,
+            nieuwe_status: status,
+          },
+        }).catch(console.error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feedback_admin"] });
-      toast.success("Feedback bijgewerkt");
+      toast.success("Feedback bijgewerkt — indiener is per e-mail geïnformeerd");
       setSelectedItem(null);
     },
   });
@@ -435,6 +448,7 @@ export default function FeedbackAdmin() {
                   id: selectedItem.id,
                   status: newStatus,
                   admin_reactie: adminReactie,
+                  oude_status: selectedItem.status,
                 })}>
                   <CheckCircle className="h-4 w-4 mr-2" /> Opslaan
                 </Button>
