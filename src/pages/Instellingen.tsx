@@ -8,6 +8,7 @@ import AbonnementZichtbaarheid from "@/components/abonnementen/AbonnementZichtba
 import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
 import BetalingsvoorwaardenConfig from "@/components/instellingen/BetalingsvoorwaardenConfig";
 import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
+import OfferteAutoHerinneringConfig from "@/components/instellingen/OfferteAutoHerinneringConfig";
 import EmailTemplatesBeheer from "@/components/instellingen/EmailTemplatesBeheer";
 import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
 import ModuleRolMatrix from "@/components/instellingen/ModuleRolMatrix";
