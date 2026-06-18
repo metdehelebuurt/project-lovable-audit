@@ -216,16 +216,18 @@ export default function FeedbackAdmin() {
           <h1 className="text-2xl font-bold">Feedback Beheer</h1>
           <p className="text-muted-foreground">Overzicht en beheer van alle feedback en functieverzoeken</p>
         </div>
-        <Button onClick={generateAiReport} disabled={aiLoading} variant="outline">
-          <Sparkles className="h-4 w-4 mr-2" />
-          {aiLoading ? "Analyseren..." : "AI Rapport"}
-        </Button>
-        <Button asChild variant="outline">
-          <Link to="/feedback/notificatie-instellingen">
-            <Settings className="h-4 w-4 mr-2" />
-            Meldinginstellingen
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={generateAiReport} disabled={aiLoading} variant="outline">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {aiLoading ? "Analyseren..." : "AI Rapport"}
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/feedback/notificatie-instellingen">
+              <Settings className="h-4 w-4 mr-2" />
+              Meldinginstellingen
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
