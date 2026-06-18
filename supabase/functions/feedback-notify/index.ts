@@ -155,7 +155,7 @@ async function handleNieuw(supa: ReturnType<typeof createClient>, fb: FeedbackRo
       indienerNaam,
       indienerEmail,
       partnerNaam,
-      feedbackUrl: `${PLATFORM_URL}/feedback-admin?id=${fb.id}`,
+      feedbackUrl: `${PLATFORM_URL}/feedback/admin/${fb.id}`,
     });
   }
 
