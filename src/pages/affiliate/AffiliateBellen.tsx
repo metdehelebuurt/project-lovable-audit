@@ -131,6 +131,14 @@ const AffiliateBellen = () => {
                   </Button>
                 );
               })}
+              {current && (
+                <TrialStartenButton
+                  lead={current}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onStarted={handleTrialGestart}
+                />
+              )}
               <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={next}>
                 <SkipForward className="h-4 w-4 mr-2" /> Overslaan
               </Button>
