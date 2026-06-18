@@ -347,8 +347,8 @@ serve(async (req) => {
         // Audit
         await supabaseAdmin.from("audit_log").insert({
           actor_id: caller.id, actie: "promote_to_affiliate",
-          entiteit_type: "user", entiteit_id: user_id,
-          beschrijving: `Gebruiker ${target.email} gepromoveerd naar affiliate`,
+          entity_type: "user", entity_id: user_id, target_user_id: user_id,
+          nieuwe_waarde: { rol: "affiliate", door: caller.id, email: target.email } as Record<string, unknown>,
         }).then((r: { error: { message: string } | null }) => {
           if (r.error) console.warn("audit log failed", r.error.message);
         });
@@ -375,8 +375,8 @@ serve(async (req) => {
         await supabaseAdmin.from("affiliate_links").update({ actief: false }).eq("user_id", user_id);
         await supabaseAdmin.from("audit_log").insert({
           actor_id: caller.id, actie: "revoke_affiliate",
-          entiteit_type: "user", entiteit_id: user_id,
-          beschrijving: `Affiliate-rol ingetrokken, nieuwe rol: ${fallbackRol}`,
+          entity_type: "user", entity_id: user_id, target_user_id: user_id,
+          nieuwe_waarde: { rol: fallbackRol, partner_id: partner_id ?? null } as Record<string, unknown>,
         });
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
