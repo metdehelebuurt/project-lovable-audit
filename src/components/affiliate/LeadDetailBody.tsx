@@ -150,6 +150,7 @@ export function LeadDetailBody({ lead }: Props) {
         onOpenChange={setOpenOrder}
         defaultTo={lead.email ?? ""}
         defaultSubject={`Orderbevestiging mijnhuis.nu — ${lead.bedrijfsnaam}`}
+        defaultBody={`Beste ${lead.contactpersoon ?? "klant"},\n\nHartelijk dank voor je vertrouwen in mijnhuis.nu. Hierbij bevestigen we je order voor ${lead.bedrijfsnaam}.\n\nWat je kunt verwachten:\n- Onze 30-daagse trial start direct na activatie\n- Je ontvangt persoonlijke onboarding via je affiliate\n- Bij vragen ben ik je vaste contactpersoon\n\nWelkom bij mijnhuis.nu!`}
         affiliateLeadId={lead.id}
       />
     </div>
