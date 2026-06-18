@@ -85,6 +85,13 @@ const AffiliateBeheer = () => {
       }).eq("id", instellingen.id);
       if (error) throw error;
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["affiliate-instellingen"] });
+      toast.success("Instellingen opgeslagen");
+    },
+    onError: (e: any) => toast.error("Fout: " + e.message),
+  });
+
   // Tier wijzigen
   const updateTier = useMutation({
     mutationFn: async ({ id, tier }: { id: string; tier: "brons" | "zilver" | "goud" }) => {
@@ -96,13 +103,6 @@ const AffiliateBeheer = () => {
       toast.success("Tier aangepast");
     },
     onError: (e: any) => toast.error(e.message),
-  });
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["affiliate-instellingen"] });
-      toast.success("Instellingen opgeslagen");
-    },
-    onError: (e: any) => toast.error("Fout: " + e.message),
   });
 
   // Create affiliate
