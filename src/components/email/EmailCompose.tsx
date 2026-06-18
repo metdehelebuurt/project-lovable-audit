@@ -17,11 +17,12 @@ interface Props {
   availableTo?: string[];
   leadId?: string;
   klantId?: string;
+  affiliateLeadId?: string;
   offerteId?: string;
   onSent?: () => void;
 }
 
-const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "", availableTo, leadId, klantId, offerteId, onSent }: Props) => {
+const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "", availableTo, leadId, klantId, affiliateLeadId, offerteId, onSent }: Props) => {
   const [to, setTo] = useState(defaultTo);
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState("");
@@ -44,6 +45,7 @@ const EmailCompose = ({ open, onOpenChange, defaultTo = "", defaultSubject = "",
           html_body: htmlBody,
           lead_id: leadId || null,
           klant_id: klantId || null,
+          affiliate_lead_id: affiliateLeadId || null,
           offerte_id: offerteId || null,
         },
       });
