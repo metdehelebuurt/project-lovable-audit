@@ -67,6 +67,7 @@ import AffiliateMijnKlanten from "@/pages/affiliate/AffiliateMijnKlanten";
 import AffiliateTrials from "@/pages/affiliate/AffiliateTrials";
 import AffiliateAgenda from "@/pages/affiliate/AffiliateAgenda";
 import AffiliateAnalytics from "@/pages/affiliate/AffiliateAnalytics";
+import AffiliateOpvolging from "@/pages/affiliate/AffiliateOpvolging";
 import LeadDetail from "@/pages/LeadDetail";
 import OfferteFeedback from "@/pages/OfferteFeedback";
 import AfspraakNieuw from "@/pages/AfspraakNieuw";
@@ -335,6 +336,9 @@ const App = () => (
               } />
               <Route path="/affiliates/agenda" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateAgenda /></ProtectedRoute>
+              } />
+              <Route path="/affiliates/opvolging" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateOpvolging /></ProtectedRoute>
               } />
               <Route path="/affiliates/analytics" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateAnalytics /></ProtectedRoute>
