@@ -78,6 +78,15 @@ ${(terugbel ?? []).map(t => `- ${t.geplande_op} ${t.type}${t.afgehandeld_op ? ' 
       laatst_gescoord_op: new Date().toISOString(),
     }).eq('id', leadId)
 
+    await admin.from('affiliate_opvolg_log').insert({
+      lead_id: leadId,
+      affiliate_id: lead.affiliate_id ?? userData.user.id,
+      actie: 'ai_score',
+      bron: 'ai',
+      titel: `AI-score bijgewerkt: ${score}/100`,
+      details: { score, reden, volgende_actie: volgende, volgende_actie_op: volgendeOp },
+    })
+
     return json({ ok: true, score, reden, volgende_actie: volgende, volgende_actie_op: volgendeOp })
   } catch (e) {
     console.error('ai-affiliate-lead-score', e)
