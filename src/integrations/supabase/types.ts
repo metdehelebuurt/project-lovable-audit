@@ -1551,6 +1551,9 @@ export type Database = {
           id: string
           is_default_voor_partner: boolean | null
           last_sync_at: string | null
+          last_sync_error: string | null
+          last_sync_error_at: string | null
+          needs_reauth: boolean
           partner_id: string | null
           provider: string
           refresh_token: string | null
@@ -1568,6 +1571,9 @@ export type Database = {
           id?: string
           is_default_voor_partner?: boolean | null
           last_sync_at?: string | null
+          last_sync_error?: string | null
+          last_sync_error_at?: string | null
+          needs_reauth?: boolean
           partner_id?: string | null
           provider: string
           refresh_token?: string | null
@@ -1585,6 +1591,9 @@ export type Database = {
           id?: string
           is_default_voor_partner?: boolean | null
           last_sync_at?: string | null
+          last_sync_error?: string | null
+          last_sync_error_at?: string | null
+          needs_reauth?: boolean
           partner_id?: string | null
           provider?: string
           refresh_token?: string | null

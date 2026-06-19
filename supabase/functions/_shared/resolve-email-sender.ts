@@ -65,9 +65,18 @@ export async function resolveEmailSender(
       .from("email_accounts").select("*")
       .eq("partner_id", partnerId).eq("actief", true).eq("is_default_voor_partner", true).maybeSingle();
     if (def) return def;
+    // Eerst een organisatie-account (zonder user_id) als die er is
+    const { data: org } = await adminClient
+      .from("email_accounts").select("*")
+      .eq("partner_id", partnerId).eq("actief", true).is("user_id", null)
+      .limit(1).maybeSingle();
+    if (org) return org;
+    // Laatste redmiddel: eerste actieve account van partner (ook persoonlijk)
     const { data: any1 } = await adminClient
       .from("email_accounts").select("*")
-      .eq("partner_id", partnerId).eq("actief", true).is("user_id", null).maybeSingle();
+      .eq("partner_id", partnerId).eq("actief", true)
+      .order("created_at", { ascending: true })
+      .limit(1).maybeSingle();
     return any1;
   };
   const pickUserAccount = async (uid: string) => {

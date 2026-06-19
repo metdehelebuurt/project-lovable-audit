@@ -1,97 +1,53 @@
-# E-mail configuratie opnieuw inrichten
+## Doel
+Klachten van Hoang (Smartaccu): e-mailkoppeling werkt nog onbetrouwbaar. Audit van de huidige stack onthult een aantal echte bugs en blinde vlekken. Plan: (1) bugs/edge-cases hardenen in backend, (2) checklist uitbreiden met concrete foutdetails + fix-suggesties per stap, (3) E2E test.
 
-Klanten lopen vast op de huidige Gmail-koppeling. We splitsen de instellingen in twee duidelijke secties, voegen per-documenttype routing toe en testen de hele flow end-to-end.
+## Gevonden bugs / zwakke plekken
 
-## 1. Database
+1. **`email-oauth-config` controleert alleen client_id, niet client_secret** — als secret ontbreekt faalt token exchange met cryptische fout. UI denkt "configured".
+2. **`email_accounts` upsert `onConflict: "user_id,provider"`** — organisatie-accounts (`user_id = null`) kunnen onbedoeld op elkaar overschrijven of juist niet upserten (NULL ≠ NULL). Voor partner-default mailbox is dit problematisch.
+3. **`pickPartnerDefault` in `resolve-email-sender.ts`** valt terug op `user_id IS NULL` — als enige gekoppelde account een persoonlijk account is, faalt routing met "Geen mailbox beschikbaar" zonder duidelijke hint.
+4. **`email-api-sync` slikt fouten** (`catch { console.error }`) → gebruiker weet niet dat sync faalt. Geen `last_sync_error` veld.
+5. **Token refresh fouten** worden niet teruggekoppeld → account blijft "actief" terwijl refresh_token revoked is. Geen `needs_reauth` markering.
+6. **Geen scope-validatie**: account kan gekoppeld zijn zonder `gmail.send` / `gmail.modify` / `gmail.readonly`, en faalt pas bij eerste send/sync.
+7. **Checklist toont alleen ✓ / ○** — geen reden waarom een stap "open" staat, geen suggestie hoe te fixen, geen testknop.
+8. **`recentSent` query gebruikt `created_at`** in checklist — kolom heet in `email_berichten` `datum`. Mogelijk false negative.
+9. **OAuth popup-onderbreking**: huidige melding suggereert alleen redirect_uri, niet "client_secret ontbreekt" of "scopes geweigerd".
+10. **Geen "stuur testmail" knop** in onboarding — verzending kan pas indirect via lead-flow worden getest.
 
-Nieuwe tabel `email_routing_config` (per partner):
+## Wijzigingen
 
-| kolom | type | doel |
-| --- | --- | --- |
-| `partner_id` (PK) | uuid | partner |
-| `document_type` (PK) | text | `offerte`, `orderbevestiging`, `factuur`, `herinnering`, `chat_klant`, `chat_lead`, `notificatie`, `algemeen` |
-| `bron` | text | `partner_default` \| `gebruiker_persoonlijk` \| `specifiek_account` |
-| `email_account_id` | uuid (nullable) | indien `specifiek_account` |
-| `updated_at`, `updated_by` | | audit |
+### Backend
+- **`email-oauth-config/index.ts`**: ook `secretConfigured` returnen (booleans `clientId`, `clientSecret`, `configured = beide`).
+- **DB migratie**: voeg toe op `email_accounts`:
+  - `last_sync_error TEXT`
+  - `last_sync_error_at TIMESTAMPTZ`
+  - `needs_reauth BOOLEAN DEFAULT FALSE`
+  - Partial unique index: `UNIQUE (partner_id, provider) WHERE user_id IS NULL` (organisatie-accounts) en `UNIQUE (user_id, provider) WHERE user_id IS NOT NULL`.
+- **`email-oauth-callback`**: verifieer dat alle gevraagde scopes daadwerkelijk teruggegeven worden; toon waarschuwing-pagina als scopes ontbreken. Reset `needs_reauth = false` op succesvolle koppeling.
+- **`email-api-sync`**: vang fouten per account op en schrijf naar `last_sync_error` + `needs_reauth` (bij `invalid_grant`).
+- **`_shared/email-send.ts` `refreshOAuthToken`**: bij `invalid_grant` / `invalid_request` zet `needs_reauth=true` + duidelijke errormessage.
+- **`resolve-email-sender.ts`**: laatste fallback = "eerste actieve account van partner" (ipv enkel `user_id IS NULL`). Bij geen account: duidelijke foutmessage met routing-context.
+- **Nieuwe edge function `email-config-diagnose`**: returnt per stap: status (`ok`/`warning`/`fail`), reden, suggestie. Bundelt: OAuth env-check, default-account check, scopes check, recente send/sync, sync-errors. Vermijdt N+1 queries vanuit UI.
 
-- RLS: alleen `partner_admin` van die partner mag wijzigen; iedereen mag lezen (nodig voor verzendlogica)
-- Seed: per partner één rij per documenttype met default `partner_default`
-- `partners.afzender_email/naam/smtp_*` blijven het "algemeen adres"
-- `email_accounts.is_default_voor_partner` blijft de markering welke gekoppelde Gmail/Outlook-mailbox het partner-default OAuth-account is
+### Frontend
+- **`EmailOnboardingChecklist.tsx`** herbouwen:
+  - Haalt data uit nieuwe `email-config-diagnose` Edge Function.
+  - Per stap: status-icoon (✓/⚠/✗), korte reden ("Refresh-token geweigerd: koppel Gmail opnieuw"), expandable details (originele errormessage, betrokken account-id).
+  - **Per stap "Fix nu"-knop**: spring naar relevante kaart (Koppelen/Routing/Accounts) of trigger actie (Sync nu, Stuur testmail naar mezelf).
+  - Knop "Stuur testmail naar mezelf" → roept `email-api-send` met partner-default + `to = ingelogde user email`.
+  - Toont per gekoppeld account: scopes-badge, laatste sync, `last_sync_error`, `needs_reauth` waarschuwing met "Opnieuw koppelen" actie.
+  - Bug fix: `datum` ipv `created_at`.
+- **`EmailAccountsBeheer.tsx`**: badge "Herkoppelen nodig" als `needs_reauth=true`, toon `last_sync_error` als tooltip.
 
-## 2. Backend
-
-**Nieuwe helper** `supabase/functions/_shared/resolve-email-sender.ts`:
-- Input: `{ partner_id, document_type, user_id? }`
-- Logica: lees `email_routing_config` voor het documenttype → bepaal mailbox:
-  - `partner_default` → eerst OAuth-account met `is_default_voor_partner=true`, anders SMTP-instellingen van partner
-  - `gebruiker_persoonlijk` → OAuth-account van die user, fallback naar partner_default
-  - `specifiek_account` → opgegeven `email_account_id`, fallback naar partner_default
-- Output: `{ method: "oauth" | "smtp", account?, from_email, from_naam }`
-
-**Update verzendfuncties** zodat ze deze helper gebruiken i.p.v. losse logica:
-- `send-offerte-email` → `document_type: "offerte"` (en `orderbevestiging` op basis van offerte status)
-- `email-api-send` → accepteert `document_type` param (default `chat_klant`)
-- `_shared/partner-email-send.ts` & `user-email-send.ts` → routen via helper
-
-## 3. UI — Instellingen splitsen
-
-**Sectie A: `AlgemeenPartnerEmail.tsx`** (alleen `partner_admin`)
-- Algemeen afzenderadres + naam (offertes, orderbevestigingen, facturen)
-- Tabs: "Gekoppeld account" (Gmail/Outlook OAuth markeren als partner-default) + "SMTP/IMAP fallback"
-- Verbeterde Gmail-wizard: stap-voor-stap met heldere foutmeldingen, redirect-URI prominent zichtbaar, "test verzenden" knop
-
-**Sectie B: `PersoonlijkeMailkoppeling.tsx`** (bestaande `MijnEmailKoppeling` uitbreiden)
-- Persoonlijke Gmail/Outlook koppelen
-- Status: wanneer laatste sync, hoeveel mails gekoppeld aan leads/klanten
-- "Mijn mailbox gebruiken voor inkomende communicatie" toggle
-
-**Sectie C: `EmailRoutingTabel.tsx`** (alleen `partner_admin`)
-- Tabel met alle documenttypes en per regel een dropdown:
-  - "Vast partner-adres (offertes@bedrijf.nl)"
-  - "Persoonlijke mailbox van verzender"
-  - "Specifiek account: …" (lijst gekoppelde accounts)
-- Live preview: "Een offerte van Jan wordt nu verstuurd vanaf: …"
-
-Wijzig `src/pages/Profiel.tsx` / Instellingen zodat deze drie kaarten zichtbaar zijn op de juiste plek (admin vs. medewerker).
-
-## 4. Klant-/lead-detailkaart logging
-
-`email_berichten.user_id` wordt al gevuld bij OAuth-sync. Aanvulling:
-- Bij verzenden via routing-helper schrijf altijd `email_berichten` rij met `via_account_id` en `document_type` zodat in lead-detail zichtbaar is "Verstuurd door Jan vanaf info@bedrijf.nl"
-- Lead/klant detail: voeg "Bron" badge toe per bericht (welke mailbox)
-
-## 5. E2E test (Playwright)
-
-`/tmp/browser/email-routing/test.py`:
-1. Login als partner_admin
-2. Open Instellingen → E-mail → koppel Gmail (mock OAuth callback via directe DB-insert in test-modus)
-3. Stel routing in: offerte → partner_default, chat_klant → gebruiker_persoonlijk
-4. Maak nieuwe offerte → verstuur → controleer `email_send_log` heeft juiste `from_email`
-5. Stuur chat-bericht naar klant → controleer dat verzendadres het persoonlijke account is
-6. Open klantdetail → controleer dat beide berichten staan met juiste bron-badge
+### E2E test
+- `/tmp/browser/email-hardening/test.py`: login partner_admin → open Instellingen → E-mail → verifieer dat checklist alle 6 stappen toont met status, dat "Stuur testmail" knop reageert, dat ontbrekende routing een ⚠ met fix-link toont.
 
 ## Bestanden
+**Nieuw (3):** `supabase/functions/email-config-diagnose/index.ts`, migratie voor `email_accounts` velden + indexes, `tests/email-hardening/test.py` (E2E).
 
-**Nieuw**
-- `supabase/migrations/<ts>_email_routing.sql`
-- `supabase/functions/_shared/resolve-email-sender.ts`
-- `src/components/instellingen/AlgemeenPartnerEmail/index.tsx` + subcomponents
-- `src/components/instellingen/EmailRoutingTabel.tsx`
-- `src/hooks/instellingen/useEmailRouting.ts`
-- `/tmp/browser/email-routing/test.py`
-
-**Aangepast**
-- `src/components/instellingen/EmailConfiguratie.tsx` → opgesplitst / verwijderd
-- `src/components/instellingen/MijnEmailKoppeling.tsx` → routing-toggle
-- `supabase/functions/send-offerte-email/index.ts`
-- `supabase/functions/email-api-send/index.ts`
-- `supabase/functions/_shared/partner-email-send.ts`
-- `supabase/functions/_shared/user-email-send.ts`
-- Lead/klant detail componenten: bron-badge per bericht
-- `src/integrations/supabase/types.ts` (auto)
+**Aangepast (7):** `EmailOnboardingChecklist.tsx` (herbouw), `EmailAccountsBeheer.tsx` (reauth-badge), `email-oauth-config/index.ts`, `email-oauth-callback/index.ts` (scope-verify), `email-api-sync/index.ts` (error capture), `_shared/email-send.ts` (refresh markeer needs_reauth), `_shared/resolve-email-sender.ts` (fallback fix).
 
 ## Out of scope
-- Volledig nieuwe Gmail OAuth-flow (huidige werkt; we verbeteren alleen UX/foutmeldingen)
-- Per-document override op verzendmoment (alleen globale routing per type)
-- Microsoft Graph wijzigingen (Outlook werkt identiek mee in dezelfde helper)
+- Volledig nieuwe OAuth UI / wizard
+- Per-bericht delivery tracking (Mailgun-stijl bounce hooks)
+- Microsoft Graph delta-sync verbetering

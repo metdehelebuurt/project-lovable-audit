@@ -18,9 +18,9 @@ const EmailInstellingenTab = ({ partnerId }: Props) => {
   return (
     <div className="space-y-6">
       <EmailOnboardingChecklist partnerId={partnerId} />
-      <EmailConfiguratie partnerId={partnerId} />
-      <EmailAccountsBeheer partnerId={partnerId} />
-      <EmailRoutingTabel partnerId={partnerId} />
+      <div id="email-configuratie"><EmailConfiguratie partnerId={partnerId} /></div>
+      <div id="email-accounts"><EmailAccountsBeheer partnerId={partnerId} /></div>
+      <div id="email-routing"><EmailRoutingTabel partnerId={partnerId} /></div>
     </div>
   );
 };

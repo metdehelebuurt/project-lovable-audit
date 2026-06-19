@@ -1,153 +1,118 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Circle, Loader2, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2, AlertTriangle, XCircle, Loader2,
+  ExternalLink, ChevronDown, ChevronRight, Send, RefreshCw,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Props {
   partnerId: string;
 }
 
-interface ChecklistStatus {
-  hasDefaultAccount: boolean;
-  hasGoogleAccount: boolean;
-  hasPersonalAccounts: number;
-  routingConfigured: boolean;
-  recentSent: boolean;
-  recentRead: boolean;
-  loading: boolean;
+type DiagStatus = "ok" | "warning" | "fail" | "pending";
+interface DiagStep {
+  id: string;
+  titel: string;
+  status: DiagStatus;
+  reden: string;
+  suggestie?: string;
+  details?: string;
+  fixActie?:
+    | { type: "scroll"; target: string }
+    | { type: "send_test" }
+    | { type: "sync_now" };
+}
+interface DiagAccount {
+  id: string;
+  email_adres: string;
+  provider: string;
+  is_default_voor_partner: boolean;
+  user_id: string | null;
+  last_sync_at: string | null;
+  last_sync_error: string | null;
+  last_sync_error_at: string | null;
+  needs_reauth: boolean;
+  scopes: string[] | null;
 }
 
-const initial: ChecklistStatus = {
-  hasDefaultAccount: false,
-  hasGoogleAccount: false,
-  hasPersonalAccounts: 0,
-  routingConfigured: false,
-  recentSent: false,
-  recentRead: false,
-  loading: true,
+const scrollTo = (id: string) => {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const EmailOnboardingChecklist = ({ partnerId }: Props) => {
-  const [status, setStatus] = useState<ChecklistStatus>(initial);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [steps, setSteps] = useState<DiagStep[]>([]);
+  const [accounts, setAccounts] = useState<DiagAccount[]>([]);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [bezig, setBezig] = useState<string | null>(null);
 
   const laad = async () => {
-    setStatus((s) => ({ ...s, loading: true }));
-    const [accountsRes, routingRes, berichtenSentRes, berichtenInRes] = await Promise.all([
-      supabase
-        .from("email_accounts" as any)
-        .select("id, provider, is_default_voor_partner, user_id, actief")
-        .eq("partner_id", partnerId)
-        .eq("actief", true),
-      supabase
-        .from("email_routing_config" as any)
-        .select("id, document_type, bron")
-        .eq("partner_id", partnerId),
-      supabase
-        .from("email_berichten" as any)
-        .select("id")
-        .eq("partner_id", partnerId)
-        .eq("richting", "uitgaand")
-        .gte("created_at", new Date(Date.now() - 30 * 24 * 3600_000).toISOString())
-        .limit(1),
-      supabase
-        .from("email_berichten" as any)
-        .select("id")
-        .eq("partner_id", partnerId)
-        .eq("richting", "inkomend")
-        .gte("created_at", new Date(Date.now() - 30 * 24 * 3600_000).toISOString())
-        .limit(1),
-    ]);
-
-    const accounts = (accountsRes.data as any[]) || [];
-    const routing = (routingRes.data as any[]) || [];
-    setStatus({
-      hasDefaultAccount: accounts.some((a) => a.is_default_voor_partner),
-      hasGoogleAccount: accounts.some((a) => a.provider === "google"),
-      hasPersonalAccounts: accounts.filter((a) => a.user_id).length,
-      routingConfigured: routing.length >= 3,
-      recentSent: ((berichtenSentRes.data as any[]) || []).length > 0,
-      recentRead: ((berichtenInRes.data as any[]) || []).length > 0,
-      loading: false,
-    });
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("email-config-diagnose", {
+        body: { partner_id: partnerId },
+      });
+      if (error) throw error;
+      setSteps((data?.steps as DiagStep[]) || []);
+      setAccounts((data?.accounts as DiagAccount[]) || []);
+    } catch (err) {
+      toast.error("Diagnose mislukt", { description: (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    if (partnerId) laad();
-  }, [partnerId]);
+  useEffect(() => { if (partnerId) laad(); }, [partnerId]);
 
-  const stappen = [
-    {
-      titel: "1. Google Mail koppelen",
-      gereed: status.hasGoogleAccount,
-      beschrijving:
-        "Koppel het centrale bedrijfs-Gmail-account (bv. info@bedrijf.nl) via 'Algemeen partner-postvak'. Log in met Google, sta de gevraagde rechten toe (lezen, verzenden) en bevestig de koppeling.",
-      hulp: [
-        "Zorg dat je bent ingelogd in de juiste Google-account in je browser.",
-        "Klik op 'Verbind met Google' in de kaart 'E-mail configuratie' hieronder.",
-        "Sta alle gevraagde scopes toe — anders kunnen we geen mails versturen of lezen.",
-        "Na succes verschijnt het adres in 'Gekoppelde mailboxen'.",
-      ],
-    },
-    {
-      titel: "2. Algemeen afzenderadres instellen",
-      gereed: status.hasDefaultAccount,
-      beschrijving:
-        "Markeer één gekoppeld account als 'Partner-standaard'. Offertes, orderbevestigingen en facturen worden vanaf dit adres verstuurd.",
-      hulp: [
-        "Open 'Gekoppelde mailboxen' hieronder.",
-        "Klik bij het juiste account op 'Maak partner-standaard'.",
-        "Er kan maar één standaard zijn — een nieuwe keuze vervangt automatisch de vorige.",
-      ],
-    },
-    {
-      titel: "3. Persoonlijke mailbox per gebruiker",
-      gereed: status.hasPersonalAccounts > 0,
-      beschrijving:
-        "Laat elke medewerker zijn eigen Gmail koppelen via 'Mijn e-mailkoppeling' in zijn profielinstellingen. Zo komen chat- en klantmails binnen in de juiste persoonlijke inbox en worden ze automatisch gelogd op de lead/klant.",
-      hulp: [
-        "Elke gebruiker logt in en gaat naar Profiel → Mijn e-mailkoppeling.",
-        "Voor pure 'send-only' organisaties is deze stap optioneel.",
-      ],
-    },
-    {
-      titel: "4. Routing per documenttype controleren",
-      gereed: status.routingConfigured,
-      beschrijving:
-        "Bepaal per documenttype (offerte, orderbevestiging, factuur, chat, notificatie) vanaf welk postvak verstuurd wordt. Standaard: documenten via partner-standaard, chat via persoonlijke mailbox.",
-      hulp: [
-        "Open 'Routing per documenttype' hieronder.",
-        "Pas per rij de bron aan: partner-standaard, persoonlijk of een specifiek account.",
-        "Test door een testofferte te sturen en het afzenderadres in de inbox van de ontvanger te controleren.",
-      ],
-    },
-    {
-      titel: "5. Verzenden testen",
-      gereed: status.recentSent,
-      beschrijving:
-        "Verstuur een testbericht (offerte of chat) vanuit een lead/klant. Controleer dat het bericht aankomt én dat het zichtbaar wordt in de tab 'E-mail' op de lead-/klantkaart met het juiste afzender-badge.",
-      hulp: [
-        "Open een lead → tab E-mail → 'Nieuw bericht'.",
-        "Controleer in de inbox van de ontvanger het afzenderadres.",
-        "Controleer de badge 'via … · documenttype' op het verstuurde bericht.",
-      ],
-    },
-    {
-      titel: "6. Inkomende mail & logging verifiëren",
-      gereed: status.recentRead,
-      beschrijving:
-        "Laat de ontvanger antwoorden. Het antwoord moet automatisch verschijnen onder de juiste lead/klant in de tab 'E-mail'. Zo weet je dat de tweerichtingslogging werkt.",
-      hulp: [
-        "Antwoord op de testmail vanaf het ontvangeradres.",
-        "Wacht ~1 minuut (sync-interval).",
-        "Open de lead/klant → tab E-mail; het antwoord moet als 'inkomend' verschijnen.",
-        "Als het ontbreekt: controleer of de mailbox van de medewerker gekoppeld is en de scopes 'lezen' toegestaan zijn.",
-      ],
-    },
-  ];
+  const stuurTest = async () => {
+    if (!user?.email) { toast.error("Geen e-mailadres van ingelogde gebruiker bekend"); return; }
+    setBezig("test");
+    try {
+      const { data, error } = await supabase.functions.invoke("email-api-send", {
+        body: {
+          to: user.email,
+          subject: "Testbericht – e-mailkoppeling werkt",
+          html_body: "<p>Dit is een testbericht vanuit de onboarding-checklist. Als je dit ziet werkt verzenden correct.</p>",
+          document_type: "algemeen",
+        },
+      });
+      if (error || (data as any)?.error) {
+        toast.error("Testmail mislukt", { description: (data as any)?.error || error?.message });
+      } else {
+        toast.success(`Testmail verstuurd naar ${user.email}`);
+        await laad();
+      }
+    } catch (err) {
+      toast.error("Testmail mislukt", { description: (err as Error).message });
+    } finally { setBezig(null); }
+  };
 
-  const gereed = stappen.filter((s) => s.gereed).length;
+  const syncNu = async () => {
+    setBezig("sync");
+    try {
+      const { data, error } = await supabase.functions.invoke("email-api-sync", {});
+      if (error) toast.error("Synchronisatie mislukt", { description: error.message });
+      else toast.success(`${(data as any)?.synced ?? 0} berichten gesynchroniseerd`);
+      await laad();
+    } finally { setBezig(null); }
+  };
+
+  const doFix = (s: DiagStep) => {
+    if (!s.fixActie) return;
+    if (s.fixActie.type === "scroll") scrollTo(s.fixActie.target);
+    if (s.fixActie.type === "send_test") stuurTest();
+    if (s.fixActie.type === "sync_now") syncNu();
+  };
+
+  const okCount = steps.filter((s) => s.status === "ok").length;
+  const failCount = steps.filter((s) => s.status === "fail").length;
 
   return (
     <Card>
@@ -159,54 +124,126 @@ const EmailOnboardingChecklist = ({ partnerId }: Props) => {
               Stap-voor-stap controle. Werk de lijst van boven naar beneden af.
             </CardDescription>
           </div>
-          <Badge variant={gereed === stappen.length ? "default" : "secondary"}>
-            {gereed}/{stappen.length} gereed
+          <Badge variant={failCount === 0 && okCount === steps.length ? "default" : "secondary"}>
+            {okCount}/{steps.length} ok{failCount > 0 ? ` · ${failCount} fout` : ""}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {status.loading ? (
+        {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Status laden…
           </div>
         ) : (
-          <ol className="space-y-4">
-            {stappen.map((stap) => (
-              <li
-                key={stap.titel}
-                className="rounded-lg border p-4 flex gap-3 items-start"
-              >
-                {stap.gereed ? (
-                  <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                ) : (
-                  <Circle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                )}
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium">{stap.titel}</p>
-                    {stap.gereed && (
-                      <Badge variant="secondary" className="text-xs">
-                        Gereed
-                      </Badge>
-                    )}
+          <ol className="space-y-3">
+            {steps.map((stap) => {
+              const isOpen = !!open[stap.id];
+              const Icon = stap.status === "ok" ? CheckCircle2
+                : stap.status === "warning" ? AlertTriangle
+                : stap.status === "fail" ? XCircle : Loader2;
+              const color = stap.status === "ok" ? "text-emerald-600"
+                : stap.status === "warning" ? "text-amber-600"
+                : stap.status === "fail" ? "text-destructive"
+                : "text-muted-foreground";
+              return (
+                <li key={stap.id} className="rounded-lg border p-4">
+                  <div className="flex gap-3 items-start">
+                    <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${color}`} />
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium">{stap.titel}</p>
+                        <Badge
+                          variant={stap.status === "ok" ? "default"
+                            : stap.status === "fail" ? "destructive" : "secondary"}
+                          className="text-[10px] uppercase"
+                        >
+                          {stap.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{stap.reden}</p>
+                      {stap.suggestie && (
+                        <p className="text-sm">
+                          <span className="font-medium text-foreground">Fix:</span>{" "}
+                          <span className="text-muted-foreground">{stap.suggestie}</span>
+                        </p>
+                      )}
+                      {stap.details && (
+                        <button
+                          type="button"
+                          onClick={() => setOpen((o) => ({ ...o, [stap.id]: !o[stap.id] }))}
+                          className="text-xs text-muted-foreground inline-flex items-center gap-1 hover:text-foreground"
+                        >
+                          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                          Details
+                        </button>
+                      )}
+                      {isOpen && stap.details && (
+                        <pre className="text-xs whitespace-pre-wrap bg-muted/50 rounded p-2 border">
+                          {stap.details}
+                        </pre>
+                      )}
+                      {stap.fixActie && (
+                        <Button
+                          size="sm"
+                          variant={stap.status === "ok" ? "outline" : "default"}
+                          className="gap-1.5"
+                          onClick={() => doFix(stap)}
+                          disabled={bezig !== null}
+                        >
+                          {stap.fixActie.type === "send_test" && <Send className="h-3.5 w-3.5" />}
+                          {stap.fixActie.type === "sync_now" && (
+                            <RefreshCw className={`h-3.5 w-3.5 ${bezig === "sync" ? "animate-spin" : ""}`} />
+                          )}
+                          {stap.fixActie.type === "send_test" ? "Stuur testmail naar mezelf"
+                            : stap.fixActie.type === "sync_now" ? "Nu synchroniseren"
+                            : "Naar betreffende sectie"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">{stap.beschrijving}</p>
-                  <ul className="text-sm list-disc pl-5 space-y-1 text-muted-foreground">
-                    {stap.hulp.map((h) => (
-                      <li key={h}>{h}</li>
-                    ))}
-                  </ul>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ol>
         )}
+
+        {accounts.length > 0 && (
+          <div className="rounded-lg border p-3 space-y-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Gekoppelde accounts</p>
+            {accounts.map((a) => (
+              <div key={a.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-medium">{a.email_adres}</span>
+                <Badge variant="outline" className="text-[10px]">{a.provider}</Badge>
+                {a.is_default_voor_partner && (
+                  <Badge className="text-[10px]">standaard</Badge>
+                )}
+                {a.needs_reauth && (
+                  <Badge variant="destructive" className="text-[10px]">opnieuw koppelen</Badge>
+                )}
+                {a.last_sync_error && (
+                  <span
+                    title={a.last_sync_error}
+                    className="text-xs text-destructive truncate max-w-[24ch]"
+                  >
+                    fout: {a.last_sync_error}
+                  </span>
+                )}
+                {a.last_sync_at && !a.last_sync_error && (
+                  <span className="text-xs text-muted-foreground">
+                    sync: {new Date(a.last_sync_at).toLocaleString("nl-NL")}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex justify-between items-center pt-2 border-t">
           <p className="text-xs text-muted-foreground">
             Tip: ververs na elke stap om de status opnieuw te laten checken.
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={laad} disabled={status.loading}>
+            <Button variant="outline" size="sm" onClick={laad} disabled={loading}>
               Status verversen
             </Button>
             <Button
