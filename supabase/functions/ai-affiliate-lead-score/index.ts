@@ -76,6 +76,7 @@ ${(terugbel ?? []).map(t => `- ${t.geplande_op} ${t.type}${t.afgehandeld_op ? ' 
       ai_volgende_actie: volgende,
       ai_volgende_actie_op: volgendeOp,
       laatst_gescoord_op: new Date().toISOString(),
+      volgende_actie_datum: volgendeOp,
     }).eq('id', leadId)
 
     await admin.from('affiliate_opvolg_log').insert({
@@ -87,7 +88,47 @@ ${(terugbel ?? []).map(t => `- ${t.geplande_op} ${t.type}${t.afgehandeld_op ? ' 
       details: { score, reden, volgende_actie: volgende, volgende_actie_op: volgendeOp },
     })
 
-    return json({ ok: true, score, reden, volgende_actie: volgende, volgende_actie_op: volgendeOp })
+    // Automatisch een opvolg-taak aanmaken zodat de AI-advies daadwerkelijk in
+    // de belwerkbank en het opvolg-overzicht verschijnt. Alleen wanneer er nog
+    // geen openstaande taak is voor deze lead.
+    let taakAangemaakt = false
+    if (volgende) {
+      const { data: openTaken } = await admin
+        .from('affiliate_opvolg_taken')
+        .select('id')
+        .eq('lead_id', leadId)
+        .is('voltooid_op', null)
+        .limit(1)
+      if (!openTaken || openTaken.length === 0) {
+        const taakType = score >= 60 ? 'bel' : score >= 30 ? 'mail' : 'anders'
+        const prioriteit = score >= 70 ? 'hoog' : score >= 40 ? 'normaal' : 'laag'
+        const eigenaarId = (lead as any).eigenaar_id ?? lead.affiliate_id ?? userData.user.id
+        const { data: nieuw } = await admin.from('affiliate_opvolg_taken').insert({
+          affiliate_id: eigenaarId,
+          lead_id: leadId,
+          titel: volgende.slice(0, 120),
+          notitie: reden,
+          type: taakType,
+          prioriteit,
+          due_op: volgendeOp,
+          bron: 'ai',
+        }).select('id').maybeSingle()
+        if (nieuw?.id) {
+          taakAangemaakt = true
+          await admin.from('affiliate_opvolg_log').insert({
+            lead_id: leadId,
+            affiliate_id: eigenaarId,
+            taak_id: nieuw.id,
+            actie: 'taak_aangemaakt',
+            bron: 'ai',
+            titel: `AI heeft taak aangemaakt: ${volgende.slice(0, 80)}`,
+            details: { type: taakType, prioriteit, due_op: volgendeOp },
+          })
+        }
+      }
+    }
+
+    return json({ ok: true, score, reden, volgende_actie: volgende, volgende_actie_op: volgendeOp, taak_aangemaakt: taakAangemaakt })
   } catch (e) {
     console.error('ai-affiliate-lead-score', e)
     return json({ error: (e as Error).message }, 500)

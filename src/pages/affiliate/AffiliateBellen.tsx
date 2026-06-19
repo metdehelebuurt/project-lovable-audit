@@ -8,6 +8,7 @@ import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
 import { useTerugbelAfspraken } from "@/hooks/affiliate/useTerugbelAfspraken";
+import { useOpvolgTaken, useVoltooiOpvolgTaak } from "@/hooks/affiliate/useOpvolgTaken";
 import { CONTACT_UITKOMST_OPTIES } from "@/lib/affiliate/leadStatus";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "@/components/affiliate/TerugbelDialog";
@@ -16,6 +17,8 @@ import { TrialStartenButton } from "@/components/affiliate/TrialStartenButton";
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
   const { data: terugbelAfspraken = [] } = useTerugbelAfspraken("open");
+  const { data: opvolgTaken = [] } = useOpvolgTaken("open");
+  const voltooiTaak = useVoltooiOpvolgTaak();
   const update = useUpdateAffiliateLead();
   const log = useLogContactmoment();
   const [notitie, setNotitie] = useState("");
@@ -31,15 +34,25 @@ const AffiliateBellen = () => {
         .filter((a) => new Date(a.geplande_op) <= vandaag)
         .map((a) => a.lead_id),
     );
+    for (const t of opvolgTaken) {
+      if (!t.lead_id) continue;
+      if (new Date(t.due_op) <= vandaag) dueLeadIds.add(t.lead_id);
+    }
     return leads.filter((l) => {
       if (dueLeadIds.has(l.id)) return true;
       if (l.status !== "nieuw" && l.status !== "gebeld_geen_gehoor") return false;
       if (!l.volgende_actie_datum) return true;
       return new Date(l.volgende_actie_datum) <= vandaag;
     });
-  }, [leads, terugbelAfspraken]);
+  }, [leads, terugbelAfspraken, opvolgTaken]);
 
   const current: AffiliateLead | undefined = belQueue[idx];
+
+  const huidigeTaken = useMemo(() => {
+    if (!current) return [];
+    const vandaag = new Date(); vandaag.setHours(23, 59, 59, 999);
+    return opvolgTaken.filter((t) => t.lead_id === current.id && new Date(t.due_op) <= vandaag);
+  }, [opvolgTaken, current]);
 
   useEffect(() => { setSeconden(0); }, [current?.id]);
 
@@ -64,6 +77,10 @@ const AffiliateBellen = () => {
       duur_seconden: seconden,
     });
     await update.mutateAsync({ id: current.id, patch: { status: uitkomst.nextStatus } });
+    // Sluit openstaande opvolg-taken voor deze lead — ze zijn nu opgevolgd.
+    for (const t of huidigeTaken) {
+      await voltooiTaak.mutateAsync(t.id).catch(() => undefined);
+    }
     next();
   };
 
@@ -119,6 +136,31 @@ const AffiliateBellen = () => {
                 <div className="text-sm border rounded-md p-3 bg-muted/30">
                   <p className="font-medium mb-1 text-xs uppercase tracking-wide text-muted-foreground">Eerdere notities</p>
                   <p className="whitespace-pre-wrap">{current.notities}</p>
+                </div>
+              )}
+              {huidigeTaken.length > 0 && (
+                <div className="text-sm border rounded-md p-3 bg-primary/5 border-primary/20">
+                  <p className="font-medium mb-2 text-xs uppercase tracking-wide text-primary">Openstaande opvolg-taken</p>
+                  <ul className="space-y-1">
+                    {huidigeTaken.map((t) => (
+                      <li key={t.id} className="flex items-start gap-2">
+                        <Badge variant="outline" className="text-xs">{t.type}</Badge>
+                        <span className="flex-1">
+                          <span className="font-medium">{t.titel}</span>
+                          {t.notitie && <span className="text-muted-foreground"> — {t.notitie}</span>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {current.ai_volgende_actie && (
+                <div className="text-sm border rounded-md p-3 bg-amber-50 border-amber-200">
+                  <p className="font-medium mb-1 text-xs uppercase tracking-wide text-amber-700">AI-advies</p>
+                  <p>{current.ai_volgende_actie}</p>
+                  {current.ai_score != null && (
+                    <p className="text-xs text-muted-foreground mt-1">Score: {current.ai_score}/100 · {current.ai_score_reden}</p>
+                  )}
                 </div>
               )}
               <div>
