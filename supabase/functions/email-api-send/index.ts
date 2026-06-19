@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveEmailSender, DocumentType } from "../_shared/resolve-email-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub as string;
     const body = await req.json();
-    const { to, subject, html_body, offerte_id, lead_id, klant_id, affiliate_lead_id } = body;
+    const { to, subject, html_body, offerte_id, lead_id, klant_id, affiliate_lead_id, document_type } = body;
 
     if (!to || !subject || !html_body) {
       return new Response(JSON.stringify({ error: "to, subject, html_body zijn verplicht" }), { status: 400, headers: corsHeaders });
@@ -40,25 +41,31 @@ Deno.serve(async (req) => {
     const { data: userRow } = await adminClient.from("users").select("partner_id").eq("id", userId).maybeSingle();
     const partnerId: string | null = userRow?.partner_id ?? null;
 
-    // Zoek e-mailaccount: eerst per gebruiker (werkt ook voor affiliates zonder partner),
-    // anders val terug op het partneraccount (legacy).
-    let { data: emailAccount } = await adminClient
-      .from("email_accounts")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("actief", true)
-      .maybeSingle();
+    // Bepaal mailbox via routing-config (per documenttype configureerbaar door partner_admin).
+    // Voor affiliates / users zonder partner: val direct terug op persoonlijke mailbox.
+    const docType: DocumentType =
+      (document_type as DocumentType)
+      ?? (offerte_id ? "chat_klant" : (lead_id || affiliate_lead_id ? "chat_lead" : "algemeen"));
 
-    if (!emailAccount && partnerId) {
-      const fallback = await adminClient
-        .from("email_accounts")
-        .select("*")
-        .eq("partner_id", partnerId)
-        .eq("actief", true)
-        .maybeSingle();
-      emailAccount = fallback.data;
+    let emailAccount: any = null;
+    let resolvedBron: string = "gebruiker_persoonlijk";
+    if (partnerId) {
+      try {
+        const resolved = await resolveEmailSender(adminClient, partnerId, docType, userId);
+        if (resolved.method === "oauth" && resolved.account) {
+          emailAccount = resolved.account;
+          resolvedBron = resolved.routingBron;
+        }
+      } catch {
+        // Val verder terug naar persoonlijke mailbox
+      }
     }
-
+    if (!emailAccount) {
+      const { data: ownAccount } = await adminClient
+        .from("email_accounts").select("*")
+        .eq("user_id", userId).eq("actief", true).maybeSingle();
+      emailAccount = ownAccount;
+    }
     if (!emailAccount) {
       return new Response(JSON.stringify({ error: "Geen e-mailaccount gekoppeld" }), { status: 400, headers: corsHeaders });
     }
@@ -92,6 +99,9 @@ Deno.serve(async (req) => {
       klant_id: klant_id || null,
       affiliate_lead_id: affiliate_lead_id || null,
       offerte_id: offerte_id || null,
+      document_type: docType,
+      via_account_id: emailAccount.id,
+      bron_method: "oauth",
     });
 
     // Also log in email_log (alleen wanneer er een partner-context is)
@@ -103,7 +113,7 @@ Deno.serve(async (req) => {
         onderwerp: subject,
         html_body: html_body,
         status: "verzonden",
-        type: offerte_id ? "offerte" : "algemeen",
+        type: docType,
         verzonden_door_id: userId,
       });
     }
