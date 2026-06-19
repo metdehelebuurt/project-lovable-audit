@@ -17,7 +17,7 @@ const EmailAccountsBeheer = ({ partnerId }: Props) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("email_accounts")
-        .select("id, email_adres, provider, user_id, is_default_voor_partner, last_sync_at, actief")
+        .select("id, email_adres, provider, user_id, is_default_voor_partner, last_sync_at, actief, needs_reauth, last_sync_error")
         .eq("partner_id", partnerId)
         .eq("actief", true)
         .order("is_default_voor_partner", { ascending: false });
@@ -92,6 +92,24 @@ const EmailAccountsBeheer = ({ partnerId }: Props) => {
                     )}
                     {a.user_id && (
                       <Badge variant="secondary" className="text-[10px]">Persoonlijk</Badge>
+                    )}
+                    {(a as any).needs_reauth && (
+                      <Badge
+                        variant="destructive"
+                        className="text-[10px]"
+                        title={(a as any).last_sync_error || "Refresh-token verlopen"}
+                      >
+                        Opnieuw koppelen
+                      </Badge>
+                    )}
+                    {!(a as any).needs_reauth && (a as any).last_sync_error && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] text-destructive border-destructive/30"
+                        title={(a as any).last_sync_error}
+                      >
+                        Syncfout
+                      </Badge>
                     )}
                   </div>
                 </div>
