@@ -129,6 +129,12 @@ const EmailTab = ({ leadId, klantId, affiliateLeadId, email, emails }: Props) =>
                         </span>
                       </div>
                       <p className="text-sm truncate">{msg.onderwerp}</p>
+                      {msg.richting === "uitgaand" && (msg.document_type || msg.van) && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          via {msg.van}
+                          {msg.document_type ? ` · ${msg.document_type}` : ""}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </button>
