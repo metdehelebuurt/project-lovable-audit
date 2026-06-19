@@ -1,153 +1,120 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Circle, Loader2, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2, AlertTriangle, XCircle, Loader2,
+  ExternalLink, ChevronDown, ChevronRight, Send, RefreshCw,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Props {
   partnerId: string;
 }
 
-interface ChecklistStatus {
-  hasDefaultAccount: boolean;
-  hasGoogleAccount: boolean;
-  hasPersonalAccounts: number;
-  routingConfigured: boolean;
-  recentSent: boolean;
-  recentRead: boolean;
-  loading: boolean;
+type DiagStatus = "ok" | "warning" | "fail" | "pending";
+interface DiagStep {
+  id: string;
+  titel: string;
+  status: DiagStatus;
+  reden: string;
+  suggestie?: string;
+  details?: string;
+  fixActie?:
+    | { type: "scroll"; target: string }
+    | { type: "send_test" }
+    | { type: "sync_now" };
+}
+interface DiagAccount {
+  id: string;
+  email_adres: string;
+  provider: string;
+  is_default_voor_partner: boolean;
+  user_id: string | null;
+  last_sync_at: string | null;
+  last_sync_error: string | null;
+  last_sync_error_at: string | null;
+  needs_reauth: boolean;
+  scopes: string[] | null;
 }
 
-const initial: ChecklistStatus = {
-  hasDefaultAccount: false,
-  hasGoogleAccount: false,
-  hasPersonalAccounts: 0,
-  routingConfigured: false,
-  recentSent: false,
-  recentRead: false,
-  loading: true,
+const scrollTo = (id: string) => {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const EmailOnboardingChecklist = ({ partnerId }: Props) => {
-  const [status, setStatus] = useState<ChecklistStatus>(initial);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [steps, setSteps] = useState<DiagStep[]>([]);
+  const [accounts, setAccounts] = useState<DiagAccount[]>([]);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [bezig, setBezig] = useState<string | null>(null);
 
   const laad = async () => {
-    setStatus((s) => ({ ...s, loading: true }));
-    const [accountsRes, routingRes, berichtenSentRes, berichtenInRes] = await Promise.all([
-      supabase
-        .from("email_accounts" as any)
-        .select("id, provider, is_default_voor_partner, user_id, actief")
-        .eq("partner_id", partnerId)
-        .eq("actief", true),
-      supabase
-        .from("email_routing_config" as any)
-        .select("id, document_type, bron")
-        .eq("partner_id", partnerId),
-      supabase
-        .from("email_berichten" as any)
-        .select("id")
-        .eq("partner_id", partnerId)
-        .eq("richting", "uitgaand")
-        .gte("created_at", new Date(Date.now() - 30 * 24 * 3600_000).toISOString())
-        .limit(1),
-      supabase
-        .from("email_berichten" as any)
-        .select("id")
-        .eq("partner_id", partnerId)
-        .eq("richting", "inkomend")
-        .gte("created_at", new Date(Date.now() - 30 * 24 * 3600_000).toISOString())
-        .limit(1),
-    ]);
-
-    const accounts = (accountsRes.data as any[]) || [];
-    const routing = (routingRes.data as any[]) || [];
-    setStatus({
-      hasDefaultAccount: accounts.some((a) => a.is_default_voor_partner),
-      hasGoogleAccount: accounts.some((a) => a.provider === "google"),
-      hasPersonalAccounts: accounts.filter((a) => a.user_id).length,
-      routingConfigured: routing.length >= 3,
-      recentSent: ((berichtenSentRes.data as any[]) || []).length > 0,
-      recentRead: ((berichtenInRes.data as any[]) || []).length > 0,
-      loading: false,
-    });
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("email-config-diagnose", {
+        body: { partner_id: partnerId },
+      });
+      if (error) throw error;
+      setSteps((data?.steps as DiagStep[]) || []);
+      setAccounts((data?.accounts as DiagAccount[]) || []);
+    } catch (err) {
+      toast.error("Diagnose mislukt", { description: (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    if (partnerId) laad();
-  }, [partnerId]);
+  useEffect(() => { if (partnerId) laad(); }, [partnerId]);
 
-  const stappen = [
-    {
-      titel: "1. Google Mail koppelen",
-      gereed: status.hasGoogleAccount,
-      beschrijving:
-        "Koppel het centrale bedrijfs-Gmail-account (bv. info@bedrijf.nl) via 'Algemeen partner-postvak'. Log in met Google, sta de gevraagde rechten toe (lezen, verzenden) en bevestig de koppeling.",
-      hulp: [
-        "Zorg dat je bent ingelogd in de juiste Google-account in je browser.",
-        "Klik op 'Verbind met Google' in de kaart 'E-mail configuratie' hieronder.",
-        "Sta alle gevraagde scopes toe — anders kunnen we geen mails versturen of lezen.",
-        "Na succes verschijnt het adres in 'Gekoppelde mailboxen'.",
-      ],
-    },
-    {
-      titel: "2. Algemeen afzenderadres instellen",
-      gereed: status.hasDefaultAccount,
-      beschrijving:
-        "Markeer één gekoppeld account als 'Partner-standaard'. Offertes, orderbevestigingen en facturen worden vanaf dit adres verstuurd.",
-      hulp: [
-        "Open 'Gekoppelde mailboxen' hieronder.",
-        "Klik bij het juiste account op 'Maak partner-standaard'.",
-        "Er kan maar één standaard zijn — een nieuwe keuze vervangt automatisch de vorige.",
-      ],
-    },
-    {
-      titel: "3. Persoonlijke mailbox per gebruiker",
-      gereed: status.hasPersonalAccounts > 0,
-      beschrijving:
-        "Laat elke medewerker zijn eigen Gmail koppelen via 'Mijn e-mailkoppeling' in zijn profielinstellingen. Zo komen chat- en klantmails binnen in de juiste persoonlijke inbox en worden ze automatisch gelogd op de lead/klant.",
-      hulp: [
-        "Elke gebruiker logt in en gaat naar Profiel → Mijn e-mailkoppeling.",
-        "Voor pure 'send-only' organisaties is deze stap optioneel.",
-      ],
-    },
-    {
-      titel: "4. Routing per documenttype controleren",
-      gereed: status.routingConfigured,
-      beschrijving:
-        "Bepaal per documenttype (offerte, orderbevestiging, factuur, chat, notificatie) vanaf welk postvak verstuurd wordt. Standaard: documenten via partner-standaard, chat via persoonlijke mailbox.",
-      hulp: [
-        "Open 'Routing per documenttype' hieronder.",
-        "Pas per rij de bron aan: partner-standaard, persoonlijk of een specifiek account.",
-        "Test door een testofferte te sturen en het afzenderadres in de inbox van de ontvanger te controleren.",
-      ],
-    },
-    {
-      titel: "5. Verzenden testen",
-      gereed: status.recentSent,
-      beschrijving:
-        "Verstuur een testbericht (offerte of chat) vanuit een lead/klant. Controleer dat het bericht aankomt én dat het zichtbaar wordt in de tab 'E-mail' op de lead-/klantkaart met het juiste afzender-badge.",
-      hulp: [
-        "Open een lead → tab E-mail → 'Nieuw bericht'.",
-        "Controleer in de inbox van de ontvanger het afzenderadres.",
-        "Controleer de badge 'via … · documenttype' op het verstuurde bericht.",
-      ],
-    },
-    {
-      titel: "6. Inkomende mail & logging verifiëren",
-      gereed: status.recentRead,
-      beschrijving:
-        "Laat de ontvanger antwoorden. Het antwoord moet automatisch verschijnen onder de juiste lead/klant in de tab 'E-mail'. Zo weet je dat de tweerichtingslogging werkt.",
-      hulp: [
-        "Antwoord op de testmail vanaf het ontvangeradres.",
-        "Wacht ~1 minuut (sync-interval).",
-        "Open de lead/klant → tab E-mail; het antwoord moet als 'inkomend' verschijnen.",
-        "Als het ontbreekt: controleer of de mailbox van de medewerker gekoppeld is en de scopes 'lezen' toegestaan zijn.",
-      ],
-    },
-  ];
+  const stuurTest = async () => {
+    if (!user?.email) { toast.error("Geen e-mailadres van ingelogde gebruiker bekend"); return; }
+    setBezig("test");
+    try {
+      const { data, error } = await supabase.functions.invoke("email-api-send", {
+        body: {
+          partner_id: partnerId,
+          to: user.email,
+          subject: "Testbericht – e-mailkoppeling werkt",
+          html: "<p>Dit is een testbericht vanuit de onboarding-checklist. Als je dit ziet werkt verzenden correct.</p>",
+          type: "test",
+          document_type: "algemeen",
+        },
+      });
+      if (error || (data as any)?.error) {
+        toast.error("Testmail mislukt", { description: (data as any)?.error || error?.message });
+      } else {
+        toast.success(`Testmail verstuurd naar ${user.email}`);
+        await laad();
+      }
+    } catch (err) {
+      toast.error("Testmail mislukt", { description: (err as Error).message });
+    } finally { setBezig(null); }
+  };
 
-  const gereed = stappen.filter((s) => s.gereed).length;
+  const syncNu = async () => {
+    setBezig("sync");
+    try {
+      const { data, error } = await supabase.functions.invoke("email-api-sync", {});
+      if (error) toast.error("Synchronisatie mislukt", { description: error.message });
+      else toast.success(`${(data as any)?.synced ?? 0} berichten gesynchroniseerd`);
+      await laad();
+    } finally { setBezig(null); }
+  };
+
+  const doFix = (s: DiagStep) => {
+    if (!s.fixActie) return;
+    if (s.fixActie.type === "scroll") scrollTo(s.fixActie.target);
+    if (s.fixActie.type === "send_test") stuurTest();
+    if (s.fixActie.type === "sync_now") syncNu();
+  };
+
+  const okCount = steps.filter((s) => s.status === "ok").length;
+  const failCount = steps.filter((s) => s.status === "fail").length;
 
   return (
     <Card>
