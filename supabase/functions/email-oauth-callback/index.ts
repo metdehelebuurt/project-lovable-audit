@@ -57,6 +57,9 @@ Deno.serve(async (req) => {
       token_expiry: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
       scopes: tokenData.scopes,
       actief: true,
+      needs_reauth: false,
+      last_sync_error: null,
+      last_sync_error_at: null,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id,provider" });
 
@@ -68,6 +71,23 @@ Deno.serve(async (req) => {
     // Update partner email_provider — alleen als de gebruiker bij een partner hoort
     if (partner_id) {
       await adminClient.from("partners").update({ email_provider: `oauth_${provider}` }).eq("id", partner_id);
+    }
+
+    // Scope-check: als verplichte scopes ontbreken, waarschuw via de result-pagina.
+    const required = provider === "google"
+      ? ["gmail.send", "gmail.readonly"]
+      : ["Mail.Send", "Mail.Read"];
+    const granted = (tokenData.scopes || []).join(" ");
+    const missing = required.filter((s) => !granted.toLowerCase().includes(s.toLowerCase()));
+    if (missing.length > 0) {
+      return renderResultPage({
+        success: false,
+        title: "Koppeling onvolledig",
+        message: `Account ${tokenData.email} is gekoppeld, maar mist permissies: ${missing.join(", ")}. Koppel opnieuw en sta álle gevraagde rechten toe.`,
+        provider,
+        email: tokenData.email,
+        fallback: redirect_url || "/instellingen",
+      });
     }
 
     // Sluit de popup en informeer de opener. Als de flow niet in een popup

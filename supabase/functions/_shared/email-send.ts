@@ -194,11 +194,25 @@ export async function refreshOAuthToken(adminClient: any, account: any): Promise
     body: new URLSearchParams(params),
   });
   const data = await resp.json();
-  if (data.error) throw new Error(`Token refresh failed: ${data.error}`);
+  if (data.error) {
+    // Markeer account als 'needs_reauth' als refresh-token revoked/expired is.
+    const fatal = ["invalid_grant", "invalid_request", "unauthorized_client"].includes(data.error);
+    if (fatal) {
+      await adminClient.from("email_accounts").update({
+        needs_reauth: true,
+        last_sync_error: `Token refresh: ${data.error} – ${data.error_description || ""}`.trim(),
+        last_sync_error_at: new Date().toISOString(),
+      }).eq("id", account.id);
+    }
+    throw new Error(`Token refresh failed: ${data.error_description || data.error}`);
+  }
 
   await adminClient.from("email_accounts").update({
     access_token: data.access_token,
     token_expiry: new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString(),
+    needs_reauth: false,
+    last_sync_error: null,
+    last_sync_error_at: null,
     ...(data.refresh_token ? { refresh_token: data.refresh_token } : {}),
   }).eq("id", account.id);
 

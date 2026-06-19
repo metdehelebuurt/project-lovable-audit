@@ -103,7 +103,14 @@ Deno.serve(async (req) => {
         }).eq("id", account.id);
 
       } catch (err) {
-        console.error(`Sync error for account ${account.id}:`, err);
+        const msg = (err as Error)?.message || String(err);
+        console.error(`Sync error for account ${account.id}:`, msg);
+        const needsReauth = /invalid_grant|invalid_request|unauthorized|401|403/i.test(msg);
+        await adminClient.from("email_accounts").update({
+          last_sync_error: msg.slice(0, 500),
+          last_sync_error_at: new Date().toISOString(),
+          ...(needsReauth ? { needs_reauth: true } : {}),
+        }).eq("id", account.id);
       }
     }
 
