@@ -1,6 +1,7 @@
 import EmailConfiguratie from "./EmailConfiguratie";
 import EmailAccountsBeheer from "./EmailAccountsBeheer";
 import EmailRoutingTabel from "./EmailRoutingTabel";
+import EmailOnboardingChecklist from "./EmailOnboardingChecklist";
 
 interface Props {
   partnerId: string;
@@ -16,6 +17,7 @@ interface Props {
 const EmailInstellingenTab = ({ partnerId }: Props) => {
   return (
     <div className="space-y-6">
+      <EmailOnboardingChecklist partnerId={partnerId} />
       <EmailConfiguratie partnerId={partnerId} />
       <EmailAccountsBeheer partnerId={partnerId} />
       <EmailRoutingTabel partnerId={partnerId} />
