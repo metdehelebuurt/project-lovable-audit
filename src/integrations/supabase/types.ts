@@ -1618,8 +1618,10 @@ export type Database = {
           bijlagen: Json | null
           body_html: string | null
           body_text: string | null
+          bron_method: string | null
           created_at: string
           datum: string
+          document_type: string | null
           email_account_id: string
           id: string
           is_gelezen: boolean
@@ -1634,6 +1636,7 @@ export type Database = {
           thread_id: string | null
           user_id: string | null
           van: string
+          via_account_id: string | null
         }
         Insert: {
           aan: string
@@ -1641,8 +1644,10 @@ export type Database = {
           bijlagen?: Json | null
           body_html?: string | null
           body_text?: string | null
+          bron_method?: string | null
           created_at?: string
           datum?: string
+          document_type?: string | null
           email_account_id: string
           id?: string
           is_gelezen?: boolean
@@ -1657,6 +1662,7 @@ export type Database = {
           thread_id?: string | null
           user_id?: string | null
           van: string
+          via_account_id?: string | null
         }
         Update: {
           aan?: string
@@ -1664,8 +1670,10 @@ export type Database = {
           bijlagen?: Json | null
           body_html?: string | null
           body_text?: string | null
+          bron_method?: string | null
           created_at?: string
           datum?: string
+          document_type?: string | null
           email_account_id?: string
           id?: string
           is_gelezen?: boolean
@@ -1680,6 +1688,7 @@ export type Database = {
           thread_id?: string | null
           user_id?: string | null
           van?: string
+          via_account_id?: string | null
         }
         Relationships: [
           {
@@ -1731,6 +1740,13 @@ export type Database = {
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "email_berichten_via_account_id_fkey"
+            columns: ["via_account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_log: {
@@ -1777,6 +1793,55 @@ export type Database = {
           verzonden_door_id?: string | null
         }
         Relationships: []
+      }
+      email_routing_config: {
+        Row: {
+          bron: string
+          document_type: string
+          email_account_id: string | null
+          partner_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bron?: string
+          document_type: string
+          email_account_id?: string | null
+          partner_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bron?: string
+          document_type?: string
+          email_account_id?: string | null
+          partner_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_routing_config_email_account_id_fkey"
+            columns: ["email_account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_routing_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_routing_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {

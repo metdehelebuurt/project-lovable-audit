@@ -7,7 +7,7 @@ import PartnerAbonnement from "@/components/abonnementen/PartnerAbonnement";
 import AbonnementZichtbaarheid from "@/components/abonnementen/AbonnementZichtbaarheid";
 import LeadBronnenConfig from "@/components/instellingen/LeadBronnenConfig";
 import BetalingsvoorwaardenConfig from "@/components/instellingen/BetalingsvoorwaardenConfig";
-import EmailConfiguratie from "@/components/instellingen/EmailConfiguratie";
+import EmailInstellingenTab from "@/components/instellingen/EmailInstellingenTab";
 import OfferteAutoHerinneringConfig from "@/components/instellingen/OfferteAutoHerinneringConfig";
 import EmailTemplatesBeheer from "@/components/instellingen/EmailTemplatesBeheer";
 import HelpdeskNotificatieConfig from "@/components/instellingen/HelpdeskNotificatieConfig";
@@ -130,7 +130,7 @@ const Instellingen = () => {
           {activeTab === "oplever" && <InstallateurVoorkeurenForm />}
           {activeTab === "bedrijf" && isPartnerAdmin && profile?.partner_id && <BedrijfsgegevensTab partnerId={profile.partner_id} />}
           {activeTab === "huisstijl" && isPartnerAdmin && profile?.partner_id && <HuisstijlTab partnerId={profile.partner_id} />}
-          {activeTab === "email" && isPartnerAdmin && profile?.partner_id && <EmailConfiguratie partnerId={profile.partner_id} />}
+          {activeTab === "email" && isPartnerAdmin && profile?.partner_id && <EmailInstellingenTab partnerId={profile.partner_id} />}
           {activeTab === "email-templates" && isPartnerAdmin && profile?.partner_id && <EmailTemplatesBeheer partnerId={profile.partner_id} />}
           {activeTab === "offertes" && isPartnerAdmin && profile?.partner_id && (
             <div className="space-y-6">

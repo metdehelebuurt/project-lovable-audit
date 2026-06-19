@@ -6,6 +6,7 @@ import {
   AttachmentInfo, sendViaSMTP, sendViaGmailApi, sendViaMsGraphApi,
   refreshOAuthToken,
 } from "./email-send.ts";
+import { resolveEmailSender, DocumentType, EmailSenderError } from "./resolve-email-sender.ts";
 
 export interface SendPartnerEmailParams {
   adminClient: any;
@@ -21,6 +22,7 @@ export interface SendPartnerEmailParams {
   offerteId?: string | null;
   leadId?: string | null;
   verzondenDoorId?: string | null;
+  documentType?: DocumentType;  // Optioneel: stuurt routing-keuze. Default = mapping op `type`.
 }
 
 export interface SendPartnerEmailResult {
@@ -43,30 +45,29 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
   const {
     adminClient, partnerId, to, cc = [], bcc = [], subject, html, attachment = null,
     type, klantId = null, offerteId = null, leadId = null, verzondenDoorId = null,
+    documentType,
   } = params;
 
-  const { data: partner, error: partnerErr } = await adminClient
-    .from("partners")
-    .select("naam, smtp_host, smtp_port, smtp_user, smtp_pass_encrypted, afzender_email, afzender_naam, email_provider")
-    .eq("id", partnerId).single();
-  if (partnerErr || !partner) {
-    throw new PartnerEmailError("Organisatiegegevens niet gevonden", 404);
+  // Map het bestaande `type` naar een DocumentType voor routing-config.
+  const docType: DocumentType =
+    documentType
+    ?? (["offerte","orderbevestiging","factuur","herinnering","chat_klant","chat_lead","notificatie","algemeen"].includes(type)
+        ? (type as DocumentType)
+        : "algemeen");
+
+  let resolved;
+  try {
+    resolved = await resolveEmailSender(adminClient, partnerId, docType, verzondenDoorId);
+  } catch (err) {
+    if (err instanceof EmailSenderError) {
+      throw new PartnerEmailError(err.message, err.status);
+    }
+    throw err;
   }
 
-  const { data: emailAccount } = await adminClient
-    .from("email_accounts")
-    .select("*").eq("partner_id", partnerId).eq("actief", true).maybeSingle();
-
-  const useOAuth = !!emailAccount && (
-    partner.email_provider === "oauth_google" || partner.email_provider === "oauth_microsoft"
-  );
-
-  if (!useOAuth && (!partner.smtp_host || !partner.afzender_email)) {
-    throw new PartnerEmailError(
-      "E-mailconfiguratie is nog niet ingesteld. Ga naar Instellingen → E-mail om SMTP of Gmail/Outlook te koppelen.",
-      400,
-    );
-  }
+  const partner = resolved.partner;
+  const emailAccount = resolved.account;
+  const useOAuth = resolved.method === "oauth";
 
   let result: SendPartnerEmailResult;
 
@@ -92,6 +93,10 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
         onderwerp: subject, body_html: html, datum: new Date().toISOString(),
         is_gelezen: true,
         klant_id: klantId, lead_id: leadId, offerte_id: offerteId,
+        user_id: verzondenDoorId,
+        document_type: docType,
+        via_account_id: emailAccount.id,
+        bron_method: "oauth",
       });
     } else {
       await sendViaSMTP({
@@ -101,6 +106,17 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
         to, cc, bcc, subject, html, attachment,
       });
       result = { provider: "smtp", from: partner.afzender_email! };
+
+      await adminClient.from("email_berichten").insert({
+        partner_id: partnerId,
+        richting: "uitgaand", van: partner.afzender_email!, aan: to,
+        onderwerp: subject, body_html: html, datum: new Date().toISOString(),
+        is_gelezen: true,
+        klant_id: klantId, lead_id: leadId, offerte_id: offerteId,
+        user_id: verzondenDoorId,
+        document_type: docType,
+        bron_method: "smtp",
+      });
     }
   } catch (err: any) {
     await adminClient.from("email_log").insert({
