@@ -77,11 +77,9 @@ const EmailOnboardingChecklist = ({ partnerId }: Props) => {
     try {
       const { data, error } = await supabase.functions.invoke("email-api-send", {
         body: {
-          partner_id: partnerId,
           to: user.email,
           subject: "Testbericht – e-mailkoppeling werkt",
-          html: "<p>Dit is een testbericht vanuit de onboarding-checklist. Als je dit ziet werkt verzenden correct.</p>",
-          type: "test",
+          html_body: "<p>Dit is een testbericht vanuit de onboarding-checklist. Als je dit ziet werkt verzenden correct.</p>",
           document_type: "algemeen",
         },
       });
