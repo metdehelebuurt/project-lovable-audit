@@ -3,9 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Hand, Layers, Plus } from "lucide-react";
+import { Hand, Layers, Plus, Sparkles } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { NieuweLeadDialog } from "@/components/affiliate/NieuweLeadDialog";
+import KoudeLeadsZoekDialog from "@/components/affiliate/KoudeLeadsZoekDialog";
 import { useAffiliateLeads, useClaimAffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ const AffiliatePool = () => {
   const claim = useClaimAffiliateLead();
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
   const [openNieuw, setOpenNieuw] = useState(false);
+  const [openZoek, setOpenZoek] = useState(false);
 
   const toggle = (id: string) => setSelectie((s) => {
     const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n;
@@ -45,6 +47,9 @@ const AffiliatePool = () => {
               <Layers className="h-4 w-4 mr-1" /> {selectie.size} leads claimen
             </Button>
           )}
+          <Button variant="outline" onClick={() => setOpenZoek(true)}>
+            <Sparkles className="h-4 w-4 mr-1" /> Leads zoeken met AI
+          </Button>
           <Button onClick={() => setOpenNieuw(true)}>
             <Plus className="h-4 w-4 mr-1" /> Nieuwe koude lead
           </Button>
@@ -88,6 +93,7 @@ const AffiliatePool = () => {
         </Table>
       </Card>
       <NieuweLeadDialog open={openNieuw} onOpenChange={setOpenNieuw} bestemming="pool" />
+      <KoudeLeadsZoekDialog open={openZoek} onOpenChange={setOpenZoek} />
     </div>
   );
 };
