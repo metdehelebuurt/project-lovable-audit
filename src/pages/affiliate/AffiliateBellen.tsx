@@ -138,6 +138,31 @@ const AffiliateBellen = () => {
                   <p className="whitespace-pre-wrap">{current.notities}</p>
                 </div>
               )}
+              {huidigeTaken.length > 0 && (
+                <div className="text-sm border rounded-md p-3 bg-primary/5 border-primary/20">
+                  <p className="font-medium mb-2 text-xs uppercase tracking-wide text-primary">Openstaande opvolg-taken</p>
+                  <ul className="space-y-1">
+                    {huidigeTaken.map((t) => (
+                      <li key={t.id} className="flex items-start gap-2">
+                        <Badge variant="outline" className="text-xs">{t.type}</Badge>
+                        <span className="flex-1">
+                          <span className="font-medium">{t.titel}</span>
+                          {t.notitie && <span className="text-muted-foreground"> — {t.notitie}</span>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {current.ai_volgende_actie && (
+                <div className="text-sm border rounded-md p-3 bg-amber-50 border-amber-200">
+                  <p className="font-medium mb-1 text-xs uppercase tracking-wide text-amber-700">AI-advies</p>
+                  <p>{current.ai_volgende_actie}</p>
+                  {current.ai_score != null && (
+                    <p className="text-xs text-muted-foreground mt-1">Score: {current.ai_score}/100 · {current.ai_score_reden}</p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium">Gespreksnotitie</label>
                 <Textarea rows={4} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder="Wat is besproken?" />
