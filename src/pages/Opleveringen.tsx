@@ -8,8 +8,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchRapporten } from "@/components/oplever/api/opleverApi";
 import OpleverStatusBadge from "@/components/oplever/StatusBadge";
 import type { Opleverrapport } from "@/components/oplever/types";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Opleveringen() {
   const { profile } = useAuth();
@@ -17,6 +18,7 @@ export default function Opleveringen() {
   const [rows, setRows] = useState<Opleverrapport[]>([]);
   const [zoek, setZoek] = useState("");
   const [busy, setBusy] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.partner_id) return;
@@ -31,6 +33,30 @@ export default function Opleveringen() {
     if (!q) return rows;
     return rows.filter((r) => r.rapportnummer.toLowerCase().includes(q) || r.scope_omschrijving?.toLowerCase().includes(q));
   }, [rows, zoek]);
+
+  const handleDownload = async (r: Opleverrapport) => {
+    if (!r.pdf_url) {
+      toast({
+        title: "Nog geen PDF beschikbaar",
+        description: "Open het rapport en klik op 'PDF downloaden' om een versie te genereren.",
+      });
+      nav(`/opleveringen/${r.id}`);
+      return;
+    }
+    try {
+      setDownloadingId(r.id);
+      const { data, error } = await supabase.storage
+        .from("oplever-media")
+        .createSignedUrl(r.pdf_url, 300, { download: `${r.rapportnummer ?? "opleverrapport"}.pdf` });
+      if (error || !data?.signedUrl) throw new Error(error?.message ?? "Geen download-link");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Download mislukt";
+      toast({ title: "Download mislukt", description: msg, variant: "destructive" });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -72,11 +98,23 @@ export default function Opleveringen() {
                   <TableCell>{r.opleverdatum ?? "—"}</TableCell>
                   <TableCell className="max-w-xs truncate">{r.scope_omschrijving ?? "—"}</TableCell>
                   <TableCell className="text-right">
-                    <Button asChild size="sm" variant="outline">
-                      <Link to={`/opleveringen/${r.id}`}>
-                        <FileText className="h-3.5 w-3.5 mr-1" /> Openen
-                      </Link>
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownload(r)}
+                        disabled={downloadingId === r.id}
+                        title={r.pdf_url ? "PDF downloaden" : "Genereer eerst een PDF in het rapport"}
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        {downloadingId === r.id ? "Bezig…" : "PDF"}
+                      </Button>
+                      <Button asChild size="sm" variant="outline">
+                        <Link to={`/opleveringen/${r.id}`}>
+                          <FileText className="h-3.5 w-3.5 mr-1" /> Openen
+                        </Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
