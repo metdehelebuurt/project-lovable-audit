@@ -11,6 +11,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LeadSearchInput } from "@/components/shared/LeadSearchInput";
 import { toast } from "sonner";
 import { ArrowLeft, Calendar, MapPin, Video, Phone, User, Clock, Save } from "lucide-react";
+import { Globe, AlertCircle } from "lucide-react";
+
+const NL_TZ = "Europe/Amsterdam";
+const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const tzOffsetLabel = (tz: string) => {
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone: tz, timeZoneName: "shortOffset" })
+      .formatToParts(new Date());
+    return parts.find(p => p.type === "timeZoneName")?.value ?? "";
+  } catch { return ""; }
+};
+const formatInTz = (datum: string, tijd: string, tz: string) => {
+  if (!datum || !tijd) return "";
+  // datum + tijd worden door browser geïnterpreteerd in lokale tz; we maken er
+  // een Date van die het lokale wandklok-moment vertegenwoordigt en tonen het
+  // equivalent in target-tz.
+  const local = new Date(`${datum}T${tijd}`);
+  if (Number.isNaN(local.getTime())) return "";
+  return new Intl.DateTimeFormat("nl-NL", {
+    timeZone: tz, hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short",
+  }).format(local);
+};
 
 interface Lead {
   id: string;
@@ -272,6 +294,31 @@ const AfspraakNieuw = () => {
               <Label className="flex items-center gap-1"><Clock className="h-3 w-3" /> Eindtijd</Label>
               <Input type="time" value={form.eind_tijd} onChange={e => update("eind_tijd", e.target.value)} className="mt-1" />
             </div>
+          </div>
+
+          {/* Tijdzone-indicator — voorkomt verwarring als gebruiker in andere tz zit (bv. Portugal) */}
+          <div className={`rounded-lg border p-3 text-xs space-y-1.5 ${browserTz !== NL_TZ ? "border-amber-500/40 bg-amber-500/5" : "bg-muted/40"}`}>
+            <div className="flex items-center gap-2 font-medium">
+              {browserTz !== NL_TZ ? <AlertCircle className="h-3.5 w-3.5 text-amber-600" /> : <Globe className="h-3.5 w-3.5 text-muted-foreground" />}
+              <span>
+                Tijden worden opgeslagen in jouw lokale tijdzone:{" "}
+                <span className="font-semibold">{browserTz}</span>
+                {tzOffsetLabel(browserTz) && <span className="text-muted-foreground"> ({tzOffsetLabel(browserTz)})</span>}
+              </span>
+            </div>
+            {browserTz !== NL_TZ && form.start_tijd && (
+              <div className="pl-5 text-muted-foreground">
+                <div>
+                  <span className="font-medium text-foreground">In Nederland (Europe/Amsterdam):</span>{" "}
+                  {formatInTz(form.datum, form.start_tijd, NL_TZ)}
+                  {form.eind_tijd && <> – {formatInTz(form.datum, form.eind_tijd, NL_TZ)}</>}
+                  <span className="text-muted-foreground"> ({tzOffsetLabel(NL_TZ)})</span>
+                </div>
+                <div className="mt-1 text-[11px]">
+                  Je zit nu in een andere tijdzone dan Nederland. Controleer of je de juiste lokale tijd kiest — de klant en collega's zien deze afspraak in hun eigen tijdzone.
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
