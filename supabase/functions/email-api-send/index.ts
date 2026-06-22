@@ -157,7 +157,24 @@ async function refreshAccessToken(adminClient: any, account: any): Promise<strin
   });
 
   const data = await resp.json();
-  if (data.error) throw new Error(`Token refresh failed: ${data.error_description || data.error}`);
+  if (data.error) {
+    // Fatale OAuth-fouten: refresh-token werkt niet meer (revoked, of token hoort
+    // bij een verwijderde/gewisselde OAuth-client). Markeer account zodat de UI
+    // duidelijk laat zien dat de gebruiker opnieuw moet koppelen.
+    const fatal = ["invalid_grant", "invalid_client", "unauthorized_client", "invalid_request"].includes(data.error);
+    if (fatal) {
+      await adminClient.from("email_accounts").update({
+        needs_reauth: true,
+        last_sync_error: data.error_description || data.error,
+        last_sync_error_at: new Date().toISOString(),
+      }).eq("id", account.id);
+      throw new Error(
+        `Gmail-koppeling is verlopen of ongeldig (${data.error}). ` +
+        `Ga naar Instellingen → E-mail en koppel ${account.email_adres} opnieuw.`,
+      );
+    }
+    throw new Error(`Token refresh failed: ${data.error_description || data.error}`);
+  }
 
   await adminClient.from("email_accounts").update({
     access_token: data.access_token,
