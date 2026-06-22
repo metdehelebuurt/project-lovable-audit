@@ -196,7 +196,7 @@ export async function refreshOAuthToken(adminClient: any, account: any): Promise
   const data = await resp.json();
   if (data.error) {
     // Markeer account als 'needs_reauth' als refresh-token revoked/expired is.
-    const fatal = ["invalid_grant", "invalid_request", "unauthorized_client"].includes(data.error);
+    const fatal = ["invalid_grant", "invalid_request", "unauthorized_client", "invalid_client"].includes(data.error);
     if (fatal) {
       await adminClient.from("email_accounts").update({
         needs_reauth: true,
