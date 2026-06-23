@@ -8,7 +8,7 @@ const items = [
   { to: "/affiliates/bellen", label: "Bellen", icon: PhoneCall },
   { to: "/affiliates/agenda", label: "Agenda", icon: Calendar },
   { to: "/affiliates/opvolging", label: "Opvolging", icon: Sparkles },
-  { to: "/affiliates/pool", label: "Koude leads", icon: Users },
+  { to: "/affiliates/pool", label: "Leads", icon: Users },
   { to: "/affiliates/klanten", label: "Mijn klanten", icon: Users },
   { to: "/affiliates/trials", label: "Trials", icon: AlertCircle },
   { to: "/affiliates/analytics", label: "Analytics", icon: BarChart3 },
