@@ -5,7 +5,7 @@ import {
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
   Lightbulb, Link2, Home, ShieldAlert, ShoppingCart, type LucideIcon,
   ScrollText, PhoneCall, Kanban, AlertCircle,
-  Target,
+  Target, Sparkles,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
@@ -104,6 +104,12 @@ const ITEMS = {
     synoniemen: ["leadpool", "claim", "koude leads", "warme leads"] } as NavigatieItem,
   affiliateMijnKlanten: { id: "affiliate-klanten", label: "Mijn klanten", icon: UserCheck2, url: "/affiliates/klanten" } as NavigatieItem,
   affiliateTrials: { id: "affiliate-trials", label: "Trials", icon: AlertCircle, url: "/affiliates/trials" } as NavigatieItem,
+  affiliateAgenda: { id: "affiliate-agenda", label: "Terugbelagenda", icon: Calendar, url: "/affiliates/agenda",
+    synoniemen: ["agenda", "terugbel", "afspraken"] } as NavigatieItem,
+  affiliateOpvolging: { id: "affiliate-opvolging", label: "Opvolging", icon: Sparkles, url: "/affiliates/opvolging",
+    synoniemen: ["taken", "herinneringen", "ai opvolging", "follow-up"] } as NavigatieItem,
+  affiliateAnalytics: { id: "affiliate-analytics", label: "Analytics", icon: BarChart3, url: "/affiliates/analytics",
+    synoniemen: ["rapportage", "statistieken"] } as NavigatieItem,
   feedback: { id: "feedback", label: "Feedback", icon: MessageSquareHeart, url: "/feedback" } as NavigatieItem,
   functieverzoek: { id: "functieverzoek", label: "Functieverzoek", icon: Lightbulb,
     url: "/feedback/nieuw?type=functieverzoek", synoniemen: ["wens", "feature request"] } as NavigatieItem,
@@ -217,10 +223,12 @@ function consumentNav(): NavigatieGroep[] {
 
 function affiliateNav(): NavigatieGroep[] {
   return [
-    { id: "werk", label: "Werk", items: [ITEMS.affiliateLinks] },
+    { id: "werk", label: "Werk", items: [ITEMS.affiliateLinks, ITEMS.berichten] },
     { id: "sales", label: "Sales CRM", items: [
       ITEMS.affiliatePipeline, ITEMS.affiliateBellen, ITEMS.affiliatePool,
+      ITEMS.affiliateAgenda, ITEMS.affiliateOpvolging,
       ITEMS.affiliateMijnKlanten, ITEMS.affiliateTrials, ITEMS.offertes,
+      ITEMS.affiliateAnalytics,
     ] },
     { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
     { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
