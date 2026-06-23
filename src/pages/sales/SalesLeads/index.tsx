@@ -47,7 +47,9 @@ export default function SalesLeads() {
         // platform = sales-admin leads die nog niet zijn doorgezet (geen affiliate eigenaar)
       }
       if (z) {
-        const hay = [l.bedrijfsnaam, l.contactpersoon, l.email, l.telefoon].join(" ").toLowerCase();
+        const hay = [l.bedrijfsnaam, l.contactpersoon, l.email, l.telefoon, l.adres, l.postcode, l.plaats]
+          .join(" ")
+          .toLowerCase();
         if (!hay.includes(z)) return false;
       }
       return true;
@@ -151,7 +153,14 @@ export default function SalesLeads() {
                     <div>{l.contactpersoon}</div>
                     <div className="text-xs text-muted-foreground">{l.email || l.telefoon}</div>
                   </TableCell>
-                  <TableCell className="text-sm">{l.regio}</TableCell>
+                  <TableCell className="text-sm">
+                    <div>{l.plaats || l.regio || "—"}</div>
+                    {(l.adres || l.postcode) && (
+                      <div className="text-xs text-muted-foreground">
+                        {[l.adres, l.postcode].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <TemperatuurBadge temperatuur={(l.temperatuur ?? "koud") as Temperatuur} />
                   </TableCell>
