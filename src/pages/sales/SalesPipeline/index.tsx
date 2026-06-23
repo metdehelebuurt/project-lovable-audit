@@ -8,7 +8,6 @@ import DoorzetDialog from "../DoorzetDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import TemperatuurFilter from "@/components/sales/TemperatuurFilter";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
-import { ChevronRight } from "lucide-react";
 
 export default function SalesPipeline() {
   const navigate = useNavigate();
