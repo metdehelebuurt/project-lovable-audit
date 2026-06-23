@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSalesLeads, useCreateSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
@@ -15,13 +16,13 @@ import { kleurClasses } from "@/lib/sales/pipeline";
 import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import TemperatuurFilter from "@/components/sales/TemperatuurFilter";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
-import LeadDetailDrawer from "../LeadDetailDrawer";
 import DoorzetDialog from "../DoorzetDialog";
 import BulkActieBalk from "../BulkActieBalk";
 
 type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
 
 export default function SalesLeads() {
+  const navigate = useNavigate();
   const { data: leads, isLoading } = useSalesLeads();
   const { data: pipeline } = useMyPipeline();
   const { data: affiliates } = useAffiliateGebruikers();
@@ -33,7 +34,6 @@ export default function SalesLeads() {
   const [postcodeFilter, setPostcodeFilter] = useState("");
   const [plaatsFilter, setPlaatsFilter] = useState("");
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
-  const [openLead, setOpenLead] = useState<SalesLead | null>(null);
   const [bulkDoorzet, setBulkDoorzet] = useState<SalesLead | null>(null);
 
   const fases = useMemo(() => (pipeline ?? []).filter((f) => f.zichtbaar !== false), [pipeline]);
@@ -190,7 +190,7 @@ export default function SalesLeads() {
                 <TableRow
                   key={l.id}
                   className={`cursor-pointer ${isDoorgezet ? "bg-emerald-50/40 hover:bg-emerald-50/70" : ""}`}
-                  onClick={() => setOpenLead(l)}
+                  onClick={() => navigate(`/sales/leads/${l.id}`)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox checked={selectie.has(l.id)} onCheckedChange={() => toggle(l.id)} />
@@ -258,7 +258,6 @@ export default function SalesLeads() {
         </Table>
       </div>
 
-      <LeadDetailDrawer lead={openLead} open={!!openLead} onOpenChange={(o) => !o && setOpenLead(null)} />
       <DoorzetDialog lead={bulkDoorzet} open={!!bulkDoorzet} onOpenChange={(o) => !o && setBulkDoorzet(null)} />
     </div>
   );
