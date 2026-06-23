@@ -42,7 +42,7 @@ export function useDoorzetten() {
     mutationFn: async (input: DoorzetInput) => {
       const { data, error } = await supabase.rpc("admin_doorzetten_naar_affiliate", {
         _lead_id: input.lead_id,
-        _affiliate_id: input.affiliate_id,
+        _affiliate_id: input.affiliate_id as unknown as string,
         _notitie: input.notitie ?? null,
       });
       if (error) throw error;
