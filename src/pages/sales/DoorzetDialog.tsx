@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAffiliateGebruikers, useDoorzetten } from "@/hooks/sales/useDoorzetten";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
 import { TEMPERATUREN, TEMP_LABEL, TEMP_ICON, TEMP_COLOR, TEMP_SUGGESTIE, type Temperatuur } from "@/lib/sales/temperatuur";
+import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -22,7 +24,9 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
   const [notitie, setNotitie] = useState("");
   const [temperatuur, setTemperatuur] = useState<Temperatuur>("lauw");
   const [snelheid, setSnelheid] = useState<string>("none");
+  const [bronId, setBronId] = useState<string>("");
   const { data: affiliates, isLoading } = useAffiliateGebruikers();
+  const { data: bronnen } = useLeadBronnen();
   const doorzetten = useDoorzetten();
 
   const onSubmit = async () => {
@@ -30,6 +34,9 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
     const targetId = modus === "direct" ? affiliateId : null;
     if (modus === "direct" && !targetId) return;
     const volgende = snelheidNaarTimestamp(snelheid);
+    if (bronId && bronId !== (lead.bron_id ?? "")) {
+      await supabase.from("affiliate_leads").update({ bron_id: bronId }).eq("id", lead.id);
+    }
     await doorzetten.mutateAsync({
       lead_id: lead.id,
       affiliate_id: targetId,
@@ -40,6 +47,7 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
     setNotitie("");
     setAffiliateId("");
     setSnelheid("none");
+    setBronId("");
     onOpenChange(false);
   };
 
@@ -121,6 +129,18 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
                 <SelectItem value="24h">Binnen 24 uur</SelectItem>
                 <SelectItem value="3d">Binnen 3 dagen</SelectItem>
                 <SelectItem value="week">Deze week</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Bron (optioneel bijwerken)</Label>
+            <Select value={bronId || (lead?.bron_id ?? "")} onValueChange={setBronId}>
+              <SelectTrigger><SelectValue placeholder="Behoud huidige bron" /></SelectTrigger>
+              <SelectContent>
+                {(bronnen ?? []).filter((b) => b.actief).map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

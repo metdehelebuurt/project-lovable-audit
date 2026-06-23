@@ -625,6 +625,7 @@ export type Database = {
           bedrijfsnaam: string
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id: string | null
           claimed_at: string | null
           contactpersoon: string | null
           created_at: string
@@ -638,6 +639,8 @@ export type Database = {
           id: string
           import_batch_id: string | null
           laatst_gescoord_op: string | null
+          lead_score_basis: number | null
+          lead_score_basis_details: Json | null
           notities: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
@@ -663,6 +666,7 @@ export type Database = {
           bedrijfsnaam: string
           branche?: string | null
           bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id?: string | null
           claimed_at?: string | null
           contactpersoon?: string | null
           created_at?: string
@@ -676,6 +680,8 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           laatst_gescoord_op?: string | null
+          lead_score_basis?: number | null
+          lead_score_basis_details?: Json | null
           notities?: string | null
           regio?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
@@ -701,6 +707,7 @@ export type Database = {
           bedrijfsnaam?: string
           branche?: string | null
           bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id?: string | null
           claimed_at?: string | null
           contactpersoon?: string | null
           created_at?: string
@@ -714,6 +721,8 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           laatst_gescoord_op?: string | null
+          lead_score_basis?: number | null
+          lead_score_basis_details?: Json | null
           notities?: string | null
           regio?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
@@ -729,6 +738,13 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "affiliate_leads_bron_id_fkey"
+            columns: ["bron_id"]
+            isOneToOne: false
+            referencedRelation: "lead_bronnen"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "affiliate_leads_created_by_fkey"
             columns: ["created_by"]
@@ -4634,6 +4650,57 @@ export type Database = {
           },
         ]
       }
+      lead_bronnen: {
+        Row: {
+          actief: boolean
+          categorie: string
+          created_at: string
+          default_temperatuur:
+            | Database["public"]["Enums"]["lead_temperatuur"]
+            | null
+          eigenaar_id: string | null
+          id: string
+          kleur: string
+          label: string
+          score_gewicht: number
+          slug: string
+          updated_at: string
+          volgorde: number
+        }
+        Insert: {
+          actief?: boolean
+          categorie?: string
+          created_at?: string
+          default_temperatuur?:
+            | Database["public"]["Enums"]["lead_temperatuur"]
+            | null
+          eigenaar_id?: string | null
+          id?: string
+          kleur?: string
+          label: string
+          score_gewicht?: number
+          slug: string
+          updated_at?: string
+          volgorde?: number
+        }
+        Update: {
+          actief?: boolean
+          categorie?: string
+          created_at?: string
+          default_temperatuur?:
+            | Database["public"]["Enums"]["lead_temperatuur"]
+            | null
+          eigenaar_id?: string | null
+          id?: string
+          kleur?: string
+          label?: string
+          score_gewicht?: number
+          slug?: string
+          updated_at?: string
+          volgorde?: number
+        }
+        Relationships: []
+      }
       lead_contactmomenten: {
         Row: {
           created_at: string | null
@@ -6747,8 +6814,10 @@ export type Database = {
           is_won: boolean
           kleur: string
           label: string
+          sla_dagen: number | null
           updated_at: string
           user_id: string
+          vereist_volgende_actie: boolean
           volgorde: number
           zichtbaar: boolean
         }
@@ -6763,8 +6832,10 @@ export type Database = {
           is_won?: boolean
           kleur?: string
           label: string
+          sla_dagen?: number | null
           updated_at?: string
           user_id: string
+          vereist_volgende_actie?: boolean
           volgorde?: number
           zichtbaar?: boolean
         }
@@ -6779,8 +6850,10 @@ export type Database = {
           is_won?: boolean
           kleur?: string
           label?: string
+          sla_dagen?: number | null
           updated_at?: string
           user_id?: string
+          vereist_volgende_actie?: boolean
           volgorde?: number
           zichtbaar?: boolean
         }
@@ -7149,6 +7222,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_snippets: {
+        Row: {
+          actief: boolean
+          body: string
+          created_at: string
+          eigenaar_id: string
+          id: string
+          kanaal: string
+          onderwerp: string | null
+          temperatuur: Database["public"]["Enums"]["lead_temperatuur"] | null
+          titel: string
+          updated_at: string
+          volgorde: number
+        }
+        Insert: {
+          actief?: boolean
+          body: string
+          created_at?: string
+          eigenaar_id?: string
+          id?: string
+          kanaal: string
+          onderwerp?: string | null
+          temperatuur?: Database["public"]["Enums"]["lead_temperatuur"] | null
+          titel: string
+          updated_at?: string
+          volgorde?: number
+        }
+        Update: {
+          actief?: boolean
+          body?: string
+          created_at?: string
+          eigenaar_id?: string
+          id?: string
+          kanaal?: string
+          onderwerp?: string | null
+          temperatuur?: Database["public"]["Enums"]["lead_temperatuur"] | null
+          titel?: string
+          updated_at?: string
+          volgorde?: number
+        }
+        Relationships: []
       }
       schouwen: {
         Row: {
@@ -8135,6 +8250,7 @@ export type Database = {
           bedrijfsnaam: string
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id: string | null
           claimed_at: string | null
           contactpersoon: string | null
           created_at: string
@@ -8148,6 +8264,8 @@ export type Database = {
           id: string
           import_batch_id: string | null
           laatst_gescoord_op: string | null
+          lead_score_basis: number | null
+          lead_score_basis_details: Json | null
           notities: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
@@ -8188,6 +8306,7 @@ export type Database = {
           bedrijfsnaam: string
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id: string | null
           claimed_at: string | null
           contactpersoon: string | null
           created_at: string
@@ -8201,6 +8320,8 @@ export type Database = {
           id: string
           import_batch_id: string | null
           laatst_gescoord_op: string | null
+          lead_score_basis: number | null
+          lead_score_basis_details: Json | null
           notities: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
@@ -8253,6 +8374,7 @@ export type Database = {
           bedrijfsnaam: string
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id: string | null
           claimed_at: string | null
           contactpersoon: string | null
           created_at: string
@@ -8266,6 +8388,8 @@ export type Database = {
           id: string
           import_batch_id: string | null
           laatst_gescoord_op: string | null
+          lead_score_basis: number | null
+          lead_score_basis_details: Json | null
           notities: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
@@ -8356,8 +8480,10 @@ export type Database = {
           is_won: boolean
           kleur: string
           label: string
+          sla_dagen: number | null
           updated_at: string
           user_id: string
+          vereist_volgende_actie: boolean
           volgorde: number
           zichtbaar: boolean
         }[]
@@ -8496,6 +8622,7 @@ export type Database = {
           bedrijfsnaam: string
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id: string | null
           claimed_at: string | null
           contactpersoon: string | null
           created_at: string
@@ -8509,6 +8636,8 @@ export type Database = {
           id: string
           import_batch_id: string | null
           laatst_gescoord_op: string | null
+          lead_score_basis: number | null
+          lead_score_basis_details: Json | null
           notities: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null

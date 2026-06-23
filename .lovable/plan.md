@@ -1,128 +1,135 @@
-## Doel
 
-De sales-module evolueert van een vaste lijst koude leads naar een volwaardig sales-systeem. Iedereen die met een pipeline werkt (platform-admin én affiliate) kan zijn eigen fases beheren, "temperatuur" wordt het centrale begrip om koud/lauw/warm/heet aan te geven, en de hele lead-flow wordt vanuit het perspectief van een sales manager doorgelicht.
+## Status-audit van de 7 roadmap-items
 
----
+Op basis van een rondgang door `src/pages/sales`, `src/pages/affiliate`, `src/components/sales`, `src/hooks/sales`, de edge-functions en de huidige `affiliate_leads`-kolommen:
 
-## Sales-manager analyse: waar gaat het nu mis
+| # | Item | Status | Opmerking |
+|---|---|---|---|
+| 1 | Aging & SLA-signalen | **Gedeeltelijk** | Werkt op `LeadKaart` (10d amber / 21d rose / overdue rose). Ontbreekt op `SalesLeads`-lijst, `AffiliatePipeline`, `AffiliatePool`. Geen aparte SLA per fase. |
+| 2 | Verplichte volgende-actie | **Niet gebouwd** | Pipeline accepteert opslag zonder `volgende_actie_op` in actieve fases. |
+| 3 | Conversie per temperatuur & fase | **Gebouwd** | `SalesAnalytics` toont temperatuur-breakdown en dynamische funnel. Mist tijdsfilter en throughput/cycle-time per fase. |
+| 4 | Lead-score | **Backend wel, UI niet** | Edge function `ai-affiliate-lead-score` + kolommen `ai_score*` bestaan en worden in affiliate-belwerkbank gebruikt. **Niet zichtbaar of triggerbaar in sales-module** (LeadKaart, LeadDetailDrawer, SalesLeads, Pipeline). Geen deterministische score (bron/branche/gedrag) — alleen AI. |
+| 5 | Inline activity-log | **Gebouwd** | `ContactmomentDialog` op LeadKaart + drawer. Affiliate-kant heeft eigen flow (`affiliate_lead_contactmomenten`). Niet gekoppeld aan SLA-reset of aging-teller. |
+| 6 | Lead-bron management | **Niet gebouwd** | `bron` is harde enum, geen beheerscherm, geen rapport, geen koppeling aan score. |
+| 7 | Templates per temperatuur | **Niet gebouwd** | `email_templates` bestaat maar geen koppeling aan `temperatuur`. Geen WhatsApp-snippets. |
 
-Vanuit de rol "sales manager die dagelijks naar deze module kijkt":
+## Extra hiaten / loose ends gevonden
 
-**1. Lead-temperatuur en pipeline-fase lopen door elkaar.** "Koud" en "warm" staan nu in dezelfde rij als "Benaderd" en "Gekwalificeerd". Een lead kan tegelijk "warm" zijn én "in offerte" — dat past niet in één enum. Een sales manager wil filteren op "alle hete leads waar nog geen contact mee is geweest" — onmogelijk vandaag.
-
-**2. Geen onderscheid bij doorzetten.** Affiliate ontvangt een lead zonder context: hoe goed is deze lead? Is er al gesproken? Hoe snel moet hij bellen? Resultaat: hete leads koelen af in de pool.
-
-**3. "Koude leads" als naam is verwarrend.** De pool bevat in praktijk alles van koud tot bijna-deal. Affiliates negeren de pool omdat het label "koud" klinkt als slecht.
-
-**4. Vaste pipeline-fases passen niet bij elke werkwijze.** Sommige affiliates werken met 4 fases, anderen met 8. Een vaste enum dwingt iedereen in hetzelfde proces — dat werkt niet voor B2B (langere cyclus) vs B2C (korte cyclus).
-
-**5. Geen SLA / aging zichtbaar.** Een lead die 14 dagen in "Benaderd" staat hoort een rood signaal te krijgen. Nu zie je dat niet.
-
-**6. Bulk doorzetten kent geen prioriteit.** Bij 50 leads in één klik doorzetten heeft geen affiliate zicht op welke 5 echt hot zijn.
-
-**7. Conversie per temperatuur is onmeetbaar.** Hoeveel % van de warme leads wordt gewonnen? Geen rapport.
-
-**8. Lead-bron en kwaliteits-score ontbreken.** Een lead uit "AI-scrape" is een andere klasse dan een lead uit "Inbound formulier" — wordt nu identiek behandeld.
-
-**9. Geen volgende-stap-discipline.** Geen verplichte "volgende actie + datum" op een lead. Leads vallen stil zonder dat iemand het ziet.
-
-**10. Activity-log is read-only.** Geen mogelijkheid om snel een belnotitie of WhatsApp-uitkomst te loggen vanuit de pipeline-kaart zelf.
-
----
+- **Dubbele waarheid voor "volgende actie"**: `volgende_actie_datum` (date, oud), `volgende_actie_op` (timestamptz, nieuw) en `ai_volgende_actie_op` leven naast elkaar. Sales-code leest `volgende_actie_op`, affiliate-code leest `volgende_actie_datum`. Risico op desync.
+- **`sales_fase` enum + nieuwe `fase_slug`** lopen door elkaar. `useCreateSalesLead` zet nog `sales_fase: "koud"`. Pipeline-DnD: nog niet duidelijk of die `fase_slug` schrijft via `update_lead_fase` RPC met validatie.
+- **Temperatuur ontbreekt op AffiliatePipeline en AffiliatePool-kaarten** (alleen sales-kant heeft `TemperatuurBadge`).
+- **AI bedrijf-samenvatting** zit nu alleen in `AffiliateBellen` — dezelfde context zou nuttig zijn in sales-LeadDetailDrawer.
+- **Activity-log inconsistent**: sales gebruikt `lead_contactmomenten`, affiliate gebruikt `affiliate_lead_contactmomenten`. Bij doorzetten gaat historie verloren voor de affiliate.
+- **`SalesAnalytics`** heeft geen periode-filter en geen "no-touch leads" KPI (leads zonder contact > X dagen).
+- **Dedupe** draait alleen bij CSV-import, niet bij handmatig aanmaken via `useCreateSalesLead`.
+- **Bulk-temperatuur in `BulkActieBalk`** schrijft direct naar DB zonder activity-log entry → audit-gat.
+- **`PipelineInstellingen`** validatie: `is_eindfase` mag meervoudig per `default_temperatuur='heet'` zijn — geen guard tegen ontbrekende won/lost fase.
 
 ## Scope van dit plan
 
-Vier verbeteringen die de basis leggen voor de rest. De overige punten uit de analyse staan onderaan als roadmap.
+In één samenhangende slag de 4 ontbrekende items bouwen + de loose ends die met deze flow raken. AI-bedrijfssamenvatting in sales-drawer en periode-filter analytics meegenomen omdat ze één edit raken.
 
-### 1. Temperatuur vervangt koud/warm-fases
+### 1. Verplichte volgende-actie (roadmap #2)
 
-Nieuw veld `temperatuur` op `affiliate_leads`: `koud | lauw | warm | heet`. De pipeline-fases worden puur procesgericht: `nieuw`, `benaderd`, `gekwalificeerd`, `voorstel`, `onderhandeling`, `gewonnen`, `verloren` (defaults, verder configureerbaar). De huidige `sales_fase` waarden `koud` en `warm` worden via een migratie omgezet naar `temperatuur` + nieuwe fase (`koud` → fase `nieuw` + temperatuur `koud`; `warm` → fase `benaderd` + temperatuur `warm`).
+- Nieuw veld op `pipeline_configuraties`: `vereist_volgende_actie boolean default true` voor niet-eindfases.
+- `update_lead_fase` RPC uitbreiden: als doelfase `vereist_volgende_actie=true` én lead heeft geen `volgende_actie_op` in de toekomst → `RAISE EXCEPTION 'volgende_actie_verplicht'`.
+- `useUpdateSalesLead` en pipeline-DnD vangen die error en openen automatisch `ContactmomentDialog` met focus op datum.
+- `DoorzetDialog`: "Volgende actie binnen" wordt verplicht voor doelfases met die vlag.
+- `PipelineInstellingen`-rij krijgt toggle "Verplicht volgende-actie".
 
-Visueel onderscheid via een gekleurd vlammetje/thermometer-icoon op elke leadkaart en een filter-chip-rij ("Alle · Heet · Warm · Lauw · Koud") boven pipeline én lijstweergave.
+### 2. Lead-score in sales-UI + deterministische component (roadmap #4)
 
-### 2. Doorzetten met temperatuur
+- Nieuwe kolom `lead_score_basis int` (0-100) en `lead_score_basis_details jsonb` op `affiliate_leads`. Berekend client-side + bij insert/update via trigger of edge-helper op basis van: bron-gewicht, branche-match, aanwezigheid email+telefoon+website, dagen sinds laatste activiteit, aantal contactmomenten, temperatuur.
+- Combined score = `0.6 * ai_score + 0.4 * lead_score_basis` (fallback naar één als ander mist).
+- `LeadKaart` toont compacte score-pill links onderaan; `LeadDetailDrawer` toont breakdown + knop "AI hercalculeren" (roept bestaande `ai-affiliate-lead-score` aan).
+- `SalesLeads`-tabel krijgt sorteerbare score-kolom.
+- Edge-function uitbreiden: combineren met deterministische component, score als één getal terugschrijven.
 
-In `DoorzetDialog`:
+### 3. Lead-bron als first-class veld (roadmap #6)
 
-- Verplichte keuze "Hoe heet is deze lead?" met 4 visuele knoppen (icoon + kleur).
-- Optioneel veld "Volgende actie binnen" (vandaag / 24u / 3 dagen / week) → wordt opgeslagen als `volgende_actie_op`.
-- De toewijzingnotitie krijgt een placeholder met suggesties per temperatuur.
+- Nieuwe tabel `lead_bronnen`:
+  - `id`, `slug`, `label`, `categorie` (inbound/outbound/import/referral/ai), `kleur`, `actief`, `default_temperatuur`, `score_gewicht int default 0`, `eigenaar_id` (null = platform).
+- Migratie seedt huidige enum-waarden als rijen; voegt `bron_id uuid references lead_bronnen` toe op `affiliate_leads`. Oude `bron`-enum-kolom blijft één release (compat), nieuwe code schrijft alleen `bron_id`.
+- Beheer-scherm `src/pages/sales/BronnenBeheer/` (CRUD + sortering, kleur, score-gewicht).
+- `DoorzetDialog`, `LeadDetailDrawer`, import-flow tonen bron-dropdown met kleurchip.
+- `SalesAnalytics` krijgt "Bron-rapport"-kaart: aantal, conversie %, gemiddelde waarde, gem. cycle-time per bron.
+- Score-engine (zie #2) gebruikt `lead_bronnen.score_gewicht`.
 
-Bij bulk-doorzetten dezelfde temperatuur-keuze één keer voor de hele batch, plus optie "Behoud per-lead temperatuur als die al is gezet".
+### 4. Templates per temperatuur (roadmap #7)
 
-### 3. Configureerbare pipeline per gebruiker
+- Nieuwe tabel `sales_snippets`:
+  - `id`, `eigenaar_id`, `kanaal` (`email` | `whatsapp` | `sms`), `temperatuur` (`koud`/`lauw`/`warm`/`heet` of `null`=algemeen), `titel`, `onderwerp` (email), `body_html`/`body_text`, `volgorde`, `actief`.
+- Beheer in `src/pages/sales/SnippetsBeheer/` met live-preview en variabele-tags (`{{bedrijfsnaam}}`, `{{contactpersoon}}`, `{{eigen_naam}}`).
+- `ContactmomentDialog` + `LeadDetailDrawer` krijgen "Snippet kiezen"-knop die op basis van huidige lead-temperatuur passende snippets toont.
+- WhatsApp = mailto-vervanger: opent `https://wa.me/<telefoon>?text=...` met ingevulde body.
+- Email: opent draft via bestaande email-flow (placeholder hook `useOpenEmailDraft`); voor nu prefill subject+body in `<a href="mailto:">`.
 
-Elke gebruiker die met een pipeline werkt (superadmin én elke affiliate) krijgt zijn eigen set fases. Nieuwe tabel `pipeline_configuraties` per `user_id`:
+### 5. Aging & SLA per fase + uitbreiding zichtbaarheid (roadmap #1 vervolmaken)
 
-- `fase_key` (slug), `label`, `kleur_token`, `volgorde`, `is_eindfase` (won/lost), `default_temperatuur` (optioneel).
-- Een platform-default set wordt automatisch geseed bij eerste gebruik.
-- Gebruiker beheert in nieuw scherm "Pipeline-instellingen": drag-to-reorder, hernoemen, kleur kiezen, fases toevoegen/verbergen, eindfases markeren.
+- `pipeline_configuraties` krijgt `sla_dagen int default null`.
+- Aging-niveau wordt: `dagenStil >= sla_dagen` (uit fase-config) → rose; `>= sla_dagen * 0.5` → amber. Fallback: huidige 10/21d.
+- `TemperatuurBadge` + aging-strip toevoegen aan `AffiliatePipeline` en `AffiliatePool`-kaarten.
+- `SalesLeads`-tabel: nieuwe kolom "Stil" met dezelfde kleuren.
 
-Leads slaan hun fase op als slug-string (niet meer als enum) zodat configuraties vrij kunnen zijn. Validatie: een lead-update mag alleen een fase-slug zetten die in de configuratie van de eigenaar bestaat.
+### 6. Loose ends opruimen
 
-### 4. Hernoeming + duidelijk onderscheid
-
-- Sidebar-item "Koude leads" (affiliate) → **"Leads"** met ondertitel "pool & toegewezen".
-- AffiliatePool-titel "Koude leads pool" → **"Leadpool"**.
-- Sales-tab in admin-CRM heet straks **"Sales"** met sub-tabs: Pipeline · Alle leads · Importeren · Analytics · Pipeline-instellingen.
-- Leadlijst krijgt vaste temperatuur-kolom (gekleurde badge) + fase-kolom (los).
-- Pipeline-kanban krijgt per kolom een kleine temperatuur-verdeling (4 mini-bars boven het aantal).
-
----
+- `useCreateSalesLead` schrijft `fase_slug='nieuw'` i.p.v. `sales_fase`; default `temperatuur='koud'`.
+- Activity-log unificeren: één hook `useLeadContactmomenten(leadId, scope)` die afhankelijk van eigenaar (`affiliate` vs `sales`) de juiste tabel raakt en intern de andere tabel niet meer aanmaakt. Bij doorzetten worden bestaande sales-contactmomenten gemirrord als read-only entries in affiliate-tijdlijn.
+- `volgende_actie_datum` (date) wordt deprecated kolom: trigger spiegelt automatisch met `volgende_actie_op` totdat affiliate-UI is omgezet (separate ticket).
+- `BulkActieBalk` schrijft per geraakte lead een `lead_contactmomenten`-entry `type='systeem'` met de bulk-actie.
+- `SalesAnalytics` krijgt periode-selector (7/30/90d/YTD) en KPI "Leads zonder contact > 14d".
+- Bedrijf-samenvatting (`BedrijfSamenvattingKaart`) ook tonen in `LeadDetailDrawer`.
+- `PipelineInstellingen`: validatie minstens 1 fase met `is_eindfase=true` en kleuren-token-check.
 
 ## Technische details
 
-**Database-migratie (één migratie, append-only):**
+**Database (één migratie):**
 
-1. `CREATE TYPE public.lead_temperatuur AS ENUM ('koud','lauw','warm','heet');`
-2. `ALTER TABLE affiliate_leads ADD COLUMN temperatuur lead_temperatuur DEFAULT 'koud' NOT NULL;`
-3. `ALTER TABLE affiliate_leads ADD COLUMN volgende_actie_op timestamptz;`
-4. `ALTER TABLE affiliate_leads ADD COLUMN fase_slug text;` (nieuwe kolom; oude `sales_fase` blijft tijdelijk voor backward compat).
-5. Backfill: `koud` → `temperatuur='koud', fase_slug='nieuw'`; `warm` → `temperatuur='warm', fase_slug='benaderd'`; `benaderd/gekwalificeerd/doorgezet/gewonnen/verloren` → identieke slug + temperatuur op `lauw` als default.
-6. `CREATE TABLE public.pipeline_configuraties (id uuid pk, user_id uuid, fase_key text, label text, kleur text, volgorde int, is_eindfase boolean, default_temperatuur lead_temperatuur, ...)` met indexes op `(user_id, volgorde)` en unique `(user_id, fase_key)`.
-7. GRANTs (`SELECT/INSERT/UPDATE/DELETE` op `authenticated`, `ALL` op `service_role`) → daarna RLS aan → policies: gebruiker beheert eigen rijen, superadmin alles.
-8. `INSERT`-functie `seed_default_pipeline(_user_id)` die de 7 default-fases neerzet bij eerste lookup.
-9. RPC `update_lead_fase(_lead_id, _fase_slug)` die valideert tegen pipeline van eigenaar.
-10. Bestaande `admin_doorzetten_naar_affiliate` uitbreiden met `_temperatuur` en `_volgende_actie_op` parameters (oude signature blijft via overload).
+```text
+ALTER TABLE pipeline_configuraties
+  ADD COLUMN vereist_volgende_actie boolean NOT NULL DEFAULT true,
+  ADD COLUMN sla_dagen int;
 
-**Frontend-bestanden (alle <800 regels, gesplitst waar nodig):**
+ALTER TABLE affiliate_leads
+  ADD COLUMN lead_score_basis int,
+  ADD COLUMN lead_score_basis_details jsonb,
+  ADD COLUMN bron_id uuid; -- FK na seed
 
-- `src/lib/sales/temperatuur.ts` — enum, labels, kleuren, iconen.
-- `src/lib/sales/pipeline.ts` — types `PipelineFase`, helpers voor sortering/lookup.
-- `src/hooks/sales/usePipelineConfig.ts` — fetch + mutate fases voor huidige user.
-- `src/pages/sales/PipelineInstellingen/` — folder met `index.tsx`, `FaseRij.tsx`, `KleurKiezer.tsx`, `NieuweFaseDialog.tsx`.
-- `src/components/sales/TemperatuurBadge.tsx` + `TemperatuurFilter.tsx`.
-- Update `SalesPipeline/index.tsx` — kolommen dynamisch uit `usePipelineConfig`, mini temperatuur-bars.
-- Update `LeadKaart.tsx` — temperatuur-icoon links, aging-indicator als `volgende_actie_op` is overschreden.
-- Update `DoorzetDialog.tsx` — temperatuur-knoppen + volgende-actie-keuze.
-- Update `BulkActieBalk.tsx` — temperatuur in bulk-doorzet.
-- Update `LeadDetailDrawer.tsx` — temperatuur-veld los van fase, volgende-actie datepicker.
-- Update navigation: `affiliatePool` label "Koude leads" → "Leads".
-- Update `AffiliatePool.tsx` titel + microcopy.
-- `src/pages/affiliate/AffiliatePipeline.tsx` werkt nu ook met `usePipelineConfig` voor de affiliate.
+CREATE TABLE lead_bronnen (...);    -- + GRANT + RLS (auth: select all, insert/update/delete: own of superadmin)
+CREATE TABLE sales_snippets (...);  -- + GRANT + RLS (own rows of superadmin)
 
-**Compat:** `sales_fase` enum-kolom blijft 1 release behouden zodat de oude analytics-views niet breken. Nieuwe code leest uitsluitend `fase_slug`.
+-- Seed lead_bronnen vanuit bestaande enum + backfill affiliate_leads.bron_id
 
----
+-- RPC update: update_lead_fase met validatie vereist_volgende_actie
+-- Trigger op affiliate_leads BEFORE INSERT/UPDATE → bereken lead_score_basis
+-- Trigger spiegelt volgende_actie_datum <-> volgende_actie_op
+```
 
-## Roadmap (niet in dit plan, wel logisch vervolg)
+**Frontend-bestanden (alles <800 regels, helpers <50 regels):**
 
-Op volgorde van impact:
+- `src/lib/sales/leadScore.ts` — deterministische scoreberekening + combined formule.
+- `src/lib/sales/snippetVars.ts` — variabele-resolver `{{bedrijfsnaam}}` etc.
+- `src/hooks/sales/useLeadBronnen.ts`, `useSnippets.ts`, `useLeadScore.ts`.
+- `src/components/sales/LeadScorePill.tsx`, `BronBadge.tsx`, `SnippetMenu.tsx`, `AgingIndicator.tsx` (extract uit LeadKaart).
+- `src/pages/sales/BronnenBeheer/` (`index.tsx`, `BronRij.tsx`).
+- `src/pages/sales/SnippetsBeheer/` (`index.tsx`, `SnippetEditor.tsx`, `Voorbeeld.tsx`).
+- Updates: `LeadKaart`, `LeadDetailDrawer`, `DoorzetDialog`, `BulkActieBalk`, `SalesLeads/index.tsx`, `SalesAnalytics/index.tsx`, `PipelineInstellingen/FaseRij.tsx`, `AffiliatePipeline.tsx`, `AffiliatePool.tsx`, `ContactmomentDialog`, `useDoorzetten`, `useSalesLeads.useCreateSalesLead`, sub-nav (`Sales > Bronnen`, `Sales > Snippets`).
+- Edge-function `ai-affiliate-lead-score`: combineert met `lead_score_basis` voordat de combined score wordt opgeslagen.
 
-1. **Aging & SLA-signalen** — kleur-escalatie op kaarten als lead te lang stilstaat.
-2. **Verplichte volgende-actie** — pipeline blokkeert opslag zonder next-step in actieve fases.
-3. **Conversie per temperatuur & per fase** — analytics-tab.
-4. **Lead-score** — automatische score op basis van bron, branche, gedrag.
-5. **Inline activity-log** — belnotitie/uitkomst loggen direct vanaf kaart.
-6. **Lead-bron management** — herkomst als first-class veld met rapportage.
-7. **Templates per temperatuur** — e-mail/WhatsApp snippets per "heet"-niveau.
-
----
+**Compat:** `bron`-enum-kolom en `volgende_actie_datum`-date-kolom blijven 1 release, gespiegeld via trigger. `sales_fase`-enum blijft eveneens; nieuwe writes gaan via `fase_slug`.
 
 ## Acceptatie
 
-- Doorzetten zonder temperatuur kiezen is niet mogelijk.
-- Pipeline-instellingen-scherm: fase toevoegen, hernoemen, herordenen werkt en is direct zichtbaar in pipeline.
-- Lijst- én kanban-view tonen temperatuur duidelijk gescheiden van fase.
-- Sidebar zegt nergens nog "Koude leads".
-- Bestaande leads zijn correct gemigreerd; geen "koud" of "warm" meer in `fase_slug`.
+- Een lead in actieve fase kan niet worden opgeslagen zonder `volgende_actie_op` als de fase dat vereist (zowel pipeline-DnD als drawer).
+- Score-pill zichtbaar op elke kaart en sorteerbaar in lijst; AI-knop hercalculeert en update zichtbaar.
+- Bronnen-beheer werkt; bron is selecteerbaar bij doorzetten/aanmaken; analytics-tab toont bron-rapport.
+- Snippets-beheer werkt; `ContactmomentDialog` toont snippets passend bij temperatuur, opent mailto/WhatsApp met variabelen ingevuld.
+- Aging gebruikt SLA-dagen uit fase-config wanneer gezet; affiliate-pipeline/pool tonen temperatuur en aging-strip.
+- Sales-analytics heeft periode-filter en "leads zonder contact"-KPI; bedrijf-samenvatting zichtbaar in sales-drawer.
+- Geen schrijfacties meer op `sales_fase` of `volgende_actie_datum` vanuit nieuwe code; oude waardes blijven leesbaar.
+
+## Niet in dit plan
+
+- Echte WhatsApp Business API-integratie (alleen `wa.me`-deeplink).
+- Hervorming affiliate-contactmomenten naar één gedeelde tabel (alleen mirror-mechanisme).
+- Workflow-automation rond snippets (bv. auto-sturen na X dagen stil).

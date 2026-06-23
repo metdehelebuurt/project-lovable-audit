@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
 import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import ContactmomentDialog from "@/components/sales/ContactmomentDialog";
+import LeadScorePill from "@/components/sales/LeadScorePill";
+import BronBadge from "@/components/sales/BronBadge";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
+import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 
 interface Props {
   lead: SalesLead;
@@ -19,13 +22,18 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
   const deadline = lead.volgende_actie_op ? new Date(lead.volgende_actie_op) : null;
   const teLaat = deadline ? deadline.getTime() < Date.now() : false;
   const [logOpen, setLogOpen] = useState(false);
+  const { data: pipeline } = useMyPipeline();
+  const fase = pipeline?.find((f) => f.fase_key === (lead.fase_slug ?? "nieuw"));
+  const slaDagen = fase?.sla_dagen ?? null;
 
   // Aging op basis van laatste update
   const dagenStil = lead.updated_at
     ? Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / 86400000)
     : 0;
+  const grensAlert = slaDagen ?? 21;
+  const grensWarn = slaDagen ? Math.ceil(slaDagen / 2) : 10;
   const agingNiveau: "ok" | "warn" | "alert" =
-    dagenStil >= 21 ? "alert" : dagenStil >= 10 ? "warn" : "ok";
+    dagenStil >= grensAlert ? "alert" : dagenStil >= grensWarn ? "warn" : "ok";
   const agingClass =
     agingNiveau === "alert" ? "text-rose-600" : agingNiveau === "warn" ? "text-amber-600" : "text-muted-foreground";
 
@@ -53,6 +61,8 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
         {lead.telefoon && <Phone className="h-3 w-3 text-muted-foreground" aria-label="heeft telefoon" />}
         {lead.regio && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{lead.regio}</Badge>}
         {lead.branche && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{lead.branche}</Badge>}
+        <BronBadge bronId={lead.bron_id} fallbackLabel={lead.bron} />
+        <LeadScorePill lead={lead} showLabel={false} />
       </div>
       <div className="flex items-center justify-between pl-6 pt-1">
         <span className="text-[11px] text-muted-foreground">

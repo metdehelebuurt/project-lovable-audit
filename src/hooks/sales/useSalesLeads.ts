@@ -78,6 +78,8 @@ export function useCreateSalesLead() {
           created_by: uid,
           bron: "sales_admin",
           sales_fase: input.sales_fase ?? "koud",
+          fase_slug: input.fase_slug ?? "nieuw",
+          temperatuur: input.temperatuur ?? "koud",
         })
         .select()
         .single();

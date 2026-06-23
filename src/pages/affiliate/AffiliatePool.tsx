@@ -9,6 +9,9 @@ import { NieuweLeadDialog } from "@/components/affiliate/NieuweLeadDialog";
 import KoudeLeadsZoekDialog from "@/components/affiliate/KoudeLeadsZoekDialog";
 import { useAffiliateLeads, useClaimAffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
+import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
+import LeadScorePill from "@/components/sales/LeadScorePill";
+import type { Temperatuur } from "@/lib/sales/temperatuur";
 import { toast } from "sonner";
 
 const AffiliatePool = () => {
@@ -66,6 +69,8 @@ const AffiliatePool = () => {
                 <Checkbox checked={pool.length > 0 && selectie.size === pool.length} onCheckedChange={toggleAll} />
               </TableHead>
               <TableHead>Bedrijf</TableHead>
+              <TableHead>Temp</TableHead>
+              <TableHead>Score</TableHead>
               <TableHead>Branche</TableHead>
               <TableHead>Regio</TableHead>
               <TableHead>Contact</TableHead>
@@ -74,12 +79,14 @@ const AffiliatePool = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">Laden...</TableCell></TableRow>}
-            {!isLoading && pool.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Geen leads in de pool. Vraag de platformbeheerder om nieuwe leads toe te voegen.</TableCell></TableRow>}
+            {isLoading && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">Laden...</TableCell></TableRow>}
+            {!isLoading && pool.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Geen leads in de pool. Vraag de platformbeheerder om nieuwe leads toe te voegen.</TableCell></TableRow>}
             {pool.map((l) => (
               <TableRow key={l.id}>
                 <TableCell><Checkbox checked={selectie.has(l.id)} onCheckedChange={() => toggle(l.id)} /></TableCell>
                 <TableCell className="font-medium">{l.bedrijfsnaam}</TableCell>
+                <TableCell><TemperatuurBadge temperatuur={(l.temperatuur ?? "koud") as Temperatuur} showLabel={false} /></TableCell>
+                <TableCell><LeadScorePill lead={l as never} showLabel={false} /></TableCell>
                 <TableCell>{l.branche ?? "—"}</TableCell>
                 <TableCell>{l.regio ?? "—"}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{l.contactpersoon ?? l.telefoon ?? l.email ?? "—"}</TableCell>
