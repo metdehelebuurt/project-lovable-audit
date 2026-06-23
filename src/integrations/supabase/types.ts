@@ -8034,8 +8034,10 @@ export type Database = {
       admin_bulk_import_sales_leads: {
         Args: {
           _affiliate_id?: string
+          _bestandsnaam?: string
           _bestemming: string
           _fase?: Database["public"]["Enums"]["sales_fase"]
+          _kolom_mapping?: Json
           _rows: Json
         }
         Returns: Json
