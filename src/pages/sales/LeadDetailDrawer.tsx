@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Send, Trash2, User2, History } from "lucide-react";
+import { Send, Trash2, User2, History, MessageSquarePlus } from "lucide-react";
 import { useUpdateSalesLead, useDeleteSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
@@ -15,6 +15,7 @@ import { TEMPERATUREN, TEMP_LABEL, TEMP_ICON, type Temperatuur } from "@/lib/sal
 import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import DoorzetDialog from "./DoorzetDialog";
 import LeadTimeline from "./LeadTimeline";
+import ContactmomentDialog from "@/components/sales/ContactmomentDialog";
 
 interface Props {
   lead: SalesLead | null;
@@ -25,6 +26,7 @@ interface Props {
 export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
   const [vorm, setVorm] = useState<Partial<SalesLead>>({});
   const [doorzetOpen, setDoorzetOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   const upd = useUpdateSalesLead();
   const del = useDeleteSalesLead();
   const { data: affiliates } = useAffiliateGebruikers();
@@ -197,6 +199,9 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
 
             <div className="flex flex-wrap gap-2 pt-2 border-t">
               <Button onClick={opslaan} disabled={upd.isPending}>Opslaan</Button>
+              <Button variant="outline" onClick={() => setLogOpen(true)} className="gap-2">
+                <MessageSquarePlus className="h-4 w-4" /> Log contact
+              </Button>
               <Button variant="default" onClick={() => setDoorzetOpen(true)} className="gap-2">
                 <Send className="h-4 w-4" /> Doorzetten naar affiliate
               </Button>
@@ -215,6 +220,12 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
         </SheetContent>
       </Sheet>
       <DoorzetDialog open={doorzetOpen} onOpenChange={setDoorzetOpen} lead={lead} />
+      <ContactmomentDialog
+        open={logOpen}
+        onOpenChange={setLogOpen}
+        leadId={lead.id}
+        bedrijfsnaam={lead.bedrijfsnaam ?? undefined}
+      />
     </>
   );
 }
