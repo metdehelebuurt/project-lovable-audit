@@ -7,6 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAffiliateGebruikers, useDoorzetten } from "@/hooks/sales/useDoorzetten";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
+import { TEMPERATUREN, TEMP_LABEL, TEMP_ICON, TEMP_COLOR, TEMP_SUGGESTIE, type Temperatuur } from "@/lib/sales/temperatuur";
+import { cn } from "@/lib/utils";
 
 interface Props {
   open: boolean;
@@ -18,6 +20,8 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
   const [modus, setModus] = useState<"direct" | "pool">("direct");
   const [affiliateId, setAffiliateId] = useState<string>("");
   const [notitie, setNotitie] = useState("");
+  const [temperatuur, setTemperatuur] = useState<Temperatuur>("lauw");
+  const [snelheid, setSnelheid] = useState<string>("none");
   const { data: affiliates, isLoading } = useAffiliateGebruikers();
   const doorzetten = useDoorzetten();
 
@@ -25,19 +29,23 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
     if (!lead) return;
     const targetId = modus === "direct" ? affiliateId : null;
     if (modus === "direct" && !targetId) return;
+    const volgende = snelheidNaarTimestamp(snelheid);
     await doorzetten.mutateAsync({
       lead_id: lead.id,
       affiliate_id: targetId,
       notitie: notitie.trim() || undefined,
+      temperatuur,
+      volgende_actie_op: volgende,
     });
     setNotitie("");
     setAffiliateId("");
+    setSnelheid("none");
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Lead doorzetten naar affiliate</DialogTitle>
         </DialogHeader>
@@ -46,6 +54,33 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
             <div className="font-medium">{lead?.bedrijfsnaam}</div>
             {lead?.contactpersoon && <div className="text-muted-foreground">{lead.contactpersoon}</div>}
           </div>
+
+          <div className="space-y-2">
+            <Label>Hoe heet is deze lead?</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {TEMPERATUREN.map((t) => {
+                const Icon = TEMP_ICON[t];
+                const actief = temperatuur === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTemperatuur(t)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-md border p-2 text-xs transition",
+                      actief ? `${TEMP_COLOR[t]} ring-2 ring-offset-1` : "hover:bg-muted",
+                    )}
+                    aria-pressed={actief}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {TEMP_LABEL[t]}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">{TEMP_SUGGESTIE[temperatuur]}</p>
+          </div>
+
           <RadioGroup value={modus} onValueChange={(v) => setModus(v as "direct" | "pool")}>
             <div className="flex items-start gap-2">
               <RadioGroupItem value="direct" id="modus-direct" className="mt-1" />
@@ -75,6 +110,21 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
               </Select>
             </div>
           )}
+
+          <div className="space-y-1.5">
+            <Label>Volgende actie binnen</Label>
+            <Select value={snelheid} onValueChange={setSnelheid}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Geen deadline</SelectItem>
+                <SelectItem value="today">Vandaag</SelectItem>
+                <SelectItem value="24h">Binnen 24 uur</SelectItem>
+                <SelectItem value="3d">Binnen 3 dagen</SelectItem>
+                <SelectItem value="week">Deze week</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1.5">
             <Label>Notitie meesturen (optioneel)</Label>
             <Textarea
@@ -82,7 +132,7 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
               onChange={(e) => setNotitie(e.target.value)}
               maxLength={1000}
               rows={3}
-              placeholder="Context voor de affiliate"
+              placeholder={TEMP_SUGGESTIE[temperatuur]}
             />
           </div>
         </div>
@@ -98,4 +148,15 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
       </DialogContent>
     </Dialog>
   );
+}
+
+function snelheidNaarTimestamp(snelheid: string): string | null {
+  const now = new Date();
+  switch (snelheid) {
+    case "today": now.setHours(23, 59, 0, 0); return now.toISOString();
+    case "24h":   now.setHours(now.getHours() + 24); return now.toISOString();
+    case "3d":    now.setDate(now.getDate() + 3); return now.toISOString();
+    case "week":  now.setDate(now.getDate() + 7); return now.toISOString();
+    default:      return null;
+  }
 }
