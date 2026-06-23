@@ -24,21 +24,27 @@ export function useAffiliateGebruikers() {
   });
 }
 
+import type { Temperatuur } from "@/lib/sales/temperatuur";
+
 export interface DoorzetInput {
   lead_id: string;
   /** null = in de pool plaatsen */
   affiliate_id: string | null;
   notitie?: string;
+  temperatuur?: Temperatuur | null;
+  volgende_actie_op?: string | null; // ISO timestamp
 }
 
 export function useDoorzetten() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: DoorzetInput) => {
-      const { data, error } = await supabase.rpc("admin_doorzetten_naar_affiliate", {
+      const { data, error } = await supabase.rpc("admin_doorzetten_naar_affiliate_v2", {
         _lead_id: input.lead_id,
         _affiliate_id: input.affiliate_id as unknown as string,
         _notitie: input.notitie ?? null,
+        _temperatuur: (input.temperatuur ?? null) as never,
+        _volgende_actie_op: input.volgende_actie_op ?? null,
       });
       if (error) throw error;
       return data;
@@ -54,13 +60,21 @@ export function useDoorzetten() {
 export function useBulkDoorzetten() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { lead_ids: string[]; affiliate_id: string | null; notitie?: string }) => {
+    mutationFn: async (input: {
+      lead_ids: string[];
+      affiliate_id: string | null;
+      notitie?: string;
+      temperatuur?: Temperatuur | null;
+      volgende_actie_op?: string | null;
+    }) => {
       const results = await Promise.allSettled(
         input.lead_ids.map((id) =>
-          supabase.rpc("admin_doorzetten_naar_affiliate", {
+          supabase.rpc("admin_doorzetten_naar_affiliate_v2", {
             _lead_id: id,
             _affiliate_id: input.affiliate_id as unknown as string,
             _notitie: input.notitie ?? null,
+            _temperatuur: (input.temperatuur ?? null) as never,
+            _volgende_actie_op: input.volgende_actie_op ?? null,
           }),
         ),
       );
