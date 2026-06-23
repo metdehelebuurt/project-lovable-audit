@@ -1,0 +1,150 @@
+import { useMemo, useState } from "react";
+import { useSalesLeads, useCreateSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Send } from "lucide-react";
+import { SALES_FASES, FASE_LABEL, FASE_COLOR, type SalesFase } from "@/lib/sales/faseLabels";
+import LeadDetailDrawer from "../LeadDetailDrawer";
+import DoorzetDialog from "../DoorzetDialog";
+
+type FaseFilter = SalesFase | "alle";
+type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
+
+export default function SalesLeads() {
+  const { data: leads, isLoading } = useSalesLeads();
+  const create = useCreateSalesLead();
+  const [zoek, setZoek] = useState("");
+  const [fase, setFase] = useState<FaseFilter>("alle");
+  const [eigenaar, setEigenaar] = useState<EigenaarFilter>("alle");
+  const [selectie, setSelectie] = useState<Set<string>>(new Set());
+  const [openLead, setOpenLead] = useState<SalesLead | null>(null);
+  const [bulkDoorzet, setBulkDoorzet] = useState<SalesLead | null>(null);
+
+  const gefilterd = useMemo(() => {
+    const z = zoek.toLowerCase().trim();
+    return (leads ?? []).filter((l) => {
+      if (fase !== "alle" && (l.sales_fase ?? "koud") !== fase) return false;
+      if (eigenaar === "pool" && l.eigenaar_id !== null) return false;
+      if (eigenaar === "toegewezen" && !l.eigenaar_id) return false;
+      if (eigenaar === "platform" && (l.bron !== "sales_admin" || l.eigenaar_id !== null)) {
+        // platform = sales-admin leads die nog niet zijn doorgezet (geen affiliate eigenaar)
+      }
+      if (z) {
+        const hay = [l.bedrijfsnaam, l.contactpersoon, l.email, l.telefoon].join(" ").toLowerCase();
+        if (!hay.includes(z)) return false;
+      }
+      return true;
+    });
+  }, [leads, zoek, fase, eigenaar]);
+
+  const toggle = (id: string) => {
+    const nieuw = new Set(selectie);
+    if (nieuw.has(id)) nieuw.delete(id); else nieuw.add(id);
+    setSelectie(nieuw);
+  };
+  const toggleAlles = () => {
+    if (selectie.size === gefilterd.length) setSelectie(new Set());
+    else setSelectie(new Set(gefilterd.map((l) => l.id)));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 items-center">
+        <Input
+          placeholder="Zoek op bedrijf, contact, e-mail…"
+          value={zoek}
+          onChange={(e) => setZoek(e.target.value)}
+          className="max-w-sm"
+        />
+        <Select value={fase} onValueChange={(v) => setFase(v as FaseFilter)}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="alle">Alle fases</SelectItem>
+            {SALES_FASES.map((f) => <SelectItem key={f} value={f}>{FASE_LABEL[f]}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={eigenaar} onValueChange={(v) => setEigenaar(v as EigenaarFilter)}>
+          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="alle">Alle eigenaren</SelectItem>
+            <SelectItem value="pool">In pool</SelectItem>
+            <SelectItem value="toegewezen">Toegewezen aan affiliate</SelectItem>
+            <SelectItem value="platform">Bij platform</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-muted-foreground ml-auto">{gefilterd.length} leads</span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => create.mutate({ bedrijfsnaam: "Nieuwe lead", sales_fase: "koud" })}
+          className="gap-1"
+        >
+          <Plus className="h-4 w-4" /> Nieuwe lead
+        </Button>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8">
+                <Checkbox
+                  checked={selectie.size > 0 && selectie.size === gefilterd.length}
+                  onCheckedChange={toggleAlles}
+                />
+              </TableHead>
+              <TableHead>Bedrijf</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Regio</TableHead>
+              <TableHead>Fase</TableHead>
+              <TableHead>Eigenaar</TableHead>
+              <TableHead className="text-right">Acties</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Laden…</TableCell></TableRow>
+            )}
+            {!isLoading && gefilterd.length === 0 && (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Geen leads gevonden</TableCell></TableRow>
+            )}
+            {gefilterd.map((l) => {
+              const f = (l.sales_fase ?? "koud") as SalesFase;
+              return (
+                <TableRow key={l.id} className="cursor-pointer" onClick={() => setOpenLead(l)}>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox checked={selectie.has(l.id)} onCheckedChange={() => toggle(l.id)} />
+                  </TableCell>
+                  <TableCell className="font-medium">{l.bedrijfsnaam}</TableCell>
+                  <TableCell className="text-sm">
+                    <div>{l.contactpersoon}</div>
+                    <div className="text-xs text-muted-foreground">{l.email || l.telefoon}</div>
+                  </TableCell>
+                  <TableCell className="text-sm">{l.regio}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={FASE_COLOR[f]}>{FASE_LABEL[f]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {l.eigenaar_id ? "Affiliate" : (l.bron === "platform_pool" ? "Pool" : "Platform")}
+                  </TableCell>
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <Button size="sm" variant="ghost" className="gap-1" onClick={() => setBulkDoorzet(l)}>
+                      <Send className="h-3.5 w-3.5" /> Doorzet
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      <LeadDetailDrawer lead={openLead} open={!!openLead} onOpenChange={(o) => !o && setOpenLead(null)} />
+      <DoorzetDialog lead={bulkDoorzet} open={!!bulkDoorzet} onOpenChange={(o) => !o && setBulkDoorzet(null)} />
+    </div>
+  );
+}
