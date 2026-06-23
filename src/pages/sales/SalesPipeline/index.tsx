@@ -8,6 +8,7 @@ import DoorzetDialog from "../DoorzetDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import TemperatuurFilter from "@/components/sales/TemperatuurFilter";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
+import { ChevronRight } from "lucide-react";
 
 export default function SalesPipeline() {
   const navigate = useNavigate();
@@ -53,20 +54,39 @@ export default function SalesPipeline() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <TemperatuurFilter waarde={tempFilter} onWijzig={setTempFilter} counts={tempCounts as never} />
-      <div className="flex gap-4 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
+      <div className="flex gap-3 overflow-x-auto pb-4 -mx-2 px-2 snap-x">
         {fases.map((fase) => {
           const items = perFase[fase.fase_key] ?? [];
-          return (
-            <div key={fase.id} className="w-[280px] shrink-0 snap-start rounded-xl border bg-muted/30 flex flex-col min-h-[400px]">
-              <div className={`px-3 py-2 border-b text-xs font-semibold sticky top-0 rounded-t-xl ${kleurClasses(fase.kleur)}`}>
-                {fase.label} · {items.length}
+          const leeg = items.length === 0;
+          if (leeg) {
+            return (
+              <div
+                key={fase.id}
+                className="w-[60px] shrink-0 snap-start rounded-xl border border-dashed bg-muted/20 flex flex-col items-center justify-start py-3 gap-2 hover:bg-muted/40 transition-colors min-h-[400px]"
+                title={`${fase.label} · leeg`}
+              >
+                <div className={`px-2 py-1 rounded-md text-[10px] font-semibold ${kleurClasses(fase.kleur)}`}>0</div>
+                <div
+                  className="text-[11px] font-medium text-muted-foreground tracking-wide"
+                  style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                >
+                  {fase.label}
+                </div>
               </div>
-              <div className="p-2 space-y-2 flex-1 overflow-y-auto max-h-[72vh]">
-                {items.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center pt-4">Leeg</p>
-                ) : items.map((lead) => (
+            );
+          }
+          return (
+            <div key={fase.id} className="w-[300px] shrink-0 snap-start rounded-xl border bg-card flex flex-col min-h-[400px] shadow-sm">
+              <div className={`flex items-center justify-between px-3 py-2.5 border-b rounded-t-xl ${kleurClasses(fase.kleur)}`}>
+                <span className="text-xs font-semibold tracking-wide">{fase.label}</span>
+                <span className="text-[11px] font-semibold bg-background/60 px-2 py-0.5 rounded-full">
+                  {items.length}
+                </span>
+              </div>
+              <div className="p-2.5 space-y-2 flex-1 overflow-y-auto max-h-[72vh]">
+                {items.map((lead) => (
                   <LeadKaart
                     key={lead.id}
                     lead={lead}
