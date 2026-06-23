@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { useSalesLeads } from "@/hooks/sales/useSalesLeads";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
+import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
 import { kleurClasses } from "@/lib/sales/pipeline";
 import { TEMPERATUREN, TEMP_LABEL, TEMP_COLOR, type Temperatuur } from "@/lib/sales/temperatuur";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,10 @@ export default function SalesAnalytics() {
   const { data: leads } = useSalesLeads();
   const { data: affiliates } = useAffiliateGebruikers();
   const { data: pipeline } = useMyPipeline();
+  const { data: bronnen } = useLeadBronnen();
+
+  const bronLabel = (slug: string) =>
+    bronnen?.find((b) => b.slug === slug || b.id === slug)?.label ?? slug;
 
   const fases = useMemo(() => (pipeline ?? []).filter((f) => f.zichtbaar !== false), [pipeline]);
 
@@ -63,7 +68,14 @@ export default function SalesAnalytics() {
     const conversie = aantalGewonnen + aantalVerloren > 0
       ? (aantalGewonnen / (aantalGewonnen + aantalVerloren)) * 100
       : 0;
-    return { perFase, perTemp, perBron, perAffiliate, totaalWaardeGewonnen, aantalGewonnen, aantalVerloren, conversie, totaal };
+
+    // Leads zonder contact > 14 dagen
+    const drempel = Date.now() - 14 * 86400000;
+    const noTouch = (leads ?? []).filter((l) => {
+      const upd = l.updated_at ? new Date(l.updated_at).getTime() : 0;
+      return upd < drempel && !l.fase_slug?.includes("won") && !l.fase_slug?.includes("verloren");
+    }).length;
+    return { perFase, perTemp, perBron, perAffiliate, totaalWaardeGewonnen, aantalGewonnen, aantalVerloren, conversie, totaal, noTouch };
   }, [leads, fases]);
 
   const naamVoor = (id: string) =>
@@ -92,8 +104,9 @@ export default function SalesAnalytics() {
           </div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Gewonnen</div>
-          <div className="text-2xl font-semibold mt-1 text-emerald-600">{stats.aantalGewonnen}</div>
+          <div className="text-xs text-muted-foreground">Stil &gt; 14d</div>
+          <div className="text-2xl font-semibold mt-1 text-amber-600">{stats.noTouch}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">leads zonder contact</div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Omzet gewonnen</div>
@@ -149,7 +162,7 @@ export default function SalesAnalytics() {
               const pct = stats.totaal > 0 ? (n / stats.totaal) * 100 : 0;
               return (
                 <div key={bron} className="flex items-center gap-3 text-sm">
-                  <span className="w-40 truncate">{bron}</span>
+                  <span className="w-40 truncate">{bronLabel(bron)}</span>
                   <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                     <div className="h-full bg-violet-500" style={{ width: `${pct}%` }} />
                   </div>
