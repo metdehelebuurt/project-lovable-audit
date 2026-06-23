@@ -38,8 +38,10 @@ const AffiliatePool = () => {
       <AffiliateSubnav />
       <div className="mb-4 flex items-end justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Koude leads pool</h1>
-          <p className="text-sm text-muted-foreground">Claim leads uit de pool of voeg zelf een koude lead toe aan jouw pijplijn. {pool.length} in pool.</p>
+          <h1 className="text-2xl font-bold">Leadpool</h1>
+          <p className="text-sm text-muted-foreground">
+            Claim leads uit de pool of voeg zelf een lead toe aan jouw pijplijn. {pool.length} in pool.
+          </p>
         </div>
         <div className="flex gap-2">
           {selectie.size > 0 && (
@@ -51,7 +53,7 @@ const AffiliatePool = () => {
             <Sparkles className="h-4 w-4 mr-1" /> Leads zoeken met AI
           </Button>
           <Button onClick={() => setOpenNieuw(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Nieuwe koude lead
+            <Plus className="h-4 w-4 mr-1" /> Nieuwe lead
           </Button>
         </div>
       </div>

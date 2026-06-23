@@ -1,34 +1,46 @@
 import { useMemo, useState } from "react";
 import { useSalesLeads, useCreateSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
+import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Send } from "lucide-react";
-import { SALES_FASES, FASE_LABEL, FASE_COLOR, type SalesFase } from "@/lib/sales/faseLabels";
+import { kleurClasses } from "@/lib/sales/pipeline";
+import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
+import TemperatuurFilter from "@/components/sales/TemperatuurFilter";
+import type { Temperatuur } from "@/lib/sales/temperatuur";
 import LeadDetailDrawer from "../LeadDetailDrawer";
 import DoorzetDialog from "../DoorzetDialog";
 import BulkActieBalk from "../BulkActieBalk";
 
-type FaseFilter = SalesFase | "alle";
 type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
 
 export default function SalesLeads() {
   const { data: leads, isLoading } = useSalesLeads();
+  const { data: pipeline } = useMyPipeline();
   const create = useCreateSalesLead();
   const [zoek, setZoek] = useState("");
-  const [fase, setFase] = useState<FaseFilter>("alle");
+  const [fase, setFase] = useState<string>("alle");
   const [eigenaar, setEigenaar] = useState<EigenaarFilter>("alle");
+  const [temp, setTemp] = useState<Temperatuur | "alle">("alle");
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
   const [openLead, setOpenLead] = useState<SalesLead | null>(null);
   const [bulkDoorzet, setBulkDoorzet] = useState<SalesLead | null>(null);
 
+  const fases = useMemo(() => (pipeline ?? []).filter((f) => f.zichtbaar !== false), [pipeline]);
+  const faseLookup = useMemo(() => {
+    const m = new Map(fases.map((f) => [f.fase_key, f]));
+    return m;
+  }, [fases]);
+
   const gefilterd = useMemo(() => {
     const z = zoek.toLowerCase().trim();
     return (leads ?? []).filter((l) => {
-      if (fase !== "alle" && (l.sales_fase ?? "koud") !== fase) return false;
+      if (fase !== "alle" && (l.fase_slug ?? "nieuw") !== fase) return false;
+      if (temp !== "alle" && (l.temperatuur ?? "koud") !== temp) return false;
       if (eigenaar === "pool" && l.eigenaar_id !== null) return false;
       if (eigenaar === "toegewezen" && !l.eigenaar_id) return false;
       if (eigenaar === "platform" && (l.bron !== "sales_admin" || l.eigenaar_id !== null)) {
@@ -40,7 +52,16 @@ export default function SalesLeads() {
       }
       return true;
     });
-  }, [leads, zoek, fase, eigenaar]);
+  }, [leads, zoek, fase, temp, eigenaar]);
+
+  const tempCounts = useMemo(() => {
+    const c: Record<string, number> = { alle: (leads ?? []).length };
+    for (const l of leads ?? []) {
+      const k = (l.temperatuur ?? "koud") as string;
+      c[k] = (c[k] ?? 0) + 1;
+    }
+    return c;
+  }, [leads]);
 
   const toggle = (id: string) => {
     const nieuw = new Set(selectie);
@@ -61,11 +82,11 @@ export default function SalesLeads() {
           onChange={(e) => setZoek(e.target.value)}
           className="max-w-sm"
         />
-        <Select value={fase} onValueChange={(v) => setFase(v as FaseFilter)}>
+        <Select value={fase} onValueChange={setFase}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="alle">Alle fases</SelectItem>
-            {SALES_FASES.map((f) => <SelectItem key={f} value={f}>{FASE_LABEL[f]}</SelectItem>)}
+            {fases.map((f) => <SelectItem key={f.fase_key} value={f.fase_key}>{f.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={eigenaar} onValueChange={(v) => setEigenaar(v as EigenaarFilter)}>
@@ -88,6 +109,8 @@ export default function SalesLeads() {
         </Button>
       </div>
 
+      <TemperatuurFilter waarde={temp} onWijzig={setTemp} counts={tempCounts as never} />
+
       <BulkActieBalk geselecteerd={Array.from(selectie)} onClear={() => setSelectie(new Set())} />
 
       <div className="rounded-md border">
@@ -103,6 +126,7 @@ export default function SalesLeads() {
               <TableHead>Bedrijf</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Regio</TableHead>
+              <TableHead>Temperatuur</TableHead>
               <TableHead>Fase</TableHead>
               <TableHead>Eigenaar</TableHead>
               <TableHead className="text-right">Acties</TableHead>
@@ -110,13 +134,13 @@ export default function SalesLeads() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Laden…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Laden…</TableCell></TableRow>
             )}
             {!isLoading && gefilterd.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Geen leads gevonden</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Geen leads gevonden</TableCell></TableRow>
             )}
             {gefilterd.map((l) => {
-              const f = (l.sales_fase ?? "koud") as SalesFase;
+              const f = faseLookup.get(l.fase_slug ?? "nieuw");
               return (
                 <TableRow key={l.id} className="cursor-pointer" onClick={() => setOpenLead(l)}>
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -129,7 +153,12 @@ export default function SalesLeads() {
                   </TableCell>
                   <TableCell className="text-sm">{l.regio}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={FASE_COLOR[f]}>{FASE_LABEL[f]}</Badge>
+                    <TemperatuurBadge temperatuur={(l.temperatuur ?? "koud") as Temperatuur} />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={kleurClasses(f?.kleur ?? "slate")}>
+                      {f?.label ?? (l.fase_slug ?? "Nieuw")}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
                     {l.eigenaar_id ? "Affiliate" : (l.bron === "platform_pool" ? "Pool" : "Platform")}

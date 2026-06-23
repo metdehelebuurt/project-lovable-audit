@@ -632,6 +632,7 @@ export type Database = {
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
           id: string
@@ -643,10 +644,12 @@ export type Database = {
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
+          temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
           toegewezen_door_admin_id: string | null
           updated_at: string
           verloren_reden: string | null
           volgende_actie_datum: string | null
+          volgende_actie_op: string | null
           website: string | null
         }
         Insert: {
@@ -667,6 +670,7 @@ export type Database = {
           doorgezet_op?: string | null
           eigenaar_id?: string | null
           email?: string | null
+          fase_slug?: string
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
           id?: string
@@ -678,10 +682,12 @@ export type Database = {
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
           tags?: string[]
           telefoon?: string | null
+          temperatuur?: Database["public"]["Enums"]["lead_temperatuur"]
           toegewezen_door_admin_id?: string | null
           updated_at?: string
           verloren_reden?: string | null
           volgende_actie_datum?: string | null
+          volgende_actie_op?: string | null
           website?: string | null
         }
         Update: {
@@ -702,6 +708,7 @@ export type Database = {
           doorgezet_op?: string | null
           eigenaar_id?: string | null
           email?: string | null
+          fase_slug?: string
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
           id?: string
@@ -713,10 +720,12 @@ export type Database = {
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
           tags?: string[]
           telefoon?: string | null
+          temperatuur?: Database["public"]["Enums"]["lead_temperatuur"]
           toegewezen_door_admin_id?: string | null
           updated_at?: string
           verloren_reden?: string | null
           volgende_actie_datum?: string | null
+          volgende_actie_op?: string | null
           website?: string | null
         }
         Relationships: [
@@ -6726,6 +6735,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_configuraties: {
+        Row: {
+          created_at: string
+          default_temperatuur:
+            | Database["public"]["Enums"]["lead_temperatuur"]
+            | null
+          fase_key: string
+          id: string
+          is_eindfase: boolean
+          is_won: boolean
+          kleur: string
+          label: string
+          updated_at: string
+          user_id: string
+          volgorde: number
+          zichtbaar: boolean
+        }
+        Insert: {
+          created_at?: string
+          default_temperatuur?:
+            | Database["public"]["Enums"]["lead_temperatuur"]
+            | null
+          fase_key: string
+          id?: string
+          is_eindfase?: boolean
+          is_won?: boolean
+          kleur?: string
+          label: string
+          updated_at?: string
+          user_id: string
+          volgorde?: number
+          zichtbaar?: boolean
+        }
+        Update: {
+          created_at?: string
+          default_temperatuur?:
+            | Database["public"]["Enums"]["lead_temperatuur"]
+            | null
+          fase_key?: string
+          id?: string
+          is_eindfase?: boolean
+          is_won?: boolean
+          kleur?: string
+          label?: string
+          updated_at?: string
+          user_id?: string
+          volgorde?: number
+          zichtbaar?: boolean
+        }
+        Relationships: []
+      }
       product_serienummers: {
         Row: {
           created_at: string
@@ -8082,6 +8142,7 @@ export type Database = {
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
           id: string
@@ -8093,10 +8154,65 @@ export type Database = {
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
+          temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
           toegewezen_door_admin_id: string | null
           updated_at: string
           verloren_reden: string | null
           volgende_actie_datum: string | null
+          volgende_actie_op: string | null
+          website: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_leads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_doorzetten_naar_affiliate_v2: {
+        Args: {
+          _affiliate_id: string
+          _lead_id: string
+          _notitie?: string
+          _temperatuur?: Database["public"]["Enums"]["lead_temperatuur"]
+          _volgende_actie_op?: string
+        }
+        Returns: {
+          ai_bedrijf_kansen: Json | null
+          ai_bedrijf_samenvatting: string | null
+          ai_bedrijf_samenvatting_op: string | null
+          ai_score: number | null
+          ai_score_reden: string | null
+          ai_volgende_actie: string | null
+          ai_volgende_actie_op: string | null
+          bedrijfsnaam: string
+          branche: string | null
+          bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          claimed_at: string | null
+          contactpersoon: string | null
+          created_at: string
+          created_by: string | null
+          doorgezet_op: string | null
+          eigenaar_id: string | null
+          email: string | null
+          fase_slug: string
+          geschatte_waarde: number | null
+          gewonnen_partner_id: string | null
+          id: string
+          import_batch_id: string | null
+          laatst_gescoord_op: string | null
+          notities: string | null
+          regio: string | null
+          sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          status: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags: string[]
+          telefoon: string | null
+          temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          toegewezen_door_admin_id: string | null
+          updated_at: string
+          verloren_reden: string | null
+          volgende_actie_datum: string | null
+          volgende_actie_op: string | null
           website: string | null
         }
         SetofOptions: {
@@ -8144,6 +8260,7 @@ export type Database = {
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
           id: string
@@ -8155,10 +8272,12 @@ export type Database = {
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
+          temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
           toegewezen_door_admin_id: string | null
           updated_at: string
           verloren_reden: string | null
           volgende_actie_datum: string | null
+          volgende_actie_op: string | null
           website: string | null
         }
         SetofOptions: {
@@ -8223,6 +8342,31 @@ export type Database = {
           provider: string
           user_id: string
         }[]
+      }
+      get_my_pipeline: {
+        Args: never
+        Returns: {
+          created_at: string
+          default_temperatuur:
+            | Database["public"]["Enums"]["lead_temperatuur"]
+            | null
+          fase_key: string
+          id: string
+          is_eindfase: boolean
+          is_won: boolean
+          kleur: string
+          label: string
+          updated_at: string
+          user_id: string
+          volgorde: number
+          zichtbaar: boolean
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "pipeline_configuraties"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_partner_by_slug: {
         Args: { _slug: string }
@@ -8328,6 +8472,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      seed_default_pipeline: { Args: { _user_id: string }; Returns: undefined }
       slugify_partner_naam: { Args: { _naam: string }; Returns: string }
       suggest_leverancier: {
         Args: { _partner_id: string; _product_id: string }
@@ -8337,6 +8482,53 @@ export type Database = {
           leverancier_naam: string
           levertijd_dagen: number
         }[]
+      }
+      update_lead_fase: {
+        Args: { _fase_slug: string; _lead_id: string }
+        Returns: {
+          ai_bedrijf_kansen: Json | null
+          ai_bedrijf_samenvatting: string | null
+          ai_bedrijf_samenvatting_op: string | null
+          ai_score: number | null
+          ai_score_reden: string | null
+          ai_volgende_actie: string | null
+          ai_volgende_actie_op: string | null
+          bedrijfsnaam: string
+          branche: string | null
+          bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          claimed_at: string | null
+          contactpersoon: string | null
+          created_at: string
+          created_by: string | null
+          doorgezet_op: string | null
+          eigenaar_id: string | null
+          email: string | null
+          fase_slug: string
+          geschatte_waarde: number | null
+          gewonnen_partner_id: string | null
+          id: string
+          import_batch_id: string | null
+          laatst_gescoord_op: string | null
+          notities: string | null
+          regio: string | null
+          sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          status: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags: string[]
+          telefoon: string | null
+          temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          toegewezen_door_admin_id: string | null
+          updated_at: string
+          verloren_reden: string | null
+          volgende_actie_datum: string | null
+          volgende_actie_op: string | null
+          website: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_leads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       user_kan_module: {
         Args: { _module_key: string; _user_id: string }
@@ -8466,6 +8658,7 @@ export type Database = {
         | "terugbellen"
         | "gesproken"
         | "afspraak_gepland"
+      lead_temperatuur: "koud" | "lauw" | "warm" | "heet"
       offerte_status:
         | "concept"
         | "verzonden"
@@ -8779,6 +8972,7 @@ export const Constants = {
         "gesproken",
         "afspraak_gepland",
       ],
+      lead_temperatuur: ["koud", "lauw", "warm", "heet"],
       offerte_status: [
         "concept",
         "verzonden",
