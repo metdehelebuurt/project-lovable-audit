@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, Tag, Building2, Send } from "lucide-react";
+import { Mail, Phone, Tag, Building2, Send, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
+import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
+import type { Temperatuur } from "@/lib/sales/temperatuur";
 
 interface Props {
   lead: SalesLead;
@@ -11,17 +13,21 @@ interface Props {
 }
 
 export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
+  const temperatuur = (lead.temperatuur ?? "koud") as Temperatuur;
+  const deadline = lead.volgende_actie_op ? new Date(lead.volgende_actie_op) : null;
+  const teLaat = deadline ? deadline.getTime() < Date.now() : false;
   return (
     <Card
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
-      className="p-3 cursor-pointer hover:shadow-md transition-shadow space-y-1.5"
+      className={`p-3 cursor-pointer hover:shadow-md transition-shadow space-y-1.5 ${teLaat ? "border-rose-300" : ""}`}
     >
       <div className="flex items-start gap-2">
         <Building2 className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
         <div className="font-medium text-sm flex-1 truncate">{lead.bedrijfsnaam}</div>
+        <TemperatuurBadge temperatuur={temperatuur} showLabel={false} />
       </div>
       {lead.contactpersoon && (
         <div className="text-xs text-muted-foreground truncate pl-6">{lead.contactpersoon}</div>
@@ -42,6 +48,12 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
           </span>
         )}
       </div>
+      {deadline && (
+        <div className={`text-[11px] pl-6 inline-flex items-center gap-1 ${teLaat ? "text-rose-600 font-medium" : "text-muted-foreground"}`}>
+          {teLaat && <AlertTriangle className="h-3 w-3" />}
+          Volgende actie: {deadline.toLocaleDateString("nl-NL")}
+        </div>
+      )}
       {onToewijzen && (
         <div className="pt-1.5 border-t flex justify-end" onClick={(e) => e.stopPropagation()}>
           <Button
