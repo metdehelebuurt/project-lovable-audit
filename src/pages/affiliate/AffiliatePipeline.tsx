@@ -94,11 +94,13 @@ const AffiliatePipeline = () => {
   const stats = useMemo(() => {
     const totaal = leads.length;
     const gewonnen = leads.filter((l) => l.status === "gewonnen").length;
+    const verloren = leads.filter((l) => l.status === "verloren").length;
     const open = leads.filter((l) => l.status !== "gewonnen" && l.status !== "verloren").length;
     const waarde = leads
       .filter((l) => l.status !== "verloren")
       .reduce((s, l) => s + Number(l.geschatte_waarde ?? 0), 0);
-    return { totaal, gewonnen, open, waarde };
+    const conversie = gewonnen + verloren > 0 ? Math.round((gewonnen / (gewonnen + verloren)) * 100) : 0;
+    return { totaal, gewonnen, open, waarde, conversie };
   }, [leads]);
 
   const advance = (lead: AffiliateLead) => {
@@ -176,7 +178,7 @@ const AffiliatePipeline = () => {
         <StatKaart icon={Users} label="Open leads" waarde={stats.open.toString()} />
         <StatKaart icon={TrendingUp} label="Gewonnen" waarde={stats.gewonnen.toString()} />
         <StatKaart icon={Euro} label="Pijplijnwaarde" waarde={euro(stats.waarde)} />
-        <StatKaart icon={Users} label="Totaal" waarde={stats.totaal.toString()} />
+        <StatKaart icon={TrendingUp} label="Conversie" waarde={`${stats.conversie}%`} />
       </div>
 
       {/* Filterbalk */}
