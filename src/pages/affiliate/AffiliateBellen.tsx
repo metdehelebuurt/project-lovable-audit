@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock, MessageCircle, CalendarPlus } from "lucide-react";
+import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock, MessageCircle, CalendarPlus, Globe, MapPin, Briefcase } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
@@ -13,6 +13,8 @@ import { CONTACT_UITKOMST_OPTIES } from "@/lib/affiliate/leadStatus";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "@/components/affiliate/TerugbelDialog";
 import { TrialStartenButton } from "@/components/affiliate/TrialStartenButton";
+import { BelStatsBalk } from "@/components/affiliate/BelStatsBalk";
+import { BedrijfSamenvattingKaart } from "@/components/affiliate/BedrijfSamenvattingKaart";
 
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
@@ -103,20 +105,35 @@ const AffiliateBellen = () => {
   return (
     <div className="p-6">
       <AffiliateSubnav />
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Belwerkbank</h1>
+          <p className="text-sm text-muted-foreground">{belQueue.length} leads klaar om te bellen vandaag</p>
+        </div>
+      </div>
       <div className="mb-4">
-        <h1 className="text-2xl font-bold">Belwerkbank</h1>
-        <p className="text-sm text-muted-foreground">{belQueue.length} leads klaar om te bellen vandaag</p>
+        <BelStatsBalk queueCount={belQueue.length} />
       </div>
 
       {!current ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground"><CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-emerald-500" /><p className="font-medium text-foreground">Klaar! Geen leads meer in de belqueue.</p><p className="text-sm">Voeg nieuwe leads toe of claim uit de koude-leads pool.</p></CardContent></Card>
       ) : (
-        <div className="grid lg:grid-cols-3 gap-4">
-          <Card className="lg:col-span-2">
+        <div className="grid lg:grid-cols-3 gap-4 items-start">
+          <div className="lg:col-span-2 space-y-4">
+          <Card>
             <CardHeader className="flex flex-row justify-between items-start">
               <div>
                 <CardTitle>{current.bedrijfsnaam}</CardTitle>
                 {current.contactpersoon && <p className="text-muted-foreground mt-1">{current.contactpersoon}</p>}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {current.branche && <Badge variant="secondary" className="gap-1"><Briefcase className="h-3 w-3" />{current.branche}</Badge>}
+                  {current.regio && <Badge variant="secondary" className="gap-1"><MapPin className="h-3 w-3" />{current.regio}</Badge>}
+                  {current.website && (
+                    <a href={current.website.startsWith("http") ? current.website : `https://${current.website}`} target="_blank" rel="noreferrer">
+                      <Badge variant="outline" className="gap-1 hover:bg-muted"><Globe className="h-3 w-3" />Website</Badge>
+                    </a>
+                  )}
+                </div>
               </div>
               <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> {formatTimer(seconden)}</Badge>
             </CardHeader>
@@ -126,11 +143,6 @@ const AffiliateBellen = () => {
                 {wa && <Button asChild variant="outline" className="text-emerald-700 border-emerald-300"><a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-2" /> WhatsApp</a></Button>}
                 {current.email && <Button asChild variant="outline"><a href={`mailto:${current.email}`}><Mail className="h-4 w-4 mr-2" /> E-mail</a></Button>}
                 <Button variant="outline" onClick={() => setOpenTerugbel(true)}><CalendarPlus className="h-4 w-4 mr-2" /> Terugbel plannen</Button>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {current.branche && <div><span className="text-muted-foreground">Branche:</span> {current.branche}</div>}
-                {current.regio && <div><span className="text-muted-foreground">Regio:</span> {current.regio}</div>}
-                {current.website && <div className="col-span-2"><span className="text-muted-foreground">Website:</span> {current.website}</div>}
               </div>
               {current.notities && (
                 <div className="text-sm border rounded-md p-3 bg-muted/30">
@@ -169,6 +181,8 @@ const AffiliateBellen = () => {
               </div>
             </CardContent>
           </Card>
+          <BedrijfSamenvattingKaart lead={current} />
+          </div>
 
           <Card>
             <CardHeader><CardTitle className="text-base">Uitkomst</CardTitle></CardHeader>
