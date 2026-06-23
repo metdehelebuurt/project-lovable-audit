@@ -15,14 +15,20 @@ export type SalesVeld =
   | "regio"
   | "website"
   | "notities"
-  | "geschatte_waarde";
+  | "geschatte_waarde"
+  | "adres"
+  | "postcode"
+  | "plaats";
 
 export type VeldGroep = "bedrijf" | "contactpersoon" | "overig";
 
 export const SALES_VELDEN: { key: SalesVeld; label: string; groep: VeldGroep; hint?: string }[] = [
   { key: "bedrijfsnaam", label: "Bedrijfsnaam", groep: "bedrijf", hint: "Naam van het bedrijf / de organisatie" },
   { key: "branche", label: "Branche", groep: "bedrijf" },
-  { key: "regio", label: "Regio / plaats", groep: "bedrijf" },
+  { key: "adres", label: "Adres (straat + huisnr.)", groep: "bedrijf" },
+  { key: "postcode", label: "Postcode", groep: "bedrijf" },
+  { key: "plaats", label: "Plaats / woonplaats", groep: "bedrijf" },
+  { key: "regio", label: "Regio", groep: "bedrijf" },
   { key: "website", label: "Website", groep: "bedrijf" },
   { key: "geschatte_waarde", label: "Geschatte waarde", groep: "bedrijf" },
   { key: "contactpersoon", label: "Contactpersoon (volledige naam)", groep: "contactpersoon", hint: "Volledige naam van de persoon — niet het bedrijf" },
@@ -51,7 +57,10 @@ const SYNONIEMEN: Record<SalesVeld, string[]> = {
   email: ["email", "emailadres", "emailaddress", "mail", "mailadres", "e", "epost"],
   telefoon: ["telefoon", "telefoonnummer", "phone", "phonenumber", "tel", "mobiel", "mobile", "gsm", "mobielnr"],
   branche: ["branche", "sector", "industrie", "industry", "vakgebied"],
-  regio: ["regio", "region", "plaats", "stad", "city", "locatie", "location", "woonplaats", "vestigingsplaats"],
+  regio: ["regio", "region", "gebied", "provincie", "province"],
+  adres: ["adres", "address", "straat", "street", "straatnaam", "streetname", "adresregel", "addressline", "straatenhuisnummer", "straathuisnummer"],
+  postcode: ["postcode", "postalcode", "postal", "zip", "zipcode", "pc"],
+  plaats: ["plaats", "stad", "city", "woonplaats", "vestigingsplaats", "locatie", "location", "town"],
   website: ["website", "url", "site", "homepage", "web"],
   notities: ["notities", "notitie", "opmerking", "opmerkingen", "omschrijving", "beschrijving", "description", "note", "notes", "memo"],
   geschatte_waarde: ["geschattewaarde", "waarde", "value", "budget", "potentie", "geschatewaarde", "estimatedvalue", "omzet"],
@@ -120,6 +129,9 @@ export function rijNaarLead(
   if (ruw.regio) lead.regio = ruw.regio;
   if (ruw.website) lead.website = ruw.website;
   if (ruw.geschatte_waarde) lead.geschatte_waarde = ruw.geschatte_waarde;
+  if (ruw.adres) lead.adres = ruw.adres;
+  if (ruw.postcode) lead.postcode = ruw.postcode;
+  if (ruw.plaats) lead.plaats = ruw.plaats;
 
   const samengesteldeNaam = [ruw.voornaam, ruw.achternaam].filter(Boolean).join(" ").trim();
   const contact = ruw.contactpersoon || samengesteldeNaam;
