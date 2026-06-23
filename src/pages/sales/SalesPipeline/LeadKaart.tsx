@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, Building2, Send, AlertTriangle, MessageSquarePlus, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
