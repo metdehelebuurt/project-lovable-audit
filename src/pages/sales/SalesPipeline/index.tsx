@@ -1,18 +1,18 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSalesLeads, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 import { kleurClasses } from "@/lib/sales/pipeline";
 import LeadKaart from "./LeadKaart";
-import LeadDetailDrawer from "../LeadDetailDrawer";
 import DoorzetDialog from "../DoorzetDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import TemperatuurFilter from "@/components/sales/TemperatuurFilter";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
 
 export default function SalesPipeline() {
+  const navigate = useNavigate();
   const { data: leads, isLoading } = useSalesLeads();
   const { data: pipeline, isLoading: pipelineLaadt } = useMyPipeline();
-  const [openLead, setOpenLead] = useState<SalesLead | null>(null);
   const [toewijzenLead, setToewijzenLead] = useState<SalesLead | null>(null);
   const [tempFilter, setTempFilter] = useState<Temperatuur | "alle">("alle");
 
@@ -70,7 +70,7 @@ export default function SalesPipeline() {
                   <LeadKaart
                     key={lead.id}
                     lead={lead}
-                    onClick={() => setOpenLead(lead)}
+                    onClick={() => navigate(`/sales/leads/${lead.id}`)}
                     onToewijzen={() => setToewijzenLead(lead)}
                   />
                 ))}
@@ -79,11 +79,6 @@ export default function SalesPipeline() {
           );
         })}
       </div>
-      <LeadDetailDrawer
-        lead={openLead}
-        open={!!openLead}
-        onOpenChange={(o) => !o && setOpenLead(null)}
-      />
       <DoorzetDialog
         lead={toewijzenLead}
         open={!!toewijzenLead}
