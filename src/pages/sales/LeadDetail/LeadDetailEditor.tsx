@@ -274,6 +274,17 @@ export default function LeadDetailEditor({ lead, onAfterDelete }: Props) {
             <LeadTimeline lead={lead} />
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" /> E-mails
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Zijbalk */}
