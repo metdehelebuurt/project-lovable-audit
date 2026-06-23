@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Send, Trash2, User2, History, MessageSquarePlus, Building2, MapPin, Target, Sparkles, FileText, Save } from "lucide-react";
+import { Send, Trash2, User2, History, MessageSquarePlus, Building2, MapPin, Target, Sparkles, FileText, Save, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useUpdateSalesLead, useDeleteSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
@@ -22,6 +22,7 @@ import LeadScorePill from "@/components/sales/LeadScorePill";
 import BronBadge from "@/components/sales/BronBadge";
 import SnippetMenu from "@/components/sales/SnippetMenu";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
+import EmailTab from "@/components/email/EmailTab";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
