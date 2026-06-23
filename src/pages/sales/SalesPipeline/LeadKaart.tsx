@@ -1,14 +1,16 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, Tag, Building2 } from "lucide-react";
+import { Mail, Phone, Tag, Building2, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
 
 interface Props {
   lead: SalesLead;
   onClick: () => void;
+  onToewijzen?: () => void;
 }
 
-export default function LeadKaart({ lead, onClick }: Props) {
+export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
   return (
     <Card
       role="button"
@@ -40,6 +42,20 @@ export default function LeadKaart({ lead, onClick }: Props) {
           </span>
         )}
       </div>
+      {onToewijzen && (
+        <div className="pt-1.5 border-t flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={onToewijzen}
+            aria-label={`Lead ${lead.bedrijfsnaam} toewijzen aan affiliate`}
+          >
+            <Send className="h-3 w-3" />
+            {lead.eigenaar_id ? "Opnieuw toewijzen" : "Toewijzen"}
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }
