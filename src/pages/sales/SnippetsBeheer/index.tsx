@@ -83,7 +83,7 @@ export default function SnippetsBeheer() {
   );
 }
 
-function SnippetEditor({ snippet, onClose, onSave }: { snippet: SalesSnippet; onClose: () => void; onSave: (s: Partial<SalesSnippet>) => void }) {
+function SnippetEditor({ snippet, onClose, onSave }: { snippet: SalesSnippet; onClose: () => void; onSave: (s: SalesSnippet) => void }) {
   const [s, setS] = useState(snippet);
   return (
     <Card className="p-4 fixed inset-x-4 bottom-4 top-4 z-50 overflow-y-auto md:inset-x-auto md:right-4 md:w-[480px] shadow-2xl">

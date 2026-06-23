@@ -26,12 +26,13 @@ export function useSnippets() {
 export function useUpsertSnippet() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: SalesSnippetInsert & { id?: string }) => {
+    mutationFn: async (input: Partial<SalesSnippet> & { titel: string; body: string; kanaal: string }) => {
+      const payload = { ...input };
       if (input.id) {
-        const { error } = await supabase.from("sales_snippets").update(input).eq("id", input.id);
+        const { error } = await supabase.from("sales_snippets").update(payload as never).eq("id", input.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("sales_snippets").insert(input);
+        const { error } = await supabase.from("sales_snippets").insert(payload as never);
         if (error) throw error;
       }
     },
