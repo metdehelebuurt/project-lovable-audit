@@ -626,16 +626,21 @@ export type Database = {
           contactpersoon: string | null
           created_at: string
           created_by: string | null
+          doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
           id: string
+          import_batch_id: string | null
           laatst_gescoord_op: string | null
           notities: string | null
           regio: string | null
+          sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags: string[]
           telefoon: string | null
+          toegewezen_door_admin_id: string | null
           updated_at: string
           verloren_reden: string | null
           volgende_actie_datum: string | null
@@ -653,16 +658,21 @@ export type Database = {
           contactpersoon?: string | null
           created_at?: string
           created_by?: string | null
+          doorgezet_op?: string | null
           eigenaar_id?: string | null
           email?: string | null
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
           id?: string
+          import_batch_id?: string | null
           laatst_gescoord_op?: string | null
           notities?: string | null
           regio?: string | null
+          sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags?: string[]
           telefoon?: string | null
+          toegewezen_door_admin_id?: string | null
           updated_at?: string
           verloren_reden?: string | null
           volgende_actie_datum?: string | null
@@ -680,16 +690,21 @@ export type Database = {
           contactpersoon?: string | null
           created_at?: string
           created_by?: string | null
+          doorgezet_op?: string | null
           eigenaar_id?: string | null
           email?: string | null
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
           id?: string
+          import_batch_id?: string | null
           laatst_gescoord_op?: string | null
           notities?: string | null
           regio?: string | null
+          sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags?: string[]
           telefoon?: string | null
+          toegewezen_door_admin_id?: string | null
           updated_at?: string
           verloren_reden?: string | null
           volgende_actie_datum?: string | null
@@ -8016,6 +8031,56 @@ export type Database = {
       }
     }
     Functions: {
+      admin_bulk_import_sales_leads: {
+        Args: {
+          _affiliate_id?: string
+          _bestemming: string
+          _fase?: Database["public"]["Enums"]["sales_fase"]
+          _rows: Json
+        }
+        Returns: Json
+      }
+      admin_doorzetten_naar_affiliate: {
+        Args: { _affiliate_id: string; _lead_id: string; _notitie?: string }
+        Returns: {
+          ai_score: number | null
+          ai_score_reden: string | null
+          ai_volgende_actie: string | null
+          ai_volgende_actie_op: string | null
+          bedrijfsnaam: string
+          branche: string | null
+          bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          claimed_at: string | null
+          contactpersoon: string | null
+          created_at: string
+          created_by: string | null
+          doorgezet_op: string | null
+          eigenaar_id: string | null
+          email: string | null
+          geschatte_waarde: number | null
+          gewonnen_partner_id: string | null
+          id: string
+          import_batch_id: string | null
+          laatst_gescoord_op: string | null
+          notities: string | null
+          regio: string | null
+          sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          status: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags: string[]
+          telefoon: string | null
+          toegewezen_door_admin_id: string | null
+          updated_at: string
+          verloren_reden: string | null
+          volgende_actie_datum: string | null
+          website: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_leads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       bereken_inkoop_match: {
         Args: { _inkoopfactuur_id: string }
         Returns: string
@@ -8038,16 +8103,21 @@ export type Database = {
           contactpersoon: string | null
           created_at: string
           created_by: string | null
+          doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
           id: string
+          import_batch_id: string | null
           laatst_gescoord_op: string | null
           notities: string | null
           regio: string | null
+          sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags: string[]
           telefoon: string | null
+          toegewezen_door_admin_id: string | null
           updated_at: string
           verloren_reden: string | null
           volgende_actie_datum: string | null
@@ -8245,7 +8315,11 @@ export type Database = {
     }
     Enums: {
       affiliate_contact_type: "telefoon" | "email" | "notitie" | "afspraak"
-      affiliate_lead_bron: "platform_pool" | "eigen_import" | "referral_klik"
+      affiliate_lead_bron:
+        | "platform_pool"
+        | "eigen_import"
+        | "referral_klik"
+        | "sales_admin"
       affiliate_lead_status:
         | "nieuw"
         | "gebeld_geen_gehoor"
@@ -8379,6 +8453,14 @@ export type Database = {
         | "accessoires"
         | "installatiemateriaal"
       product_status: "actief" | "uitgefaseerd" | "niet_beschikbaar"
+      sales_fase:
+        | "koud"
+        | "benaderd"
+        | "warm"
+        | "gekwalificeerd"
+        | "doorgezet"
+        | "gewonnen"
+        | "verloren"
       schouw_categorie:
         | "zonnepanelen"
         | "warmtepomp"
@@ -8533,7 +8615,12 @@ export const Constants = {
   public: {
     Enums: {
       affiliate_contact_type: ["telefoon", "email", "notitie", "afspraak"],
-      affiliate_lead_bron: ["platform_pool", "eigen_import", "referral_klik"],
+      affiliate_lead_bron: [
+        "platform_pool",
+        "eigen_import",
+        "referral_klik",
+        "sales_admin",
+      ],
       affiliate_lead_status: [
         "nieuw",
         "gebeld_geen_gehoor",
@@ -8682,6 +8769,15 @@ export const Constants = {
         "installatiemateriaal",
       ],
       product_status: ["actief", "uitgefaseerd", "niet_beschikbaar"],
+      sales_fase: [
+        "koud",
+        "benaderd",
+        "warm",
+        "gekwalificeerd",
+        "doorgezet",
+        "gewonnen",
+        "verloren",
+      ],
       schouw_categorie: [
         "zonnepanelen",
         "warmtepomp",
