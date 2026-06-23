@@ -10,9 +10,24 @@ export const PIPELINE_KLEUREN = [
 
 export type PipelineKleur = typeof PIPELINE_KLEUREN[number];
 
+/** Statische klasse-map zodat Tailwind ze niet purged. */
+const KLEUR_MAP: Record<PipelineKleur, string> = {
+  slate:   "bg-slate-100 text-slate-700 border-slate-200",
+  blue:    "bg-blue-100 text-blue-700 border-blue-200",
+  cyan:    "bg-cyan-100 text-cyan-700 border-cyan-200",
+  teal:    "bg-teal-100 text-teal-700 border-teal-200",
+  emerald: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  amber:   "bg-amber-100 text-amber-700 border-amber-200",
+  orange:  "bg-orange-100 text-orange-700 border-orange-200",
+  rose:    "bg-rose-100 text-rose-700 border-rose-200",
+  violet:  "bg-violet-100 text-violet-700 border-violet-200",
+  fuchsia: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
+};
+
 export function kleurClasses(kleur: string): string {
-  const k = (PIPELINE_KLEUREN as readonly string[]).includes(kleur) ? kleur : "slate";
-  return `bg-${k}-100 text-${k}-700 border-${k}-200`;
+  return KLEUR_MAP[(PIPELINE_KLEUREN as readonly string[]).includes(kleur)
+    ? (kleur as PipelineKleur)
+    : "slate"];
 }
 
 /** Standaard slugify voor handmatige fase-keys. */
