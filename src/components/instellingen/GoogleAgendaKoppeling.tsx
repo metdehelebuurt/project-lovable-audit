@@ -8,6 +8,7 @@ import { Calendar, ExternalLink, RefreshCw, Unplug, CheckCircle2, AlertCircle } 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import AgendaDelegaties from "./AgendaDelegaties";
 
 interface Account {
   id: string;
@@ -136,7 +137,8 @@ export default function GoogleAgendaKoppeling() {
 
   if (!account) {
     return (
-      <Card>
+      <div className="space-y-6">
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" /> Google Agenda
@@ -155,12 +157,15 @@ export default function GoogleAgendaKoppeling() {
             Je wordt doorgestuurd naar Google om toestemming te geven. We slaan alleen tokens op die nodig zijn voor synchronisatie.
           </p>
         </CardContent>
-      </Card>
+        </Card>
+        <AgendaDelegaties />
+      </div>
     );
   }
 
   return (
-    <Card>
+    <div className="space-y-6">
+      <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" /> Google Agenda
@@ -214,6 +219,8 @@ export default function GoogleAgendaKoppeling() {
           ))}
         </div>
       </CardContent>
-    </Card>
+      </Card>
+      <AgendaDelegaties />
+    </div>
   );
 }
