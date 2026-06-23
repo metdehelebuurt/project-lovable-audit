@@ -123,7 +123,10 @@ function adminNav(rol: AppRole): NavigatieGroep[] {
     },
     {
       id: "verkoop", label: "Klant & Verkoop",
-      items: [ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen],
+      items: [
+        ITEMS.leads, ITEMS.klanten, ITEMS.offertes, ITEMS.opdrachten, ITEMS.schouwen,
+        ...(isSuper ? [ITEMS.sales] : []),
+      ],
     },
     {
       id: "uitvoering", label: "Uitvoering",
