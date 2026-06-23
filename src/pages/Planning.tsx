@@ -28,6 +28,7 @@ import {
 import { nl } from "date-fns/locale";
 import { toast } from "sonner";
 import { AfspraakEditDialog } from "@/components/shared/AfspraakEditDialog";
+import { useAgendaDelegaties } from "@/hooks/agenda/useAgendaDelegaties";
 
 type ViewMode = "dag" | "week" | "maand" | "jaar";
 
@@ -97,6 +98,19 @@ const Planning = () => {
   const [mijnAgenda, setMijnAgenda] = useState(!isAdmin);
   const [selectedAdviseur, setSelectedAdviseur] = useState<string>("alle");
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
+  const { data: delegatieData } = useAgendaDelegaties();
+  const inkomendeDelegaties = delegatieData?.inkomend ?? [];
+  const delegatedUserIds = useMemo(
+    () => new Set(inkomendeDelegaties.map((d) => d.gever_user_id)),
+    [inkomendeDelegaties],
+  );
+  const heeftDelegaties = delegatedUserIds.size > 0;
+  const zichtbareCollegas = useMemo(
+    () => isAdmin
+      ? teamUsers
+      : teamUsers.filter((u) => delegatedUserIds.has(u.id)),
+    [teamUsers, delegatedUserIds, isAdmin],
+  );
 
   // Fetch team users
   useEffect(() => {
@@ -208,8 +222,16 @@ const Planning = () => {
         return e.adviseur_id === selectedAdviseur;
       });
     }
+    // Niet-admin zonder mijnAgenda en zonder filter: alleen eigen + gedelegeerde collega's
+    if (!isAdmin && profile?.id) {
+      return events.filter((e) => {
+        if (e.type === "installatie") return true;
+        if (!e.adviseur_id) return false;
+        return e.adviseur_id === profile.id || delegatedUserIds.has(e.adviseur_id);
+      });
+    }
     return events;
-  }, [events, mijnAgenda, selectedAdviseur, profile?.id, isInstallateur]);
+  }, [events, mijnAgenda, selectedAdviseur, profile?.id, isInstallateur, isAdmin, delegatedUserIds]);
 
   const getEventsForDay = useCallback(
     (day: Date) => filteredEvents.filter((e) => isSameDay(parseISO(e.date), day)),
@@ -427,17 +449,22 @@ const Planning = () => {
             </Label>
           </div>
 
-          {/* Adviseur filter - only for admins when not in "mijn agenda" mode */}
-          {isAdmin && !mijnAgenda && teamUsers.length > 0 && (
+          {/* Adviseur filter - admins zien alle teamleden; overige rollen zien zichzelf + gedelegeerde collega's */}
+          {!mijnAgenda && (isAdmin || heeftDelegaties) && zichtbareCollegas.length > 0 && (
             <Select value={selectedAdviseur} onValueChange={setSelectedAdviseur}>
               <SelectTrigger className="w-[180px] h-9">
                 <User className="h-4 w-4 mr-1 shrink-0" />
-                <SelectValue placeholder="Filter adviseur" />
+                <SelectValue placeholder={isAdmin ? "Filter adviseur" : "Collega's agenda"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="alle">Alle adviseurs</SelectItem>
-                {teamUsers.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>{u.voornaam} {u.achternaam}</SelectItem>
+                <SelectItem value="alle">
+                  {isAdmin ? "Alle adviseurs" : "Mijn + collega's agenda"}
+                </SelectItem>
+                {zichtbareCollegas.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.voornaam} {u.achternaam}
+                    {!isAdmin && delegatedUserIds.has(u.id) ? " · gedeeld" : ""}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
