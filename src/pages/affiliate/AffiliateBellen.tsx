@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock, MessageCircle, CalendarPlus, Globe, MapPin, Briefcase, Headphones, History as HistoryIcon, Building2 } from "lucide-react";
+import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock, MessageCircle, CalendarPlus, Globe, MapPin, Briefcase, Headphones, History as HistoryIcon, Building2, Sparkles } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLogContactmoment, useLeadContactmomenten } from "@/hooks/affiliate/useAffiliateLeadContact";
@@ -18,6 +18,7 @@ import { TrialStartenButton } from "@/components/affiliate/TrialStartenButton";
 import { useBelStats } from "@/hooks/affiliate/useBelStats";
 import { BedrijfSamenvattingKaart } from "@/components/affiliate/BedrijfSamenvattingKaart";
 import { BelQueueStrip } from "@/components/affiliate/BelQueueStrip";
+import { VerrijkLeadDialog } from "@/components/affiliate/VerrijkLeadDialog";
 
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
@@ -32,6 +33,7 @@ const AffiliateBellen = () => {
   const [seconden, setSeconden] = useState(0);
   const tickRef = useRef<number | null>(null);
   const [openTerugbel, setOpenTerugbel] = useState(false);
+  const [openVerrijk, setOpenVerrijk] = useState(false);
 
   const belQueue = useMemo(() => {
     const vandaag = new Date(); vandaag.setHours(23, 59, 59, 999);
@@ -192,6 +194,9 @@ const AffiliateBellen = () => {
                 {wa && <Button asChild variant="outline" size="sm" className="text-emerald-700 border-emerald-300"><a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-2" /> WhatsApp</a></Button>}
                 {current.email && <Button asChild variant="outline" size="sm"><a href={`mailto:${current.email}`}><Mail className="h-4 w-4 mr-2" /> E-mail</a></Button>}
                 <Button variant="outline" size="sm" onClick={() => setOpenTerugbel(true)}><CalendarPlus className="h-4 w-4 mr-2" /> Terugbel plannen</Button>
+                <Button variant="outline" size="sm" onClick={() => setOpenVerrijk(true)} className="text-primary border-primary/40 hover:bg-primary/10">
+                  <Sparkles className="h-4 w-4 mr-2" /> Verrijken
+                </Button>
               </div>
 
               <Tabs defaultValue="gesprek" className="w-full">
@@ -316,6 +321,9 @@ const AffiliateBellen = () => {
       )}
       {current && (
         <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={current.id} leadNaam={current.bedrijfsnaam} />
+      )}
+      {current && (
+        <VerrijkLeadDialog open={openVerrijk} onOpenChange={setOpenVerrijk} lead={current} />
       )}
     </div>
   );
