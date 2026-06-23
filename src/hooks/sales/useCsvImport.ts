@@ -28,7 +28,7 @@ export function useCsvImport() {
       const { data, error } = await supabase.rpc("admin_bulk_import_sales_leads", {
         _rows: input.rijen as unknown as never,
         _bestemming: input.bestemming,
-        _affiliate_id: input.affiliate_id ?? null,
+        _affiliate_id: (input.affiliate_id ?? undefined) as unknown as string,
         _fase: input.fase,
         _bestandsnaam: input.bestandsnaam,
         _kolom_mapping: input.kolom_mapping as unknown as never,
