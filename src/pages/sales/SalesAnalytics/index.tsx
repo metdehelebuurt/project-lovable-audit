@@ -2,42 +2,79 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { useSalesLeads } from "@/hooks/sales/useSalesLeads";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
-import { SALES_FASES, FASE_LABEL, FASE_COLOR, type SalesFase } from "@/lib/sales/faseLabels";
+import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
+import { kleurClasses } from "@/lib/sales/pipeline";
+import { TEMPERATUREN, TEMP_LABEL, TEMP_COLOR, type Temperatuur } from "@/lib/sales/temperatuur";
 import { Badge } from "@/components/ui/badge";
 
 export default function SalesAnalytics() {
   const { data: leads } = useSalesLeads();
   const { data: affiliates } = useAffiliateGebruikers();
+  const { data: pipeline } = useMyPipeline();
+
+  const fases = useMemo(() => (pipeline ?? []).filter((f) => f.zichtbaar !== false), [pipeline]);
 
   const stats = useMemo(() => {
-    const perFase: Record<SalesFase, number> = {
-      koud: 0, benaderd: 0, warm: 0, gekwalificeerd: 0, doorgezet: 0, gewonnen: 0, verloren: 0,
+    const perFase: Record<string, number> = {};
+    const perTemp: Record<Temperatuur, { totaal: number; gewonnen: number; waarde: number }> = {
+      koud: { totaal: 0, gewonnen: 0, waarde: 0 },
+      lauw: { totaal: 0, gewonnen: 0, waarde: 0 },
+      warm: { totaal: 0, gewonnen: 0, waarde: 0 },
+      heet: { totaal: 0, gewonnen: 0, waarde: 0 },
     };
+    const perBron = new Map<string, number>();
     const perAffiliate = new Map<string, { gewonnen: number; doorgezet: number; waarde: number }>();
     let totaalWaardeGewonnen = 0;
+    let aantalGewonnen = 0;
+    let aantalVerloren = 0;
+
+    const wonKeys = new Set(fases.filter((f) => f.is_won).map((f) => f.fase_key));
+    const eindKeys = new Set(fases.filter((f) => f.is_eindfase).map((f) => f.fase_key));
+
     for (const l of leads ?? []) {
-      const f = (l.sales_fase ?? "koud") as SalesFase;
-      perFase[f] = (perFase[f] ?? 0) + 1;
+      const slug = l.fase_slug ?? "nieuw";
+      perFase[slug] = (perFase[slug] ?? 0) + 1;
+      const t = (l.temperatuur ?? "koud") as Temperatuur;
+      perTemp[t].totaal += 1;
+      perBron.set(l.bron ?? "onbekend", (perBron.get(l.bron ?? "onbekend") ?? 0) + 1);
+
+      const isWon = wonKeys.has(slug);
+      const isVerloren = eindKeys.has(slug) && !isWon;
+      if (isWon) {
+        aantalGewonnen += 1;
+        perTemp[t].gewonnen += 1;
+        perTemp[t].waarde += Number(l.geschatte_waarde ?? 0);
+        totaalWaardeGewonnen += Number(l.geschatte_waarde ?? 0);
+      }
+      if (isVerloren) aantalVerloren += 1;
+
       if (l.eigenaar_id) {
         const k = l.eigenaar_id;
         const cur = perAffiliate.get(k) ?? { gewonnen: 0, doorgezet: 0, waarde: 0 };
-        if (f === "doorgezet" || f === "gewonnen") cur.doorgezet += 1;
-        if (f === "gewonnen") {
+        cur.doorgezet += 1;
+        if (isWon) {
           cur.gewonnen += 1;
           cur.waarde += Number(l.geschatte_waarde ?? 0);
-          totaalWaardeGewonnen += Number(l.geschatte_waarde ?? 0);
         }
         perAffiliate.set(k, cur);
       }
     }
-    return { perFase, perAffiliate, totaalWaardeGewonnen, totaal: leads?.length ?? 0 };
-  }, [leads]);
+    const totaal = leads?.length ?? 0;
+    const conversie = aantalGewonnen + aantalVerloren > 0
+      ? (aantalGewonnen / (aantalGewonnen + aantalVerloren)) * 100
+      : 0;
+    return { perFase, perTemp, perBron, perAffiliate, totaalWaardeGewonnen, aantalGewonnen, aantalVerloren, conversie, totaal };
+  }, [leads, fases]);
 
   const naamVoor = (id: string) =>
     affiliates?.find((a) => a.id === id)?.naam ?? id.slice(0, 8);
 
   const top = Array.from(stats.perAffiliate.entries())
     .sort((a, b) => b[1].waarde - a[1].waarde)
+    .slice(0, 10);
+
+  const bronnen = Array.from(stats.perBron.entries())
+    .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
 
   return (
@@ -48,12 +85,15 @@ export default function SalesAnalytics() {
           <div className="text-2xl font-semibold mt-1">{stats.totaal}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Doorgezet</div>
-          <div className="text-2xl font-semibold mt-1">{stats.perFase.doorgezet}</div>
+          <div className="text-xs text-muted-foreground">Conversie</div>
+          <div className="text-2xl font-semibold mt-1">{stats.conversie.toFixed(0)}%</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">
+            {stats.aantalGewonnen} won / {stats.aantalVerloren} verloren
+          </div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Gewonnen</div>
-          <div className="text-2xl font-semibold mt-1 text-emerald-600">{stats.perFase.gewonnen}</div>
+          <div className="text-2xl font-semibold mt-1 text-emerald-600">{stats.aantalGewonnen}</div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Omzet gewonnen</div>
@@ -62,14 +102,33 @@ export default function SalesAnalytics() {
       </div>
 
       <Card className="p-4">
-        <h3 className="font-semibold mb-3">Verdeling per fase</h3>
+        <h3 className="font-semibold mb-3">Conversie per temperatuur</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {TEMPERATUREN.map((t) => {
+            const s = stats.perTemp[t];
+            const pct = s.totaal > 0 ? (s.gewonnen / s.totaal) * 100 : 0;
+            return (
+              <div key={t} className={`rounded-md border p-3 ${TEMP_COLOR[t]}`}>
+                <div className="text-xs font-medium">{TEMP_LABEL[t]}</div>
+                <div className="text-xl font-semibold mt-1">{pct.toFixed(0)}%</div>
+                <div className="text-[11px] mt-0.5 opacity-80">
+                  {s.gewonnen}/{s.totaal} · €{s.waarde.toLocaleString("nl-NL")}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Funnel per fase</h3>
         <div className="space-y-2">
-          {SALES_FASES.map((f) => {
-            const c = stats.perFase[f];
+          {fases.map((f) => {
+            const c = stats.perFase[f.fase_key] ?? 0;
             const pct = stats.totaal > 0 ? (c / stats.totaal) * 100 : 0;
             return (
-              <div key={f} className="flex items-center gap-3">
-                <Badge variant="outline" className={`${FASE_COLOR[f]} w-32 justify-start`}>{FASE_LABEL[f]}</Badge>
+              <div key={f.id} className="flex items-center gap-3">
+                <Badge variant="outline" className={`${kleurClasses(f.kleur)} w-36 justify-start`}>{f.label}</Badge>
                 <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                   <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
                 </div>
@@ -78,6 +137,28 @@ export default function SalesAnalytics() {
             );
           })}
         </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Leads per bron</h3>
+        {bronnen.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nog geen data.</p>
+        ) : (
+          <div className="space-y-2">
+            {bronnen.map(([bron, n]) => {
+              const pct = stats.totaal > 0 ? (n / stats.totaal) * 100 : 0;
+              return (
+                <div key={bron} className="flex items-center gap-3 text-sm">
+                  <span className="w-40 truncate">{bron}</span>
+                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-violet-500" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="w-12 text-right text-muted-foreground">{n}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       <Card className="p-4">
