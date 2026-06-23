@@ -1,0 +1,101 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAffiliateGebruikers, useDoorzetten } from "@/hooks/sales/useDoorzetten";
+import type { SalesLead } from "@/hooks/sales/useSalesLeads";
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  lead: SalesLead | null;
+}
+
+export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
+  const [modus, setModus] = useState<"direct" | "pool">("direct");
+  const [affiliateId, setAffiliateId] = useState<string>("");
+  const [notitie, setNotitie] = useState("");
+  const { data: affiliates, isLoading } = useAffiliateGebruikers();
+  const doorzetten = useDoorzetten();
+
+  const onSubmit = async () => {
+    if (!lead) return;
+    const targetId = modus === "direct" ? affiliateId : null;
+    if (modus === "direct" && !targetId) return;
+    await doorzetten.mutateAsync({
+      lead_id: lead.id,
+      affiliate_id: targetId,
+      notitie: notitie.trim() || undefined,
+    });
+    setNotitie("");
+    setAffiliateId("");
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Lead doorzetten naar affiliate</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="rounded-md bg-muted/40 p-3 text-sm">
+            <div className="font-medium">{lead?.bedrijfsnaam}</div>
+            {lead?.contactpersoon && <div className="text-muted-foreground">{lead.contactpersoon}</div>}
+          </div>
+          <RadioGroup value={modus} onValueChange={(v) => setModus(v as "direct" | "pool")}>
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="direct" id="modus-direct" className="mt-1" />
+              <Label htmlFor="modus-direct" className="font-normal">
+                <span className="font-medium">Direct toewijzen aan affiliate</span>
+                <p className="text-xs text-muted-foreground">Verschijnt meteen in hun dashboard.</p>
+              </Label>
+            </div>
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="pool" id="modus-pool" className="mt-1" />
+              <Label htmlFor="modus-pool" className="font-normal">
+                <span className="font-medium">In de affiliate-pool plaatsen</span>
+                <p className="text-xs text-muted-foreground">Eerste affiliate die claimt krijgt de lead.</p>
+              </Label>
+            </div>
+          </RadioGroup>
+          {modus === "direct" && (
+            <div className="space-y-1.5">
+              <Label>Affiliate</Label>
+              <Select value={affiliateId} onValueChange={setAffiliateId}>
+                <SelectTrigger><SelectValue placeholder={isLoading ? "Laden..." : "Kies affiliate"} /></SelectTrigger>
+                <SelectContent>
+                  {(affiliates ?? []).map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.naam} — {a.email}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label>Notitie meesturen (optioneel)</Label>
+            <Textarea
+              value={notitie}
+              onChange={(e) => setNotitie(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="Context voor de affiliate"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Annuleren</Button>
+          <Button
+            onClick={onSubmit}
+            disabled={doorzetten.isPending || (modus === "direct" && !affiliateId)}
+          >
+            {doorzetten.isPending ? "Bezig…" : "Doorzetten"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
