@@ -26,6 +26,8 @@ export default function SalesLeads() {
   const [fase, setFase] = useState<string>("alle");
   const [eigenaar, setEigenaar] = useState<EigenaarFilter>("alle");
   const [temp, setTemp] = useState<Temperatuur | "alle">("alle");
+  const [postcodeFilter, setPostcodeFilter] = useState("");
+  const [plaatsFilter, setPlaatsFilter] = useState("");
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
   const [openLead, setOpenLead] = useState<SalesLead | null>(null);
   const [bulkDoorzet, setBulkDoorzet] = useState<SalesLead | null>(null);
@@ -38,6 +40,8 @@ export default function SalesLeads() {
 
   const gefilterd = useMemo(() => {
     const z = zoek.toLowerCase().trim();
+    const pc = postcodeFilter.toLowerCase().replace(/\s+/g, "").trim();
+    const pl = plaatsFilter.toLowerCase().trim();
     return (leads ?? []).filter((l) => {
       if (fase !== "alle" && (l.fase_slug ?? "nieuw") !== fase) return false;
       if (temp !== "alle" && (l.temperatuur ?? "koud") !== temp) return false;
@@ -45,6 +49,14 @@ export default function SalesLeads() {
       if (eigenaar === "toegewezen" && !l.eigenaar_id) return false;
       if (eigenaar === "platform" && (l.bron !== "sales_admin" || l.eigenaar_id !== null)) {
         // platform = sales-admin leads die nog niet zijn doorgezet (geen affiliate eigenaar)
+      }
+      if (pc) {
+        const leadPc = (l.postcode ?? "").toLowerCase().replace(/\s+/g, "");
+        if (!leadPc.startsWith(pc)) return false;
+      }
+      if (pl) {
+        const leadPl = (l.plaats ?? "").toLowerCase();
+        if (!leadPl.includes(pl)) return false;
       }
       if (z) {
         const hay = [l.bedrijfsnaam, l.contactpersoon, l.email, l.telefoon, l.adres, l.postcode, l.plaats]
@@ -54,7 +66,7 @@ export default function SalesLeads() {
       }
       return true;
     });
-  }, [leads, zoek, fase, temp, eigenaar]);
+  }, [leads, zoek, fase, temp, eigenaar, postcodeFilter, plaatsFilter]);
 
   const tempCounts = useMemo(() => {
     const c: Record<string, number> = { alle: (leads ?? []).length };
@@ -83,6 +95,18 @@ export default function SalesLeads() {
           value={zoek}
           onChange={(e) => setZoek(e.target.value)}
           className="max-w-sm"
+        />
+        <Input
+          placeholder="Postcode (bv. 1011 of 10)"
+          value={postcodeFilter}
+          onChange={(e) => setPostcodeFilter(e.target.value)}
+          className="w-44"
+        />
+        <Input
+          placeholder="Plaats"
+          value={plaatsFilter}
+          onChange={(e) => setPlaatsFilter(e.target.value)}
+          className="w-40"
         />
         <Select value={fase} onValueChange={setFase}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
