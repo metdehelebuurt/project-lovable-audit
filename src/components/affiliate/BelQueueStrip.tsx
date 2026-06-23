@@ -10,6 +10,7 @@ type Props = {
 const TEMP_KLEUR: Record<Temperatuur, string> = {
   heet: "bg-rose-500",
   warm: "bg-amber-500",
+  lauw: "bg-yellow-500",
   koud: "bg-sky-500",
 };
 
