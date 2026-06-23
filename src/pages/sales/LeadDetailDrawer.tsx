@@ -16,6 +16,12 @@ import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import DoorzetDialog from "./DoorzetDialog";
 import LeadTimeline from "./LeadTimeline";
 import ContactmomentDialog from "@/components/sales/ContactmomentDialog";
+import LeadScorePill from "@/components/sales/LeadScorePill";
+import BronBadge from "@/components/sales/BronBadge";
+import SnippetMenu from "@/components/sales/SnippetMenu";
+import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Props {
   lead: SalesLead | null;
@@ -31,6 +37,8 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
   const del = useDeleteSalesLead();
   const { data: affiliates } = useAffiliateGebruikers();
   const { data: pipeline } = useMyPipeline();
+  const { data: bronnen } = useLeadBronnen();
+  const [aiBezig, setAiBezig] = useState(false);
 
   useEffect(() => {
     if (lead) setVorm(lead);
@@ -64,6 +72,21 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
     onOpenChange(false);
   };
 
+  const aiHercalc = async () => {
+    setAiBezig(true);
+    try {
+      const { error } = await supabase.functions.invoke("ai-affiliate-lead-score", {
+        body: { leadId: lead.id },
+      });
+      if (error) throw error;
+      toast.success("AI-score bijgewerkt");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAiBezig(false);
+    }
+  };
+
   const fases = (pipeline ?? []).filter((f) => f.zichtbaar !== false);
   const huidigeFase = fases.find((f) => f.fase_key === (vorm.fase_slug ?? "nieuw"));
   const temperatuur = (vorm.temperatuur ?? "koud") as Temperatuur;
@@ -86,12 +109,27 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
                 {huidigeFase?.label ?? (vorm.fase_slug ?? "Nieuw")}
               </Badge>
               <TemperatuurBadge temperatuur={temperatuur} />
+              <LeadScorePill lead={lead} />
+              <BronBadge bronId={lead.bron_id} fallbackLabel={lead.bron} />
               {lead.eigenaar_id ? (
                 <Badge variant="secondary">Toegewezen</Badge>
               ) : (
                 <Badge variant="outline">In pool</Badge>
               )}
             </div>
+
+            {lead.lead_score_basis_details ? (
+              <div className="rounded-md border bg-muted/30 p-2 text-xs">
+                <div className="font-medium mb-1">Score-onderbouwing</div>
+                <div className="text-muted-foreground">
+                  {Object.entries(lead.lead_score_basis_details as Record<string, unknown>)
+                    .filter(([k]) => k !== "berekend_op")
+                    .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)
+                    .join(" · ")}
+                </div>
+                {lead.ai_score_reden && <div className="mt-1 italic">AI: {lead.ai_score_reden}</div>}
+              </div>
+            ) : null}
 
             <div className="rounded-md bg-muted/40 p-3 text-sm flex items-center gap-2">
               <User2 className="h-4 w-4 text-muted-foreground" />
@@ -135,6 +173,21 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
               <div>
                 <Label>Regio</Label>
                 <Input value={vorm.regio ?? ""} onChange={(e) => setVorm({ ...vorm, regio: e.target.value })} />
+              </div>
+              <div className="col-span-2">
+                <Label>Bron</Label>
+                <Select
+                  value={vorm.bron_id ?? "geen"}
+                  onValueChange={(v) => setVorm({ ...vorm, bron_id: v === "geen" ? null : v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Kies bron" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="geen">— Geen —</SelectItem>
+                    {(bronnen ?? []).filter((b) => b.actief).map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Geschatte waarde (€)</Label>
@@ -201,6 +254,10 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
               <Button onClick={opslaan} disabled={upd.isPending}>Opslaan</Button>
               <Button variant="outline" onClick={() => setLogOpen(true)} className="gap-2">
                 <MessageSquarePlus className="h-4 w-4" /> Log contact
+              </Button>
+              <SnippetMenu lead={lead} />
+              <Button variant="outline" onClick={aiHercalc} disabled={aiBezig} className="gap-2">
+                <History className="h-4 w-4" /> {aiBezig ? "AI bezig…" : "AI hercalc"}
               </Button>
               <Button variant="default" onClick={() => setDoorzetOpen(true)} className="gap-2">
                 <Send className="h-4 w-4" /> Doorzetten naar affiliate
