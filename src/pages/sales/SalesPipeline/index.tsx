@@ -55,15 +55,15 @@ export default function SalesPipeline() {
   return (
     <div className="space-y-3">
       <TemperatuurFilter waarde={tempFilter} onWijzig={setTempFilter} counts={tempCounts as never} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+      <div className="flex gap-4 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
         {fases.map((fase) => {
           const items = perFase[fase.fase_key] ?? [];
           return (
-            <div key={fase.id} className="rounded-lg border bg-muted/30 flex flex-col min-h-[400px]">
-              <div className={`px-3 py-2 border-b text-xs font-semibold sticky top-0 rounded-t-lg ${kleurClasses(fase.kleur)}`}>
+            <div key={fase.id} className="w-[280px] shrink-0 snap-start rounded-xl border bg-muted/30 flex flex-col min-h-[400px]">
+              <div className={`px-3 py-2 border-b text-xs font-semibold sticky top-0 rounded-t-xl ${kleurClasses(fase.kleur)}`}>
                 {fase.label} · {items.length}
               </div>
-              <div className="p-2 space-y-2 flex-1 overflow-y-auto max-h-[70vh]">
+              <div className="p-2 space-y-2 flex-1 overflow-y-auto max-h-[72vh]">
                 {items.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center pt-4">Leeg</p>
                 ) : items.map((lead) => (
