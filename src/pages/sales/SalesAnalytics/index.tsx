@@ -12,10 +12,10 @@ export default function SalesAnalytics() {
   const { data: leads } = useSalesLeads();
   const { data: affiliates } = useAffiliateGebruikers();
   const { data: pipeline } = useMyPipeline();
-  const { data: bronnen } = useLeadBronnen();
+  const { data: bronnenLijst } = useLeadBronnen();
 
   const bronLabel = (slug: string) =>
-    bronnen?.find((b) => b.slug === slug || b.id === slug)?.label ?? slug;
+    bronnenLijst?.find((b) => b.slug === slug || b.id === slug)?.label ?? slug;
 
   const fases = useMemo(() => (pipeline ?? []).filter((f) => f.zichtbaar !== false), [pipeline]);
 
