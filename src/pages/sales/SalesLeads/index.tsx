@@ -127,7 +127,7 @@ export default function SalesLeads() {
               </TableHead>
               <TableHead>Bedrijf</TableHead>
               <TableHead>Contact</TableHead>
-              <TableHead>Regio</TableHead>
+              <TableHead>Locatie</TableHead>
               <TableHead>Temperatuur</TableHead>
               <TableHead>Fase</TableHead>
               <TableHead>Eigenaar</TableHead>
