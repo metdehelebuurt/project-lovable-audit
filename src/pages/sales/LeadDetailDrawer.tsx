@@ -7,9 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Send, Trash2, User2, History } from "lucide-react";
-import { SALES_FASES, FASE_LABEL, FASE_COLOR } from "@/lib/sales/faseLabels";
 import { useUpdateSalesLead, useDeleteSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
+import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
+import { kleurClasses } from "@/lib/sales/pipeline";
+import { TEMPERATUREN, TEMP_LABEL, TEMP_ICON, type Temperatuur } from "@/lib/sales/temperatuur";
+import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import DoorzetDialog from "./DoorzetDialog";
 import LeadTimeline from "./LeadTimeline";
 
@@ -25,6 +28,7 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
   const upd = useUpdateSalesLead();
   const del = useDeleteSalesLead();
   const { data: affiliates } = useAffiliateGebruikers();
+  const { data: pipeline } = useMyPipeline();
 
   useEffect(() => {
     if (lead) setVorm(lead);
@@ -44,7 +48,9 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
         regio: vorm.regio,
         website: vorm.website,
         notities: vorm.notities,
-        sales_fase: vorm.sales_fase,
+        fase_slug: vorm.fase_slug,
+        temperatuur: vorm.temperatuur,
+        volgende_actie_op: vorm.volgende_actie_op,
         geschatte_waarde: vorm.geschatte_waarde,
       },
     });
@@ -56,10 +62,14 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
     onOpenChange(false);
   };
 
-  const fase = (vorm.sales_fase ?? "koud") as keyof typeof FASE_LABEL;
+  const fases = (pipeline ?? []).filter((f) => f.zichtbaar !== false);
+  const huidigeFase = fases.find((f) => f.fase_key === (vorm.fase_slug ?? "nieuw"));
+  const temperatuur = (vorm.temperatuur ?? "koud") as Temperatuur;
   const eigenaar = lead.eigenaar_id
     ? (affiliates ?? []).find((a) => a.id === lead.eigenaar_id)
     : null;
+  const deadline = vorm.volgende_actie_op ? new Date(vorm.volgende_actie_op as string) : null;
+  const deadlineInput = deadline ? deadline.toISOString().slice(0, 10) : "";
 
   return (
     <>
@@ -69,8 +79,11 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
             <SheetTitle>Lead bewerken</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
-            <div className="flex items-center gap-2">
-              <Badge className={FASE_COLOR[fase]} variant="outline">{FASE_LABEL[fase]}</Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className={kleurClasses(huidigeFase?.kleur ?? "slate")} variant="outline">
+                {huidigeFase?.label ?? (vorm.fase_slug ?? "Nieuw")}
+              </Badge>
+              <TemperatuurBadge temperatuur={temperatuur} />
               {lead.eigenaar_id ? (
                 <Badge variant="secondary">Toegewezen</Badge>
               ) : (
@@ -131,14 +144,45 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
               </div>
               <div>
                 <Label>Fase</Label>
-                <Select value={vorm.sales_fase ?? "koud"} onValueChange={(v) => setVorm({ ...vorm, sales_fase: v as never })}>
+                <Select value={vorm.fase_slug ?? "nieuw"} onValueChange={(v) => setVorm({ ...vorm, fase_slug: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {SALES_FASES.map((f) => (
-                      <SelectItem key={f} value={f}>{FASE_LABEL[f]}</SelectItem>
+                    {fases.map((f) => (
+                      <SelectItem key={f.fase_key} value={f.fase_key}>{f.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Temperatuur</Label>
+                <Select value={temperatuur} onValueChange={(v) => setVorm({ ...vorm, temperatuur: v as Temperatuur })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TEMPERATUREN.map((t) => {
+                      const Icon = TEMP_ICON[t];
+                      return (
+                        <SelectItem key={t} value={t}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <Icon className="h-3.5 w-3.5" /> {TEMP_LABEL[t]}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <Label>Volgende actie op</Label>
+                <Input
+                  type="date"
+                  value={deadlineInput}
+                  onChange={(e) =>
+                    setVorm({
+                      ...vorm,
+                      volgende_actie_op: e.target.value ? new Date(e.target.value).toISOString() : null,
+                    })
+                  }
+                />
               </div>
               <div className="col-span-2">
                 <Label>Notitie</Label>
