@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus, Presentation, FileCheck2 } from "lucide-react";
+import { Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus, Presentation, FileCheck2, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { STATUS_LABEL, STATUS_VOLGORDE, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
@@ -13,6 +13,7 @@ import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "./TerugbelDialog";
 import { TrialStartenButton } from "./TrialStartenButton";
 import { TrialStatusBadge } from "./TrialStatusBadge";
+import { VerrijkLeadDialog } from "./VerrijkLeadDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import EmailTab from "@/components/email/EmailTab";
@@ -35,6 +36,7 @@ export function LeadDetailBody({ lead }: Props) {
   const [openTerugbel, setOpenTerugbel] = useState(false);
   const [openDemo, setOpenDemo] = useState(false);
   const [openOrder, setOpenOrder] = useState(false);
+  const [openVerrijk, setOpenVerrijk] = useState(false);
 
   useEffect(() => {
     setStatus(lead.status as AffiliateLeadStatus);
@@ -90,6 +92,9 @@ export function LeadDetailBody({ lead }: Props) {
         <Button size="sm" variant="outline" onClick={() => setOpenTerugbel(true)}><CalendarPlus className="h-4 w-4 mr-1" /> Terugbel plannen</Button>
         <Button size="sm" variant="outline" onClick={() => setOpenDemo(true)}><Presentation className="h-4 w-4 mr-1" /> Demo inplannen</Button>
         <Button size="sm" variant="outline" onClick={() => setOpenOrder(true)} disabled={!lead.email}><FileCheck2 className="h-4 w-4 mr-1" /> Orderbevestiging sturen</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpenVerrijk(true)} className="text-primary border-primary/40 hover:bg-primary/10">
+          <Sparkles className="h-4 w-4 mr-1" /> Verrijken
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -153,6 +158,7 @@ export function LeadDetailBody({ lead }: Props) {
       </div>
       <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={lead.id} leadNaam={lead.bedrijfsnaam} />
       <TerugbelDialog open={openDemo} onOpenChange={setOpenDemo} leadId={lead.id} leadNaam={lead.bedrijfsnaam} afspraakType="demo" />
+      <VerrijkLeadDialog open={openVerrijk} onOpenChange={setOpenVerrijk} lead={lead} />
       <EmailCompose
         open={openOrder}
         onOpenChange={setOpenOrder}
