@@ -3,11 +3,13 @@ import { useSalesLeads, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { SALES_FASES, FASE_LABEL, FASE_COLOR, type SalesFase } from "@/lib/sales/faseLabels";
 import LeadKaart from "./LeadKaart";
 import LeadDetailDrawer from "../LeadDetailDrawer";
+import DoorzetDialog from "../DoorzetDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SalesPipeline() {
   const { data: leads, isLoading } = useSalesLeads();
   const [openLead, setOpenLead] = useState<SalesLead | null>(null);
+  const [toewijzenLead, setToewijzenLead] = useState<SalesLead | null>(null);
 
   const perFase = useMemo(() => {
     const map: Record<SalesFase, SalesLead[]> = {
@@ -40,7 +42,12 @@ export default function SalesPipeline() {
               {perFase[fase].length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center pt-4">Leeg</p>
               ) : perFase[fase].map((lead) => (
-                <LeadKaart key={lead.id} lead={lead} onClick={() => setOpenLead(lead)} />
+                <LeadKaart
+                  key={lead.id}
+                  lead={lead}
+                  onClick={() => setOpenLead(lead)}
+                  onToewijzen={() => setToewijzenLead(lead)}
+                />
               ))}
             </div>
           </div>
@@ -50,6 +57,11 @@ export default function SalesPipeline() {
         lead={openLead}
         open={!!openLead}
         onOpenChange={(o) => !o && setOpenLead(null)}
+      />
+      <DoorzetDialog
+        lead={toewijzenLead}
+        open={!!toewijzenLead}
+        onOpenChange={(o) => !o && setToewijzenLead(null)}
       />
     </>
   );

@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Send, Trash2 } from "lucide-react";
+import { Send, Trash2, User2 } from "lucide-react";
 import { SALES_FASES, FASE_LABEL, FASE_COLOR } from "@/lib/sales/faseLabels";
 import { useUpdateSalesLead, useDeleteSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
+import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
 import DoorzetDialog from "./DoorzetDialog";
 
 interface Props {
@@ -22,6 +23,7 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
   const [doorzetOpen, setDoorzetOpen] = useState(false);
   const upd = useUpdateSalesLead();
   const del = useDeleteSalesLead();
+  const { data: affiliates } = useAffiliateGebruikers();
 
   useEffect(() => {
     if (lead) setVorm(lead);
@@ -54,6 +56,9 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
   };
 
   const fase = (vorm.sales_fase ?? "koud") as keyof typeof FASE_LABEL;
+  const eigenaar = lead.eigenaar_id
+    ? (affiliates ?? []).find((a) => a.id === lead.eigenaar_id)
+    : null;
 
   return (
     <>
@@ -70,6 +75,20 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
               ) : (
                 <Badge variant="outline">In pool</Badge>
               )}
+            </div>
+
+            <div className="rounded-md bg-muted/40 p-3 text-sm flex items-center gap-2">
+              <User2 className="h-4 w-4 text-muted-foreground" />
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground">Huidige eigenaar</div>
+                <div className="font-medium">
+                  {lead.eigenaar_id
+                    ? eigenaar
+                      ? `${eigenaar.naam} — ${eigenaar.email}`
+                      : "Affiliate"
+                    : "Platform (nog niet doorgezet)"}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
