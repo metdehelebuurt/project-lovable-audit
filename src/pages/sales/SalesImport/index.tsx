@@ -12,6 +12,9 @@ import { autoMapKolommen, rijNaarLead, SALES_VELDEN, GROEP_LABEL, type SalesVeld
 import { SALES_FASES, FASE_LABEL, type SalesFase } from "@/lib/sales/faseLabels";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
 import { useCsvImport, type Bestemming } from "@/hooks/sales/useCsvImport";
+import { checkDedupe, type DedupeResultaat } from "@/hooks/sales/useDedupeCheck";
+import DedupeBevestigingDialog from "../DedupeBevestigingDialog";
+import { toast } from "sonner";
 
 export default function SalesImport() {
   const [bestand, setBestand] = useState<File | null>(null);
@@ -22,6 +25,10 @@ export default function SalesImport() {
   const [affiliateId, setAffiliateId] = useState<string>("");
   const [fase, setFase] = useState<SalesFase>("koud");
   const [resultaat, setResultaat] = useState<{ aangemaakt: number; geskipped: number } | null>(null);
+  const [dedupeResultaat, setDedupeResultaat] = useState<DedupeResultaat | null>(null);
+  const [dedupeOpen, setDedupeOpen] = useState(false);
+  const [dedupeBezig, setDedupeBezig] = useState(false);
+  const [transformedRijen, setTransformedRijen] = useState<Record<string, string>[]>([]);
 
   const { data: affiliates } = useAffiliateGebruikers();
   const importer = useCsvImport();
@@ -42,10 +49,30 @@ export default function SalesImport() {
     });
   };
 
-  const importeren = async () => {
+  const startImport = async () => {
     const transformed = rijen.map((r) => rijNaarLead(r, mapping));
+    setTransformedRijen(transformed);
+    setDedupeBezig(true);
+    try {
+      const res = await checkDedupe(transformed);
+      setDedupeResultaat(res);
+      setDedupeOpen(true);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Dedupe-check mislukt");
+    } finally {
+      setDedupeBezig(false);
+    }
+  };
+
+  const bevestigImport = async (skipIndices: number[]) => {
+    const skipSet = new Set(skipIndices);
+    const teImporteren = transformedRijen.filter((_, i) => !skipSet.has(i));
+    if (teImporteren.length === 0) {
+      toast.error("Geen rijen om te importeren");
+      return;
+    }
     const res = await importer.mutateAsync({
-      rijen: transformed,
+      rijen: teImporteren,
       bestemming,
       affiliate_id: bestemming === "affiliate" ? affiliateId : null,
       fase,
@@ -55,6 +82,7 @@ export default function SalesImport() {
       ),
     });
     setResultaat({ aangemaakt: res.aangemaakt, geskipped: res.geskipped });
+    setDedupeOpen(false);
   };
 
   const aantalGemapt = Object.values(mapping).filter(Boolean).length;
@@ -62,7 +90,8 @@ export default function SalesImport() {
     rijen.length > 0 &&
     aantalGemapt > 0 &&
     (bestemming !== "affiliate" || !!affiliateId) &&
-    !importer.isPending;
+    !importer.isPending &&
+    !dedupeBezig;
 
   return (
     <div className="space-y-4 max-w-4xl">
@@ -185,12 +214,12 @@ export default function SalesImport() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Leads met een e-mail die al in het systeem voorkomt worden automatisch overgeslagen.
+              Voor het importeren wordt automatisch gecontroleerd op duplicaten (e-mail, telefoon, website, bedrijfsnaam). Je krijgt eerst een bevestigingsvenster met de gevonden duplicaten.
             </AlertDescription>
           </Alert>
-          <Button onClick={importeren} disabled={!kanImporteren} className="gap-2">
+          <Button onClick={startImport} disabled={!kanImporteren} className="gap-2">
             <Upload className="h-4 w-4" />
-            {importer.isPending ? "Bezig…" : `Importeer ${rijen.length} rijen`}
+            {dedupeBezig ? "Duplicaten controleren…" : importer.isPending ? "Bezig…" : `Controleer & importeer ${rijen.length} rijen`}
           </Button>
           {resultaat && (
             <Alert>
@@ -202,6 +231,15 @@ export default function SalesImport() {
           )}
         </Card>
       )}
+
+      <DedupeBevestigingDialog
+        open={dedupeOpen}
+        onOpenChange={setDedupeOpen}
+        resultaat={dedupeResultaat}
+        rijen={transformedRijen}
+        bezig={importer.isPending}
+        onBevestig={bevestigImport}
+      />
     </div>
   );
 }
