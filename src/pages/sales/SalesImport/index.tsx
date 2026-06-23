@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, FileUp, Info, Upload } from "lucide-react";
-import { autoMapKolommen, rijNaarLead, SALES_VELDEN, type SalesVeld } from "@/lib/sales/kolomMapping";
+import { autoMapKolommen, rijNaarLead, SALES_VELDEN, GROEP_LABEL, type SalesVeld, type VeldGroep } from "@/lib/sales/kolomMapping";
 import { SALES_FASES, FASE_LABEL, type SalesFase } from "@/lib/sales/faseLabels";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
 import { useCsvImport, type Bestemming } from "@/hooks/sales/useCsvImport";
@@ -93,6 +93,9 @@ export default function SalesImport() {
             <p className="text-sm text-muted-foreground">
               {aantalGemapt} van de {kolommen.length} kolommen automatisch herkend. Pas waar nodig aan.
             </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Let op: <span className="font-medium">Bedrijfsnaam</span> en <span className="font-medium">Contactpersoon</span> zijn aparte velden. Eén bedrijf kan meerdere contactpersonen hebben — koppel een persoonsnaam dus nooit aan Bedrijfsnaam.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {kolommen.map((k) => (
@@ -105,11 +108,18 @@ export default function SalesImport() {
                   value={mapping[k] ?? "__niet__"}
                   onValueChange={(v) => setMapping({ ...mapping, [k]: v === "__niet__" ? null : (v as SalesVeld) })}
                 >
-                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__niet__">— Niet importeren —</SelectItem>
-                    {SALES_VELDEN.map((v) => (
-                      <SelectItem key={v.key} value={v.key}>{v.label}</SelectItem>
+                    {(["bedrijf", "contactpersoon", "overig"] as VeldGroep[]).map((groep) => (
+                      <div key={groep}>
+                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {GROEP_LABEL[groep]}
+                        </div>
+                        {SALES_VELDEN.filter((v) => v.groep === groep).map((v) => (
+                          <SelectItem key={v.key} value={v.key}>{v.label}</SelectItem>
+                        ))}
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>
