@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, Tag, Building2, Send, AlertTriangle, MessageSquarePlus, Hourglass } from "lucide-react";
+import { Mail, Phone, Building2, Send, AlertTriangle, MessageSquarePlus, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
 import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import ContactmomentDialog from "@/components/sales/ContactmomentDialog";
 import LeadScorePill from "@/components/sales/LeadScorePill";
-import BronBadge from "@/components/sales/BronBadge";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface Props {
   lead: SalesLead;
@@ -26,7 +30,6 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
   const fase = pipeline?.find((f) => f.fase_key === (lead.fase_slug ?? "nieuw"));
   const slaDagen = fase?.sla_dagen ?? null;
 
-  // Aging op basis van laatste update
   const dagenStil = lead.updated_at
     ? Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / 86400000)
     : 0;
@@ -34,8 +37,6 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
   const grensWarn = slaDagen ? Math.ceil(slaDagen / 2) : 10;
   const agingNiveau: "ok" | "warn" | "alert" =
     dagenStil >= grensAlert ? "alert" : dagenStil >= grensWarn ? "warn" : "ok";
-  const agingClass =
-    agingNiveau === "alert" ? "text-rose-600" : agingNiveau === "warn" ? "text-amber-600" : "text-muted-foreground";
 
   return (
     <>
@@ -44,67 +45,78 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
-      className={`p-3 cursor-pointer hover:shadow-md transition-shadow space-y-1.5 ${
+      className={`group relative p-3 cursor-pointer hover:shadow-md transition-shadow ${
         teLaat ? "border-rose-300" : agingNiveau === "alert" ? "border-rose-200" : agingNiveau === "warn" ? "border-amber-200" : ""
       }`}
     >
+      {/* Titelregel */}
       <div className="flex items-start gap-2">
         <Building2 className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-        <div className="font-medium text-sm flex-1 truncate">{lead.bedrijfsnaam}</div>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium text-sm truncate leading-tight">{lead.bedrijfsnaam}</div>
+          {lead.contactpersoon && (
+            <div className="text-xs text-muted-foreground truncate">{lead.contactpersoon}</div>
+          )}
+        </div>
         <TemperatuurBadge temperatuur={temperatuur} showLabel={false} />
       </div>
-      {lead.contactpersoon && (
-        <div className="text-xs text-muted-foreground truncate pl-6">{lead.contactpersoon}</div>
-      )}
-      <div className="flex flex-wrap gap-1.5 pl-6 pt-1">
-        {lead.email && <Mail className="h-3 w-3 text-muted-foreground" aria-label="heeft e-mail" />}
-        {lead.telefoon && <Phone className="h-3 w-3 text-muted-foreground" aria-label="heeft telefoon" />}
-        {lead.regio && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{lead.regio}</Badge>}
-        {lead.branche && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{lead.branche}</Badge>}
-        <BronBadge bronId={lead.bron_id} fallbackLabel={lead.bron} />
+
+      {/* Compacte meta-regel: icoontjes + locatie/branche + score */}
+      <div className="flex items-center gap-2 mt-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <Mail className={`h-3 w-3 ${lead.email ? "text-foreground/60" : "opacity-25"}`} />
+          <Phone className={`h-3 w-3 ${lead.telefoon ? "text-foreground/60" : "opacity-25"}`} />
+        </div>
+        <span className="truncate flex-1">
+          {[lead.plaats, lead.branche].filter(Boolean).join(" · ") || "—"}
+        </span>
         <LeadScorePill lead={lead} showLabel={false} />
       </div>
-      <div className="flex items-center justify-between pl-6 pt-1">
-        <span className="text-[11px] text-muted-foreground">
+
+      {/* Onderbalk: status + deadline */}
+      <div className="flex items-center justify-between mt-2 pt-2 border-t text-[11px]">
+        <span className="text-muted-foreground">
           {lead.eigenaar_id ? "Toegewezen" : "Platform"}
         </span>
-        {lead.geschatte_waarde != null && (
-          <span className="text-[11px] font-medium inline-flex items-center gap-1">
-            <Tag className="h-3 w-3" />€{Number(lead.geschatte_waarde).toLocaleString("nl-NL")}
+        {deadline ? (
+          <span className={`inline-flex items-center gap-1 ${teLaat ? "text-rose-600 font-medium" : "text-muted-foreground"}`}>
+            {teLaat && <AlertTriangle className="h-3 w-3" />}
+            {deadline.toLocaleDateString("nl-NL", { day: "2-digit", month: "short" })}
           </span>
-        )}
+        ) : agingNiveau !== "ok" ? (
+          <span className={agingNiveau === "alert" ? "text-rose-600" : "text-amber-600"}>
+            {dagenStil}d stil
+          </span>
+        ) : null}
       </div>
-      {deadline && (
-        <div className={`text-[11px] pl-6 inline-flex items-center gap-1 ${teLaat ? "text-rose-600 font-medium" : "text-muted-foreground"}`}>
-          {teLaat && <AlertTriangle className="h-3 w-3" />}
-          Volgende actie: {deadline.toLocaleDateString("nl-NL")}
-        </div>
-      )}
-      <div className={`text-[11px] pl-6 inline-flex items-center gap-1 ${agingClass}`}>
-        <Hourglass className="h-3 w-3" />
-        {dagenStil === 0 ? "Vandaag bijgewerkt" : `${dagenStil} dag${dagenStil === 1 ? "" : "en"} stil`}
-      </div>
+
+      {/* Acties: kebab rechtsboven, alleen on hover */}
       {onToewijzen && (
-        <div className="pt-1.5 border-t flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs gap-1"
-            onClick={() => setLogOpen(true)}
-            aria-label={`Contactmoment loggen voor ${lead.bedrijfsnaam}`}
-          >
-            <MessageSquarePlus className="h-3 w-3" /> Log
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs gap-1"
-            onClick={onToewijzen}
-            aria-label={`Lead ${lead.bedrijfsnaam} toewijzen aan affiliate`}
-          >
-            <Send className="h-3 w-3" />
-            {lead.eigenaar_id ? "Opnieuw toewijzen" : "Toewijzen"}
-          </Button>
+        <div
+          className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 bg-background/80 backdrop-blur"
+                aria-label="Acties"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setLogOpen(true)}>
+                <MessageSquarePlus className="h-3.5 w-3.5 mr-2" /> Contactmoment loggen
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToewijzen}>
+                <Send className="h-3.5 w-3.5 mr-2" />
+                {lead.eigenaar_id ? "Opnieuw toewijzen" : "Toewijzen aan affiliate"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
     </Card>
