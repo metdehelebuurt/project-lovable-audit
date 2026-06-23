@@ -29,6 +29,7 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  useDraggable,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
