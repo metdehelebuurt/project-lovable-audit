@@ -615,6 +615,7 @@ export type Database = {
       }
       affiliate_leads: {
         Row: {
+          adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
           ai_bedrijf_samenvatting_op: string | null
@@ -642,6 +643,8 @@ export type Database = {
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
           notities: string | null
+          plaats: string | null
+          postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -656,6 +659,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          adres?: string | null
           ai_bedrijf_kansen?: Json | null
           ai_bedrijf_samenvatting?: string | null
           ai_bedrijf_samenvatting_op?: string | null
@@ -683,6 +687,8 @@ export type Database = {
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
           notities?: string | null
+          plaats?: string | null
+          postcode?: string | null
           regio?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -697,6 +703,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          adres?: string | null
           ai_bedrijf_kansen?: Json | null
           ai_bedrijf_samenvatting?: string | null
           ai_bedrijf_samenvatting_op?: string | null
@@ -724,6 +731,8 @@ export type Database = {
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
           notities?: string | null
+          plaats?: string | null
+          postcode?: string | null
           regio?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -8240,6 +8249,7 @@ export type Database = {
       admin_doorzetten_naar_affiliate: {
         Args: { _affiliate_id: string; _lead_id: string; _notitie?: string }
         Returns: {
+          adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
           ai_bedrijf_samenvatting_op: string | null
@@ -8267,6 +8277,8 @@ export type Database = {
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
           notities: string | null
+          plaats: string | null
+          postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -8296,6 +8308,7 @@ export type Database = {
           _volgende_actie_op?: string
         }
         Returns: {
+          adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
           ai_bedrijf_samenvatting_op: string | null
@@ -8323,6 +8336,8 @@ export type Database = {
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
           notities: string | null
+          plaats: string | null
+          postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -8364,6 +8379,7 @@ export type Database = {
       claim_affiliate_lead: {
         Args: { _lead_id: string }
         Returns: {
+          adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
           ai_bedrijf_samenvatting_op: string | null
@@ -8391,6 +8407,8 @@ export type Database = {
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
           notities: string | null
+          plaats: string | null
+          postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -8612,6 +8630,7 @@ export type Database = {
       update_lead_fase: {
         Args: { _fase_slug: string; _lead_id: string }
         Returns: {
+          adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
           ai_bedrijf_samenvatting_op: string | null
@@ -8639,6 +8658,8 @@ export type Database = {
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
           notities: string | null
+          plaats: string | null
+          postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]

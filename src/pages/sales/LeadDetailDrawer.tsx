@@ -57,6 +57,9 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
         branche: vorm.branche,
         regio: vorm.regio,
         website: vorm.website,
+        adres: vorm.adres,
+        postcode: vorm.postcode,
+        plaats: vorm.plaats,
         notities: vorm.notities,
         fase_slug: vorm.fase_slug,
         temperatuur: vorm.temperatuur,
@@ -173,6 +176,29 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
               <div>
                 <Label>Regio</Label>
                 <Input value={vorm.regio ?? ""} onChange={(e) => setVorm({ ...vorm, regio: e.target.value })} />
+              </div>
+              <div className="col-span-2">
+                <Label>Straat + huisnummer</Label>
+                <Input
+                  value={vorm.adres ?? ""}
+                  onChange={(e) => setVorm({ ...vorm, adres: e.target.value })}
+                  placeholder="Bijv. Dorpsstraat 12"
+                />
+              </div>
+              <div>
+                <Label>Postcode</Label>
+                <Input
+                  value={vorm.postcode ?? ""}
+                  onChange={(e) => setVorm({ ...vorm, postcode: e.target.value })}
+                  placeholder="1234 AB"
+                />
+              </div>
+              <div>
+                <Label>Plaats</Label>
+                <Input
+                  value={vorm.plaats ?? ""}
+                  onChange={(e) => setVorm({ ...vorm, plaats: e.target.value })}
+                />
               </div>
               <div className="col-span-2">
                 <Label>Bron</Label>
