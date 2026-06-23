@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Send, Trash2, User2 } from "lucide-react";
+import { Send, Trash2, User2, History } from "lucide-react";
 import { SALES_FASES, FASE_LABEL, FASE_COLOR } from "@/lib/sales/faseLabels";
 import { useUpdateSalesLead, useDeleteSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
 import DoorzetDialog from "./DoorzetDialog";
+import LeadTimeline from "./LeadTimeline";
 
 interface Props {
   lead: SalesLead | null;
@@ -158,6 +159,13 @@ export default function LeadDetailDrawer({ lead, open, onOpenChange }: Props) {
               <Button variant="ghost" className="text-destructive ml-auto gap-2" onClick={verwijderen}>
                 <Trash2 className="h-4 w-4" /> Verwijderen
               </Button>
+            </div>
+
+            <div className="pt-4 border-t">
+              <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <History className="h-4 w-4" /> Activiteit
+              </h3>
+              <LeadTimeline lead={lead} />
             </div>
           </div>
         </SheetContent>
