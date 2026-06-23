@@ -94,11 +94,13 @@ const AffiliatePipeline = () => {
   const stats = useMemo(() => {
     const totaal = leads.length;
     const gewonnen = leads.filter((l) => l.status === "gewonnen").length;
+    const verloren = leads.filter((l) => l.status === "verloren").length;
     const open = leads.filter((l) => l.status !== "gewonnen" && l.status !== "verloren").length;
     const waarde = leads
       .filter((l) => l.status !== "verloren")
       .reduce((s, l) => s + Number(l.geschatte_waarde ?? 0), 0);
-    return { totaal, gewonnen, open, waarde };
+    const conversie = gewonnen + verloren > 0 ? Math.round((gewonnen / (gewonnen + verloren)) * 100) : 0;
+    return { totaal, gewonnen, open, waarde, conversie };
   }, [leads]);
 
   const advance = (lead: AffiliateLead) => {
@@ -150,11 +152,16 @@ const AffiliatePipeline = () => {
     <div className="p-6 space-y-4">
       <AffiliateSubnav />
       <div className="flex justify-between items-start gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Sales pipeline</h1>
-          <p className="text-sm text-muted-foreground">
-            {gefilterd.length} van {leads.length} leads · sleep kaarten om de status te wijzigen
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <LayoutGrid className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold leading-tight">Pipeline overzicht</h1>
+            <p className="text-sm text-muted-foreground">
+              Strategisch overzicht · {gefilterd.length} van {leads.length} leads · sleep kaarten om fase te wijzigen
+            </p>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={exportCsv} disabled={gefilterd.length === 0}>
@@ -171,7 +178,7 @@ const AffiliatePipeline = () => {
         <StatKaart icon={Users} label="Open leads" waarde={stats.open.toString()} />
         <StatKaart icon={TrendingUp} label="Gewonnen" waarde={stats.gewonnen.toString()} />
         <StatKaart icon={Euro} label="Pijplijnwaarde" waarde={euro(stats.waarde)} />
-        <StatKaart icon={Users} label="Totaal" waarde={stats.totaal.toString()} />
+        <StatKaart icon={TrendingUp} label="Conversie" waarde={`${stats.conversie}%`} />
       </div>
 
       {/* Filterbalk */}
