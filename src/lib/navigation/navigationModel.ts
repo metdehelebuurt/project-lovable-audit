@@ -5,6 +5,7 @@ import {
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
   Lightbulb, Link2, Home, ShieldAlert, ShoppingCart, type LucideIcon,
   ScrollText, PhoneCall, Kanban, AlertCircle,
+  Target,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
@@ -91,6 +92,8 @@ const ITEMS = {
   adviseurs: { id: "adviseurs", label: "Adviseurs", icon: UserCheck, url: "/adviseurs" } as NavigatieItem,
   gebruikers: { id: "gebruikers", label: "Gebruikers", icon: Users, url: "/gebruikers" } as NavigatieItem,
   affiliateBeheer: { id: "affiliate-beheer", label: "Affiliate beheer", icon: Handshake, url: "/affiliate-beheer" } as NavigatieItem,
+  sales: { id: "sales", label: "Sales", icon: Target, url: "/sales",
+    synoniemen: ["crm", "prospects", "koude leads", "warme leads", "pipeline platform"] } as NavigatieItem,
   abonnementen: { id: "abonnementen", label: "Abonnementen", icon: CreditCard, url: "/admin/abonnementen" } as NavigatieItem,
   affiliateLinks: { id: "affiliate-links", label: "Affiliate links", icon: Link2, url: "/affiliates" } as NavigatieItem,
   affiliatePipeline: { id: "affiliate-pipeline", label: "Pipeline", icon: Kanban, url: "/affiliates/pipeline",
