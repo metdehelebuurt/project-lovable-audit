@@ -1,53 +1,135 @@
 ## Doel
-Klachten van Hoang (Smartaccu): e-mailkoppeling werkt nog onbetrouwbaar. Audit van de huidige stack onthult een aantal echte bugs en blinde vlekken. Plan: (1) bugs/edge-cases hardenen in backend, (2) checklist uitbreiden met concrete foutdetails + fix-suggesties per stap, (3) E2E test.
 
-## Gevonden bugs / zwakke plekken
+Een nieuwe module **Sales** in het hoofdmenu, **uitsluitend zichtbaar voor superadmin** (platformbeheerder). Hierin beheer je koude en warme prospects en zet je ze door naar affiliates — óf direct toegewezen aan één affiliate, óf in de bestaande affiliate-pool waar de eerste claimer 'm krijgt. De affiliate ziet de doorgezette lead direct in hun bestaande dashboard (pipeline / "Pool" / "Mijn klanten").
 
-1. **`email-oauth-config` controleert alleen client_id, niet client_secret** — als secret ontbreekt faalt token exchange met cryptische fout. UI denkt "configured".
-2. **`email_accounts` upsert `onConflict: "user_id,provider"`** — organisatie-accounts (`user_id = null`) kunnen onbedoeld op elkaar overschrijven of juist niet upserten (NULL ≠ NULL). Voor partner-default mailbox is dit problematisch.
-3. **`pickPartnerDefault` in `resolve-email-sender.ts`** valt terug op `user_id IS NULL` — als enige gekoppelde account een persoonlijk account is, faalt routing met "Geen mailbox beschikbaar" zonder duidelijke hint.
-4. **`email-api-sync` slikt fouten** (`catch { console.error }`) → gebruiker weet niet dat sync faalt. Geen `last_sync_error` veld.
-5. **Token refresh fouten** worden niet teruggekoppeld → account blijft "actief" terwijl refresh_token revoked is. Geen `needs_reauth` markering.
-6. **Geen scope-validatie**: account kan gekoppeld zijn zonder `gmail.send` / `gmail.modify` / `gmail.readonly`, en faalt pas bij eerste send/sync.
-7. **Checklist toont alleen ✓ / ○** — geen reden waarom een stap "open" staat, geen suggestie hoe te fixen, geen testknop.
-8. **`recentSent` query gebruikt `created_at`** in checklist — kolom heet in `email_berichten` `datum`. Mogelijk false negative.
-9. **OAuth popup-onderbreking**: huidige melding suggereert alleen redirect_uri, niet "client_secret ontbreekt" of "scopes geweigerd".
-10. **Geen "stuur testmail" knop** in onboarding — verzending kan pas indirect via lead-flow worden getest.
+We hergebruiken de bestaande tabel `affiliate_leads` (met `eigenaar_id` en pool-logica) en breiden hem uit met sales-velden. Geen aparte parallelle CRM-tabel — dat geeft één bron van waarheid en de affiliate-flows blijven werken.
 
-## Wijzigingen
+## Wat je krijgt als platform admin
 
-### Backend
-- **`email-oauth-config/index.ts`**: ook `secretConfigured` returnen (booleans `clientId`, `clientSecret`, `configured = beide`).
-- **DB migratie**: voeg toe op `email_accounts`:
-  - `last_sync_error TEXT`
-  - `last_sync_error_at TIMESTAMPTZ`
-  - `needs_reauth BOOLEAN DEFAULT FALSE`
-  - Partial unique index: `UNIQUE (partner_id, provider) WHERE user_id IS NULL` (organisatie-accounts) en `UNIQUE (user_id, provider) WHERE user_id IS NOT NULL`.
-- **`email-oauth-callback`**: verifieer dat alle gevraagde scopes daadwerkelijk teruggegeven worden; toon waarschuwing-pagina als scopes ontbreken. Reset `needs_reauth = false` op succesvolle koppeling.
-- **`email-api-sync`**: vang fouten per account op en schrijf naar `last_sync_error` + `needs_reauth` (bij `invalid_grant`).
-- **`_shared/email-send.ts` `refreshOAuthToken`**: bij `invalid_grant` / `invalid_request` zet `needs_reauth=true` + duidelijke errormessage.
-- **`resolve-email-sender.ts`**: laatste fallback = "eerste actieve account van partner" (ipv enkel `user_id IS NULL`). Bij geen account: duidelijke foutmessage met routing-context.
-- **Nieuwe edge function `email-config-diagnose`**: returnt per stap: status (`ok`/`warning`/`fail`), reden, suggestie. Bundelt: OAuth env-check, default-account check, scopes check, recente send/sync, sync-errors. Vermijdt N+1 queries vanuit UI.
+### 1. Navigatie
+- Nieuw menu-item **Sales** (superadmin-only, alleen onder rol-check, niet via configurable module).
+- Subnavigatie:
+  - **Pipeline** (kanban)
+  - **Alle leads** (tabel met filters + bulk-acties)
+  - **Import** (CSV)
+  - **Analytics** (conversie per fase, per affiliate, per bron)
+
+### 2. Pipeline (kanban)
+Fases:
+`koud` → `benaderd` → `warm` → `gekwalificeerd` → `doorgezet` → `gewonnen` / `verloren`
+
+- Drag & drop tussen fases
+- Kaart toont: bedrijfsnaam, contact, branche, regio, geschatte waarde, eigenaar (affiliate of "platform"), AI-score badge
+- Klik = detailpaneel met notities, contactmomenten, historie, doorzet-knop
+
+### 3. Lead-detail
+- Bewerken van alle velden
+- **Doorzetten naar affiliate** (modal):
+  - Optie A: *Direct toewijzen* — kies affiliate uit dropdown (zoekbaar, alleen actieve affiliates)
+  - Optie B: *In pool plaatsen* — alle affiliates zien 'm en kunnen claimen
+  - Optioneel: notitie meesturen, deadline voor opvolging
+- Contactmomenten loggen (hergebruik bestaande `affiliate_lead_contactmomenten`)
+- Volledige historie
+
+### 4. Alle leads (tabel)
+- Filters: fase, eigenaar (platform / specifieke affiliate / pool), bron, branche, regio, AI-score, datumbereik
+- Bulk-acties: doorzetten (naar pool of 1 affiliate), fase wijzigen, taggen, verwijderen, exporteren
+- Snelzoek op bedrijfsnaam/contact/email/telefoon
+
+### 5. CSV-import met auto-mapping
+- Upload CSV → preview eerste 5 rijen
+- Auto-mapping op kolomnaam (case-insensitive, accent-tolerant). Herkent o.a.:
+  - bedrijfsnaam / company / organisatie / naam → `bedrijfsnaam`
+  - contactpersoon / contact / aanspreekpunt → `contactpersoon`
+  - email / e-mail / mail → `email`
+  - telefoon / phone / tel / mobiel → `telefoon`
+  - branche / sector / industrie → `branche`
+  - regio / plaats / stad / locatie → `regio`
+  - website / url / site → `website`
+  - notitie / opmerking / omschrijving → `notities`
+  - geschatte waarde / waarde / value / budget → `geschatte_waarde`
+- Niet-herkende kolommen handmatig mappen via dropdown
+- Bestemming kiezen vóór import: *Sales-pipeline (eigenaar = platform)*, *Affiliate-pool*, of *Direct toewijzen aan affiliate X*
+- Standaard-fase kiezen (default: `koud`)
+- Dedupe-check op email + telefoon → toont conflicten vóór import
+- Per-rij validatie, importrapport na afloop (X aangemaakt, Y geskipped, Z fouten)
+
+### 6. Analytics
+- Aantal leads per fase
+- Conversie koud → gewonnen per maand
+- Doorzet-funnel: doorgezet → geclaimd → gewonnen (per affiliate)
+- Top affiliates op gewonnen waarde
+- Bron-performance
+
+## Hoe affiliates het zien (bestaande flows, geen wijziging in hun UX)
+
+- *Direct toegewezen*: lead verschijnt in hun **Mijn klanten / Pipeline** met `eigenaar_id = <affiliate>`.
+- *Pool*: lead verschijnt in **AffiliatePool** met `eigenaar_id = NULL`. Bestaande `claim_affiliate_lead` RPC werkt.
+
+## Technische details
+
+### Database (1 migratie)
+- Uitbreiding `affiliate_leads`:
+  - `sales_fase` enum: `koud, benaderd, warm, gekwalificeerd, doorgezet, gewonnen, verloren` (nullable; null = niet in sales-pipeline, behandeld als reguliere affiliate-lead)
+  - `toegewezen_door_admin_id uuid` (welke superadmin heeft doorgezet)
+  - `doorgezet_op timestamptz`
+  - `import_batch_id uuid` (link naar `affiliate_lead_imports` — die tabel bestaat al)
+  - `tags text[]`
+- Nieuwe enum-waarde voor `bron` indien nodig: `sales_admin`.
+- RLS: nieuwe policy "superadmin volledige toegang tot affiliate_leads" (bestaat mogelijk al via `is_superadmin`); bestaande affiliate-policies ongemoeid.
+- RPC `admin_doorzetten_naar_affiliate(_lead_id, _affiliate_id_or_null, _notitie)` — SECURITY DEFINER, check `is_superadmin(auth.uid())`. Zet `eigenaar_id`, `sales_fase='doorgezet'`, logt in `entiteit_historie`.
+- RPC `admin_bulk_import_leads(_rows jsonb, _bestemming, _affiliate_id, _fase)` — SECURITY DEFINER, superadmin-only, dedupe op email/telefoon binnen batch, retourneert importrapport.
 
 ### Frontend
-- **`EmailOnboardingChecklist.tsx`** herbouwen:
-  - Haalt data uit nieuwe `email-config-diagnose` Edge Function.
-  - Per stap: status-icoon (✓/⚠/✗), korte reden ("Refresh-token geweigerd: koppel Gmail opnieuw"), expandable details (originele errormessage, betrokken account-id).
-  - **Per stap "Fix nu"-knop**: spring naar relevante kaart (Koppelen/Routing/Accounts) of trigger actie (Sync nu, Stuur testmail naar mezelf).
-  - Knop "Stuur testmail naar mezelf" → roept `email-api-send` met partner-default + `to = ingelogde user email`.
-  - Toont per gekoppeld account: scopes-badge, laatste sync, `last_sync_error`, `needs_reauth` waarschuwing met "Opnieuw koppelen" actie.
-  - Bug fix: `datum` ipv `created_at`.
-- **`EmailAccountsBeheer.tsx`**: badge "Herkoppelen nodig" als `needs_reauth=true`, toon `last_sync_error` als tooltip.
+Onder strikte 800-regel en 50-regel-per-functie limieten, opgesplitst in modules:
 
-### E2E test
-- `/tmp/browser/email-hardening/test.py`: login partner_admin → open Instellingen → E-mail → verifieer dat checklist alle 6 stappen toont met status, dat "Stuur testmail" knop reageert, dat ontbrekende routing een ⚠ met fix-link toont.
+```text
+src/pages/sales/
+  index.tsx                    # tabs-shell
+  SalesPipeline/
+    index.tsx
+    KanbanKolom.tsx
+    LeadKaart.tsx
+    useSalesPipeline.ts
+  SalesLeads/
+    index.tsx
+    LeadsTabel.tsx
+    Filters.tsx
+    BulkActieBar.tsx
+  SalesImport/
+    index.tsx
+    CsvUploader.tsx
+    KolomMapper.tsx           # auto-mapping logica
+    PreviewTabel.tsx
+    BestemmingKiezer.tsx
+    useCsvImport.ts
+  SalesAnalytics/
+    index.tsx
+    ConversieKaart.tsx
+    AffiliatePrestatieTabel.tsx
+  DoorzetDialog.tsx           # gedeeld: direct/pool keuze
+  LeadDetailDrawer.tsx
+src/hooks/sales/
+  useSalesLeads.ts
+  useDoorzetten.ts
+  useCsvAutoMapping.ts
+src/lib/sales/
+  kolomMapping.ts             # synoniem-lijsten
+  faseLabels.ts
+```
 
-## Bestanden
-**Nieuw (3):** `supabase/functions/email-config-diagnose/index.ts`, migratie voor `email_accounts` velden + indexes, `tests/email-hardening/test.py` (E2E).
+### Toegang
+- `ProtectedRoute` met `allowedRoles={["superadmin"]}` op alle `/sales/*` routes.
+- Menu-item alleen renderen als `profile.rol === "superadmin"`.
+- Geen module-key in `MODULES`-registry (omdat niet-configurable + superadmin-only).
 
-**Aangepast (7):** `EmailOnboardingChecklist.tsx` (herbouw), `EmailAccountsBeheer.tsx` (reauth-badge), `email-oauth-config/index.ts`, `email-oauth-callback/index.ts` (scope-verify), `email-api-sync/index.ts` (error capture), `_shared/email-send.ts` (refresh markeer needs_reauth), `_shared/resolve-email-sender.ts` (fallback fix).
+### Hergebruik
+- `affiliate_lead_contactmomenten` voor notities/calls
+- `affiliate_lead_imports` voor importgeschiedenis
+- `claim_affiliate_lead` RPC blijft de affiliate-claim flow
+- Bestaande `AffiliatePool` en `AffiliateMijnKlanten` pagina's: geen wijziging nodig
 
-## Out of scope
-- Volledig nieuwe OAuth UI / wizard
-- Per-bericht delivery tracking (Mailgun-stijl bounce hooks)
-- Microsoft Graph delta-sync verbetering
+## Buiten scope
+- Aanpassingen aan affiliate-dashboard UX
+- E-mail-automation vanuit sales (later)
+- AI lead-scoring uitbreiden (bestaande `ai_score` blijft werken)
