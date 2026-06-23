@@ -1,10 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Kanban, List, Upload, BarChart3, Settings } from "lucide-react";
+import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText } from "lucide-react";
 import SalesPipeline from "./SalesPipeline";
 import SalesLeads from "./SalesLeads";
 import SalesImport from "./SalesImport";
 import SalesAnalytics from "./SalesAnalytics";
 import PipelineInstellingen from "./PipelineInstellingen";
+import BronnenBeheer from "./BronnenBeheer";
+import SnippetsBeheer from "./SnippetsBeheer";
 
 export default function Sales() {
   return (
@@ -16,18 +18,22 @@ export default function Sales() {
         </p>
       </div>
       <Tabs defaultValue="pipeline">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="pipeline" className="gap-2"><Kanban className="h-4 w-4" />Pipeline</TabsTrigger>
           <TabsTrigger value="leads" className="gap-2"><List className="h-4 w-4" />Alle leads</TabsTrigger>
           <TabsTrigger value="import" className="gap-2"><Upload className="h-4 w-4" />Importeren</TabsTrigger>
           <TabsTrigger value="analytics" className="gap-2"><BarChart3 className="h-4 w-4" />Analytics</TabsTrigger>
-          <TabsTrigger value="instellingen" className="gap-2"><Settings className="h-4 w-4" />Pipeline-instellingen</TabsTrigger>
+          <TabsTrigger value="instellingen" className="gap-2"><Settings className="h-4 w-4" />Pipeline</TabsTrigger>
+          <TabsTrigger value="bronnen" className="gap-2"><Tag className="h-4 w-4" />Bronnen</TabsTrigger>
+          <TabsTrigger value="snippets" className="gap-2"><FileText className="h-4 w-4" />Snippets</TabsTrigger>
         </TabsList>
         <TabsContent value="pipeline" className="mt-4"><SalesPipeline /></TabsContent>
         <TabsContent value="leads" className="mt-4"><SalesLeads /></TabsContent>
         <TabsContent value="import" className="mt-4"><SalesImport /></TabsContent>
         <TabsContent value="analytics" className="mt-4"><SalesAnalytics /></TabsContent>
         <TabsContent value="instellingen" className="mt-4"><PipelineInstellingen /></TabsContent>
+        <TabsContent value="bronnen" className="mt-4"><BronnenBeheer /></TabsContent>
+        <TabsContent value="snippets" className="mt-4"><SnippetsBeheer /></TabsContent>
       </Tabs>
     </div>
   );

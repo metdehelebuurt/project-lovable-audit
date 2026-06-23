@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { ArrowUp, ArrowDown, Trash2, Check } from "lucide-react";
 import { kleurClasses, PIPELINE_KLEUREN, type PipelineFase } from "@/lib/sales/pipeline";
 import { TEMPERATUREN, TEMP_LABEL, type Temperatuur } from "@/lib/sales/temperatuur";
@@ -22,6 +23,8 @@ export default function FaseRij({ fase, kanOmhoog, kanOmlaag, onOmhoog, onOmlaag
   const [temp, setTemp] = useState<Temperatuur>((fase.default_temperatuur ?? "lauw") as Temperatuur);
   const [isEind, setIsEind] = useState(fase.is_eindfase);
   const [isWon, setIsWon] = useState(fase.is_won);
+  const [vereistVa, setVereistVa] = useState(fase.vereist_volgende_actie);
+  const [slaDagen, setSlaDagen] = useState<number | "">(fase.sla_dagen ?? "");
   const upd = useUpdateFase();
   const del = useDeleteFase();
 
@@ -30,7 +33,9 @@ export default function FaseRij({ fase, kanOmhoog, kanOmlaag, onOmhoog, onOmlaag
     kleur !== fase.kleur ||
     temp !== (fase.default_temperatuur ?? "lauw") ||
     isEind !== fase.is_eindfase ||
-    isWon !== fase.is_won;
+    isWon !== fase.is_won ||
+    vereistVa !== fase.vereist_volgende_actie ||
+    (slaDagen === "" ? null : slaDagen) !== fase.sla_dagen;
 
   const opslaan = () => {
     upd.mutate({
@@ -41,6 +46,8 @@ export default function FaseRij({ fase, kanOmhoog, kanOmlaag, onOmhoog, onOmlaag
         default_temperatuur: temp,
         is_eindfase: isEind,
         is_won: isWon && isEind,
+        vereist_volgende_actie: vereistVa && !isEind,
+        sla_dagen: slaDagen === "" ? null : Number(slaDagen),
       },
     });
   };
@@ -51,7 +58,7 @@ export default function FaseRij({ fase, kanOmhoog, kanOmlaag, onOmhoog, onOmlaag
         <span className={`inline-block w-2 h-6 rounded ${kleurClasses(kleur).split(" ")[0]}`} aria-hidden />
         <Input value={label} onChange={(e) => setLabel(e.target.value)} className="h-8" />
       </div>
-      <div className="col-span-6 sm:col-span-2">
+      <div className="col-span-6 sm:col-span-1">
         <Select value={kleur} onValueChange={setKleur}>
           <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -73,7 +80,21 @@ export default function FaseRij({ fase, kanOmhoog, kanOmlaag, onOmhoog, onOmlaag
       <label className="col-span-6 sm:col-span-1 flex items-center gap-1 text-xs">
         <Checkbox checked={isWon} onCheckedChange={(v) => setIsWon(!!v)} disabled={!isEind} /> Won
       </label>
-      <div className="col-span-12 sm:col-span-3 flex items-center justify-end gap-1">
+      <label className="col-span-6 sm:col-span-1 flex items-center gap-1 text-xs" title="Verplicht volgende-actie bij deze fase">
+        <Switch checked={vereistVa && !isEind} onCheckedChange={setVereistVa} disabled={isEind} /> VA
+      </label>
+      <div className="col-span-6 sm:col-span-1">
+        <Input
+          type="number"
+          min={0}
+          value={slaDagen}
+          onChange={(e) => setSlaDagen(e.target.value === "" ? "" : Number(e.target.value))}
+          className="h-8"
+          placeholder="SLA"
+          title="SLA (dagen) — leeg = default"
+        />
+      </div>
+      <div className="col-span-12 sm:col-span-2 flex items-center justify-end gap-1">
         <Button size="icon" variant="ghost" disabled={!kanOmhoog} onClick={onOmhoog} aria-label="Omhoog">
           <ArrowUp className="h-4 w-4" />
         </Button>
@@ -87,7 +108,7 @@ export default function FaseRij({ fase, kanOmhoog, kanOmlaag, onOmhoog, onOmlaag
           onClick={opslaan}
           className="gap-1"
         >
-          <Check className="h-3.5 w-3.5" /> Opslaan
+          <Check className="h-3.5 w-3.5" />
         </Button>
         <Button
           size="icon"
