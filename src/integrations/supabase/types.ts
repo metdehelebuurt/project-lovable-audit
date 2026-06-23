@@ -615,6 +615,9 @@ export type Database = {
       }
       affiliate_leads: {
         Row: {
+          ai_bedrijf_kansen: Json | null
+          ai_bedrijf_samenvatting: string | null
+          ai_bedrijf_samenvatting_op: string | null
           ai_score: number | null
           ai_score_reden: string | null
           ai_volgende_actie: string | null
@@ -647,6 +650,9 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          ai_bedrijf_kansen?: Json | null
+          ai_bedrijf_samenvatting?: string | null
+          ai_bedrijf_samenvatting_op?: string | null
           ai_score?: number | null
           ai_score_reden?: string | null
           ai_volgende_actie?: string | null
@@ -679,6 +685,9 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          ai_bedrijf_kansen?: Json | null
+          ai_bedrijf_samenvatting?: string | null
+          ai_bedrijf_samenvatting_op?: string | null
           ai_score?: number | null
           ai_score_reden?: string | null
           ai_volgende_actie?: string | null
@@ -8056,6 +8065,9 @@ export type Database = {
       admin_doorzetten_naar_affiliate: {
         Args: { _affiliate_id: string; _lead_id: string; _notitie?: string }
         Returns: {
+          ai_bedrijf_kansen: Json | null
+          ai_bedrijf_samenvatting: string | null
+          ai_bedrijf_samenvatting_op: string | null
           ai_score: number | null
           ai_score_reden: string | null
           ai_volgende_actie: string | null
@@ -8115,6 +8127,9 @@ export type Database = {
       claim_affiliate_lead: {
         Args: { _lead_id: string }
         Returns: {
+          ai_bedrijf_kansen: Json | null
+          ai_bedrijf_samenvatting: string | null
+          ai_bedrijf_samenvatting_op: string | null
           ai_score: number | null
           ai_score_reden: string | null
           ai_volgende_actie: string | null

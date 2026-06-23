@@ -3,6 +3,8 @@ project_id = "xmguipmetciwvzeyxugu"
 [functions]
   [functions.ai-data-import]
     verify_jwt = false
+  [functions.ai-affiliate-bedrijf-samenvatting]
+    verify_jwt = false
   [functions.ai-feedback-categorize]
     verify_jwt = false
   [functions.ai-lead-signals]
