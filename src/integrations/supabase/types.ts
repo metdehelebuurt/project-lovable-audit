@@ -8031,6 +8031,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_bulk_delete_sales_leads: {
+        Args: { _lead_ids: string[] }
+        Returns: number
+      }
       admin_bulk_import_sales_leads: {
         Args: {
           _affiliate_id?: string
@@ -8041,6 +8045,13 @@ export type Database = {
           _rows: Json
         }
         Returns: Json
+      }
+      admin_bulk_update_sales_fase: {
+        Args: {
+          _fase: Database["public"]["Enums"]["sales_fase"]
+          _lead_ids: string[]
+        }
+        Returns: number
       }
       admin_doorzetten_naar_affiliate: {
         Args: { _affiliate_id: string; _lead_id: string; _notitie?: string }
@@ -8082,6 +8093,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_lijst_sales_affiliates: {
+        Args: never
+        Returns: {
+          achternaam: string
+          email: string
+          id: string
+          partner_id: string
+          voornaam: string
+        }[]
       }
       bereken_inkoop_match: {
         Args: { _inkoopfactuur_id: string }

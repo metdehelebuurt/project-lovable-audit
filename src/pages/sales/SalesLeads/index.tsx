@@ -10,6 +10,7 @@ import { Plus, Send } from "lucide-react";
 import { SALES_FASES, FASE_LABEL, FASE_COLOR, type SalesFase } from "@/lib/sales/faseLabels";
 import LeadDetailDrawer from "../LeadDetailDrawer";
 import DoorzetDialog from "../DoorzetDialog";
+import BulkActieBalk from "../BulkActieBalk";
 
 type FaseFilter = SalesFase | "alle";
 type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
@@ -86,6 +87,8 @@ export default function SalesLeads() {
           <Plus className="h-4 w-4" /> Nieuwe lead
         </Button>
       </div>
+
+      <BulkActieBalk geselecteerd={Array.from(selectie)} onClear={() => setSelectie(new Set())} />
 
       <div className="rounded-md border">
         <Table>
