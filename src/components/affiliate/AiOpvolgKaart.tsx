@@ -10,6 +10,8 @@ import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useCreateOpvolgTaak } from "@/hooks/affiliate/useOpvolgTaken";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Voorstel {
   titel: string; notitie: string; type: string; offset_dagen: number; prioriteit: string; due_op: string;
@@ -60,6 +62,21 @@ export function AiOpvolgKaart({ lead }: { lead: AffiliateLead }) {
     }
     setOpen(false);
     setVoorstellen([]);
+  };
+
+  const updateDatum = (i: number, datum: string) => {
+    setVoorstellen((prev) => {
+      const next = [...prev];
+      // Behoud tijd indien aanwezig, anders 09:00
+      const huidige = next[i].due_op ? new Date(next[i].due_op) : new Date();
+      const [y, m, d] = datum.split("-").map(Number);
+      if (y && m && d) {
+        huidige.setFullYear(y, m - 1, d);
+        if (!next[i].due_op) huidige.setHours(9, 0, 0, 0);
+        next[i] = { ...next[i], due_op: huidige.toISOString() };
+      }
+      return next;
+    });
   };
 
   const score = lead.ai_score ?? null;
@@ -130,9 +147,18 @@ export function AiOpvolgKaart({ lead }: { lead: AffiliateLead }) {
                     <Badge variant="outline" className="text-xs">{v.type}</Badge>
                   </div>
                   {v.notitie && <p className="text-xs text-muted-foreground mt-1">{v.notitie}</p>}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Inplannen op {new Date(v.due_op).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })} · prioriteit {v.prioriteit}
-                  </p>
+                  <div className="flex items-center gap-2 mt-2" onClick={(e) => e.preventDefault()}>
+                    <Label htmlFor={`due-${i}`} className="text-xs text-muted-foreground">Inplannen op</Label>
+                    <Input
+                      id={`due-${i}`}
+                      type="date"
+                      className="h-7 w-auto text-xs"
+                      value={v.due_op ? new Date(v.due_op).toISOString().slice(0, 10) : ""}
+                      onChange={(e) => updateDatum(i, e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="text-xs text-muted-foreground">· prioriteit {v.prioriteit}</span>
+                  </div>
                 </div>
               </label>
             ))}
