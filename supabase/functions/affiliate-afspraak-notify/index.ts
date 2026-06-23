@@ -1,7 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 
-interface Body { afspraakId: string }
+interface Body {
+  afspraakId: string;
+  klantBevestiging?: boolean;
+  klantEmail?: string | null;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -20,6 +24,8 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as Body
     if (!body?.afspraakId) return json({ error: 'afspraakId is required' }, 400)
+    const stuurNaarKlant = body.klantBevestiging !== false
+    const klantEmailOverride = (body.klantEmail ?? '').trim() || null
 
     const admin = createClient(url, serviceKey)
 
@@ -51,12 +57,13 @@ Deno.serve(async (req) => {
     const sends: Array<Promise<unknown>> = []
     const results = { klant: false, collega: false }
 
-    if (lead?.email) {
+    const klantEmail = klantEmailOverride ?? lead?.email ?? null
+    if (stuurNaarKlant && klantEmail) {
       sends.push(
         admin.functions.invoke('send-transactional-email', {
           body: {
             templateName: 'affiliate-afspraak-klant',
-            recipientEmail: lead.email,
+            recipientEmail: klantEmail,
             idempotencyKey: `affiliate-afspraak-klant-${afspraak.id}`,
             templateData: {
               klantNaam,

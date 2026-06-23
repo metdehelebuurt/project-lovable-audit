@@ -6,7 +6,13 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type TerugbelAfspraak = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Row"];
 type InsertBase = Database["public"]["Tables"]["affiliate_terugbel_afspraken"]["Insert"];
-type Insert = InsertBase & { type?: "terugbel" | "demo" };
+type Insert = InsertBase & {
+  type?: "terugbel" | "demo";
+  /** Wil de gebruiker een bevestigingsmail naar de klant sturen? */
+  klant_bevestiging?: boolean;
+  /** Overschrijving van het e-mailadres waar de klantbevestiging naartoe moet. */
+  klant_email?: string | null;
+};
 
 const KEY = ["affiliate-terugbel"] as const;
 
@@ -34,9 +40,10 @@ export function useCreateTerugbel() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (input: Omit<Insert, "affiliate_id">) => {
+      const { klant_bevestiging, klant_email, ...insertInput } = input;
       const { data, error } = await supabase
         .from("affiliate_terugbel_afspraken")
-        .insert({ ...input, affiliate_id: user!.id } as InsertBase)
+        .insert({ ...insertInput, affiliate_id: user!.id } as InsertBase)
         .select()
         .single();
       if (error) throw error;
@@ -51,7 +58,11 @@ export function useCreateTerugbel() {
       // Verstuur bevestigingsmails (klant + collega). Niet blokkerend.
       try {
         const { error: mailErr } = await supabase.functions.invoke("affiliate-afspraak-notify", {
-          body: { afspraakId: data.id },
+          body: {
+            afspraakId: data.id,
+            klantBevestiging: klant_bevestiging ?? true,
+            klantEmail: klant_email ?? null,
+          },
         });
         if (mailErr) {
           console.error("affiliate-afspraak-notify", mailErr);
