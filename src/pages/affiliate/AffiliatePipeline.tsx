@@ -150,11 +150,16 @@ const AffiliatePipeline = () => {
     <div className="p-6 space-y-4">
       <AffiliateSubnav />
       <div className="flex justify-between items-start gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Sales pipeline</h1>
-          <p className="text-sm text-muted-foreground">
-            {gefilterd.length} van {leads.length} leads · sleep kaarten om de status te wijzigen
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <LayoutGrid className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold leading-tight">Pipeline overzicht</h1>
+            <p className="text-sm text-muted-foreground">
+              Strategisch overzicht · {gefilterd.length} van {leads.length} leads · sleep kaarten om fase te wijzigen
+            </p>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={exportCsv} disabled={gefilterd.length === 0}>
