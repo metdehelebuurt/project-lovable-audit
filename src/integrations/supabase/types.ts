@@ -1277,6 +1277,42 @@ export type Database = {
           },
         ]
       }
+      agenda_delegaties: {
+        Row: {
+          actief: boolean
+          created_at: string
+          gever_user_id: string
+          id: string
+          notitie: string | null
+          ontvanger_user_id: string
+          partner_id: string
+          scope: string
+          updated_at: string
+        }
+        Insert: {
+          actief?: boolean
+          created_at?: string
+          gever_user_id: string
+          id?: string
+          notitie?: string | null
+          ontvanger_user_id: string
+          partner_id: string
+          scope: string
+          updated_at?: string
+        }
+        Update: {
+          actief?: boolean
+          created_at?: string
+          gever_user_id?: string
+          id?: string
+          notitie?: string | null
+          ontvanger_user_id?: string
+          partner_id?: string
+          scope?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           actie: string
@@ -8566,6 +8602,14 @@ export type Database = {
         Returns: boolean
       }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      kan_agenda_bekijken: {
+        Args: { _target: string; _viewer: string }
+        Returns: boolean
+      }
+      kan_agenda_plannen: {
+        Args: { _target: string; _viewer: string }
+        Returns: boolean
+      }
       log_audit_event: {
         Args: {
           _actie: string
