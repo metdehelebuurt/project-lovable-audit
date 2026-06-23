@@ -31,13 +31,13 @@ export default function BulkActieBalk({ geselecteerd, onClear }: Props) {
 
   const updTemp = useMutation({
     mutationFn: async (input: { ids: string[]; temp: Temperatuur }) => {
-      const { error, count } = await supabase
+      const { data, error } = await supabase
         .from("affiliate_leads")
         .update({ temperatuur: input.temp })
         .in("id", input.ids)
-        .select("id", { count: "exact", head: true });
+        .select("id");
       if (error) throw error;
-      return count ?? input.ids.length;
+      return data?.length ?? input.ids.length;
     },
     onSuccess: (n) => {
       qc.invalidateQueries({ queryKey: ["sales-leads"] });
