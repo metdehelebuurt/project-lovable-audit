@@ -10,6 +10,7 @@ import { useOpvolgTaken, useVoltooiOpvolgTaak, useVerzetOpvolgTaak, type OpvolgT
 import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink } from "@/lib/affiliate/contact";
 import { OpvolgRegelsKaart } from "@/components/affiliate/OpvolgRegelsKaart";
+import { AffiliateDuplicatenBanner } from "@/components/affiliate/duplicaten/AffiliateDuplicatenBanner";
 
 const prioKleur: Record<string, string> = {
   hoog: "bg-rose-100 text-rose-800 border-rose-300",
@@ -95,6 +96,8 @@ const AffiliateOpvolging = () => {
         <h1 className="text-2xl font-bold flex items-center gap-2"><Sparkles className="h-6 w-6 text-primary" /> Opvolging</h1>
         <p className="text-sm text-muted-foreground">{taken.length} openstaande taken · AI helpt je prioriteren en plannen.</p>
       </div>
+
+      <AffiliateDuplicatenBanner />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Laden…</p>

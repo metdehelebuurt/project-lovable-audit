@@ -4890,6 +4890,51 @@ export type Database = {
           },
         ]
       }
+      lead_duplicaat_negeerlijst_affiliate: {
+        Row: {
+          created_at: string
+          eigenaar_id: string
+          genegeerd_door: string
+          id: string
+          lead_a_id: string
+          lead_b_id: string
+          reden: string | null
+        }
+        Insert: {
+          created_at?: string
+          eigenaar_id: string
+          genegeerd_door: string
+          id?: string
+          lead_a_id: string
+          lead_b_id: string
+          reden?: string | null
+        }
+        Update: {
+          created_at?: string
+          eigenaar_id?: string
+          genegeerd_door?: string
+          id?: string
+          lead_a_id?: string
+          lead_b_id?: string
+          reden?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_duplicaat_negeerlijst_affiliate_lead_a_id_fkey"
+            columns: ["lead_a_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_duplicaat_negeerlijst_affiliate_lead_b_id_fkey"
+            columns: ["lead_b_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_eigenschappen: {
         Row: {
           aantal_panelen: number | null
@@ -8203,6 +8248,16 @@ export type Database = {
           },
         ]
       }
+      v_affiliate_lead_duplicaten: {
+        Row: {
+          eigenaar_id: string | null
+          lead_a_id: string | null
+          lead_b_id: string | null
+          match_redenen: string[] | null
+          score: number | null
+        }
+        Relationships: []
+      }
       v_lead_duplicaten: {
         Row: {
           lead_a_id: string | null
@@ -8649,8 +8704,10 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_bedrijfsnaam: { Args: { _input: string }; Returns: string }
       normalize_phone: { Args: { _telefoon: string }; Returns: string }
       normalize_postcode: { Args: { _postcode: string }; Returns: string }
+      normalize_website: { Args: { _input: string }; Returns: string }
       purge_system_error_logs: { Args: { _dagen?: number }; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

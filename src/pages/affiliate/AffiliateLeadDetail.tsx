@@ -7,6 +7,7 @@ import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { LeadDetailBody } from "@/components/affiliate/LeadDetailBody";
 import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
+import { AffiliateDuplicaatWaarschuwing } from "@/components/affiliate/duplicaten/AffiliateDuplicaatWaarschuwing";
 
 const AffiliateLeadDetail = () => {
   useRealtimeAffiliateLeads();
@@ -35,6 +36,9 @@ const AffiliateLeadDetail = () => {
       {lead && (
         <div className="max-w-3xl">
           <h1 className="text-2xl font-bold mb-4">{lead.bedrijfsnaam}</h1>
+          <div className="mb-4">
+            <AffiliateDuplicaatWaarschuwing leadId={lead.id} />
+          </div>
           <LeadDetailBody lead={lead} />
         </div>
       )}
