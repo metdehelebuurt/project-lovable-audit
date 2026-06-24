@@ -140,74 +140,81 @@ export default function ContactmomentItem({ contact, compact = false, onChanged 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const Icon = TYPE_ICON[contact.type] ?? MessageSquare;
+  const DirArrow = contact.richting === "inkomend" ? ArrowDownLeft : ArrowUpRight;
+  const dateStr = new Date(contact.gebeurd_op || contact.created_at).toLocaleString("nl-NL", {
+    dateStyle: "short", timeStyle: "short",
+  });
+  const authorName = `${contact.user?.voornaam ?? ""} ${contact.user?.achternaam ?? ""}`.trim() || "Onbekend";
+
   return (
     <>
-      <div className={compact ? "text-xs border rounded-lg p-2 group" : "p-3 rounded-xl border bg-card group"}>
-        <div className={`flex items-center gap-2 ${compact ? "" : "mb-1"}`}>
-          {compact ? (
-            <span className="font-medium">
-              {TYPE_OPTIONS.find((t) => t.value === contact.type)?.label || contact.type}
-              {" · "}
-              <span className="text-muted-foreground">{contact.richting}</span>
-            </span>
-          ) : (
-            <>
-              <Badge variant="outline" className="text-[10px]">{contact.type}</Badge>
-              <Badge variant="outline" className="text-[10px]">{contact.richting}</Badge>
+      {compact ? (
+        <div className="text-xs border rounded-lg p-2 group flex items-start gap-2">
+          <div className="mt-0.5 h-6 w-6 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Icon className="h-3 w-3" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-medium text-foreground">{typeLabel(contact.type)}</span>
+              <DirArrow className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground capitalize">{contact.richting}</span>
               {contact.resultaat && (
-                <Badge className="text-[10px] bg-primary/10 text-primary">
-                  {contact.resultaat.replace(/_/g, " ")}
+                <Badge variant="outline" className={`text-[10px] ${RESULTAAT_VARIANT[contact.resultaat] ?? ""}`}>
+                  {resultaatLabel(contact.resultaat)}
                 </Badge>
               )}
-            </>
-          )}
-          <span className={`${compact ? "text-[10px]" : "text-[10px]"} text-muted-foreground ml-auto`}>
-            {new Date(contact.gebeurd_op || contact.created_at).toLocaleString("nl-NL", {
-              dateStyle: "short", timeStyle: "short",
-            })}
-          </span>
-          {canManage && (
-            <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setEditOpen(true)}
-                aria-label="Bewerken"
-              >
-                <Pencil className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-destructive hover:text-destructive"
-                onClick={() => setConfirmDelete(true)}
-                aria-label="Verwijderen"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              <span className="text-[10px] text-muted-foreground ml-auto">{dateStr}</span>
             </div>
-          )}
+            {contact.notitie && <p className="text-[11px] mt-1 text-foreground/90 whitespace-pre-wrap break-words">{contact.notitie}</p>}
+          </div>
         </div>
-        {compact ? (
-          <>
-            {contact.resultaat && (
-              <p className="text-[11px] text-muted-foreground">
-                {contact.resultaat.replace(/_/g, " ")}
-              </p>
-            )}
-            {contact.notitie && <p className="text-[11px] mt-0.5">{contact.notitie}</p>}
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <UserIcon className="h-3 w-3" />
-              <span>{contact.user?.voornaam} {contact.user?.achternaam}</span>
+      ) : (
+        <div className="p-3 rounded-xl border bg-card group">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Icon className="h-4 w-4" />
             </div>
-            {contact.notitie && <p className="text-sm text-foreground mt-1">{contact.notitie}</p>}
-          </>
-        )}
-      </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-sm font-semibold text-foreground leading-none">{typeLabel(contact.type)}</h4>
+                <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0 h-5">
+                  <DirArrow className="h-3 w-3" />
+                  <span className="capitalize">{contact.richting}</span>
+                </Badge>
+                {contact.resultaat && (
+                  <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${RESULTAAT_VARIANT[contact.resultaat] ?? ""}`}>
+                    {resultaatLabel(contact.resultaat)}
+                  </Badge>
+                )}
+                <span className="text-[11px] text-muted-foreground ml-auto">{dateStr}</span>
+                {canManage && (
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditOpen(true)} aria-label="Bewerken">
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)} aria-label="Verwijderen">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
+                <UserIcon className="h-3 w-3" />
+                <span>door {authorName}</span>
+              </div>
+              {contact.notitie ? (
+                <div className="mt-2 rounded-lg bg-muted/40 border border-border/50 px-3 py-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Notitie</p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap break-words">{contact.notitie}</p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic mt-2">Geen notitie toegevoegd.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-md">
