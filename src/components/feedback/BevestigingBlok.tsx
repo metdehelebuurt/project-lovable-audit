@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThumbsUp, ThumbsDown, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ThumbsUp, ThumbsDown, AlertCircle, CheckCircle2, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -20,6 +20,8 @@ interface Props {
 export default function BevestigingBlok({ feedbackId, huidigeStatus, onAfgehandeld }: Props) {
   const [keuze, setKeuze] = useState<BevestigingStatus | null>(null);
   const [opmerking, setOpmerking] = useState("");
+  const [score, setScore] = useState<number>(0);
+  const [hoverScore, setHoverScore] = useState<number>(0);
   const [busy, setBusy] = useState(false);
 
   const isAfgehandeld =
@@ -51,11 +53,16 @@ export default function BevestigingBlok({ feedbackId, huidigeStatus, onAfgehande
       toast.error("Voeg een toelichting toe");
       return;
     }
+    if (score === 0) {
+      toast.error("Geef een tevredenheidsscore");
+      return;
+    }
     setBusy(true);
     const update: Record<string, unknown> = {
       bevestiging_status: keuze,
       bevestiging_opmerking: opmerking.trim() || null,
       bevestiging_op: new Date().toISOString(),
+      csat_score: score,
     };
     if (keuze === "werkt_niet" || keuze === "deels") {
       update.status = "in_behandeling";
@@ -115,7 +122,38 @@ export default function BevestigingBlok({ feedbackId, huidigeStatus, onAfgehande
           </Button>
         </div>
         {keuze && (
-          <Textarea
+          <>
+            <div>
+              <p className="text-xs font-medium mb-1">Hoe tevreden ben je over de afhandeling?</p>
+              <div className="flex items-center gap-1" role="radiogroup" aria-label="Tevredenheidsscore">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const actief = (hoverScore || score) >= n;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={score === n}
+                      aria-label={`${n} ster${n === 1 ? "" : "ren"}`}
+                      onClick={() => setScore(n)}
+                      onMouseEnter={() => setHoverScore(n)}
+                      onMouseLeave={() => setHoverScore(0)}
+                      className="p-0.5 rounded hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <Star
+                        className={`h-6 w-6 transition ${
+                          actief ? "fill-amber-400 text-amber-400" : "text-muted-foreground"
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+                {score > 0 && (
+                  <span className="ml-2 text-xs text-muted-foreground">{score}/5</span>
+                )}
+              </div>
+            </div>
+            <Textarea
             placeholder={
               keuze === "bevestigd_werkt"
                 ? "Optionele toelichting…"
@@ -124,7 +162,8 @@ export default function BevestigingBlok({ feedbackId, huidigeStatus, onAfgehande
             value={opmerking}
             onChange={(e) => setOpmerking(e.target.value)}
             rows={3}
-          />
+            />
+          </>
         )}
         <Button onClick={bevestig} disabled={!keuze || busy} className="w-full">
           {busy ? "Versturen…" : "Terugkoppeling versturen"}

@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, Bug, Lightbulb, MessageSquareText, User } from "lucide-react";
+import { ThumbsUp, Bug, Lightbulb, MessageSquareText, User, Star } from "lucide-react";
 import {
   STATUS_KLEUR,
   STATUS_OPTIONS,
@@ -22,6 +22,7 @@ export type FeedbackKaartItem = {
   bevestiging_status: string | null;
   gearchiveerd: boolean | null;
   created_at: string;
+  csat_score?: number | null;
   indienerNaam?: string;
 };
 
@@ -106,6 +107,15 @@ export default function FeedbackKaart({
             {item.prioriteit && item.prioriteit !== "normaal" && (
               <span className={`font-medium ${PRIORITEIT_KLEUR[item.prioriteit] ?? ""}`}>
                 {item.prioriteit}
+              </span>
+            )}
+            {typeof item.csat_score === "number" && item.csat_score > 0 && (
+              <span
+                className="inline-flex items-center gap-0.5 text-amber-600 font-medium"
+                title={`CSAT: ${item.csat_score}/5`}
+              >
+                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                {item.csat_score}/5
               </span>
             )}
           </div>
