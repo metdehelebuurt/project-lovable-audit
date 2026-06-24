@@ -82,6 +82,7 @@ import FeedbackOverzicht from "@/pages/FeedbackOverzicht";
 import FeedbackAdmin from "@/pages/FeedbackAdmin";
 import FeedbackDetail from "@/pages/FeedbackDetail";
 import FeedbackNotificatieInstellingen from "@/pages/FeedbackNotificatieInstellingen";
+import FeedbackRoadmap from "@/pages/FeedbackRoadmap";
 import AdminAbonnementen from "@/pages/AdminAbonnementen";
 import Financieel from "@/pages/Financieel";
 import FactuurNieuw from "@/pages/FactuurNieuw";
@@ -142,6 +143,7 @@ const App = () => (
             <Route path="/offerte/:token" element={<OffertePublic />} />
             <Route path="/oplevering/:token" element={<OpleverKlantOndertekenen />} />
             <Route path="/public/schouw/:token" element={<ConsumerSchouw />} />
+            <Route path="/roadmap" element={<FeedbackRoadmap />} />
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
             <Route path="/embed/calculator/:widgetId" element={<EmbedCalculator />} />
             <Route path="/embed/catalogus/:widgetId" element={<EmbedCatalogus />} />
