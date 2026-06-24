@@ -97,6 +97,8 @@ const AffiliateOpvolging = () => {
         <p className="text-sm text-muted-foreground">{taken.length} openstaande taken · AI helpt je prioriteren en plannen.</p>
       </div>
 
+      <AffiliateDuplicatenBanner />
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Laden…</p>
       ) : (
