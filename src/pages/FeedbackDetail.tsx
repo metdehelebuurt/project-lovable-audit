@@ -311,6 +311,31 @@ export default function FeedbackDetail() {
             </Card>
           )}
 
+          {/* Bevestigingsblok voor indiener */}
+          {!isSuperadmin && user?.id === item.user_id && (item.status === "in_review" || item.status === "afgerond") && (
+            <BevestigingBlok
+              feedbackId={item.id}
+              huidigeStatus={(item as any).bevestiging_status}
+              onAfgehandeld={() => queryClient.invalidateQueries({ queryKey: ["feedback_detail", id] })}
+            />
+          )}
+
+          {/* Indiener heeft probleem gemeld */}
+          {isSuperadmin && ((item as any).bevestiging_status === "werkt_niet" || (item as any).bevestiging_status === "deels") && (
+            <Card className="border-destructive/40 bg-destructive/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-destructive">
+                  Indiener meldt: {(item as any).bevestiging_status === "werkt_niet" ? "werkt niet" : "werkt deels"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm whitespace-pre-wrap">
+                  {(item as any).bevestiging_opmerking || "Geen toelichting opgegeven."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Beschrijving</CardTitle>
@@ -378,7 +403,11 @@ export default function FeedbackDetail() {
             </Card>
           )}
 
-          {/* Implementatieprompt */}
+          {/* Reacties / gesprek */}
+          <ReactiesThread feedbackId={item.id} />
+
+          {/* Implementatieprompt — alleen voor admin */}
+          {isSuperadmin && (
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -430,17 +459,21 @@ export default function FeedbackDetail() {
               )}
             </CardContent>
           </Card>
+          )}
 
-          {/* Notificatielogboek */}
-          <Card>
-            <CardContent className="pt-4">
-              <FeedbackNotificatieLog feedbackId={item.id} />
-            </CardContent>
-          </Card>
+          {/* Notificatielogboek — alleen voor admin */}
+          {isSuperadmin && (
+            <Card>
+              <CardContent className="pt-4">
+                <FeedbackNotificatieLog feedbackId={item.id} />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Zijkolom */}
         <div className="space-y-6">
+          {isSuperadmin && (<>
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Status & reactie</CardTitle>
@@ -456,6 +489,24 @@ export default function FeedbackDetail() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Verwacht klaar</label>
+                  <Input
+                    type="date"
+                    value={verwachtKlaarOp}
+                    onChange={(e) => setVerwachtKlaarOp(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Verwerkt in versie</label>
+                  <Input
+                    placeholder="bv. v2.41"
+                    value={verwerktInVersie}
+                    onChange={(e) => setVerwerktInVersie(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
@@ -494,6 +545,31 @@ export default function FeedbackDetail() {
               )}
             </CardContent>
           </Card>
+          </>)}
+
+          {/* Voor indieners: tonen we lichte status-info */}
+          {!isSuperadmin && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <Badge variant="outline" className={statusKleur[item.status] ?? ""}>
+                  {statusOptions.find((s) => s.value === item.status)?.label ?? item.status}
+                </Badge>
+                {(item as any).verwacht_klaar_op && (
+                  <p className="text-xs text-muted-foreground">
+                    Verwacht klaar: {new Date((item as any).verwacht_klaar_op).toLocaleDateString("nl-NL")}
+                  </p>
+                )}
+                {(item as any).verwerkt_in_versie && (
+                  <p className="text-xs text-muted-foreground">
+                    Verwerkt in: {(item as any).verwerkt_in_versie}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
