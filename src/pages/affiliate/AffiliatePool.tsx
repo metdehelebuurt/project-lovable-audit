@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Hand, Layers, Plus, Sparkles } from "lucide-react";
+import { Hand, Layers, Plus, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { NieuweLeadDialog } from "@/components/affiliate/NieuweLeadDialog";
 import KoudeLeadsZoekDialog from "@/components/affiliate/KoudeLeadsZoekDialog";
-import { useAffiliateLeads, useClaimAffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
+import { useAffiliateLeads, useClaimAffiliateLead, useZetLeadInPipeline } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
 import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import LeadScorePill from "@/components/sales/LeadScorePill";
@@ -23,6 +23,7 @@ const AffiliatePool = () => {
   const { data: pool = [], isLoading } = useAffiliateLeads("pool");
   const { data: mijn = [], isLoading: laadtMijn } = useAffiliateLeads("mine");
   const claim = useClaimAffiliateLead();
+  const naarPipeline = useZetLeadInPipeline();
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
   const [openNieuw, setOpenNieuw] = useState(false);
   const [openZoek, setOpenZoek] = useState(false);
@@ -93,12 +94,13 @@ const AffiliatePool = () => {
                   <TableHead>Regio</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Geschatte waarde</TableHead>
+                  <TableHead className="text-right">Pipeline</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {laadtMijn && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">Laden...</TableCell></TableRow>}
+                {laadtMijn && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">Laden...</TableCell></TableRow>}
                 {!laadtMijn && mijnActief.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nog geen leads aan jou toegewezen. Claim er een uit de pool.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nog geen leads aan jou toegewezen. Claim er een uit de pool.</TableCell></TableRow>
                 )}
                 {mijnActief.map((l) => (
                   <TableRow key={l.id} className="cursor-pointer hover:bg-muted/40">
@@ -112,6 +114,22 @@ const AffiliatePool = () => {
                     <TableCell>{l.regio ?? l.plaats ?? "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{l.contactpersoon ?? l.telefoon ?? l.email ?? "—"}</TableCell>
                     <TableCell>{l.geschatte_waarde ? `€${Number(l.geschatte_waarde).toLocaleString("nl-NL")}` : "—"}</TableCell>
+                    <TableCell className="text-right">
+                      {l.in_pipeline ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> In pipeline
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => naarPipeline.mutate(l.id)}
+                          disabled={naarPipeline.isPending}
+                        >
+                          <ArrowRight className="h-4 w-4 mr-1" /> Naar pipeline
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
