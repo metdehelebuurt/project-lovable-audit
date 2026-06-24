@@ -17,7 +17,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, User as UserIcon, Loader2 } from "lucide-react";
+import {
+  Pencil, Trash2, User as UserIcon, Loader2,
+  Phone, Mail, MessageSquare, Voicemail, MapPin, MessageCircle, ArrowDownLeft, ArrowUpRight,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const TYPE_OPTIONS = [
@@ -35,6 +38,29 @@ const RESULTAAT_OPTIONS = [
   { value: "voicemail", label: "Voicemail" },
   { value: "terugbelverzoek", label: "Terugbelverzoek" },
 ];
+
+const TYPE_ICON: Record<string, typeof Phone> = {
+  call: Phone,
+  voicemail: Voicemail,
+  email: Mail,
+  whatsapp: MessageCircle,
+  bezoek: MapPin,
+  overig: MessageSquare,
+};
+
+const RESULTAAT_VARIANT: Record<string, string> = {
+  bereikt: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  geen_gehoor: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  voicemail: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  terugbelverzoek: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+};
+
+function typeLabel(t: string) {
+  return TYPE_OPTIONS.find((o) => o.value === t)?.label ?? t;
+}
+function resultaatLabel(r: string) {
+  return RESULTAAT_OPTIONS.find((o) => o.value === r)?.label ?? r.replace(/_/g, " ");
+}
 
 function toLocalDateTime(iso?: string | null): string {
   if (!iso) return "";
