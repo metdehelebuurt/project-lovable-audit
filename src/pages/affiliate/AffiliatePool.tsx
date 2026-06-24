@@ -16,6 +16,7 @@ import type { Temperatuur } from "@/lib/sales/temperatuur";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { STATUS_LABEL, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
+import { AffiliateDuplicatenBanner } from "@/components/affiliate/duplicaten/AffiliateDuplicatenBanner";
 
 const AffiliatePool = () => {
   useRealtimeAffiliateLeads();
@@ -49,6 +50,9 @@ const AffiliatePool = () => {
   return (
     <div className="p-6">
       <AffiliateSubnav />
+      <div className="mb-4">
+        <AffiliateDuplicatenBanner />
+      </div>
       <div className="mb-4 flex items-end justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Leads</h1>

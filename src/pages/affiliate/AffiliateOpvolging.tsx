@@ -10,6 +10,7 @@ import { useOpvolgTaken, useVoltooiOpvolgTaak, useVerzetOpvolgTaak, type OpvolgT
 import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink } from "@/lib/affiliate/contact";
 import { OpvolgRegelsKaart } from "@/components/affiliate/OpvolgRegelsKaart";
+import { AffiliateDuplicatenBanner } from "@/components/affiliate/duplicaten/AffiliateDuplicatenBanner";
 
 const prioKleur: Record<string, string> = {
   hoog: "bg-rose-100 text-rose-800 border-rose-300",
