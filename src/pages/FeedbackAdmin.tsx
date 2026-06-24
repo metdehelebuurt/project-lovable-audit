@@ -44,7 +44,7 @@ export default function FeedbackAdmin() {
       let q = supabase
         .from("feedback_verzoeken")
         .select(
-          "id, titel, type, status, categorie, prioriteit, stemmen, ai_samenvatting, bevestiging_status, gearchiveerd, created_at, user_id",
+          "id, titel, type, status, categorie, prioriteit, stemmen, ai_samenvatting, bevestiging_status, gearchiveerd, created_at, user_id, csat_score",
         )
         .order("created_at", { ascending: false });
       if (!toonGearchiveerd) q = q.eq("gearchiveerd", false);
