@@ -42,7 +42,7 @@ type Weergave = "kanban" | "lijst" | "compact";
 
 const AffiliatePipeline = () => {
   useRealtimeAffiliateLeads();
-  const { data: leads = [] } = useAffiliateLeads("mine");
+  const { data: leads = [] } = useAffiliateLeads("pipeline");
   const update = useUpdateAffiliateLead();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
