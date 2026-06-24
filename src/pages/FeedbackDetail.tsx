@@ -11,42 +11,41 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/shared/RichTextEditor";
 import FeedbackNotificatieLog from "@/components/feedback/FeedbackNotificatieLog";
+import ReactiesThread from "@/components/feedback/ReactiesThread";
+import BevestigingBlok from "@/components/feedback/BevestigingBlok";
+import { useAuth } from "@/contexts/AuthContext";
 import { buildImplementatiePrompt } from "@/lib/feedback/buildImplementatiePrompt";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
-  ArrowLeft, Sparkles, Wand2, Copy, ExternalLink, CheckCircle,
+  STATUS_OPTIONS,
+  STATUS_KLEUR,
+  PRIORITEIT_KLEUR,
+  BEVESTIGING_LABEL,
+  BEVESTIGING_KLEUR,
+  type BevestigingStatus,
+  type FeedbackStatus,
+} from "@/lib/feedback/constants";
+import {
+  ArrowLeft, Sparkles, Wand2, Copy, ExternalLink, CheckCircle, Archive,
   Paperclip, User, Calendar, ThumbsUp, Tag,
 } from "lucide-react";
 
-const statusOptions = [
-  { value: "nieuw", label: "Nieuw" },
-  { value: "in_behandeling", label: "In behandeling" },
-  { value: "gepland", label: "Gepland" },
-  { value: "afgerond", label: "Afgerond" },
-  { value: "afgewezen", label: "Afgewezen" },
-];
-
-const statusKleur: Record<string, string> = {
-  nieuw: "bg-primary/10 text-primary border-primary/20",
-  in_behandeling: "bg-amber-100 text-amber-700 border-amber-200",
-  gepland: "bg-blue-100 text-blue-700 border-blue-200",
-  afgerond: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  afgewezen: "bg-muted text-muted-foreground border-transparent",
-};
-
-const prioriteitKleur: Record<string, string> = {
-  laag: "text-muted-foreground",
-  normaal: "text-foreground",
-  hoog: "text-amber-600",
-  kritiek: "text-destructive",
-};
+const statusOptions = STATUS_OPTIONS;
+const statusKleur = STATUS_KLEUR as Record<string, string>;
+const prioriteitKleur = PRIORITEIT_KLEUR;
 
 export default function FeedbackDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { profile, user } = useAuth();
+  const isSuperadmin = profile?.rol === "superadmin";
 
   const [adminReactie, setAdminReactie] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [verwachtKlaarOp, setVerwachtKlaarOp] = useState("");
+  const [verwerktInVersie, setVerwerktInVersie] = useState("");
   const [implPrompt, setImplPrompt] = useState("");
   const [aiVerrijkLoading, setAiVerrijkLoading] = useState(false);
 
@@ -81,6 +80,8 @@ export default function FeedbackDetail() {
     if (item) {
       setAdminReactie(item.admin_reactie || "");
       setNewStatus(item.status);
+      setVerwachtKlaarOp((item as any).verwacht_klaar_op || "");
+      setVerwerktInVersie((item as any).verwerkt_in_versie || "");
     }
   }, [item]);
 
@@ -88,9 +89,21 @@ export default function FeedbackDetail() {
     mutationFn: async () => {
       if (!item) return;
       const oudeStatus = item.status;
+      const update: Record<string, unknown> = {
+        status: newStatus,
+        admin_reactie: adminReactie,
+        verwacht_klaar_op: verwachtKlaarOp || null,
+        verwerkt_in_versie: verwerktInVersie || null,
+      };
+      if (
+        (newStatus === "afgerond" || newStatus === "in_review") &&
+        oudeStatus !== newStatus
+      ) {
+        update.bevestiging_status = "wachten_op_indiener";
+      }
       const { error } = await supabase
         .from("feedback_verzoeken")
-        .update({ status: newStatus, admin_reactie: adminReactie })
+        .update(update)
         .eq("id", item.id);
       if (error) throw error;
 
@@ -106,14 +119,39 @@ export default function FeedbackDetail() {
           },
         }).catch(console.error);
       }
+      if (
+        statusChanged &&
+        (newStatus === "afgerond" || newStatus === "in_review")
+      ) {
+        supabase.functions.invoke("feedback-notify", {
+          body: { event: "bevestiging_gevraagd", feedback_id: item.id },
+        }).catch(console.error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feedback_detail", id] });
       queryClient.invalidateQueries({ queryKey: ["feedback_admin"] });
+      queryClient.invalidateQueries({ queryKey: ["feedback_admin_v2"] });
       toast.success("Feedback bijgewerkt — indiener is per e-mail geïnformeerd");
     },
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : "Opslaan mislukt"),
+  });
+
+  const archiefMutation = useMutation({
+    mutationFn: async () => {
+      if (!item) return;
+      const { error } = await supabase
+        .from("feedback_verzoeken")
+        .update({ gearchiveerd: !(item as any).gearchiveerd })
+        .eq("id", item.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feedback_detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["feedback_admin_v2"] });
+      toast.success(((item as any)?.gearchiveerd) ? "Hersteld" : "Gearchiveerd");
+    },
   });
 
   const genereerPrompt = () => {
