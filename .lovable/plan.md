@@ -1,117 +1,68 @@
-# Actieve duplicaatdetectie — partners én affiliates
+## Doel
 
-## Wat er al staat (voortbouwen, niet opnieuw bouwen)
+Affiliate-leads verschijnen pas in de Pipeline (kolom "Nieuw" en verder) wanneer de affiliate ze actief "koopt" / activeert. De Leads-pagina blijft het complete overzicht van alle eigen leads — ongeacht of ze al in de pipeline zitten.
 
-Voor **partner-leads** (`leads`-tabel) is dit grotendeels al gebouwd:
-- DB-view `v_lead_duplicaten` matcht op e-mail, telefoon (`normalize_phone`), en adres (postcode + huisnummer).
-- Tabel `lead_duplicaat_negeerlijst` voor "geen duplicaat".
-- Hooks: `useDuplicaten`, `useDuplicatenVoorLead`, `useNegeerDuplicaat`.
-- UI: `DuplicatenBanner` (overzicht), `DuplicaatWaarschuwing` (per leaddetail), `DuplicatenLijstDialog`, `MergeDialog` (veld-voor-veld kiezen welke waarde behouden blijft).
-- Gebruikt op `/leads`, `/leads/:id` en `Vandaag`.
+## Wat verandert
 
-Voor **affiliate-leads** (`affiliate_leads`) bestaat alleen detectie tijdens CSV-import (`useDedupeCheck` + `DedupeBevestigingDialog`) en in `ResultatenTabel` van de koude-leads-zoeker. Er is **geen** actieve detectie op bestaande records, geen banner, geen per-leadwaarschuwing, geen merge-flow.
+**1. Database (`affiliate_leads`)**
 
-Doel: dezelfde slimme, failsafe ervaring als bij partners, óók voor affiliates — met zoveel mogelijk hergebruik.
+Nieuwe kolom: `in_pipeline boolean not null default false`.
 
-## Aanpak
+Initiële migratie zet `in_pipeline = false` voor álle bestaande leads met status `'nieuw'` — zo verdwijnen ze uit de Pipeline en blijven ze zichtbaar op de Leads-pagina. Leads die al verder in de funnel staan (gebeld, gesprek gepland, in gesprek, voorstel, gewonnen, verloren) krijgen `in_pipeline = true`, zodat lopend werk niet onverwacht uit de pipeline verdwijnt.
 
-### 1. Detectielaag voor affiliate-leads (DB)
+Geen wijziging aan status-enum, RLS-policies of triggers.
 
-Nieuwe SQL-objecten via migratie:
+**2. Hook `useAffiliateLeads`**
 
-- `lead_duplicaat_negeerlijst_affiliate` (analoog aan partner-versie, gescopet op `eigenaar_id`/affiliate i.p.v. `partner_id`) met RLS + GRANTs.
-- View `v_affiliate_lead_duplicaten` met dezelfde structuur (`lead_a_id`, `lead_b_id`, `match_redenen[]`, `score`), matcht op:
-  - e-mail (lowercased + getrimd, niet leeg)
-  - telefoon (`normalize_phone`)
-  - website (genormaliseerd: lowercase, zonder protocol/`www.`/trailing slash) — affiliate-specifiek
-  - bedrijfsnaam (genormaliseerd: lowercase, zonder rechtsvormen `bv|b.v.|nv|n.v.|vof`, leestekens en spaties weg) — affiliate-specifiek
-  - adres (postcode + huisnummer) waar beschikbaar
-- Scope per `eigenaar_id` (de affiliate die de lead bezit) zodat affiliates geen duplicaten van andermans leads zien. Negeerlijst respecteren in de view.
-- Helperfuncties `normalize_website(text)` en `normalize_bedrijfsnaam(text)` als ze nog niet bestaan; hergebruiken van `normalize_phone` en `normalize_postcode`.
+Extra scope toevoegen: `"pipeline"` → `eigenaar_id = user AND in_pipeline = true`.
+- `AffiliatePipeline.tsx` gebruikt voortaan scope `"pipeline"`.
+- `AffiliatePool.tsx` blijft `"mine"` gebruiken → toont nog steeds álle eigen leads.
 
-### 2. Gedeelde frontend-laag
+Nieuwe mutation `useZetLeadInPipeline(id)`:
+- Patcht `in_pipeline = true` (en, alleen als status `'nieuw'` is en lead nog geen status had buiten "nieuw", blijft status op `'nieuw'`).
+- Optimistic update + invalidate.
 
-Refactor zodat partner- en affiliate-duplicaten één gedeelde UI delen, met een dunne datalaag per context:
+`useClaimAffiliateLead` blijft puur claimen — zet `in_pipeline` níet automatisch op true. Pool → Leads → handmatige "Kopen"-knop → Pipeline.
 
-```text
-src/components/leads/duplicaten/
-  shared/
-    DuplicatenBannerBase.tsx     # generiek, neemt data + handlers
-    DuplicaatWaarschuwingBase.tsx
-    DuplicatenLijstDialogBase.tsx
-    MergeDialogBase/             # generieke veldlijst via config
-    types.ts                     # generieke DuplicaatPaar<TLead>
-  partner/
-    useDuplicaten.ts             # bestaand, lichte refactor
-    useNegeerDuplicaat.ts
-    fields.ts                    # LEAD_FIELDS bestaand
-  affiliate/
-    useAffiliateDuplicaten.ts    # query v_affiliate_lead_duplicaten + affiliate_leads
-    useNegeerAffiliateDuplicaat.ts
-    useMergeAffiliateLeads.ts
-    fields.ts                    # bedrijfsnaam, contactpersoon, email, telefoon, website, branche, regio, tags, notities, adres, ...
-```
+**3. Leads-tab (`AffiliatePool.tsx`, tab "Aan mij toegewezen")**
 
-Componenten:
-- `<DuplicatenBanner context="partner" />` en `<DuplicatenBanner context="affiliate" />` — zelfde look, andere data-bron.
-- `<DuplicaatWaarschuwing leadId context />` op detailpagina's.
-- Mergeflow: veld-voor-veld kiezen welke waarde behouden blijft (zoals bestaand), inclusief het automatisch verplaatsen van gerelateerde records (zie merge-strategie).
+- Extra kolom met knop **"Naar pipeline"** (label conform `mem://constraints` — neutrale, actiegerichte microcopy; "Kopen" suggereert betaling en past niet bij de bestaande UX).
+- Knop is alleen zichtbaar wanneer `lead.in_pipeline === false`.
+- Klik → `useZetLeadInPipeline(lead.id)` + toast "Lead toegevoegd aan pipeline".
+- Voor leads die al `in_pipeline = true` zijn: kleine, neutrale badge "In pipeline" op dezelfde plek (geen knop).
+- Filter `mijnActief` blijft ongewijzigd (toont gewonnen/verloren niet) — gebruiker zei expliciet dat álle leads zichtbaar moeten zijn, dus geen verdere statusfilters toevoegen.
 
-### 3. Merge-strategie voor affiliate-leads (failsafe)
+**4. Pipeline (`AffiliatePipeline.tsx`)**
 
-Server-side via Edge Function `affiliate-lead-merge` (analoog aan bestaande partner-merge-aanpak): atomair in één RPC zodat half-werk niet kan blijven hangen. De function:
+- Scope `"pipeline"` ophalen.
+- Statistiekkaarten blijven werken op de zichtbare set (alleen leads die al in de pipeline staan).
+- Geen verdere UI-wijziging; kanban, lijst, drag-and-drop blijven hetzelfde.
 
-1. Valideert dat caller eigenaar is van beide leads (RLS-equivalent + expliciete check op `eigenaar_id`).
-2. Past de gekozen velden toe op de "behouden" lead.
-3. Verplaatst FK-relaties naar de behouden lead:
-   - `affiliate_lead_contactmomenten`
-   - `affiliate_opvolg_taken`, `affiliate_opvolg_log`
-   - `affiliate_terugbel_afspraken`
-   - `affiliate_onboarding_taken`
-   - `affiliate_referrals`
-   - `affiliate_commissies`
-4. Verwijdert de andere lead pas ná succesvolle herkoppeling (cascade-veilig).
-5. Schrijft `audit_log`-entry met beide id's, gekozen velden en gebruiker.
+**5. Nieuwe lead aanmaken (`useCreateAffiliateLead` / `NieuweLeadDialog`)**
 
-### 4. Failsafe-gedrag (overal)
-
-- **Niet-blokkerend**: detectie blokkeert nooit invoer of import; het is altijd een **waarschuwing + keuze** ("Samenvoegen", "Open ander", "Geen duplicaat").
-- **Negeerlijst is permanent** per paar — een paar dat ooit "geen duplicaat" is, blijft weg uit de view tot iemand 'm actief weer aanzet (superadmin/eigenaar via dialog "Genegeerde duplicaten").
-- **Conservatieve normalisatie**: lege/te-korte waarden (telefoon < 7 cijfers, website zonder host, bedrijfsnaam < 3 chars) tellen niet als match → minder valse positieven.
-- **Score-drempel**: in UI alleen tonen bij `score ≥ 1`, sorteren op score desc; bij score ≥ 2 (meerdere redenen) extra prominent ("zeer waarschijnlijk").
-- **Idempotente merge**: bij netwerkretry geen dubbele uitvoering — function checkt of doel-lead nog bestaat en logt eerder gedaan werk.
-- **Realtime refresh**: na merge/negeer wordt `react-query` cache geïnvalideerd voor `lead-duplicaten` én lijstpagina's.
-
-### 5. Plaatsing in UI
-
-- **Affiliate kanalen**: banner bovenaan `AffiliatePool`, `AffiliateMijnKlanten`, `AffiliateOpvolging` (zoals partner-banner op `/leads`).
-- **AffiliateLeadDetail**: `<DuplicaatWaarschuwing>` direct onder de header.
-- **Bij aanmaken/bewerken** van een affiliate-lead: bij `onBlur` van e-mail/telefoon/website een live check via dezelfde view (rij eruit halen vóór insert nog niet gebeurt is — alleen waarschuwing tonen, niet blokkeren). Hergebruik logica uit `ResultatenTabel`.
-- **Partner-kant**: alleen lichte refactor om dezelfde componenten te delen; geen functionele wijziging zichtbaar voor gebruikers.
-
-### 6. Wat we expliciet **niet** doen
-
-- Geen automatisch samenvoegen zonder gebruikersbevestiging.
-- Geen fuzzy/AI-matching in deze ronde (Levenshtein op namen e.d.) — start met deterministische normalisatie; AI-laag kan later bovenop.
-- Geen cross-tenant detectie (partner ↔ affiliate). Strikt binnen scope.
+- Bij `_bestemming === "mine"` (handmatig aangemaakt vanuit Leads/Pool): `in_pipeline = true` zetten. Een handmatig aangemaakte lead is per definitie een actieve lead die de affiliate gaat bewerken.
+- Bij `_bestemming === "pool"`: `in_pipeline = false` (default).
+- Bij `NieuweLeadDialog` op `AffiliatePipeline`: nieuw aangemaakte lead direct `in_pipeline = true` (logisch, want de gebruiker maakt 'm aan vanaf de pipeline).
 
 ## Technische details
 
-- **Migraties**:
-  1. `create_normalize_helpers_affiliate` — `normalize_website`, `normalize_bedrijfsnaam` (immutable, `STABLE`).
-  2. `create_lead_duplicaat_negeerlijst_affiliate` — tabel + GRANTs + RLS (eigenaar mag eigen paren beheren, service_role alles).
-  3. `create_v_affiliate_lead_duplicaten` — view met dezelfde shape als `v_lead_duplicaten` plus `eigenaar_id`.
-- **Edge Function**: `affiliate-lead-merge` met Zod-validatie van payload `{ keepId, dropId, fields: Record<string,string> }`.
-- **Hooks**: TanStack Query, geen `useEffect`-fetch; query keys `["affiliate-lead-duplicaten", eigenaarId]`.
-- **Bestandsgroottes**: bestaande `MergeDialog/index.tsx` zal richting de 800-grens kruipen na generalisatie → splitsen in `MergeDialogBase/{Header,FieldList,Footer,useMergeForm}.tsx`.
-- **Types**: `DuplicaatPaar<TLead>` generiek; affiliate-versie gebruikt `Pick<AffiliateLead, ...>` voor de "lite"-vorm.
-- **Tests**: Vitest-unit voor normalize-helpers (input → genormaliseerd) en voor `useMergeForm` field-resolution; Playwright happy-path voor "banner → samenvoegen → één lead over".
+```text
+Leads-tab (Pool/Mijn)              Pipeline
+┌──────────────────────────┐       ┌────────────────────────┐
+│ alle eigen leads (mine)  │       │ in_pipeline = true     │
+│  ├─ in_pipeline=false →  │       │  status = nieuw/…/won  │
+│  │   knop "Naar pipeline"│──┐    │                        │
+│  └─ in_pipeline=true  →  │  │    │                        │
+│      badge "In pipeline" │  └──► UPDATE in_pipeline=true  │
+└──────────────────────────┘       └────────────────────────┘
+```
 
-## Opleverbare stappen
+- Migratie: één bestand met `ALTER TABLE … ADD COLUMN`, `UPDATE` voor backfill, `CREATE INDEX` op `(eigenaar_id, in_pipeline)` voor de Pipeline-query.
+- Type-regeneratie loopt automatisch na migratie.
+- `useAffiliateLeads` blijft binnen 1 hook-bestand (< 50 regels per functie).
 
-1. SQL-helpers + tabel + view voor affiliate (migratie).
-2. Generieke shared UI-componenten extraheren uit huidige partner-componenten.
-3. Affiliate hooks (`useAffiliateDuplicaten`, negeer, merge).
-4. Edge Function `affiliate-lead-merge` + audit-log.
-5. UI-inhaak op affiliate-pagina's (banner + per-lead waarschuwing + live-check bij invoer).
-6. Tests + handmatige verificatie via Playwright op preview.
+## Buiten scope
+
+- Partners (`leads`-tabel) — die hebben al de bestaande Kanban/pipeline-flow; verzoek gaat expliciet over affiliate-zijde.
+- Cost/tellers voor "gekochte" leads — er wordt geen verbruik bijgehouden, alleen een boolean.
+- Terug-uit-pipeline knop (kan later als reverse-actie worden toegevoegd).
