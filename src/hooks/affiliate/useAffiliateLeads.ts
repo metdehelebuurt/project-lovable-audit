@@ -11,7 +11,7 @@ export type AffiliateLeadUpdate = Database["public"]["Tables"]["affiliate_leads"
 
 const KEY = ["affiliate-leads"] as const;
 
-export function useAffiliateLeads(scope: "mine" | "pool" | "all" = "mine") {
+export function useAffiliateLeads(scope: "mine" | "pool" | "all" | "pipeline" = "mine") {
   const { user } = useAuth();
   return useQuery({
     queryKey: [...KEY, scope, user?.id],
@@ -20,6 +20,7 @@ export function useAffiliateLeads(scope: "mine" | "pool" | "all" = "mine") {
       let query = supabase.from("affiliate_leads").select("*").order("updated_at", { ascending: false });
       if (scope === "mine") query = query.eq("eigenaar_id", user!.id);
       if (scope === "pool") query = query.is("eigenaar_id", null);
+      if (scope === "pipeline") query = query.eq("eigenaar_id", user!.id).eq("in_pipeline", true);
       const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
@@ -42,6 +43,7 @@ export function useCreateAffiliateLead() {
         eigenaar_id: _bestemming === "pool" ? null : user!.id,
         created_by: user!.id,
         bron: "eigen_import",
+        in_pipeline: _bestemming === "pool" ? false : true,
       }).select().single();
       if (error) throw error;
       return data;
@@ -85,4 +87,25 @@ export function useClaimAffiliateLead() {
 export function useUpdateLeadStatus() {
   const upd = useUpdateAffiliateLead();
   return (id: string, status: AffiliateLeadStatus) => upd.mutate({ id, patch: { status } });
+}
+
+export function useZetLeadInPipeline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase
+        .from("affiliate_leads")
+        .update({ in_pipeline: true })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      toast.success("Lead toegevoegd aan pipeline");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 }
