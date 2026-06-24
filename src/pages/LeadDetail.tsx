@@ -273,9 +273,10 @@ const LeadDetail = () => {
   });
 
   const addNoteMutation = useMutation({
-    mutationFn: async ({ inhoud, intern }: { inhoud: string; intern: boolean }) => {
+    mutationFn: async ({ inhoud, intern, titel }: { inhoud: string; intern: boolean; titel: string }) => {
       const { data, error } = await supabase.from("lead_notities" as any).insert({
         lead_id: id!, user_id: profile!.id, partner_id: profile!.partner_id, inhoud, intern,
+        titel: titel || null,
       } as any).select("id").single();
       if (error) throw error;
       await processNoteMentions({
@@ -291,6 +292,7 @@ const LeadDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead-notities", id] });
       setNewNote("");
+      setNewNoteTitel("");
       setNewNoteIntern(true);
       toast.success("Notitie toegevoegd");
     },
