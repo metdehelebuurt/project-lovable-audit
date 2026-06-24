@@ -17,7 +17,7 @@ import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Globe, Pencil,
   FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw,
   MessageSquare, StickyNote, Send, Trash2, Clock, User, TrendingUp,
-  Save, ExternalLink, X, Check, PhoneCall, PhoneOff, CalendarIcon, Home,
+  Save, ExternalLink, X, Check, PhoneCall, PhoneOff, CalendarIcon, Home, Search,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
