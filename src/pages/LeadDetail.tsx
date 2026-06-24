@@ -808,24 +808,35 @@ const LeadDetail = () => {
                 {notities.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Nog geen notities.</p>
                 ) : (
-                  <div className="space-y-3">
-                    {notities.map((n: any) => (
-                      <div key={n.id} className="p-3 rounded-xl border bg-card group relative">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center"><User className="h-3 w-3 text-primary" /></div>
-                          <span className="text-xs font-medium text-foreground">{n.user?.voornaam} {n.user?.achternaam}</span>
-                          <span className="text-[10px] text-muted-foreground">{formatDateTime(n.created_at)}</span>
-                          <NotitieZichtbaarheidBadge intern={n.intern !== false} />
-                          {(n.user_id === profile?.id) && (
-                            <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteNoteMutation.mutate(n.id)}>
-                              <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                        <p className="text-sm text-foreground pl-8"><RenderedNote inhoud={n.inhoud} /></p>
-                      </div>
-                    ))}
-                  </div>
+                   <div className="space-y-3">
+                    {notities.map((n: any) => {
+                      const auteur = `${n.user?.voornaam ?? ""} ${n.user?.achternaam ?? ""}`.trim() || "Onbekend";
+                      return (
+                       <div key={n.id} className="p-3 rounded-xl border bg-card group relative">
+                         <div className="flex items-start gap-3">
+                           <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><StickyNote className="h-4 w-4 text-primary" /></div>
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <h4 className="text-sm font-semibold text-foreground leading-none">Notitie</h4>
+                               <NotitieZichtbaarheidBadge intern={n.intern !== false} />
+                               <span className="text-[11px] text-muted-foreground ml-auto">{formatDateTime(n.created_at)}</span>
+                               {(n.user_id === profile?.id) && (
+                                 <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteNoteMutation.mutate(n.id)}>
+                                   <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                                 </Button>
+                               )}
+                             </div>
+                             <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
+                               <User className="h-3 w-3" />
+                               <span>door {auteur}</span>
+                             </div>
+                             <div className="mt-2 text-sm text-foreground whitespace-pre-wrap break-words"><RenderedNote inhoud={n.inhoud} /></div>
+                           </div>
+                         </div>
+                       </div>
+                      );
+                    })}
+                   </div>
                 )}
               </CardContent>
             </Card>
