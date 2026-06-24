@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
+import { AffiliateDuplicatenBanner } from "@/components/affiliate/duplicaten/AffiliateDuplicatenBanner";
 
 const AffiliateMijnKlanten = () => {
   const { user } = useAuth();
@@ -43,6 +44,9 @@ const AffiliateMijnKlanten = () => {
   return (
     <div className="p-6">
       <AffiliateSubnav />
+      <div className="mb-4">
+        <AffiliateDuplicatenBanner />
+      </div>
       <div className="mb-4 flex justify-between items-end">
         <div>
           <h1 className="text-2xl font-bold">Mijn klanten</h1>
