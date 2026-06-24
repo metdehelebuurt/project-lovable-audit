@@ -8,10 +8,17 @@ const corsHeaders = {
 };
 
 type Payload = {
-  event: "nieuw" | "status_wijziging" | "log";
+  event:
+    | "nieuw"
+    | "status_wijziging"
+    | "log"
+    | "bevestiging_gevraagd"
+    | "indiener_meldt_probleem";
   feedback_id: string;
   oude_status?: string;
   nieuwe_status?: string;
+  bevestiging_status?: string;
+  bevestiging_opmerking?: string;
 };
 
 const PLATFORM_URL = "https://app.mijnhuis.nu";
@@ -59,6 +66,12 @@ Deno.serve(async (req) => {
   }
   if (body.event === "status_wijziging") {
     return await handleStatusWijziging(supa, fb, body);
+  }
+  if (body.event === "bevestiging_gevraagd") {
+    return await handleBevestigingGevraagd(supa, fb);
+  }
+  if (body.event === "indiener_meldt_probleem") {
+    return await handleIndienerMeldtProbleem(supa, fb, body);
   }
   return json({ error: "onbekend event" }, 400);
 });
@@ -257,6 +270,110 @@ async function handleStatusWijziging(
       feedbackUrl: `${PLATFORM_URL}/feedback`,
     },
   );
+
+  return json({ ok: true });
+}
+
+async function handleBevestigingGevraagd(
+  supa: ReturnType<typeof createClient>,
+  fb: FeedbackRow,
+) {
+  if (!fb.user_id) return json({ skipped: "geen indiener" });
+
+  const { data: u } = await supa
+    .from("users")
+    .select("voornaam, email, status")
+    .eq("id", fb.user_id)
+    .maybeSingle();
+
+  if (!u?.email || (u.status ?? "actief") !== "actief") {
+    return json({ skipped: "geen actieve indiener" });
+  }
+
+  await supa.from("notificaties").insert({
+    user_id: fb.user_id,
+    type: "feedback_bevestiging_gevraagd",
+    titel: "Werkt je verzoek zoals bedoeld?",
+    bericht: `${fb.titel} is verwerkt — geef even door of het werkt`,
+    entity_type: "feedback_verzoeken",
+    entity_id: fb.id,
+    gelezen: false,
+  });
+
+  await sendTransactional(
+    "feedback-status-update",
+    u.email,
+    `feedback-bevestiging-${fb.id}-${Date.now()}`,
+    {
+      titel: fb.titel,
+      type: fb.type,
+      oudeStatus: "in_behandeling",
+      nieuweStatus: "in_review",
+      adminReactie:
+        (fb.admin_reactie ?? "") +
+        '<p><strong>Werkt deze functie nu zoals je bedoelde?</strong> Open het verzoek en geef even door of het klopt of dat er nog iets mist.</p>',
+      indienerNaam: u.voornaam ?? "",
+      feedbackUrl: `${PLATFORM_URL}/feedback/${fb.id}?actie=bevestig`,
+    },
+  );
+
+  return json({ ok: true });
+}
+
+async function handleIndienerMeldtProbleem(
+  supa: ReturnType<typeof createClient>,
+  fb: FeedbackRow,
+  body: Payload,
+) {
+  const { data: admins } = await supa
+    .from("users")
+    .select("id, email, status")
+    .eq("rol", "superadmin");
+
+  const actieve = (admins ?? []).filter((u) => (u.status ?? "actief") === "actief");
+  const emails = Array.from(
+    new Set(actieve.map((u) => u.email).filter(Boolean) as string[]),
+  );
+
+  const titelKort = (fb.titel || "feedback").slice(0, 80);
+  const notifRows = actieve
+    .filter((u) => u.id)
+    .map((u) => ({
+      user_id: u.id as string,
+      type: "feedback_indiener_probleem",
+      titel:
+        body.bevestiging_status === "werkt_niet"
+          ? "Indiener meldt: werkt niet"
+          : "Indiener meldt: werkt deels",
+      bericht: titelKort,
+      entity_type: "feedback_verzoeken",
+      entity_id: fb.id,
+      gelezen: false,
+    }));
+  if (notifRows.length > 0) {
+    await supa.from("notificaties").insert(notifRows);
+  }
+
+  if (emails.length > 0) {
+    await sendTransactionalBatch(
+      "feedback-nieuw-platform",
+      emails,
+      `feedback-probleem-${fb.id}-${Date.now()}`,
+      {
+        type: fb.type,
+        titel: `[Indiener meldt probleem] ${fb.titel}`,
+        beschrijving:
+          body.bevestiging_opmerking ??
+          "Indiener heeft aangegeven dat het verzoek niet (volledig) werkt zoals bedoeld.",
+        categorie: fb.categorie ?? "",
+        prioriteit: fb.prioriteit ?? "",
+        indienerNaam: "",
+        indienerEmail: "",
+        partnerNaam: "",
+        feedbackUrl: `${PLATFORM_URL}/feedback/admin/${fb.id}`,
+      },
+    );
+  }
 
   return json({ ok: true });
 }

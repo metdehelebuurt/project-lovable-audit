@@ -2292,6 +2292,87 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_reacties: {
+        Row: {
+          bericht: string
+          created_at: string
+          feedback_id: string
+          id: string
+          intern: boolean
+          soort: string
+          user_id: string
+        }
+        Insert: {
+          bericht: string
+          created_at?: string
+          feedback_id: string
+          id?: string
+          intern?: boolean
+          soort?: string
+          user_id: string
+        }
+        Update: {
+          bericht?: string
+          created_at?: string
+          feedback_id?: string
+          id?: string
+          intern?: boolean
+          soort?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_reacties_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_verzoeken"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_reacties_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_stemmen: {
+        Row: {
+          created_at: string
+          feedback_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_stemmen_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_verzoeken"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_stemmen_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback_verzoeken: {
         Row: {
           admin_reactie: string | null
@@ -2299,9 +2380,13 @@ export type Database = {
           ai_samenvatting: string | null
           ai_tags: Json | null
           beschrijving: string
+          bevestiging_op: string | null
+          bevestiging_opmerking: string | null
+          bevestiging_status: string | null
           bijlagen: Json | null
           categorie: string | null
           created_at: string
+          gearchiveerd: boolean
           id: string
           partner_id: string | null
           prioriteit: string | null
@@ -2311,6 +2396,8 @@ export type Database = {
           type: string
           updated_at: string
           user_id: string
+          verwacht_klaar_op: string | null
+          verwerkt_in_versie: string | null
         }
         Insert: {
           admin_reactie?: string | null
@@ -2318,9 +2405,13 @@ export type Database = {
           ai_samenvatting?: string | null
           ai_tags?: Json | null
           beschrijving: string
+          bevestiging_op?: string | null
+          bevestiging_opmerking?: string | null
+          bevestiging_status?: string | null
           bijlagen?: Json | null
           categorie?: string | null
           created_at?: string
+          gearchiveerd?: boolean
           id?: string
           partner_id?: string | null
           prioriteit?: string | null
@@ -2330,6 +2421,8 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id: string
+          verwacht_klaar_op?: string | null
+          verwerkt_in_versie?: string | null
         }
         Update: {
           admin_reactie?: string | null
@@ -2337,9 +2430,13 @@ export type Database = {
           ai_samenvatting?: string | null
           ai_tags?: Json | null
           beschrijving?: string
+          bevestiging_op?: string | null
+          bevestiging_opmerking?: string | null
+          bevestiging_status?: string | null
           bijlagen?: Json | null
           categorie?: string | null
           created_at?: string
+          gearchiveerd?: boolean
           id?: string
           partner_id?: string | null
           prioriteit?: string | null
@@ -2349,6 +2446,8 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
+          verwacht_klaar_op?: string | null
+          verwerkt_in_versie?: string | null
         }
         Relationships: [
           {
