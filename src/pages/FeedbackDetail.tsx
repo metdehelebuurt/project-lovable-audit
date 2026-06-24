@@ -207,7 +207,7 @@ export default function FeedbackDetail() {
     return (
       <div className="space-y-4">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/feedback/admin">
+          <Link to={isSuperadmin ? "/feedback/admin" : "/feedback"}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Terug
           </Link>
         </Button>
@@ -230,7 +230,7 @@ export default function FeedbackDetail() {
     <div className="space-y-6 max-w-6xl">
       <div>
         <Button asChild variant="ghost" size="sm" className="mb-3 -ml-2">
-          <Link to="/feedback/admin">
+          <Link to={isSuperadmin ? "/feedback/admin" : "/feedback"}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Terug naar overzicht
           </Link>
         </Button>
@@ -266,14 +266,25 @@ export default function FeedbackDetail() {
               </span>
             </div>
           </div>
-          <Button
-            onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}
-            className="shrink-0"
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            {updateMutation.isPending ? "Opslaan…" : "Wijzigingen opslaan"}
-          </Button>
+          {isSuperadmin && (
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => archiefMutation.mutate()}
+                disabled={archiefMutation.isPending}
+              >
+                <Archive className="h-4 w-4 mr-1" />
+                {(item as any).gearchiveerd ? "Herstel" : "Archiveer"}
+              </Button>
+              <Button
+                onClick={() => updateMutation.mutate()}
+                disabled={updateMutation.isPending}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                {updateMutation.isPending ? "Opslaan…" : "Opslaan"}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
