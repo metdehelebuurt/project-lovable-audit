@@ -639,6 +639,7 @@ export type Database = {
           gewonnen_partner_id: string | null
           id: string
           import_batch_id: string | null
+          in_pipeline: boolean
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -683,6 +684,7 @@ export type Database = {
           gewonnen_partner_id?: string | null
           id?: string
           import_batch_id?: string | null
+          in_pipeline?: boolean
           laatst_gescoord_op?: string | null
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
@@ -727,6 +729,7 @@ export type Database = {
           gewonnen_partner_id?: string | null
           id?: string
           import_batch_id?: string | null
+          in_pipeline?: boolean
           laatst_gescoord_op?: string | null
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
@@ -8364,6 +8367,7 @@ export type Database = {
           gewonnen_partner_id: string | null
           id: string
           import_batch_id: string | null
+          in_pipeline: boolean
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -8423,6 +8427,7 @@ export type Database = {
           gewonnen_partner_id: string | null
           id: string
           import_batch_id: string | null
+          in_pipeline: boolean
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -8494,6 +8499,7 @@ export type Database = {
           gewonnen_partner_id: string | null
           id: string
           import_batch_id: string | null
+          in_pipeline: boolean
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -8755,6 +8761,7 @@ export type Database = {
           gewonnen_partner_id: string | null
           id: string
           import_batch_id: string | null
+          in_pipeline: boolean
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
