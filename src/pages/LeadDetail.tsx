@@ -808,24 +808,35 @@ const LeadDetail = () => {
                 {notities.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Nog geen notities.</p>
                 ) : (
-                  <div className="space-y-3">
-                    {notities.map((n: any) => (
-                      <div key={n.id} className="p-3 rounded-xl border bg-card group relative">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center"><User className="h-3 w-3 text-primary" /></div>
-                          <span className="text-xs font-medium text-foreground">{n.user?.voornaam} {n.user?.achternaam}</span>
-                          <span className="text-[10px] text-muted-foreground">{formatDateTime(n.created_at)}</span>
-                          <NotitieZichtbaarheidBadge intern={n.intern !== false} />
-                          {(n.user_id === profile?.id) && (
-                            <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteNoteMutation.mutate(n.id)}>
-                              <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                        <p className="text-sm text-foreground pl-8"><RenderedNote inhoud={n.inhoud} /></p>
-                      </div>
-                    ))}
-                  </div>
+                   <div className="space-y-3">
+                    {notities.map((n: any) => {
+                      const auteur = `${n.user?.voornaam ?? ""} ${n.user?.achternaam ?? ""}`.trim() || "Onbekend";
+                      return (
+                       <div key={n.id} className="p-3 rounded-xl border bg-card group relative">
+                         <div className="flex items-start gap-3">
+                           <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><StickyNote className="h-4 w-4 text-primary" /></div>
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <h4 className="text-sm font-semibold text-foreground leading-none">Notitie</h4>
+                               <NotitieZichtbaarheidBadge intern={n.intern !== false} />
+                               <span className="text-[11px] text-muted-foreground ml-auto">{formatDateTime(n.created_at)}</span>
+                               {(n.user_id === profile?.id) && (
+                                 <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteNoteMutation.mutate(n.id)}>
+                                   <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                                 </Button>
+                               )}
+                             </div>
+                             <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
+                               <User className="h-3 w-3" />
+                               <span>door {auteur}</span>
+                             </div>
+                             <div className="mt-2 text-sm text-foreground whitespace-pre-wrap break-words"><RenderedNote inhoud={n.inhoud} /></div>
+                           </div>
+                         </div>
+                       </div>
+                      );
+                    })}
+                   </div>
                 )}
               </CardContent>
             </Card>
@@ -840,25 +851,55 @@ const LeadDetail = () => {
               <CardContent className="space-y-4">
                 {contactmomenten.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contactmomenten</p>
-                    {contactmomenten.map((c: any) => (
-                      <ContactmomentItem key={c.id} contact={c} />
-                    ))}
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <PhoneCall className="h-3.5 w-3.5" /> Contactmomenten
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">{contactmomenten.length} totaal</span>
+                    </div>
+                    <div className="space-y-2">
+                      {contactmomenten.map((c: any) => (
+                        <ContactmomentItem key={c.id} contact={c} />
+                      ))}
+                    </div>
                   </div>
                 )}
                 {berichten.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Offerte berichten</p>
-                    {berichten.map((b: any) => (
-                      <div key={b.id} className={`p-3 rounded-xl border ${b.afzender_type === "partner" ? "bg-primary/5 border-primary/10" : "bg-card"}`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-[10px]">{b.afzender_type === "partner" ? "Partner" : "Klant"}</Badge>
-                          <span className="text-xs font-medium">{b.afzender_naam}</span>
-                          <span className="text-[10px] text-muted-foreground ml-auto">{formatDateTime(b.created_at)}</span>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5" /> Offerte-berichten
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">{berichten.length} totaal</span>
+                    </div>
+                    {berichten.map((b: any) => {
+                      const isPartner = b.afzender_type === "partner";
+                      return (
+                        <div key={b.id} className={`p-3 rounded-xl border ${isPartner ? "bg-primary/5 border-primary/10" : "bg-card"}`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${isPartner ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                              <MessageSquare className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-sm font-semibold text-foreground leading-none">
+                                  Bericht van {isPartner ? "partner" : "klant"}
+                                </h4>
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                                  {isPartner ? "Partner" : "Klant"}
+                                </Badge>
+                                <span className="text-[11px] text-muted-foreground ml-auto">{formatDateTime(b.created_at)}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
+                                <User className="h-3 w-3" />
+                                <span>door {b.afzender_naam || "Onbekend"}</span>
+                              </div>
+                              <p className="text-sm text-foreground mt-2 whitespace-pre-wrap break-words">{b.bericht}</p>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-foreground">{b.bericht}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 {contactmomenten.length === 0 && berichten.length === 0 && (
