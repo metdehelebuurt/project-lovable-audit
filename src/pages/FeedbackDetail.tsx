@@ -336,6 +336,26 @@ export default function FeedbackDetail() {
             </Card>
           )}
 
+          {isSuperadmin && typeof (item as any).csat_score === "number" && (item as any).csat_score > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Tevredenheid indiener</CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <span
+                    key={n}
+                    className={`text-xl ${n <= (item as any).csat_score ? "text-amber-400" : "text-muted-foreground/30"}`}
+                    aria-hidden
+                  >
+                    ★
+                  </span>
+                ))}
+                <span className="ml-2 text-sm font-medium">{(item as any).csat_score}/5</span>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Beschrijving</CardTitle>
