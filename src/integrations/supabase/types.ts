@@ -2386,6 +2386,7 @@ export type Database = {
           bijlagen: Json | null
           categorie: string | null
           created_at: string
+          csat_score: number | null
           gearchiveerd: boolean
           id: string
           partner_id: string | null
@@ -2411,6 +2412,7 @@ export type Database = {
           bijlagen?: Json | null
           categorie?: string | null
           created_at?: string
+          csat_score?: number | null
           gearchiveerd?: boolean
           id?: string
           partner_id?: string | null
@@ -2436,6 +2438,7 @@ export type Database = {
           bijlagen?: Json | null
           categorie?: string | null
           created_at?: string
+          csat_score?: number | null
           gearchiveerd?: boolean
           id?: string
           partner_id?: string | null
