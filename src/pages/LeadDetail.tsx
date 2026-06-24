@@ -101,6 +101,8 @@ const LeadDetail = () => {
   const [snelleSchouwOpen, setSnelleSchouwOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [newNoteIntern, setNewNoteIntern] = useState(true);
+  const [newNoteTitel, setNewNoteTitel] = useState("");
+  const [noteSearch, setNoteSearch] = useState("");
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
