@@ -1,0 +1,1 @@
+ALTER TABLE public.lead_notities ADD COLUMN IF NOT EXISTS titel text;

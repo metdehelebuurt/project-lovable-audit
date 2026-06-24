@@ -17,7 +17,7 @@ import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Globe, Pencil,
   FileText, ClipboardCheck, Plus, Sparkles, Loader2, RefreshCw,
   MessageSquare, StickyNote, Send, Trash2, Clock, User, TrendingUp,
-  Save, ExternalLink, X, Check, PhoneCall, PhoneOff, CalendarIcon, Home,
+  Save, ExternalLink, X, Check, PhoneCall, PhoneOff, CalendarIcon, Home, Search,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { AfspraakDialog } from "@/components/shared/AfspraakDialog";
@@ -101,6 +101,8 @@ const LeadDetail = () => {
   const [snelleSchouwOpen, setSnelleSchouwOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [newNoteIntern, setNewNoteIntern] = useState(true);
+  const [newNoteTitel, setNewNoteTitel] = useState("");
+  const [noteSearch, setNoteSearch] = useState("");
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
@@ -271,9 +273,10 @@ const LeadDetail = () => {
   });
 
   const addNoteMutation = useMutation({
-    mutationFn: async ({ inhoud, intern }: { inhoud: string; intern: boolean }) => {
+    mutationFn: async ({ inhoud, intern, titel }: { inhoud: string; intern: boolean; titel: string }) => {
       const { data, error } = await supabase.from("lead_notities" as any).insert({
         lead_id: id!, user_id: profile!.id, partner_id: profile!.partner_id, inhoud, intern,
+        titel: titel || null,
       } as any).select("id").single();
       if (error) throw error;
       await processNoteMentions({
@@ -289,6 +292,7 @@ const LeadDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead-notities", id] });
       setNewNote("");
+      setNewNoteTitel("");
       setNewNoteIntern(true);
       toast.success("Notitie toegevoegd");
     },
@@ -792,24 +796,52 @@ const LeadDetail = () => {
           {activeTab === "notities" && (
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><StickyNote className="h-4 w-4 text-primary" /> Notities</CardTitle>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <CardTitle className="text-base flex items-center gap-2"><StickyNote className="h-4 w-4 text-primary" /> Notities</CardTitle>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      value={noteSearch}
+                      onChange={e => setNoteSearch(e.target.value)}
+                      placeholder="Zoek in notities…"
+                      className="pl-8 h-8 rounded-xl text-sm"
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Input
+                    value={newNoteTitel}
+                    onChange={e => setNewNoteTitel(e.target.value)}
+                    placeholder="Titel (optioneel)"
+                    className="rounded-xl"
+                  />
                   <MentionTextarea value={newNote} onChange={setNewNote} placeholder="Schrijf een notitie… gebruik @ om een collega te taggen" rows={2} />
                   <div className="flex items-center justify-between">
                     <NotitieZichtbaarheidToggle intern={newNoteIntern} onChange={setNewNoteIntern} id="lead-note-intern" />
                     <Button size="sm" className="rounded-xl gap-1.5" disabled={!newNote.trim() || addNoteMutation.isPending}
-                      onClick={() => newNote.trim() && addNoteMutation.mutate({ inhoud: newNote.trim(), intern: newNoteIntern })}>
+                      onClick={() => newNote.trim() && addNoteMutation.mutate({ inhoud: newNote.trim(), intern: newNoteIntern, titel: newNoteTitel.trim() })}>
                       {addNoteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Toevoegen
                     </Button>
                   </div>
                 </div>
-                {notities.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Nog geen notities.</p>
-                ) : (
+                {(() => {
+                  const q = noteSearch.trim().toLowerCase();
+                  const filtered = q
+                    ? notities.filter((n: any) =>
+                        (n.titel || "").toLowerCase().includes(q) ||
+                        (n.inhoud || "").toLowerCase().includes(q))
+                    : notities;
+                  if (notities.length === 0) {
+                    return <p className="text-sm text-muted-foreground text-center py-6">Nog geen notities.</p>;
+                  }
+                  if (filtered.length === 0) {
+                    return <p className="text-sm text-muted-foreground text-center py-6">Geen notities gevonden voor "{noteSearch}".</p>;
+                  }
+                  return (
                    <div className="space-y-3">
-                    {notities.map((n: any) => {
+                    {filtered.map((n: any) => {
                       const auteur = `${n.user?.voornaam ?? ""} ${n.user?.achternaam ?? ""}`.trim() || "Onbekend";
                       return (
                        <div key={n.id} className="p-3 rounded-xl border bg-card group relative">
@@ -817,7 +849,7 @@ const LeadDetail = () => {
                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><StickyNote className="h-4 w-4 text-primary" /></div>
                            <div className="flex-1 min-w-0">
                              <div className="flex items-center gap-2 flex-wrap">
-                               <h4 className="text-sm font-semibold text-foreground leading-none">Notitie</h4>
+                               <h4 className="text-sm font-semibold text-foreground leading-none">{n.titel?.trim() ? n.titel : "Notitie"}</h4>
                                <NotitieZichtbaarheidBadge intern={n.intern !== false} />
                                <span className="text-[11px] text-muted-foreground ml-auto">{formatDateTime(n.created_at)}</span>
                                {(n.user_id === profile?.id) && (
@@ -837,7 +869,8 @@ const LeadDetail = () => {
                       );
                     })}
                    </div>
-                )}
+                  );
+                })()}
               </CardContent>
             </Card>
           )}
