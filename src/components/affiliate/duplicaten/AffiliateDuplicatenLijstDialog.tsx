@@ -55,8 +55,8 @@ export function AffiliateDuplicatenLijstDialog({ open, onOpenChange }: Props) {
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <LeadKaartje lead={p.lead_a} onOpen={() => { onOpenChange(false); navigate(`/affiliate/leads/${p.lead_a!.id}`); }} />
-                    <LeadKaartje lead={p.lead_b} onOpen={() => { onOpenChange(false); navigate(`/affiliate/leads/${p.lead_b!.id}`); }} />
+                    <LeadKaartje lead={p.lead_a} onOpen={() => { onOpenChange(false); navigate(`/affiliates/leads/${p.lead_a!.id}`); }} />
+                    <LeadKaartje lead={p.lead_b} onOpen={() => { onOpenChange(false); navigate(`/affiliates/leads/${p.lead_b!.id}`); }} />
                   </div>
                   <div className="flex items-center gap-2 justify-end pt-1 flex-wrap">
                     <Button
@@ -89,7 +89,7 @@ export function AffiliateDuplicatenLijstDialog({ open, onOpenChange }: Props) {
           onOpenChange={(v) => { if (!v) setMergePair(null); }}
           leadA={mergePair.a}
           leadB={mergePair.b}
-          onMerged={(keptId) => { setMergePair(null); navigate(`/affiliate/leads/${keptId}`); }}
+          onMerged={(keptId) => { setMergePair(null); navigate(`/affiliates/leads/${keptId}`); }}
         />
       )}
     </>

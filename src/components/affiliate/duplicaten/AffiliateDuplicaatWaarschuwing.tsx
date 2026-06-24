@@ -46,7 +46,7 @@ export function AffiliateDuplicaatWaarschuwing({ leadId }: Props) {
                     {" · "}Aangemaakt {new Date(ander.created_at).toLocaleDateString("nl-NL")}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => navigate(`/affiliate/leads/${ander.id}`)}>
+                <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => navigate(`/affiliates/leads/${ander.id}`)}>
                   <ExternalLink className="h-3.5 w-3.5" /> Open
                 </Button>
                 <Button variant="ghost" size="sm" className="gap-1.5"
@@ -72,7 +72,7 @@ export function AffiliateDuplicaatWaarschuwing({ leadId }: Props) {
           leadB={mergePair.b}
           onMerged={(keptId) => {
             setMergePair(null);
-            if (keptId !== leadId) navigate(`/affiliate/leads/${keptId}`);
+            if (keptId !== leadId) navigate(`/affiliates/leads/${keptId}`);
           }}
         />
       )}
