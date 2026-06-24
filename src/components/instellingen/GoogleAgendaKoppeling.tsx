@@ -106,11 +106,27 @@ export default function GoogleAgendaKoppeling() {
     if (!user) return;
     setBezig(true);
     try {
-      const { error } = await supabase.functions.invoke("google-calendar-sync-pull", {
+      // 1) Pull: wijzigingen vanuit Google terughalen
+      const pull = await supabase.functions.invoke("google-calendar-sync-pull", {
         body: { user_id: user.id },
       });
-      if (error) throw error;
-      toast.success("Synchronisatie gestart");
+      if (pull.error) throw pull.error;
+
+      // 2) Push: bestaande platform-items (her)versturen naar Google
+      const push = await supabase.functions.invoke("google-calendar-backfill", {
+        body: { user_id: user.id },
+      });
+      if (push.error) throw push.error;
+
+      const r = (push.data || {}) as { totaal?: number; gelukt?: number; overgeslagen?: number; mislukt?: number };
+      const totaal = r.totaal ?? 0;
+      if (totaal === 0) {
+        toast.success("Synchronisatie voltooid – geen items om te versturen");
+      } else {
+        toast.success(
+          `Synchronisatie voltooid (${r.gelukt ?? 0} verstuurd, ${r.overgeslagen ?? 0} ongewijzigd${r.mislukt ? `, ${r.mislukt} mislukt` : ""})`,
+        );
+      }
       setTimeout(laadAccount, 1500);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Synchronisatie mislukt");
