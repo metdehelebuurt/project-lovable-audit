@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CheckCircle2, Mail, RefreshCw, Unlink } from "lucide-react";
+import { KeyRound } from "lucide-react";
+import { AppPasswordDialog } from "./AppPasswordDialog";
 
 interface OAuthConfig {
   google: { clientId: string; configured: boolean };
@@ -17,6 +19,9 @@ interface EmailAccount {
   email_adres: string;
   provider: string;
   last_sync_at: string | null;
+  auth_method?: string | null;
+  app_password_encrypted?: string | null;
+  access_token?: string | null;
 }
 
 /**
@@ -30,6 +35,7 @@ const MijnEmailKoppeling = () => {
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [appPwOpen, setAppPwOpen] = useState(false);
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
@@ -52,7 +58,7 @@ const MijnEmailKoppeling = () => {
     if (!user?.id) return;
     const { data } = await supabase
       .from("email_accounts")
-      .select("id, email_adres, provider, last_sync_at")
+      .select("id, email_adres, provider, last_sync_at, auth_method, app_password_encrypted, access_token")
       .eq("user_id", user.id)
       .eq("actief", true)
       .maybeSingle();
@@ -121,6 +127,9 @@ const MijnEmailKoppeling = () => {
 
   if (loading) return null;
 
+  const hasAppPw = !!account?.app_password_encrypted;
+  const hasOauth = !!account?.access_token;
+
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader className="flex flex-row items-center gap-3">
@@ -145,6 +154,16 @@ const MijnEmailKoppeling = () => {
                   <Badge variant="outline" className="text-xs">
                     {account.provider === "google" ? "Gmail" : "Outlook"}
                   </Badge>
+                  {hasOauth && (
+                    <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                      API
+                    </Badge>
+                  )}
+                  {hasAppPw && (
+                    <Badge variant="outline" className="text-xs bg-violet-50 text-violet-700 border-violet-200">
+                      IMAP/SMTP fallback
+                    </Badge>
+                  )}
                   {account.last_sync_at && (
                     <span className="text-xs text-muted-foreground">
                       Gesynchroniseerd: {new Date(account.last_sync_at).toLocaleString("nl-NL")}
@@ -158,6 +177,18 @@ const MijnEmailKoppeling = () => {
                 <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                 {syncing ? "Synchroniseren..." : "Nu synchroniseren"}
               </Button>
+              {account.provider === "google" && !hasAppPw && (
+                <Button variant="outline" size="sm" onClick={() => setAppPwOpen(true)} className="gap-2">
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Fallback (App-wachtwoord) instellen
+                </Button>
+              )}
+              {hasAppPw && (
+                <Button variant="outline" size="sm" onClick={() => setAppPwOpen(true)} className="gap-2">
+                  <KeyRound className="h-3.5 w-3.5" />
+                  App-wachtwoord vervangen
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={disconnect} className="gap-2 text-destructive hover:text-destructive">
                 <Unlink className="h-3.5 w-3.5" />
                 Ontkoppelen
@@ -200,10 +231,31 @@ const MijnEmailKoppeling = () => {
                   <p className="text-xs text-muted-foreground">Microsoft 365 of Outlook.com</p>
                 </div>
               </button>
+              <button
+                type="button"
+                onClick={() => setAppPwOpen(true)}
+                className="flex items-center gap-3 p-4 border rounded-xl hover:bg-muted/50 transition-colors text-left sm:col-span-2"
+              >
+                <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                  <KeyRound className="h-5 w-5 text-violet-700" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Gmail koppelen via App-wachtwoord (IMAP/SMTP)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Gebruikt als fallback wanneer de Google API niet werkt. Vereist 2-staps-verificatie.
+                  </p>
+                </div>
+              </button>
             </div>
           </div>
         )}
       </CardContent>
+      <AppPasswordDialog
+        open={appPwOpen}
+        onOpenChange={setAppPwOpen}
+        defaultEmail={account?.email_adres}
+        onLinked={() => void load()}
+      />
     </Card>
   );
 };

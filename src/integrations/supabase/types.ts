@@ -1745,10 +1745,18 @@ export type Database = {
         Row: {
           access_token: string | null
           actief: boolean
+          app_password_encrypted: string | null
+          auth_method: string
           created_at: string
           email_adres: string
           id: string
+          imap_host: string | null
+          imap_last_uid: number | null
+          imap_port: number | null
           is_default_voor_partner: boolean | null
+          last_send_error: string | null
+          last_send_error_at: string | null
+          last_send_method: string | null
           last_sync_at: string | null
           last_sync_error: string | null
           last_sync_error_at: string | null
@@ -1757,6 +1765,8 @@ export type Database = {
           provider: string
           refresh_token: string | null
           scopes: string[] | null
+          smtp_host: string | null
+          smtp_port: number | null
           sync_cursor: string | null
           token_expiry: string | null
           updated_at: string
@@ -1765,10 +1775,18 @@ export type Database = {
         Insert: {
           access_token?: string | null
           actief?: boolean
+          app_password_encrypted?: string | null
+          auth_method?: string
           created_at?: string
           email_adres: string
           id?: string
+          imap_host?: string | null
+          imap_last_uid?: number | null
+          imap_port?: number | null
           is_default_voor_partner?: boolean | null
+          last_send_error?: string | null
+          last_send_error_at?: string | null
+          last_send_method?: string | null
           last_sync_at?: string | null
           last_sync_error?: string | null
           last_sync_error_at?: string | null
@@ -1777,6 +1795,8 @@ export type Database = {
           provider: string
           refresh_token?: string | null
           scopes?: string[] | null
+          smtp_host?: string | null
+          smtp_port?: number | null
           sync_cursor?: string | null
           token_expiry?: string | null
           updated_at?: string
@@ -1785,10 +1805,18 @@ export type Database = {
         Update: {
           access_token?: string | null
           actief?: boolean
+          app_password_encrypted?: string | null
+          auth_method?: string
           created_at?: string
           email_adres?: string
           id?: string
+          imap_host?: string | null
+          imap_last_uid?: number | null
+          imap_port?: number | null
           is_default_voor_partner?: boolean | null
+          last_send_error?: string | null
+          last_send_error_at?: string | null
+          last_send_method?: string | null
           last_sync_at?: string | null
           last_sync_error?: string | null
           last_sync_error_at?: string | null
@@ -1797,6 +1825,8 @@ export type Database = {
           provider?: string
           refresh_token?: string | null
           scopes?: string[] | null
+          smtp_host?: string | null
+          smtp_port?: number | null
           sync_cursor?: string | null
           token_expiry?: string | null
           updated_at?: string

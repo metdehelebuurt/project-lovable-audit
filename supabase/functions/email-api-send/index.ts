@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveEmailSender, DocumentType } from "../_shared/resolve-email-sender.ts";
+import { decryptAppPassword } from "../_shared/email-crypto.ts";
+import { smtpSend } from "../_shared/smtp-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,18 +72,63 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Geen e-mailaccount gekoppeld" }), { status: 400, headers: corsHeaders });
     }
 
-    // Refresh token if needed
-    let accessToken = emailAccount.access_token;
-    if (new Date(emailAccount.token_expiry) <= new Date()) {
-      accessToken = await refreshAccessToken(adminClient, emailAccount);
+    // Bepaal welke methodes beschikbaar zijn.
+    const hasOauth = !!emailAccount.access_token && !!emailAccount.refresh_token;
+    const hasAppPw = emailAccount.provider === "google" && !!emailAccount.app_password_encrypted;
+    let sendMethod: "oauth_api" | "smtp_app_password" | null = null;
+    let lastErr: string | null = null;
+
+    // 1) Probeer OAuth API (Gmail of Microsoft)
+    if (hasOauth) {
+      try {
+        let accessToken = emailAccount.access_token;
+        if (new Date(emailAccount.token_expiry) <= new Date()) {
+          accessToken = await refreshAccessToken(adminClient, emailAccount);
+        }
+        if (emailAccount.provider === "google") {
+          await sendViaGmail(accessToken, emailAccount.email_adres, to, subject, html_body);
+        } else if (emailAccount.provider === "microsoft") {
+          await sendViaMsGraph(accessToken, to, subject, html_body);
+        }
+        sendMethod = "oauth_api";
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : String(e);
+        console.warn("OAuth send mislukt, probeer fallback:", lastErr);
+      }
     }
 
-    // Send via appropriate API
-    if (emailAccount.provider === "google") {
-      await sendViaGmail(accessToken, emailAccount.email_adres, to, subject, html_body);
-    } else if (emailAccount.provider === "microsoft") {
-      await sendViaMsGraph(accessToken, to, subject, html_body);
+    // 2) Fallback: SMTP via Gmail App Password
+    if (!sendMethod && hasAppPw) {
+      try {
+        const plain = await decryptAppPassword(emailAccount.app_password_encrypted as string);
+        await smtpSend({
+          email_adres: emailAccount.email_adres,
+          smtp_host: emailAccount.smtp_host, smtp_port: emailAccount.smtp_port,
+          app_password_plain: plain,
+        }, { from: emailAccount.email_adres, to, subject, html: html_body });
+        sendMethod = "smtp_app_password";
+        lastErr = null;
+      } catch (e) {
+        lastErr = `SMTP-fallback mislukte: ${e instanceof Error ? e.message : String(e)}` +
+          (lastErr ? ` (API-fout: ${lastErr})` : "");
+      }
     }
+
+    if (!sendMethod) {
+      await adminClient.from("email_accounts").update({
+        last_send_error: lastErr ?? "Geen werkende verzendmethode",
+        last_send_error_at: new Date().toISOString(),
+      }).eq("id", emailAccount.id);
+      return new Response(JSON.stringify({
+        error: lastErr ?? "Geen werkende verzendmethode (geen OAuth-token of App-wachtwoord).",
+      }), { status: 502, headers: corsHeaders });
+    }
+
+    // Markeer succes
+    await adminClient.from("email_accounts").update({
+      last_send_method: sendMethod,
+      last_send_error: null, last_send_error_at: null,
+    }).eq("id", emailAccount.id);
 
     // Save to email_berichten
     await adminClient.from("email_berichten").insert({
@@ -101,7 +148,7 @@ Deno.serve(async (req) => {
       offerte_id: offerte_id || null,
       document_type: docType,
       via_account_id: emailAccount.id,
-      bron_method: "oauth",
+      bron_method: sendMethod,
     });
 
     // Also log in email_log (alleen wanneer er een partner-context is)
@@ -118,7 +165,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, method: sendMethod }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
