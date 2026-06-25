@@ -634,6 +634,62 @@ export type Database = {
           },
         ]
       }
+      affiliate_lead_contactpersonen: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string | null
+          functie: string | null
+          id: string
+          is_hoofdcontact: boolean
+          lead_id: string
+          linkedin_url: string | null
+          naam: string
+          notitie: string | null
+          telefoon_kantoor: string | null
+          telefoon_mobiel: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          functie?: string | null
+          id?: string
+          is_hoofdcontact?: boolean
+          lead_id: string
+          linkedin_url?: string | null
+          naam: string
+          notitie?: string | null
+          telefoon_kantoor?: string | null
+          telefoon_mobiel?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          functie?: string | null
+          id?: string
+          is_hoofdcontact?: boolean
+          lead_id?: string
+          linkedin_url?: string | null
+          naam?: string
+          notitie?: string | null
+          telefoon_kantoor?: string | null
+          telefoon_mobiel?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_lead_contactpersonen_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_lead_imports: {
         Row: {
           afgekeurd: number
@@ -672,6 +728,7 @@ export type Database = {
       }
       affiliate_leads: {
         Row: {
+          aantal_medewerkers: number | null
           adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
@@ -681,26 +738,36 @@ export type Database = {
           ai_volgende_actie: string | null
           ai_volgende_actie_op: string | null
           bedrijfsnaam: string
+          beslissingscriteria: string | null
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
           bron_id: string | null
+          btw_nummer: string | null
           claimed_at: string | null
+          concurrenten: string | null
           contactpersoon: string | null
           created_at: string
           created_by: string | null
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          facebook_url: string | null
           fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
+          huidige_leverancier: string | null
           id: string
           import_batch_id: string | null
           in_pipeline: boolean
+          instagram_url: string | null
+          jaaromzet: number | null
+          kvk_nummer: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
+          linkedin_url: string | null
           notities: string | null
+          oprichtingsjaar: number | null
           plaats: string | null
           postcode: string | null
           regio: string | null
@@ -729,6 +796,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          aantal_medewerkers?: number | null
           adres?: string | null
           ai_bedrijf_kansen?: Json | null
           ai_bedrijf_samenvatting?: string | null
@@ -738,26 +806,36 @@ export type Database = {
           ai_volgende_actie?: string | null
           ai_volgende_actie_op?: string | null
           bedrijfsnaam: string
+          beslissingscriteria?: string | null
           branche?: string | null
           bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
           bron_id?: string | null
+          btw_nummer?: string | null
           claimed_at?: string | null
+          concurrenten?: string | null
           contactpersoon?: string | null
           created_at?: string
           created_by?: string | null
           doorgezet_op?: string | null
           eigenaar_id?: string | null
           email?: string | null
+          facebook_url?: string | null
           fase_slug?: string
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
+          huidige_leverancier?: string | null
           id?: string
           import_batch_id?: string | null
           in_pipeline?: boolean
+          instagram_url?: string | null
+          jaaromzet?: number | null
+          kvk_nummer?: string | null
           laatst_gescoord_op?: string | null
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
+          linkedin_url?: string | null
           notities?: string | null
+          oprichtingsjaar?: number | null
           plaats?: string | null
           postcode?: string | null
           regio?: string | null
@@ -786,6 +864,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          aantal_medewerkers?: number | null
           adres?: string | null
           ai_bedrijf_kansen?: Json | null
           ai_bedrijf_samenvatting?: string | null
@@ -795,26 +874,36 @@ export type Database = {
           ai_volgende_actie?: string | null
           ai_volgende_actie_op?: string | null
           bedrijfsnaam?: string
+          beslissingscriteria?: string | null
           branche?: string | null
           bron?: Database["public"]["Enums"]["affiliate_lead_bron"]
           bron_id?: string | null
+          btw_nummer?: string | null
           claimed_at?: string | null
+          concurrenten?: string | null
           contactpersoon?: string | null
           created_at?: string
           created_by?: string | null
           doorgezet_op?: string | null
           eigenaar_id?: string | null
           email?: string | null
+          facebook_url?: string | null
           fase_slug?: string
           geschatte_waarde?: number | null
           gewonnen_partner_id?: string | null
+          huidige_leverancier?: string | null
           id?: string
           import_batch_id?: string | null
           in_pipeline?: boolean
+          instagram_url?: string | null
+          jaaromzet?: number | null
+          kvk_nummer?: string | null
           laatst_gescoord_op?: string | null
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
+          linkedin_url?: string | null
           notities?: string | null
+          oprichtingsjaar?: number | null
           plaats?: string | null
           postcode?: string | null
           regio?: string | null
@@ -8613,6 +8702,7 @@ export type Database = {
       admin_doorzetten_naar_affiliate: {
         Args: { _affiliate_id: string; _lead_id: string; _notitie?: string }
         Returns: {
+          aantal_medewerkers: number | null
           adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
@@ -8622,26 +8712,36 @@ export type Database = {
           ai_volgende_actie: string | null
           ai_volgende_actie_op: string | null
           bedrijfsnaam: string
+          beslissingscriteria: string | null
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
           bron_id: string | null
+          btw_nummer: string | null
           claimed_at: string | null
+          concurrenten: string | null
           contactpersoon: string | null
           created_at: string
           created_by: string | null
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          facebook_url: string | null
           fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
+          huidige_leverancier: string | null
           id: string
           import_batch_id: string | null
           in_pipeline: boolean
+          instagram_url: string | null
+          jaaromzet: number | null
+          kvk_nummer: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
+          linkedin_url: string | null
           notities: string | null
+          oprichtingsjaar: number | null
           plaats: string | null
           postcode: string | null
           regio: string | null
@@ -8685,6 +8785,7 @@ export type Database = {
           _volgende_actie_op?: string
         }
         Returns: {
+          aantal_medewerkers: number | null
           adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
@@ -8694,26 +8795,36 @@ export type Database = {
           ai_volgende_actie: string | null
           ai_volgende_actie_op: string | null
           bedrijfsnaam: string
+          beslissingscriteria: string | null
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
           bron_id: string | null
+          btw_nummer: string | null
           claimed_at: string | null
+          concurrenten: string | null
           contactpersoon: string | null
           created_at: string
           created_by: string | null
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          facebook_url: string | null
           fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
+          huidige_leverancier: string | null
           id: string
           import_batch_id: string | null
           in_pipeline: boolean
+          instagram_url: string | null
+          jaaromzet: number | null
+          kvk_nummer: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
+          linkedin_url: string | null
           notities: string | null
+          oprichtingsjaar: number | null
           plaats: string | null
           postcode: string | null
           regio: string | null
@@ -8768,6 +8879,91 @@ export type Database = {
           voornaam: string
         }[]
       }
+      admin_overdracht_affiliate_lead: {
+        Args: {
+          _lead_id: string
+          _nieuwe_eigenaar_id: string
+          _notitie?: string
+        }
+        Returns: {
+          aantal_medewerkers: number | null
+          adres: string | null
+          ai_bedrijf_kansen: Json | null
+          ai_bedrijf_samenvatting: string | null
+          ai_bedrijf_samenvatting_op: string | null
+          ai_score: number | null
+          ai_score_reden: string | null
+          ai_volgende_actie: string | null
+          ai_volgende_actie_op: string | null
+          bedrijfsnaam: string
+          beslissingscriteria: string | null
+          branche: string | null
+          bron: Database["public"]["Enums"]["affiliate_lead_bron"]
+          bron_id: string | null
+          btw_nummer: string | null
+          claimed_at: string | null
+          concurrenten: string | null
+          contactpersoon: string | null
+          created_at: string
+          created_by: string | null
+          doorgezet_op: string | null
+          eigenaar_id: string | null
+          email: string | null
+          facebook_url: string | null
+          fase_slug: string
+          geschatte_waarde: number | null
+          gewonnen_partner_id: string | null
+          huidige_leverancier: string | null
+          id: string
+          import_batch_id: string | null
+          in_pipeline: boolean
+          instagram_url: string | null
+          jaaromzet: number | null
+          kvk_nummer: string | null
+          laatst_gescoord_op: string | null
+          lead_score_basis: number | null
+          lead_score_basis_details: Json | null
+          linkedin_url: string | null
+          notities: string | null
+          oprichtingsjaar: number | null
+          plaats: string | null
+          postcode: string | null
+          regio: string | null
+          review_bucket:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id: string | null
+          review_notitie: string | null
+          review_op: string | null
+          sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op: string | null
+          status: Database["public"]["Enums"]["affiliate_lead_status"]
+          tags: string[]
+          telefoon: string | null
+          temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op: string | null
+          toegewezen_door_admin_id: string | null
+          updated_at: string
+          verloren_categorie:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op: string | null
+          verloren_reden: string | null
+          volgende_actie_datum: string | null
+          volgende_actie_op: string | null
+          website: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_leads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      affiliate_lead_is_editable: {
+        Args: { _lead_id: string; _user_id: string }
+        Returns: boolean
+      }
       bereken_inkoop_match: {
         Args: { _inkoopfactuur_id: string }
         Returns: string
@@ -8779,6 +8975,7 @@ export type Database = {
       claim_affiliate_lead: {
         Args: { _lead_id: string }
         Returns: {
+          aantal_medewerkers: number | null
           adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
@@ -8788,26 +8985,36 @@ export type Database = {
           ai_volgende_actie: string | null
           ai_volgende_actie_op: string | null
           bedrijfsnaam: string
+          beslissingscriteria: string | null
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
           bron_id: string | null
+          btw_nummer: string | null
           claimed_at: string | null
+          concurrenten: string | null
           contactpersoon: string | null
           created_at: string
           created_by: string | null
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          facebook_url: string | null
           fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
+          huidige_leverancier: string | null
           id: string
           import_batch_id: string | null
           in_pipeline: boolean
+          instagram_url: string | null
+          jaaromzet: number | null
+          kvk_nummer: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
+          linkedin_url: string | null
           notities: string | null
+          oprichtingsjaar: number | null
           plaats: string | null
           postcode: string | null
           regio: string | null
@@ -9071,6 +9278,7 @@ export type Database = {
       update_lead_fase: {
         Args: { _fase_slug: string; _lead_id: string }
         Returns: {
+          aantal_medewerkers: number | null
           adres: string | null
           ai_bedrijf_kansen: Json | null
           ai_bedrijf_samenvatting: string | null
@@ -9080,26 +9288,36 @@ export type Database = {
           ai_volgende_actie: string | null
           ai_volgende_actie_op: string | null
           bedrijfsnaam: string
+          beslissingscriteria: string | null
           branche: string | null
           bron: Database["public"]["Enums"]["affiliate_lead_bron"]
           bron_id: string | null
+          btw_nummer: string | null
           claimed_at: string | null
+          concurrenten: string | null
           contactpersoon: string | null
           created_at: string
           created_by: string | null
           doorgezet_op: string | null
           eigenaar_id: string | null
           email: string | null
+          facebook_url: string | null
           fase_slug: string
           geschatte_waarde: number | null
           gewonnen_partner_id: string | null
+          huidige_leverancier: string | null
           id: string
           import_batch_id: string | null
           in_pipeline: boolean
+          instagram_url: string | null
+          jaaromzet: number | null
+          kvk_nummer: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
+          linkedin_url: string | null
           notities: string | null
+          oprichtingsjaar: number | null
           plaats: string | null
           postcode: string | null
           regio: string | null
