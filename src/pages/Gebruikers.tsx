@@ -29,6 +29,7 @@ const rolLabels: Record<AppRole, string> = {
   installateur: "Installateur",
   consument: "Consument",
   affiliate: "Affiliate",
+  sales_manager: "Sales Manager",
 };
 
 const rolColors: Record<AppRole, string> = {
@@ -40,6 +41,7 @@ const rolColors: Record<AppRole, string> = {
   installateur: "bg-warning-light text-warning-foreground",
   consument: "bg-muted text-muted-foreground",
   affiliate: "bg-chart-4/10 text-chart-4",
+  sales_manager: "bg-primary/15 text-primary",
 };
 
 interface UserFormData {
