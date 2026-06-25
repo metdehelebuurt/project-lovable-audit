@@ -1,6 +1,6 @@
 import { LogOut, User, MessageSquarePlus, Inbox } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -12,6 +12,7 @@ import { NotificatieCenter } from "@/components/NotificatieCenter";
 import { useActiecentrumBadgeCount } from "@/hooks/useActiecentrum";
 import { CommandPaletteTrigger } from "@/components/command/CommandPalette";
 import { QuickCreateMenu } from "@/components/command/QuickCreateMenu";
+import { AffiliateTopnav } from "@/components/affiliate/AffiliateSubnav";
 
 const rolLabels: Record<string, string> = {
   superadmin: "Platformbeheerder",
@@ -25,7 +26,10 @@ const rolLabels: Record<string, string> = {
 export function AppHeader() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: acCount = 0 } = useActiecentrumBadgeCount();
+  const isAffiliate =
+    location.pathname.startsWith("/affiliates") || location.pathname.startsWith("/affiliate/");
 
   const handleSignOut = async () => {
     await signOut();
@@ -34,19 +38,34 @@ export function AppHeader() {
   };
 
   return (
-    <header className="h-[72px] bg-card border-b border-border flex items-center justify-between px-4 md:px-8">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <SidebarTrigger className="text-foreground" />
-        <CommandPaletteTrigger />
+    <header
+      className={
+        isAffiliate
+          ? "h-[72px] bg-primary text-primary-foreground border-b border-primary/40 flex items-center gap-3 px-4 md:px-6"
+          : "h-[72px] bg-card border-b border-border flex items-center justify-between px-4 md:px-8"
+      }
+    >
+      <div className={isAffiliate ? "flex items-center gap-3 shrink-0" : "flex items-center gap-3 flex-1 min-w-0"}>
+        <SidebarTrigger className={isAffiliate ? "text-primary-foreground" : "text-foreground"} />
+        {!isAffiliate && <CommandPaletteTrigger />}
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      {isAffiliate && (
+        <div className="flex-1 min-w-0 flex items-center gap-3">
+          <AffiliateTopnav />
+          <div className="hidden lg:block shrink-0">
+            <CommandPaletteTrigger />
+          </div>
+        </div>
+      )}
+
+      <div className={isAffiliate ? "flex items-center gap-2 sm:gap-3 shrink-0" : "flex items-center gap-2 sm:gap-3"}>
         <QuickCreateMenu />
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/actiecentrum")}
-          className="relative gap-1.5"
+          className={isAffiliate ? "relative gap-1.5 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" : "relative gap-1.5"}
           aria-label="Actiecentrum openen"
         >
           <Inbox className="h-4.5 w-4.5" />
@@ -61,15 +80,15 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2">
-              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
+            <Button variant="ghost" className={isAffiliate ? "flex items-center gap-2 px-2 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" : "flex items-center gap-2 px-2"}>
+              <div className={isAffiliate ? "h-8 w-8 rounded-full bg-primary-foreground text-primary flex items-center justify-center text-sm font-medium" : "h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium"}>
                 {profile?.voornaam?.[0]}{profile?.achternaam?.[0]}
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium leading-none">
                   {profile?.voornaam} {profile?.achternaam}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className={isAffiliate ? "text-xs text-primary-foreground/70" : "text-xs text-muted-foreground"}>
                   {rolLabels[profile?.rol ?? ""] ?? profile?.rol}
                 </p>
               </div>
