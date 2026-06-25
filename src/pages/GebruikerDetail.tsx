@@ -26,7 +26,7 @@ type AppRole = Database["public"]["Enums"]["app_role"];
 const ROL_LABELS: Record<string, string> = {
   superadmin: "Platformbeheerder", partner_admin: "Beheerder", backoffice: "Backoffice",
   partner_staff: "Medewerker", adviseur: "Energieadviseur", installateur: "Installateur",
-  consument: "Consument", affiliate: "Affiliate",
+  consument: "Consument", affiliate: "Affiliate", sales_manager: "Sales Manager",
 };
 
 const GebruikerDetail = () => {
