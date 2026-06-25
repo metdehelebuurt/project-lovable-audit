@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import type { Installatie } from "./api/installatieApi";
 import { updateInstallatie } from "./api/installatieApi";
 import AiWerkomschrijvingDialog from "./AiWerkomschrijvingDialog";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 interface Props {
   installatie: Installatie;
@@ -94,6 +95,7 @@ export default function InstallatiePlanningCard({ installatie, onChanged, readOn
             <Input type="time" value={form.eind_tijd} onChange={(e) => setForm({ ...form, eind_tijd: e.target.value })} disabled={readOnly} />
           </div>
         </div>
+        <TijdzoneBanner datum={form.geplande_startdatum} tijd={form.start_tijd} compact />
         <div>
           <Label>Werkadres</Label>
           <Input value={form.werkadres} onChange={(e) => setForm({ ...form, werkadres: e.target.value })} placeholder="Adres van uitvoering" disabled={readOnly} />

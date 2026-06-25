@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCreateTerugbel } from "@/hooks/affiliate/useTerugbelAfspraken";
 import { useInterneCollegas } from "@/hooks/affiliate/useInterneCollegas";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 interface Props {
   open: boolean;
@@ -63,6 +64,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
           <div className="space-y-1">
             <Label>Datum en tijd</Label>
             <Input type="datetime-local" value={moment} onChange={(e) => setMoment(e.target.value)} />
+            <TijdzoneBanner moment={moment} className="mt-2" />
           </div>
           <div className="space-y-1">
             <Label>Voor welke collega?</Label>

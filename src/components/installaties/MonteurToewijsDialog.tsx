@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { createInstallatie, generateInstallatienummer } from "./api/installatieApi";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 interface Opdracht {
   id: string;
@@ -145,6 +146,7 @@ export default function MonteurToewijsDialog({ open, onOpenChange, opdracht, onS
               <Input type="time" value={form.eindtijd} onChange={(e) => setForm({ ...form, eindtijd: e.target.value })} />
             </div>
           </div>
+          <TijdzoneBanner datum={form.startdatum} tijd={form.starttijd} compact />
           <div>
             <Label>Werkomschrijving</Label>
             <Textarea value={form.werkomschrijving} onChange={(e) => setForm({ ...form, werkomschrijving: e.target.value })} rows={3} />

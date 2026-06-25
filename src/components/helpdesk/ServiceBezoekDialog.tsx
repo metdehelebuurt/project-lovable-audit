@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateServiceBezoek } from "@/hooks/helpdesk/useServiceBezoeken";
 import type { HelpdeskTicket } from "@/hooks/helpdesk/useTickets";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 function useMonteurs(partnerId: string) {
   return useQuery({
@@ -92,6 +93,7 @@ export function ServiceBezoekDialog({ ticket, type, trigger }: { ticket: Helpdes
               </Select>
             </div>
           </div>
+          <TijdzoneBanner datum={datum} tijd={tijd} compact />
           <div>
             <Label>Notities</Label>
             <Textarea rows={3} value={notities} onChange={(e) => setNotities(e.target.value)} placeholder="Wat moet de monteur weten" />

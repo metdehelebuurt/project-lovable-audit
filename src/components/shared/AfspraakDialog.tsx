@@ -21,6 +21,7 @@ import { CalendarIcon, Video, MapPin, Phone, User, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 interface AfspraakDialogProps {
   open: boolean;
@@ -302,6 +303,7 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
               <Input type="time" value={form.eind_tijd} onChange={e => update("eind_tijd", e.target.value)} />
             </div>
           </div>
+          <TijdzoneBanner datum={form.datum} tijd={form.start_tijd} compact />
           <div>
             <Label>Locatie</Label>
             <Input value={form.locatie} onChange={e => update("locatie", e.target.value)} placeholder="Adres of videocall link" />

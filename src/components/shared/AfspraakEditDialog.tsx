@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { CalendarIcon, Video, MapPin, Phone, User, Trash2 } from "lucide-react";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 interface Afspraak {
   id: string;
@@ -317,6 +318,7 @@ export function AfspraakEditDialog({ open, onOpenChange, afspraak, onSuccess }: 
                 <Input type="time" value={form.eind_tijd ? form.eind_tijd.slice(0,5) : ""} onChange={e => update("eind_tijd", e.target.value)} />
               </div>
             </div>
+            <TijdzoneBanner datum={form.datum} tijd={form.start_tijd ? form.start_tijd.slice(0,5) : ""} compact />
             <div>
               <Label>Locatie</Label>
               <Input value={form.locatie || ""} onChange={e => update("locatie", e.target.value)} />
