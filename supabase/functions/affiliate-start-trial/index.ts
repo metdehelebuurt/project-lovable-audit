@@ -111,6 +111,9 @@ serve(async (req) => {
     }
 
     // Trial-signup aanroepen
+    const isTrialDurationAdmin =
+      profile.rol === "superadmin" || (profile.email ?? "").toLowerCase() === "bas@mijnhuis.nu";
+    const effectieveTrialDagen = isTrialDurationAdmin && body.trial_dagen ? body.trial_dagen : 30;
     const signupRes = await admin.functions.invoke("trial-signup", {
       body: {
         bedrijfsnaam: body.bedrijfsnaam,
