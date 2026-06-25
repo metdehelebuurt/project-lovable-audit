@@ -1192,6 +1192,60 @@ export type Database = {
           },
         ]
       }
+      affiliate_pipeline_config: {
+        Row: {
+          created_at: string
+          id: string
+          is_systeem: boolean
+          kleur: string
+          label: string
+          partner_id: string
+          status_key: string
+          updated_at: string
+          volgorde: number
+          zichtbaar: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_systeem?: boolean
+          kleur?: string
+          label: string
+          partner_id: string
+          status_key: string
+          updated_at?: string
+          volgorde?: number
+          zichtbaar?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_systeem?: boolean
+          kleur?: string
+          label?: string
+          partner_id?: string
+          status_key?: string
+          updated_at?: string
+          volgorde?: number
+          zichtbaar?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_pipeline_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_pipeline_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_referrals: {
         Row: {
           affiliate_id: string
@@ -9264,6 +9318,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      seed_affiliate_pipeline_config: {
+        Args: { _partner_id: string }
+        Returns: undefined
+      }
       seed_default_pipeline: { Args: { _user_id: string }; Returns: undefined }
       slugify_partner_naam: { Args: { _naam: string }; Returns: string }
       suggest_leverancier: {
@@ -9391,6 +9449,8 @@ export type Database = {
         | "trial_gestart"
         | "gewonnen"
         | "verloren"
+        | "nieuw_campagne"
+        | "nieuw_demo_voltooid"
       affiliate_lost_review_bucket:
         | "te_beoordelen"
         | "terugbellen"
@@ -9711,6 +9771,8 @@ export const Constants = {
         "trial_gestart",
         "gewonnen",
         "verloren",
+        "nieuw_campagne",
+        "nieuw_demo_voltooid",
       ],
       affiliate_lost_review_bucket: [
         "te_beoordelen",
