@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3, Sparkles, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3, Sparkles, AlertTriangle, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsLostReviewAdmin } from "@/hooks/affiliate/useIsLostReviewAdmin";
 
@@ -15,6 +15,7 @@ const baseItems = [
   { to: "/affiliates/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/affiliates/links", label: "Links & codes", icon: Link2 },
   { to: "/offertes", label: "Offertes", icon: FileText },
+  { to: "/affiliates/instellingen/mailtemplates", label: "Mailtemplates", icon: Mail },
 ];
 
 export function AffiliateSubnav() {
