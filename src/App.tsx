@@ -370,6 +370,9 @@ const App = () => (
               <Route path="/sales/agenda" element={
                 <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><SalesAgenda /></ProtectedRoute>
               } />
+              <Route path="/sales/affiliates" element={
+                <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><SalesAffiliates /></ProtectedRoute>
+              } />
               <Route path="/admin/abonnementen" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><AdminAbonnementen /></ProtectedRoute>
               } />
