@@ -25,9 +25,12 @@ const TOP_ITEMS_PER_ROL: Record<AppRole, string[]> = {
   sales_manager: ["vandaag", "affiliate-pipeline", "affiliate-pool", "affiliate-analytics"],
 };
 
-function selecteerTopItems(rol: AppRole | undefined | null): NavigatieItem[] {
+function selecteerTopItems(
+  rol: AppRole | undefined | null,
+  extraRollen: AppRole[] = [],
+): NavigatieItem[] {
   const ids = TOP_ITEMS_PER_ROL[(rol as AppRole) ?? "consument"] ?? [];
-  const groepen = getNavigation(rol);
+  const groepen = getNavigation(rol, extraRollen);
   const alleItems: NavigatieItem[] = groepen.flatMap((g) => g.items);
   const out: NavigatieItem[] = [];
   for (const id of ids) {
@@ -44,7 +47,7 @@ export function MobileBottomNav() {
   const { data: counts = {} } = useModuleNotificatieCounts();
   const [quickOpen, setQuickOpen] = useState(false);
 
-  const items = selecteerTopItems(profile?.rol);
+  const items = selecteerTopItems(profile?.rol, profile?.extra_rollen ?? []);
   if (items.length === 0) return null;
 
   const isActief = (url: string) => {
