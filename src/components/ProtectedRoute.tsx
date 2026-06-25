@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
 import { useEffectieveModules } from "@/lib/modules";
+import { getAllRoles } from "@/lib/permissions";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -27,7 +28,8 @@ const ProtectedRoute = ({ children, allowedRoles, moduleKey }: ProtectedRoutePro
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(profile.rol)) {
+  const userRoles = getAllRoles(profile);
+  if (allowedRoles && !allowedRoles.some((r) => userRoles.includes(r))) {
     return <Navigate to="/dashboard" replace />;
   }
 
