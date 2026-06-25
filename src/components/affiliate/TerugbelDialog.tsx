@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCreateTerugbel } from "@/hooks/affiliate/useTerugbelAfspraken";
 import { useInterneCollegas } from "@/hooks/affiliate/useInterneCollegas";
 import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePlanAfspraakViaSales } from "@/hooks/sales/useSalesAgenda";
 
 interface Props {
   open: boolean;
@@ -17,11 +19,20 @@ interface Props {
   leadNaam: string;
   klantEmail?: string | null;
   afspraakType?: "terugbel" | "demo";
+  /** Eigenaar (affiliate) van de lead — nodig voor sales-manager flow. */
+  affiliateId?: string | null;
   onSaved?: () => void;
 }
 
-export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmail, afspraakType = "terugbel", onSaved }: Props) {
+export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmail, afspraakType = "terugbel", affiliateId, onSaved }: Props) {
   const create = useCreateTerugbel();
+  const planViaSales = usePlanAfspraakViaSales();
+  const { user, profile } = useAuth();
+  // Sales-manager / superadmin die NIET zelf de affiliate is plant via de sales-endpoint.
+  const isSalesProxy =
+    !!affiliateId &&
+    user?.id !== affiliateId &&
+    (profile?.rol === "sales_manager" || profile?.rol === "superadmin");
   const { data: collegas = [], isLoading: collegasLoading } = useInterneCollegas();
   // datetime-local verwacht LOKALE tijd (zonder timezone). toISOString() geeft UTC
   // en zou daardoor in bv. Portugal het uur verkeerd voorinvullen.
@@ -42,8 +53,23 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
     : "Waar bel je over terug?";
 
   const opslaan = async () => {
-    if (!moment || !collegaId) return;
+    if (!moment) return;
+    if (!isSalesProxy && !collegaId) return;
     if (stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email)) return;
+    if (isSalesProxy && affiliateId) {
+      await planViaSales.mutateAsync({
+        affiliate_id: affiliateId,
+        lead_id: leadId,
+        type: afspraakType,
+        geplande_op: new Date(moment).toISOString(),
+        duur_minuten: isDemo ? 45 : 30,
+        notitie: notitie || null,
+      });
+      setNotitie("");
+      onOpenChange(false);
+      onSaved?.();
+      return;
+    }
     await create.mutateAsync({
       lead_id: leadId,
       geplande_op: new Date(moment).toISOString(),
@@ -72,6 +98,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
             <Input type="datetime-local" value={moment} onChange={(e) => setMoment(e.target.value)} />
             <TijdzoneBanner moment={moment} className="mt-2" />
           </div>
+          {!isSalesProxy && (
           <div className="space-y-1">
             <Label>Voor welke collega?</Label>
             <Select value={collegaId} onValueChange={setCollegaId}>
@@ -93,10 +120,18 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
               Deze collega krijgt altijd een interne notificatie.
             </p>
           </div>
+          )}
+          {isSalesProxy && (
+            <div className="rounded-md border border-violet-200 bg-violet-50 p-3 text-xs text-violet-900">
+              Je plant deze afspraak namens de affiliate. De afspraak komt in hun agenda
+              (en Google-agenda indien gekoppeld); jij wordt geregistreerd als planner.
+            </div>
+          )}
           <div className="space-y-1">
             <Label>Notitie (optioneel)</Label>
             <Textarea rows={3} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder={placeholder} />
           </div>
+          {!isSalesProxy && (
           <div className="rounded-md border p-3 space-y-2 bg-muted/30">
             <label className="flex items-start gap-2 cursor-pointer">
               <Checkbox
@@ -118,16 +153,17 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
               </div>
             )}
           </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
           <Button
             onClick={opslaan}
             disabled={
-              create.isPending ||
+              create.isPending || planViaSales.isPending ||
               !moment ||
-              !collegaId ||
-              (stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email))
+              (!isSalesProxy && !collegaId) ||
+              (!isSalesProxy && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email))
             }
           >
             Plannen
