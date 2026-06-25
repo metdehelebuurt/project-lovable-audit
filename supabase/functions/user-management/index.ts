@@ -393,6 +393,84 @@ serve(async (req) => {
         });
       }
 
+      case "add_affiliate_role": {
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen affiliate-modules toekennen" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { user_id } = payload as { user_id: string };
+        if (!user_id) {
+          return new Response(JSON.stringify({ error: "user_id ontbreekt" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: target, error: targetErr } = await supabaseAdmin
+          .from("users").select("id, email, voornaam, achternaam, rol, partner_id").eq("id", user_id).single();
+        if (targetErr || !target) {
+          return new Response(JSON.stringify({ error: "Gebruiker niet gevonden" }), {
+            status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Voeg additieve rol toe — laat users.rol en partner_id ongemoeid
+        const { error: insErr } = await supabaseAdmin
+          .from("user_roles")
+          .upsert({ user_id, rol: "affiliate", toegekend_door: caller.id }, { onConflict: "user_id,rol" });
+        if (insErr) {
+          return new Response(JSON.stringify({ error: insErr.message }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Seed default affiliate-link als die nog niet bestaat
+        const { data: bestaand } = await supabaseAdmin
+          .from("affiliate_links").select("id").eq("user_id", user_id).eq("actief", true).maybeSingle();
+        let slug: string | null = null;
+        if (!bestaand) {
+          const baseSlug = `${(target.voornaam || "ref").toLowerCase()}-${(target.achternaam || "").toLowerCase()}`
+            .replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+          slug = `${baseSlug || "ref"}-${Math.floor(Math.random() * 9999).toString().padStart(4, "0")}`;
+          await supabaseAdmin.from("affiliate_links").insert({ user_id, code: slug });
+        }
+        await supabaseAdmin.from("audit_log").insert({
+          actor_id: caller.id, actie: "add_affiliate_role",
+          entity_type: "user", entity_id: user_id, target_user_id: user_id,
+          nieuwe_waarde: { extra_rol: "affiliate", door: caller.id, primair: target.rol, partner_id: target.partner_id },
+        });
+        return new Response(JSON.stringify({ success: true, slug }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "remove_affiliate_role": {
+        if (callerProfile.rol !== "superadmin") {
+          return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen affiliate-modules intrekken" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { user_id } = payload as { user_id: string };
+        if (!user_id) {
+          return new Response(JSON.stringify({ error: "user_id ontbreekt" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { error: delErr } = await supabaseAdmin
+          .from("user_roles").delete().eq("user_id", user_id).eq("rol", "affiliate");
+        if (delErr) {
+          return new Response(JSON.stringify({ error: delErr.message }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        await supabaseAdmin.from("affiliate_links").update({ actief: false }).eq("user_id", user_id);
+        await supabaseAdmin.from("audit_log").insert({
+          actor_id: caller.id, actie: "remove_affiliate_role",
+          entity_type: "user", entity_id: user_id, target_user_id: user_id,
+          nieuwe_waarde: { extra_rol: "affiliate", door: caller.id, intrekken: true },
+        });
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       case "revoke_affiliate": {
         if (callerProfile.rol !== "superadmin") {
           return new Response(JSON.stringify({ error: "Alleen platformbeheerders mogen dit uitvoeren" }), {

@@ -45,6 +45,27 @@ export const canSeeAdviseursOverview = (rol?: AppRole | null): boolean =>
 export const isOperational = (rol?: AppRole | null): boolean =>
   !!rol && OPERATIONEEL.includes(rol);
 
+/** Check of een gebruiker een specifieke rol bezit, primair of via additieve user_roles. */
+export const hasRole = (
+  profile: { rol?: AppRole | null; extra_rollen?: AppRole[] | null } | null | undefined,
+  rol: AppRole,
+): boolean => {
+  if (!profile) return false;
+  if (profile.rol === rol) return true;
+  return !!profile.extra_rollen?.includes(rol);
+};
+
+/** Volledige set rollen (primair + extra) voor een profiel. */
+export const getAllRoles = (
+  profile: { rol?: AppRole | null; extra_rollen?: AppRole[] | null } | null | undefined,
+): AppRole[] => {
+  if (!profile) return [];
+  const all = new Set<AppRole>();
+  if (profile.rol) all.add(profile.rol);
+  (profile.extra_rollen ?? []).forEach((r) => all.add(r));
+  return Array.from(all);
+};
+
 export const ROL_LABEL: Record<AppRole, string> = {
   superadmin: "Platformbeheerder",
   partner_admin: "Organisatiebeheerder",

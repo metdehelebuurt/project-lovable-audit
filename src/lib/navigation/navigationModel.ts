@@ -253,25 +253,50 @@ function salesManagerNav(): NavigatieGroep[] {
 }
 
 /** Geeft het navigatiemodel voor een rol terug. Lege groepen worden door de UI overgeslagen. */
-export function getNavigation(rol: AppRole | undefined | null): NavigatieGroep[] {
+export function getNavigation(
+  rol: AppRole | undefined | null,
+  extraRollen: AppRole[] = [],
+): NavigatieGroep[] {
+  let groepen: NavigatieGroep[];
   switch (rol) {
     case "superadmin":
     case "partner_admin":
-      return adminNav(rol);
-    case "backoffice": return backofficeNav();
-    case "partner_staff": return partnerStaffNav();
-    case "adviseur": return adviseurNav();
-    case "installateur": return installateurNav();
-    case "consument": return consumentNav();
-    case "affiliate": return affiliateNav();
-    case "sales_manager": return salesManagerNav();
-    default: return consumentNav();
+      groepen = adminNav(rol); break;
+    case "backoffice": groepen = backofficeNav(); break;
+    case "partner_staff": groepen = partnerStaffNav(); break;
+    case "adviseur": groepen = adviseurNav(); break;
+    case "installateur": groepen = installateurNav(); break;
+    case "consument": groepen = consumentNav(); break;
+    case "affiliate": groepen = affiliateNav(); break;
+    case "sales_manager": groepen = salesManagerNav(); break;
+    default: groepen = consumentNav();
   }
+
+  // Voeg additieve modules toe als de gebruiker er extra rollen bovenop heeft,
+  // zonder zijn primaire navigatie te wijzigen.
+  if (extraRollen.includes("affiliate") && rol !== "affiliate" && rol !== "sales_manager") {
+    const aff = affiliateNav();
+    const sales = aff.find((g) => g.id === "sales");
+    const werk = aff.find((g) => g.id === "werk");
+    const extra: NavigatieGroep = {
+      id: "affiliate-module",
+      label: "Affiliate",
+      items: [
+        ...(werk?.items.filter((i) => i.id === "affiliate-links") ?? []),
+        ...(sales?.items ?? []),
+      ],
+    };
+    groepen = [...groepen, extra];
+  }
+  return groepen;
 }
 
 /** Vlakke lijst van alle items voor een rol, handig voor command palette. */
-export function getAlleNavItems(rol: AppRole | undefined | null): NavigatieItem[] {
-  const groepen = getNavigation(rol);
+export function getAlleNavItems(
+  rol: AppRole | undefined | null,
+  extraRollen: AppRole[] = [],
+): NavigatieItem[] {
+  const groepen = getNavigation(rol, extraRollen);
   const out: NavigatieItem[] = [];
   for (const g of groepen) {
     out.push(...g.items);

@@ -49,7 +49,7 @@ export function CommandPalette() {
   }, [open]);
 
   const { data: zoekResultaten = [], isFetching } = useGlobaleZoek(query);
-  const navItems = getAlleNavItems(profile?.rol);
+  const navItems = getAlleNavItems(profile?.rol, profile?.extra_rollen ?? []);
   const rol = profile?.rol;
 
   const ga = (url: string) => {
