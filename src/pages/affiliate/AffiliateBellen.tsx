@@ -20,6 +20,7 @@ import { BedrijfSamenvattingKaart } from "@/components/affiliate/BedrijfSamenvat
 import { BelQueueStrip } from "@/components/affiliate/BelQueueStrip";
 import { VerrijkLeadDialog } from "@/components/affiliate/VerrijkLeadDialog";
 import { vereistDialog, type UitkomstWaarde } from "@/lib/affiliate/uitkomstAutomatisering";
+import { UitkomstGroep, UitkomstKnop } from "@/components/affiliate/UitkomstSoundboard";
 import { toast } from "sonner";
 
 const AffiliateBellen = () => {
