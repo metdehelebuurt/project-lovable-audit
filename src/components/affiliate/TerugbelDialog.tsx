@@ -23,7 +23,13 @@ interface Props {
 export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmail, afspraakType = "terugbel", onSaved }: Props) {
   const create = useCreateTerugbel();
   const { data: collegas = [], isLoading: collegasLoading } = useInterneCollegas();
-  const morgen = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  // datetime-local verwacht LOKALE tijd (zonder timezone). toISOString() geeft UTC
+  // en zou daardoor in bv. Portugal het uur verkeerd voorinvullen.
+  const morgen = (() => {
+    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  })();
   const [moment, setMoment] = useState(morgen);
   const [collegaId, setCollegaId] = useState<string>("");
   const [notitie, setNotitie] = useState("");
