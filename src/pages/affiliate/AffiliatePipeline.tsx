@@ -17,6 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { NieuweLeadDialog } from "@/components/affiliate/NieuweLeadDialog";
 import { PipelineKaart } from "@/components/affiliate/PipelineKaart";
+import { VerlorenRedenDialog } from "@/components/affiliate/VerlorenRedenDialog";
 import { STATUS_VOLGORDE, STATUS_LABEL, STATUS_KLEUR, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
@@ -47,6 +48,7 @@ const AffiliatePipeline = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [actief, setActief] = useState<AffiliateLead | null>(null);
+  const [verlorenLead, setVerlorenLead] = useState<AffiliateLead | null>(null);
   const [zoek, setZoek] = useState("");
   const [tempFilter, setTempFilter] = useState<Temperatuur | "alle">("alle");
   const [weergave, setWeergave] = useState<Weergave>(() => {
@@ -142,6 +144,10 @@ const AffiliatePipeline = () => {
     const lead = leads.find((l) => l.id === e.active.id);
     if (!overStatus || !lead) return;
     if (lead.status === overStatus) return;
+    if (overStatus === "verloren") {
+      setVerlorenLead(lead);
+      return;
+    }
     update.mutate({ id: lead.id, patch: { status: overStatus } });
   };
 
@@ -282,6 +288,14 @@ const AffiliatePipeline = () => {
       )}
 
       <NieuweLeadDialog open={open} onOpenChange={setOpen} />
+      {verlorenLead && (
+        <VerlorenRedenDialog
+          open={!!verlorenLead}
+          onOpenChange={(o) => { if (!o) setVerlorenLead(null); }}
+          leadId={verlorenLead.id}
+          leadNaam={verlorenLead.bedrijfsnaam}
+        />
+      )}
     </div>
   );
 };

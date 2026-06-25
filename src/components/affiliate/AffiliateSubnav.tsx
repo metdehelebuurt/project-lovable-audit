@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3, Sparkles } from "lucide-react";
+import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3, Sparkles, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsLostReviewAdmin } from "@/hooks/affiliate/useIsLostReviewAdmin";
 
-const items = [
+const baseItems = [
   { to: "/affiliates", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/affiliates/pipeline", label: "Pipeline", icon: Kanban },
   { to: "/affiliates/bellen", label: "Bellen", icon: PhoneCall },
@@ -17,6 +18,10 @@ const items = [
 ];
 
 export function AffiliateSubnav() {
+  const magReview = useIsLostReviewAdmin();
+  const items = magReview
+    ? [...baseItems, { to: "/affiliates/verloren-review", label: "Verloren review", icon: AlertTriangle }]
+    : baseItems;
   return (
     <nav className="flex flex-wrap gap-2 border-b border-border pb-2 mb-6">
       {items.map((i) => (

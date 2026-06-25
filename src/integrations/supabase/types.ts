@@ -647,14 +647,25 @@ export type Database = {
           plaats: string | null
           postcode: string | null
           regio: string | null
+          review_bucket:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id: string | null
+          review_notitie: string | null
+          review_op: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
           temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op: string | null
           toegewezen_door_admin_id: string | null
           updated_at: string
+          verloren_categorie:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op: string | null
           verloren_reden: string | null
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
@@ -693,14 +704,25 @@ export type Database = {
           plaats?: string | null
           postcode?: string | null
           regio?: string | null
+          review_bucket?:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id?: string | null
+          review_notitie?: string | null
+          review_op?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
           tags?: string[]
           telefoon?: string | null
           temperatuur?: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op?: string | null
           toegewezen_door_admin_id?: string | null
           updated_at?: string
+          verloren_categorie?:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op?: string | null
           verloren_reden?: string | null
           volgende_actie_datum?: string | null
           volgende_actie_op?: string | null
@@ -739,14 +761,25 @@ export type Database = {
           plaats?: string | null
           postcode?: string | null
           regio?: string | null
+          review_bucket?:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id?: string | null
+          review_notitie?: string | null
+          review_op?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
           tags?: string[]
           telefoon?: string | null
           temperatuur?: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op?: string | null
           toegewezen_door_admin_id?: string | null
           updated_at?: string
+          verloren_categorie?:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op?: string | null
           verloren_reden?: string | null
           volgende_actie_datum?: string | null
           volgende_actie_op?: string | null
@@ -8495,14 +8528,25 @@ export type Database = {
           plaats: string | null
           postcode: string | null
           regio: string | null
+          review_bucket:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id: string | null
+          review_notitie: string | null
+          review_op: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
           temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op: string | null
           toegewezen_door_admin_id: string | null
           updated_at: string
+          verloren_categorie:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op: string | null
           verloren_reden: string | null
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
@@ -8556,14 +8600,25 @@ export type Database = {
           plaats: string | null
           postcode: string | null
           regio: string | null
+          review_bucket:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id: string | null
+          review_notitie: string | null
+          review_op: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
           temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op: string | null
           toegewezen_door_admin_id: string | null
           updated_at: string
+          verloren_categorie:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op: string | null
           verloren_reden: string | null
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
@@ -8629,14 +8684,25 @@ export type Database = {
           plaats: string | null
           postcode: string | null
           regio: string | null
+          review_bucket:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id: string | null
+          review_notitie: string | null
+          review_op: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
           temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op: string | null
           toegewezen_door_admin_id: string | null
           updated_at: string
+          verloren_categorie:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op: string | null
           verloren_reden: string | null
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
@@ -8781,6 +8847,7 @@ export type Database = {
       }
       is_admin_tier: { Args: { _user_id: string }; Returns: boolean }
       is_affiliate: { Args: { _user_id: string }; Returns: boolean }
+      is_lost_review_admin: { Args: { _user_id: string }; Returns: boolean }
       is_partner_admin_or_higher: {
         Args: { _user_id: string }
         Returns: boolean
@@ -8892,14 +8959,25 @@ export type Database = {
           plaats: string | null
           postcode: string | null
           regio: string | null
+          review_bucket:
+            | Database["public"]["Enums"]["affiliate_lost_review_bucket"]
+            | null
+          review_door_id: string | null
+          review_notitie: string | null
+          review_op: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
           temperatuur: Database["public"]["Enums"]["lead_temperatuur"]
+          terug_in_pipeline_op: string | null
           toegewezen_door_admin_id: string | null
           updated_at: string
+          verloren_categorie:
+            | Database["public"]["Enums"]["affiliate_verloren_categorie"]
+            | null
+          verloren_op: string | null
           verloren_reden: string | null
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
@@ -8944,7 +9022,20 @@ export type Database = {
         | "trial_gestart"
         | "gewonnen"
         | "verloren"
+      affiliate_lost_review_bucket:
+        | "te_beoordelen"
+        | "terugbellen"
+        | "wacht_3_maanden"
+        | "wacht_6_maanden"
+        | "echt_verloren"
       affiliate_tier: "brons" | "zilver" | "goud"
+      affiliate_verloren_categorie:
+        | "geen_interesse"
+        | "geen_budget"
+        | "concurrent"
+        | "timing"
+        | "geen_contact"
+        | "anders"
       app_role:
         | "superadmin"
         | "partner_admin"
@@ -9251,7 +9342,22 @@ export const Constants = {
         "gewonnen",
         "verloren",
       ],
+      affiliate_lost_review_bucket: [
+        "te_beoordelen",
+        "terugbellen",
+        "wacht_3_maanden",
+        "wacht_6_maanden",
+        "echt_verloren",
+      ],
       affiliate_tier: ["brons", "zilver", "goud"],
+      affiliate_verloren_categorie: [
+        "geen_interesse",
+        "geen_budget",
+        "concurrent",
+        "timing",
+        "geen_contact",
+        "anders",
+      ],
       app_role: [
         "superadmin",
         "partner_admin",

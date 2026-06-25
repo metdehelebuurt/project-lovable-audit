@@ -19,6 +19,7 @@ import { TerugbelDialog } from "./TerugbelDialog";
 import { TrialStartenButton } from "./TrialStartenButton";
 import { TrialStatusBadge } from "./TrialStatusBadge";
 import { VerrijkLeadDialog } from "./VerrijkLeadDialog";
+import { VerlorenRedenDialog } from "./VerlorenRedenDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import EmailTab from "@/components/email/EmailTab";
@@ -67,6 +68,7 @@ export function LeadDetailBody({ lead }: Props) {
   const [openDemo, setOpenDemo] = useState(false);
   const [openOrder, setOpenOrder] = useState(false);
   const [openVerrijk, setOpenVerrijk] = useState(false);
+  const [openVerloren, setOpenVerloren] = useState(false);
 
   useEffect(() => {
     setStatus(lead.status as AffiliateLeadStatus);
@@ -95,6 +97,11 @@ export function LeadDetailBody({ lead }: Props) {
 
   const opslaan = async () => {
     try {
+      // Als gebruiker status naar 'verloren' zet → verplichte reden via dialog.
+      if (status === "verloren" && lead.status !== "verloren") {
+        setOpenVerloren(true);
+        return;
+      }
       await update.mutateAsync({
         id: lead.id,
         patch: {
@@ -270,6 +277,12 @@ export function LeadDetailBody({ lead }: Props) {
       <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={lead.id} leadNaam={lead.bedrijfsnaam} klantEmail={lead.email} />
       <TerugbelDialog open={openDemo} onOpenChange={setOpenDemo} leadId={lead.id} leadNaam={lead.bedrijfsnaam} klantEmail={lead.email} afspraakType="demo" />
       <VerrijkLeadDialog open={openVerrijk} onOpenChange={setOpenVerrijk} lead={lead} />
+      <VerlorenRedenDialog
+        open={openVerloren}
+        onOpenChange={(o) => { setOpenVerloren(o); if (!o) setStatus(lead.status as AffiliateLeadStatus); }}
+        leadId={lead.id}
+        leadNaam={lead.bedrijfsnaam}
+      />
       <EmailCompose
         open={openOrder}
         onOpenChange={setOpenOrder}
