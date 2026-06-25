@@ -2,11 +2,12 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import LinkExt from "@tiptap/extension-link";
+import Image from "@tiptap/extension-image";
 import { useEffect } from "react";
 import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
   Link as LinkIcon, Heading2, Minus, Undo, Redo, MousePointerClick,
-  Calendar, Quote,
+  Calendar, Quote, Image as ImageIcon, Phone,
 } from "lucide-react";
 
 interface Props {
@@ -39,6 +40,7 @@ export function MailWysiwyg({ value, onChange, onReady }: Props) {
       StarterKit.configure({ codeBlock: false, code: false, blockquote: false }),
       Underline,
       LinkExt.configure({ openOnClick: false, HTMLAttributes: { rel: "noopener noreferrer" } }),
+      Image.configure({ inline: false, HTMLAttributes: { style: "max-width:100%;height:auto;border-radius:6px;" } }),
     ],
     content: value || "",
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -101,6 +103,24 @@ export function MailWysiwyg({ value, onChange, onReady }: Props) {
       .run();
   };
 
+  const insertPhone = () => {
+    const label = window.prompt("Tekst voor bel-link", "Bel mij direct");
+    if (!label) return;
+    editor
+      .chain()
+      .focus()
+      .insertContent(
+        `<a href="tel:{{affiliate.telefoon}}" style="color:#6d28d9;text-decoration:none;font-weight:600;">${label}</a>`,
+      )
+      .run();
+  };
+
+  const insertImage = () => {
+    const url = window.prompt("Afbeelding-URL (https://...)", "https://");
+    if (!url || url.trim() === "" || url.trim() === "https://") return;
+    editor.chain().focus().setImage({ src: url.trim() }).run();
+  };
+
   const insertCallout = () => {
     editor
       .chain()
@@ -150,6 +170,12 @@ export function MailWysiwyg({ value, onChange, onReady }: Props) {
         </Btn>
         <Btn title="Toevoegen aan agenda" onClick={insertCalendar}>
           <Calendar className="h-3.5 w-3.5" />
+        </Btn>
+        <Btn title="Telefoon-link" onClick={insertPhone}>
+          <Phone className="h-3.5 w-3.5" />
+        </Btn>
+        <Btn title="Afbeelding invoegen" onClick={insertImage}>
+          <ImageIcon className="h-3.5 w-3.5" />
         </Btn>
         <Btn title="Highlight-blok" onClick={insertCallout}>
           <Quote className="h-3.5 w-3.5" />

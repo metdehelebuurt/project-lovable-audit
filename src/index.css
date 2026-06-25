@@ -6,6 +6,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Scoped styling voor de live-preview van e-mailtemplates (MailIframePreview) */
+.mh-mail-preview .mh-content p { margin: 0 0 12px; line-height: 1.6; }
+.mh-mail-preview .mh-content p:last-child { margin-bottom: 0; }
+.mh-mail-preview .mh-content ul,
+.mh-mail-preview .mh-content ol { padding-left: 20px; margin: 0 0 12px; }
+.mh-mail-preview .mh-content li { margin: 4px 0; }
+.mh-mail-preview .mh-content a { color: #6d28d9; }
+.mh-mail-preview .mh-content h1,
+.mh-mail-preview .mh-content h2,
+.mh-mail-preview .mh-content h3 { color: #0f172a; margin: 18px 0 8px; line-height: 1.3; }
+.mh-mail-preview .mh-content h2 { font-size: 18px; }
+.mh-mail-preview .mh-content h3 { font-size: 16px; }
+.mh-mail-preview .mh-content img { max-width: 100%; height: auto; border-radius: 6px; }
+.mh-mail-preview .mh-content hr.mh-divider,
+.mh-mail-preview .mh-content hr { border: 0; border-top: 1px solid #e2e8f0; margin: 18px 0; }
+.mh-mail-preview .mh-content .mh-btn,
+.mh-mail-preview .mh-content a.mh-btn {
+  display: inline-block; background: #6d28d9; color: #ffffff !important;
+  text-decoration: none; padding: 11px 22px; border-radius: 8px;
+  font-weight: 600; font-size: 14px;
+}
+.mh-mail-preview .mh-content .mh-callout {
+  background: #f5f3ff; border-left: 3px solid #6d28d9;
+  padding: 12px 16px; border-radius: 6px; margin: 14px 0; font-size: 14px;
+}
+
 @layer base {
   :root {
     --background: 36 22% 96%;
