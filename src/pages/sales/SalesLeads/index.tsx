@@ -2,14 +2,14 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSalesLeads, useCreateSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
-import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
+import { useAffiliateGebruikers, useSalesManagerGebruikers } from "@/hooks/sales/useDoorzetten";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Send, CheckCircle2, Users, Building2 } from "lucide-react";
+import { Plus, Send, CheckCircle2, Users, Building2, UserCircle2, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { kleurClasses } from "@/lib/sales/pipeline";
@@ -26,6 +26,7 @@ export default function SalesLeads() {
   const { data: leads, isLoading } = useSalesLeads();
   const { data: pipeline } = useMyPipeline();
   const { data: affiliates } = useAffiliateGebruikers();
+  const { data: salesManagers } = useSalesManagerGebruikers();
   const create = useCreateSalesLead();
   const [zoek, setZoek] = useState("");
   const [fase, setFase] = useState<string>("alle");
@@ -33,6 +34,7 @@ export default function SalesLeads() {
   const [temp, setTemp] = useState<Temperatuur | "alle">("alle");
   const [postcodeFilter, setPostcodeFilter] = useState("");
   const [plaatsFilter, setPlaatsFilter] = useState("");
+  const [doorgezetAan, setDoorgezetAan] = useState<string>("alle");
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
   const [bulkDoorzet, setBulkDoorzet] = useState<SalesLead | null>(null);
 
@@ -41,11 +43,13 @@ export default function SalesLeads() {
     const m = new Map(fases.map((f) => [f.fase_key, f]));
     return m;
   }, [fases]);
-  const affiliateLookup = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const a of affiliates ?? []) m.set(a.id, a.naam);
+  /** Lookup van alle mogelijke eigenaren — affiliate of sales manager — met hun rol. */
+  const eigenaarLookup = useMemo(() => {
+    const m = new Map<string, { naam: string; rol: "affiliate" | "sales_manager" }>();
+    for (const a of affiliates ?? []) m.set(a.id, { naam: a.naam, rol: "affiliate" });
+    for (const s of salesManagers ?? []) m.set(s.id, { naam: s.naam, rol: "sales_manager" });
     return m;
-  }, [affiliates]);
+  }, [affiliates, salesManagers]);
 
   const gefilterd = useMemo(() => {
     const z = zoek.toLowerCase().trim();
@@ -57,6 +61,7 @@ export default function SalesLeads() {
       if (eigenaar === "pool" && (l.eigenaar_id !== null || l.bron !== "platform_pool")) return false;
       if (eigenaar === "toegewezen" && !l.eigenaar_id) return false;
       if (eigenaar === "platform" && (l.eigenaar_id !== null || l.bron === "platform_pool")) return false;
+      if (doorgezetAan !== "alle" && l.eigenaar_id !== doorgezetAan) return false;
       if (pc) {
         const leadPc = (l.postcode ?? "").toLowerCase().replace(/\s+/g, "");
         if (!leadPc.startsWith(pc)) return false;
@@ -73,7 +78,7 @@ export default function SalesLeads() {
       }
       return true;
     });
-  }, [leads, zoek, fase, temp, eigenaar, postcodeFilter, plaatsFilter]);
+  }, [leads, zoek, fase, temp, eigenaar, postcodeFilter, plaatsFilter, doorgezetAan]);
 
   const tempCounts = useMemo(() => {
     const c: Record<string, number> = { alle: (leads ?? []).length };
@@ -91,6 +96,16 @@ export default function SalesLeads() {
       pool: all.filter((l) => !l.eigenaar_id && l.bron === "platform_pool").length,
       platform: all.filter((l) => !l.eigenaar_id && l.bron !== "platform_pool").length,
     };
+  }, [leads]);
+
+  /** Tellingen per eigenaar voor de "Doorgezet aan"-filter. */
+  const perEigenaarCounts = useMemo(() => {
+    const c = new Map<string, number>();
+    for (const l of leads ?? []) {
+      if (!l.eigenaar_id) continue;
+      c.set(l.eigenaar_id, (c.get(l.eigenaar_id) ?? 0) + 1);
+    }
+    return c;
   }, [leads]);
 
   const toggle = (id: string) => {
@@ -140,6 +155,28 @@ export default function SalesLeads() {
             <SelectItem value="platform">Bij platform ({counts.platform})</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={doorgezetAan} onValueChange={setDoorgezetAan}>
+          <SelectTrigger className="w-52"><SelectValue placeholder="Doorgezet aan" /></SelectTrigger>
+          <SelectContent className="max-h-80">
+            <SelectItem value="alle">Doorgezet aan: iedereen</SelectItem>
+            {(affiliates ?? []).length > 0 && (
+              <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Affiliates</div>
+            )}
+            {(affiliates ?? []).map((a) => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.naam} {perEigenaarCounts.get(a.id) ? `(${perEigenaarCounts.get(a.id)})` : ""}
+              </SelectItem>
+            ))}
+            {(salesManagers ?? []).length > 0 && (
+              <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Sales managers</div>
+            )}
+            {(salesManagers ?? []).map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.naam} {perEigenaarCounts.get(s.id) ? `(${perEigenaarCounts.get(s.id)})` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <span className="text-sm text-muted-foreground ml-auto">{gefilterd.length} leads</span>
         <Button
           size="sm"
@@ -185,7 +222,9 @@ export default function SalesLeads() {
               const f = faseLookup.get(l.fase_slug ?? "nieuw");
               const isDoorgezet = !!l.eigenaar_id;
               const isPool = !l.eigenaar_id && l.bron === "platform_pool";
-              const affiliateNaam = l.eigenaar_id ? (affiliateLookup.get(l.eigenaar_id) ?? "Affiliate") : null;
+              const eigenaarInfo = l.eigenaar_id ? eigenaarLookup.get(l.eigenaar_id) : null;
+              const eigenaarNaam = eigenaarInfo?.naam ?? (isDoorgezet ? "Onbekende gebruiker" : null);
+              const eigenaarRol = eigenaarInfo?.rol;
               return (
                 <TableRow
                   key={l.id}
@@ -223,7 +262,23 @@ export default function SalesLeads() {
                           <CheckCircle2 className="h-3 w-3" />
                           Doorgezet
                         </Badge>
-                        <span className="text-xs font-medium">{affiliateNaam}</span>
+                        <span className="text-sm font-semibold leading-tight">{eigenaarNaam}</span>
+                        {eigenaarRol && (
+                          <Badge
+                            variant="outline"
+                            className={`w-fit gap-1 text-[10px] py-0 h-4 ${
+                              eigenaarRol === "sales_manager"
+                                ? "border-violet-300 text-violet-800 bg-violet-50"
+                                : "border-sky-300 text-sky-800 bg-sky-50"
+                            }`}
+                          >
+                            {eigenaarRol === "sales_manager" ? (
+                              <><Briefcase className="h-2.5 w-2.5" /> Sales manager</>
+                            ) : (
+                              <><UserCircle2 className="h-2.5 w-2.5" /> Affiliate</>
+                            )}
+                          </Badge>
+                        )}
                         {l.doorgezet_op && (
                           <span className="text-[11px] text-muted-foreground">
                             {format(new Date(l.doorgezet_op as string), "d MMM yyyy", { locale: nl })}
@@ -243,12 +298,12 @@ export default function SalesLeads() {
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <Button
                       size="sm"
-                      variant={isDoorgezet ? "ghost" : "outline"}
+                      variant={isDoorgezet ? "outline" : "default"}
                       className="gap-1"
                       onClick={() => setBulkDoorzet(l)}
                     >
                       <Send className="h-3.5 w-3.5" />
-                      {isDoorgezet ? "Heropnieuw" : "Doorzet"}
+                      {isDoorgezet ? "Wijzig toewijzing" : "Doorzetten"}
                     </Button>
                   </TableCell>
                 </TableRow>
