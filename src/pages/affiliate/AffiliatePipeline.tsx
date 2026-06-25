@@ -20,6 +20,8 @@ import { PipelineKaart } from "@/components/affiliate/PipelineKaart";
 import { VerlorenRedenDialog } from "@/components/affiliate/VerlorenRedenDialog";
 import { STATUS_VOLGORDE, STATUS_LABEL, STATUS_KLEUR, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
+import { useAffiliatePipelineConfig } from "@/hooks/affiliate/useAffiliatePipelineConfig";
+import { kleurBadge, kleurDot, kleurBorder } from "@/lib/affiliate/pipelineKleur";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
 import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
@@ -44,6 +46,7 @@ type Weergave = "kanban" | "lijst" | "compact";
 const AffiliatePipeline = () => {
   useRealtimeAffiliateLeads();
   const { data: leads = [] } = useAffiliateLeads("pipeline");
+  const { data: pipelineConfig = [] } = useAffiliatePipelineConfig();
   const update = useUpdateAffiliateLead();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -274,6 +277,8 @@ const AffiliatePipeline = () => {
                 onOpen={(l) => navigate(`/affiliates/leads/${l.id}`)}
                 onAdvance={advance}
                 compact={weergave === "compact"}
+                kleurToken={pipelineConfig.find((f) => f.status_key === status)?.kleur ?? "slate"}
+                label={pipelineConfig.find((f) => f.status_key === status)?.label ?? STATUS_LABEL[status]}
               />
             ))}
           </div>
@@ -320,34 +325,38 @@ function KanbanKolom({
   onOpen,
   onAdvance,
   compact,
+  kleurToken,
+  label,
 }: {
   status: AffiliateLeadStatus;
   leads: AffiliateLead[];
   onOpen: (l: AffiliateLead) => void;
   onAdvance: (l: AffiliateLead) => void;
   compact?: boolean;
+  kleurToken: string;
+  label: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const totaal = leads.reduce((s, l) => s + Number(l.geschatte_waarde ?? 0), 0);
   return (
     <div
       ref={setNodeRef}
-      className={`${compact ? "w-[240px]" : "w-[300px]"} shrink-0 snap-start rounded-xl border bg-muted/30 transition-colors ${isOver ? "bg-primary/10 ring-2 ring-primary/40 border-primary/40" : "border-border"}`}
+      className={`${compact ? "w-[240px]" : "w-[300px]"} shrink-0 snap-start rounded-xl border-2 bg-muted/30 transition-colors ${isOver ? "bg-primary/10 ring-2 ring-primary/40 border-primary/40" : kleurBorder(kleurToken)}`}
     >
-      <div className={`px-3 py-2.5 border-b bg-background/60 rounded-t-xl`}>
+      <div className={`px-3 py-2.5 border-b rounded-t-xl ${kleurBadge(kleurToken)}`}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <span className={`h-2 w-2 rounded-full ${STATUS_KLEUR[status].split(" ")[0]}`} />
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground/80 truncate">
-              {STATUS_LABEL[status]}
+            <span className={`h-2.5 w-2.5 rounded-full ${kleurDot(kleurToken)}`} />
+            <h3 className="text-xs font-semibold uppercase tracking-wide truncate">
+              {label}
             </h3>
           </div>
-          <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0">
+          <span className="text-xs font-medium bg-background/70 px-2 py-0.5 rounded-full shrink-0">
             {leads.length}
           </span>
         </div>
         {totaal > 0 && (
-          <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+          <p className="text-[10px] mt-1 tabular-nums opacity-80">
             {totaal.toLocaleString("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
           </p>
         )}

@@ -6,6 +6,8 @@ export type AffiliateContactType = Database["public"]["Enums"]["affiliate_contac
 
 export const STATUS_VOLGORDE: AffiliateLeadStatus[] = [
   "nieuw",
+  "nieuw_campagne",
+  "nieuw_demo_voltooid",
   "gebeld_geen_gehoor",
   "mail_gestuurd",
   "terugbel_gepland",
@@ -19,7 +21,9 @@ export const STATUS_VOLGORDE: AffiliateLeadStatus[] = [
 ];
 
 export const STATUS_LABEL: Record<AffiliateLeadStatus, string> = {
-  nieuw: "Nieuw",
+  nieuw: "Nieuw - Koude leads",
+  nieuw_campagne: "Nieuw - Campagne",
+  nieuw_demo_voltooid: "Nieuw - Demo voltooid",
   gebeld_geen_gehoor: "Gebeld, geen gehoor",
   mail_gestuurd: "Mail gestuurd",
   terugbel_gepland: "Terugbel gepland",
@@ -34,6 +38,8 @@ export const STATUS_LABEL: Record<AffiliateLeadStatus, string> = {
 
 export const STATUS_KLEUR: Record<AffiliateLeadStatus, string> = {
   nieuw: "bg-slate-100 text-slate-700",
+  nieuw_campagne: "bg-blue-100 text-blue-800",
+  nieuw_demo_voltooid: "bg-emerald-100 text-emerald-800",
   gebeld_geen_gehoor: "bg-amber-100 text-amber-800",
   mail_gestuurd: "bg-cyan-100 text-cyan-800",
   terugbel_gepland: "bg-sky-100 text-sky-800",

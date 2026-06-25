@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,9 @@ import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@
 import { useLogContactmoment, useLeadContactmomenten } from "@/hooks/affiliate/useAffiliateLeadContact";
 import { useTerugbelAfspraken } from "@/hooks/affiliate/useTerugbelAfspraken";
 import { useOpvolgTaken, useVoltooiOpvolgTaak } from "@/hooks/affiliate/useOpvolgTaken";
-import { CONTACT_UITKOMST_OPTIES } from "@/lib/affiliate/leadStatus";
+import { CONTACT_UITKOMST_OPTIES, STATUS_LABEL } from "@/lib/affiliate/leadStatus";
+import { useAffiliatePipelineConfig } from "@/hooks/affiliate/useAffiliatePipelineConfig";
+import { kleurBadge, kleurDot } from "@/lib/affiliate/pipelineKleur";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TerugbelDialog } from "@/components/affiliate/TerugbelDialog";
 import { TrialStartenButton } from "@/components/affiliate/TrialStartenButton";
@@ -22,6 +24,8 @@ import { VerrijkLeadDialog } from "@/components/affiliate/VerrijkLeadDialog";
 import { VerlorenRedenDialog } from "@/components/affiliate/VerlorenRedenDialog";
 import { vereistDialog, type UitkomstWaarde } from "@/lib/affiliate/uitkomstAutomatisering";
 import { UitkomstGroep, UitkomstKnop } from "@/components/affiliate/UitkomstSoundboard";
+import { GespreksTimer } from "@/components/affiliate/Belsessie/Timer";
+import { BriefingKaart } from "@/components/affiliate/Belsessie/BriefingKaart";
 import { toast } from "sonner";
 
 const AffiliateBellen = () => {
@@ -32,10 +36,11 @@ const AffiliateBellen = () => {
   const update = useUpdateAffiliateLead();
   const log = useLogContactmoment();
   const { data: belStats } = useBelStats();
+  const { data: pipelineConfig = [] } = useAffiliatePipelineConfig();
   const [notitie, setNotitie] = useState("");
   const [idx, setIdx] = useState(0);
   const [seconden, setSeconden] = useState(0);
-  const tickRef = useRef<number | null>(null);
+  const [timerLoopt, setTimerLoopt] = useState(false);
   const [openTerugbel, setOpenTerugbel] = useState(false);
   const [openAfspraak, setOpenAfspraak] = useState(false);
   const [afspraakType, setAfspraakType] = useState<"terugbel" | "demo">("terugbel");
@@ -44,28 +49,40 @@ const AffiliateBellen = () => {
   const [openVerloren, setOpenVerloren] = useState(false);
 
   const belQueue = useMemo(() => {
-    const vandaag = new Date(); vandaag.setHours(23, 59, 59, 999);
+    const eindVandaag = new Date(); eindVandaag.setHours(23, 59, 59, 999);
+    const nu = Date.now();
+    // Leads met EEN toekomstige open afspraak (later dan vandaag) horen NIET in de queue.
+    const leadsMetToekomstigeAfspraak = new Set(
+      terugbelAfspraken
+        .filter((a) => new Date(a.geplande_op).getTime() > eindVandaag.getTime())
+        .map((a) => a.lead_id),
+    );
     const dueLeadIds = new Set(
       terugbelAfspraken
-        .filter((a) => new Date(a.geplande_op) <= vandaag)
+        .filter((a) => new Date(a.geplande_op) <= eindVandaag)
         .map((a) => a.lead_id),
     );
     for (const t of opvolgTaken) {
       if (!t.lead_id) continue;
-      if (new Date(t.due_op) <= vandaag) dueLeadIds.add(t.lead_id);
+      if (new Date(t.due_op) <= eindVandaag) dueLeadIds.add(t.lead_id);
     }
     return leads.filter((l) => {
       // Leads zonder telefoon kunnen we niet bellen — verberg ze in de cockpit.
       if (!l.telefoon) return false;
+      // Een toekomstige afspraak heeft voorrang: lead niet in queue.
+      if (leadsMetToekomstigeAfspraak.has(l.id) && !dueLeadIds.has(l.id)) return false;
       if (dueLeadIds.has(l.id)) return true;
+      // Status `terugbel_gepland` mag alleen via due-afspraak in de queue komen,
+      // niet via status-fallback (anders blijven leads met afspraak ver in de toekomst hangen).
       if (
         l.status !== "nieuw" &&
+        l.status !== "nieuw_campagne" &&
+        l.status !== "nieuw_demo_voltooid" &&
         l.status !== "gebeld_geen_gehoor" &&
-        l.status !== "mail_gestuurd" &&
-        l.status !== "terugbel_gepland"
+        l.status !== "mail_gestuurd"
       ) return false;
       if (!l.volgende_actie_datum) return true;
-      return new Date(l.volgende_actie_datum) <= vandaag;
+      return new Date(l.volgende_actie_datum) <= eindVandaag;
     });
   }, [leads, terugbelAfspraken, opvolgTaken]);
 
@@ -78,13 +95,11 @@ const AffiliateBellen = () => {
     return opvolgTaken.filter((t) => t.lead_id === current.id && new Date(t.due_op) <= vandaag);
   }, [opvolgTaken, current]);
 
-  useEffect(() => { setSeconden(0); }, [current?.id]);
-
+  // Bij wissel van lead: timer reset en pauze.
   useEffect(() => {
-    if (tickRef.current) window.clearInterval(tickRef.current);
-    tickRef.current = window.setInterval(() => setSeconden((s) => s + 1), 1000) as unknown as number;
-    return () => { if (tickRef.current) window.clearInterval(tickRef.current); };
-  }, []);
+    setSeconden(0);
+    setTimerLoopt(false);
+  }, [current?.id]);
 
   const next = () => {
     setNotitie("");
@@ -175,10 +190,10 @@ const AffiliateBellen = () => {
     next();
   };
 
-  const formatTimer = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   const tel = current ? telLink(current.telefoon) : null;
   const wa = current ? whatsappLink(current.telefoon) : null;
   const voortgangPct = belQueue.length > 0 ? Math.round((idx / belQueue.length) * 100) : 0;
+  const fase = current ? pipelineConfig.find((f) => f.status_key === current.status) : null;
 
   return (
     <div className="p-6 space-y-4">
@@ -229,6 +244,14 @@ const AffiliateBellen = () => {
                 <h2 className="text-3xl font-bold leading-tight tracking-tight">{current.bedrijfsnaam}</h2>
                 {current.contactpersoon && <p className="text-muted-foreground mt-1 text-base">{current.contactpersoon}</p>}
                 <div className="flex flex-wrap gap-2 mt-3">
+                  {fase ? (
+                    <Badge variant="outline" className={`gap-1.5 ${kleurBadge(fase.kleur)}`}>
+                      <span className={`h-2 w-2 rounded-full ${kleurDot(fase.kleur)}`} />
+                      {fase.label}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">{STATUS_LABEL[current.status]}</Badge>
+                  )}
                   {current.branche && <Badge variant="secondary" className="gap-1"><Briefcase className="h-3 w-3" />{current.branche}</Badge>}
                   {current.regio && <Badge variant="secondary" className="gap-1"><MapPin className="h-3 w-3" />{current.regio}</Badge>}
                   {current.website && (
@@ -238,12 +261,13 @@ const AffiliateBellen = () => {
                   )}
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Gesprekstijd</p>
-                <p className="text-2xl font-bold tabular-nums text-primary flex items-center gap-1.5 justify-end">
-                  <Clock className="h-4 w-4" /> {formatTimer(seconden)}
-                </p>
-              </div>
+              <GespreksTimer
+                seconden={seconden}
+                loopt={timerLoopt}
+                onTick={setSeconden}
+                onToggle={() => setTimerLoopt((v) => !v)}
+                onReset={() => { setSeconden(0); setTimerLoopt(false); }}
+              />
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Grote "Bel nu" CTA */}
@@ -277,6 +301,7 @@ const AffiliateBellen = () => {
                 </TabsList>
 
                 <TabsContent value="gesprek" className="space-y-3 pt-3">
+                  <BriefingKaart leadId={current.id} />
                   {huidigeTaken.length > 0 && (
                     <div className="text-sm border rounded-md p-3 bg-primary/5 border-primary/20">
                       <p className="font-medium mb-2 text-xs uppercase tracking-wide text-primary">Openstaande opvolg-taken</p>
