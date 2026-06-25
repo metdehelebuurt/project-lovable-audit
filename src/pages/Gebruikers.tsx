@@ -90,6 +90,20 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
     },
   });
 
+  const { data: extraRollenMap = {} } = useQuery({
+    queryKey: ["user-roles-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("user_roles").select("user_id, rol");
+      if (error) throw error;
+      const map: Record<string, AppRole[]> = {};
+      (data ?? []).forEach((r) => {
+        (map[r.user_id] ||= []).push(r.rol as AppRole);
+      });
+      return map;
+    },
+    enabled: profile?.rol === "superadmin",
+  });
+
   const { data: partners = [] } = useQuery({
     queryKey: ["partners-list"],
     queryFn: async () => {
@@ -282,7 +296,14 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                     >
                       <TableCell className="font-medium">{user.voornaam} {user.achternaam}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell><Badge className={rolColors[user.rol]}>{rolLabels[user.rol]}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 flex-wrap">
+                          <Badge className={rolColors[user.rol]}>{rolLabels[user.rol]}</Badge>
+                          {(extraRollenMap[user.id] ?? []).map((r) => (
+                            <Badge key={r} variant="outline">+ {rolLabels[r]}</Badge>
+                          ))}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge className={user.status === "actief" ? "bg-success-light text-success" : "bg-muted text-muted-foreground"}>
                           {user.status === "actief" ? "Actief" : "Inactief"}
@@ -300,7 +321,13 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                             </Button>
                           )}
                           {user.id !== profile?.id && profile?.rol === "superadmin" && (
-                            <PromoteToAffiliateButton userId={user.id} currentRol={user.rol} variant="ghost" size="sm" />
+                            <PromoteToAffiliateButton
+                              userId={user.id}
+                              currentRol={user.rol}
+                              extraRollen={extraRollenMap[user.id] ?? []}
+                              variant="ghost"
+                              size="sm"
+                            />
                           )}
                           {user.id !== profile?.id && (
                             <AlertDialog>
