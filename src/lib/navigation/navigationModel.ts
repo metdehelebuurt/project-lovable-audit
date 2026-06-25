@@ -106,6 +106,8 @@ const ITEMS = {
   affiliateTrials: { id: "affiliate-trials", label: "Trials", icon: AlertCircle, url: "/affiliates/trials" } as NavigatieItem,
   affiliateAgenda: { id: "affiliate-agenda", label: "Terugbelagenda", icon: Calendar, url: "/affiliates/agenda",
     synoniemen: ["agenda", "terugbel", "afspraken"] } as NavigatieItem,
+  salesAgenda: { id: "sales-agenda", label: "Sales-agenda", icon: Calendar, url: "/sales/agenda",
+    synoniemen: ["agenda affiliates", "affiliate agenda", "planning sales"] } as NavigatieItem,
   affiliateOpvolging: { id: "affiliate-opvolging", label: "Opvolging", icon: Sparkles, url: "/affiliates/opvolging",
     synoniemen: ["taken", "herinneringen", "ai opvolging", "follow-up"] } as NavigatieItem,
   affiliateAnalytics: { id: "affiliate-analytics", label: "Analytics", icon: BarChart3, url: "/affiliates/analytics",
@@ -235,6 +237,21 @@ function affiliateNav(): NavigatieGroep[] {
   ];
 }
 
+function salesManagerNav(): NavigatieGroep[] {
+  return [
+    { id: "werk", label: "Werk", items: [ITEMS.affiliateLinks, ITEMS.berichten] },
+    { id: "sales", label: "Sales CRM", items: [
+      ITEMS.salesAgenda,
+      ITEMS.affiliatePipeline, ITEMS.affiliateBellen, ITEMS.affiliatePool,
+      ITEMS.affiliateAgenda, ITEMS.affiliateOpvolging,
+      ITEMS.affiliateMijnKlanten, ITEMS.affiliateTrials, ITEMS.offertes,
+      ITEMS.affiliateAnalytics,
+    ] },
+    { id: "support", label: "Support", items: [ITEMS.feedback, ITEMS.functieverzoek] },
+    { id: "systeem", label: "Systeem", items: [ITEMS.instellingen] },
+  ];
+}
+
 /** Geeft het navigatiemodel voor een rol terug. Lege groepen worden door de UI overgeslagen. */
 export function getNavigation(rol: AppRole | undefined | null): NavigatieGroep[] {
   switch (rol) {
@@ -247,7 +264,7 @@ export function getNavigation(rol: AppRole | undefined | null): NavigatieGroep[]
     case "installateur": return installateurNav();
     case "consument": return consumentNav();
     case "affiliate": return affiliateNav();
-    case "sales_manager": return affiliateNav();
+    case "sales_manager": return salesManagerNav();
     default: return consumentNav();
   }
 }

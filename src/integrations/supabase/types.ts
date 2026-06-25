@@ -8933,6 +8933,17 @@ export type Database = {
         Args: { _target: string; _viewer: string }
         Returns: boolean
       }
+      lijst_affiliates_voor_sales_admin: {
+        Args: never
+        Returns: {
+          achternaam: string
+          email: string
+          has_google_calendar: boolean
+          id: string
+          partner_id: string
+          voornaam: string
+        }[]
+      }
       log_audit_event: {
         Args: {
           _actie: string
