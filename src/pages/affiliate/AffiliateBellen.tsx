@@ -26,6 +26,7 @@ import { vereistDialog, type UitkomstWaarde } from "@/lib/affiliate/uitkomstAuto
 import { UitkomstGroep, UitkomstKnop } from "@/components/affiliate/UitkomstSoundboard";
 import { GespreksTimer } from "@/components/affiliate/Belsessie/Timer";
 import { BriefingKaart } from "@/components/affiliate/Belsessie/BriefingKaart";
+import { StatusKaart } from "@/components/affiliate/Belsessie/StatusKaart";
 import { toast } from "sonner";
 
 const AffiliateBellen = () => {
@@ -301,6 +302,7 @@ const AffiliateBellen = () => {
                 </TabsList>
 
                 <TabsContent value="gesprek" className="space-y-3 pt-3">
+                  <StatusKaart lead={current} afspraken={terugbelAfspraken} />
                   <BriefingKaart leadId={current.id} />
                   {huidigeTaken.length > 0 && (
                     <div className="text-sm border rounded-md p-3 bg-primary/5 border-primary/20">
