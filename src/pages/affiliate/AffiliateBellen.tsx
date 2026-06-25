@@ -53,6 +53,8 @@ const AffiliateBellen = () => {
       if (new Date(t.due_op) <= vandaag) dueLeadIds.add(t.lead_id);
     }
     return leads.filter((l) => {
+      // Leads zonder telefoon kunnen we niet bellen — verberg ze in de cockpit.
+      if (!l.telefoon) return false;
       if (dueLeadIds.has(l.id)) return true;
       if (l.status !== "nieuw" && l.status !== "gebeld_geen_gehoor") return false;
       if (!l.volgende_actie_datum) return true;
