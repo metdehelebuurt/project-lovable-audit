@@ -73,6 +73,7 @@ import AffiliateOpvolging from "@/pages/affiliate/AffiliateOpvolging";
 import Sales from "@/pages/sales";
 import SalesLeadDetail from "@/pages/sales/LeadDetail";
 import SalesAgenda from "@/pages/sales/SalesAgenda";
+import SalesAffiliates from "@/pages/sales/Affiliates";
 import LeadDetail from "@/pages/LeadDetail";
 import OfferteFeedback from "@/pages/OfferteFeedback";
 import AfspraakNieuw from "@/pages/AfspraakNieuw";
@@ -368,6 +369,9 @@ const App = () => (
               } />
               <Route path="/sales/agenda" element={
                 <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><SalesAgenda /></ProtectedRoute>
+              } />
+              <Route path="/sales/affiliates" element={
+                <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><SalesAffiliates /></ProtectedRoute>
               } />
               <Route path="/admin/abonnementen" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><AdminAbonnementen /></ProtectedRoute>
