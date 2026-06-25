@@ -32,9 +32,10 @@ export function useAffiliatesMetDetails() {
           .in("eigenaar_id", userIds),
         supabase
           .from("affiliate_terugbel_afspraken")
-          .select("affiliate_id, status, geplande_op")
+          .select("affiliate_id, geplande_op, afgehandeld_op")
           .in("affiliate_id", userIds)
-          .gte("geplande_op", new Date().toISOString()),
+          .gte("geplande_op", new Date().toISOString())
+          .is("afgehandeld_op", null),
       ]);
 
       const partnerMap = new Map<string, string>();
@@ -50,8 +51,7 @@ export function useAffiliatesMetDetails() {
       });
 
       const openAfspraken = new Map<string, number>();
-      (afspraken.data ?? []).forEach((a: { affiliate_id: string; status: string }) => {
-        if (a.status === "geannuleerd") return;
+      (afspraken.data ?? []).forEach((a: { affiliate_id: string }) => {
         openAfspraken.set(a.affiliate_id, (openAfspraken.get(a.affiliate_id) ?? 0) + 1);
       });
 
