@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptAppPassword } from "../_shared/email-crypto.ts";
+import { imapFetchNew } from "../_shared/imap-sync.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,23 +47,55 @@ Deno.serve(async (req) => {
 
     for (const account of accounts) {
       try {
-        // Refresh token if needed
-        let accessToken = account.access_token;
-        if (new Date(account.token_expiry) <= new Date()) {
-          accessToken = await refreshToken(adminClient, account);
-        }
-
         let messages: any[] = [];
         let newCursor: string | null = null;
+        let newImapUid: number | null = null;
+        let usedMethod: "oauth_api" | "imap_app_password" | null = null;
 
-        if (account.provider === "google") {
-          const result = await syncGmail(accessToken, account.sync_cursor);
-          messages = result.messages;
-          newCursor = result.cursor;
-        } else if (account.provider === "microsoft") {
-          const result = await syncMsGraph(accessToken, account.sync_cursor);
-          messages = result.messages;
-          newCursor = result.cursor;
+        const hasOauth = !!account.access_token && !!account.refresh_token && !account.needs_reauth;
+        const hasAppPw = account.provider === "google" && !!account.app_password_encrypted;
+
+        // 1) OAuth API pad
+        if (hasOauth) {
+          try {
+            let accessToken = account.access_token;
+            if (new Date(account.token_expiry) <= new Date()) {
+              accessToken = await refreshToken(adminClient, account);
+            }
+            if (account.provider === "google") {
+              const r = await syncGmail(accessToken, account.sync_cursor);
+              messages = r.messages; newCursor = r.cursor;
+            } else if (account.provider === "microsoft") {
+              const r = await syncMsGraph(accessToken, account.sync_cursor);
+              messages = r.messages; newCursor = r.cursor;
+            }
+            usedMethod = "oauth_api";
+          } catch (e) {
+            console.warn(`OAuth sync mislukt voor ${account.id}, probeer IMAP-fallback:`, (e as Error).message);
+          }
+        }
+
+        // 2) IMAP fallback (alleen Gmail + app_password)
+        if (!usedMethod && hasAppPw) {
+          const plain = await decryptAppPassword(account.app_password_encrypted);
+          const r = await imapFetchNew({
+            email_adres: account.email_adres,
+            imap_host: account.imap_host, imap_port: account.imap_port,
+            app_password_plain: plain,
+            last_uid: account.imap_last_uid ?? null,
+          });
+          messages = r.messages.map((m) => ({
+            id: m.messageId || `imap-${account.id}-${m.uid}`,
+            from: m.from, to: m.to, subject: m.subject,
+            body_html: m.html, body_text: m.text,
+            date: m.date, is_read: false, labels: [], thread_id: null, attachments: [],
+          }));
+          newImapUid = r.newLastUid;
+          usedMethod = "imap_app_password";
+        }
+
+        if (!usedMethod) {
+          throw new Error("Geen werkende sync-methode (geen OAuth-token en geen App-wachtwoord).");
         }
 
         // Insert messages
@@ -99,6 +133,7 @@ Deno.serve(async (req) => {
         await adminClient.from("email_accounts").update({
           last_sync_at: new Date().toISOString(),
           ...(newCursor ? { sync_cursor: newCursor } : {}),
+          ...(newImapUid ? { imap_last_uid: newImapUid } : {}),
           updated_at: new Date().toISOString(),
         }).eq("id", account.id);
 
