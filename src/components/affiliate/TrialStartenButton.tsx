@@ -16,7 +16,7 @@ export function TrialStartenButton({ lead, size = "default", variant = "default"
   const [open, setOpen] = useState(false);
   const al = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id;
   if (al) return null;
-  if (!lead.email || !lead.bedrijfsnaam) return null;
+  if (!lead.bedrijfsnaam) return null;
   return (
     <>
       <Button size={size} variant={variant} className={className} onClick={(e) => { e.stopPropagation(); setOpen(true); }}>
