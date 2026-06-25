@@ -118,11 +118,11 @@ export const APPS: AppDefinition[] = [
   { id: "gebruikers", label: "Gebruikers", icon: Users, url: "/gebruikers", kleur: "violet",
     rollen: ["superadmin", "partner_admin"], categorie: "beheer" },
   { id: "affiliate-beheer", label: "Affiliate Beheer", icon: Handshake, url: "/affiliate-beheer", kleur: "fuchsia",
-    rollen: ["superadmin"], categorie: "beheer" },
+    rollen: ["superadmin", "sales_manager"], categorie: "beheer" },
   { id: "abonnementen", label: "Abonnementen", icon: CreditCard, url: "/admin/abonnementen", kleur: "amber",
     rollen: ["superadmin"], categorie: "beheer" },
   { id: "affiliate-links", label: "Affiliate Links", icon: Link2, url: "/affiliates", kleur: "fuchsia",
-    rollen: ["affiliate"], categorie: "beheer" },
+    rollen: ["affiliate", "sales_manager"], categorie: "beheer" },
 
   // Support
   { id: "feedback", label: "Feedback", icon: MessageSquareHeart, url: "/feedback", kleur: "roze",
