@@ -8912,6 +8912,8 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_sales_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_sales_manager: { Args: { _user_id: string }; Returns: boolean }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       kan_agenda_bekijken: {
         Args: { _target: string; _viewer: string }
