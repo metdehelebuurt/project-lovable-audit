@@ -49,8 +49,8 @@ const AffiliateAnalytics = () => {
     });
     const aantal = gewonnenDezeMaand.length;
     const omzet = gewonnenDezeMaand.reduce((s, l) => s + Number(l.geschatte_waarde ?? 0), 0);
-    const aantalDoel = Number((target as { aantal_deals_doel?: number }).aantal_deals_doel ?? 0);
-    const omzetDoel = Number((target as { omzet_doel?: number }).omzet_doel ?? 0);
+    const aantalDoel = Number(target.target_klanten ?? 0);
+    const omzetDoel = Number(target.target_omzet ?? 0);
     return {
       jaar,
       maand,
