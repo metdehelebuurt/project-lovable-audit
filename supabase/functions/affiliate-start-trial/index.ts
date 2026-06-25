@@ -16,6 +16,7 @@ const BodySchema = z.object({
   telefoon: z.string().max(40).optional().nullable(),
   password: z.string().min(8).max(100),
   toestemming: z.literal(true),
+  trial_dagen: z.number().int().min(1).max(30).optional(),
 });
 
 function err(message: string, status = 400, code = "bad_request") {
