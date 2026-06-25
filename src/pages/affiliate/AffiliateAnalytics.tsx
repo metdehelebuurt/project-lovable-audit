@@ -2,13 +2,18 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Trophy, X, Euro, Target } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
+import { useAffiliateTargets } from "@/hooks/affiliate/useAffiliateTargets";
+import { useAuth } from "@/contexts/AuthContext";
 
 const fmtEur = (n: number) => n.toLocaleString("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
 const AffiliateAnalytics = () => {
   const { data: leads = [], isLoading } = useAffiliateLeads("mine");
+  const { user } = useAuth();
+  const { data: targets = [] } = useAffiliateTargets(user?.id);
 
   const stats = useMemo(() => {
     const gewonnen = leads.filter((l) => l.status === "gewonnen");
@@ -31,6 +36,33 @@ const AffiliateAnalytics = () => {
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [stats.verloren]);
 
+  const targetVoortgang = useMemo(() => {
+    const nu = new Date();
+    const jaar = nu.getFullYear();
+    const maand = nu.getMonth() + 1;
+    const target = targets.find((t) => t.jaar === jaar && t.maand === maand);
+    if (!target) return null;
+    const startMaand = new Date(jaar, maand - 1, 1).getTime();
+    const gewonnenDezeMaand = stats.gewonnen.filter((l) => {
+      const d = l.updated_at ? new Date(l.updated_at).getTime() : 0;
+      return d >= startMaand;
+    });
+    const aantal = gewonnenDezeMaand.length;
+    const omzet = gewonnenDezeMaand.reduce((s, l) => s + Number(l.geschatte_waarde ?? 0), 0);
+    const aantalDoel = Number(target.target_klanten ?? 0);
+    const omzetDoel = Number(target.target_omzet ?? 0);
+    return {
+      jaar,
+      maand,
+      aantal,
+      aantalDoel,
+      omzet,
+      omzetDoel,
+      aantalPct: aantalDoel > 0 ? Math.min(100, Math.round((aantal / aantalDoel) * 100)) : 0,
+      omzetPct: omzetDoel > 0 ? Math.min(100, Math.round((omzet / omzetDoel) * 100)) : 0,
+    };
+  }, [targets, stats.gewonnen]);
+
   return (
     <div className="p-6 space-y-4">
       <AffiliateSubnav />
@@ -49,6 +81,36 @@ const AffiliateAnalytics = () => {
             <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Trophy className="h-7 w-7 text-emerald-600" /><div><p className="text-2xl font-bold">{stats.gewonnen.length}</p><p className="text-xs text-muted-foreground">Gewonnen ({fmtEur(stats.gewonnenWaarde)})</p></div></div></CardContent></Card>
             <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><TrendingUp className="h-7 w-7 text-amber-600" /><div><p className="text-2xl font-bold">{stats.winRate}%</p><p className="text-xs text-muted-foreground">Win-rate</p></div></div></CardContent></Card>
           </div>
+
+          {targetVoortgang && (targetVoortgang.aantalDoel > 0 || targetVoortgang.omzetDoel > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Target className="h-4 w-4 text-blue-600" /> Maanddoel — {String(targetVoortgang.maand).padStart(2, "0")}/{targetVoortgang.jaar}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {targetVoortgang.aantalDoel > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span>Aantal deals</span>
+                      <span className="text-muted-foreground">{targetVoortgang.aantal} / {targetVoortgang.aantalDoel}</span>
+                    </div>
+                    <Progress value={targetVoortgang.aantalPct} />
+                  </div>
+                )}
+                {targetVoortgang.omzetDoel > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span>Omzet</span>
+                      <span className="text-muted-foreground">{fmtEur(targetVoortgang.omzet)} / {fmtEur(targetVoortgang.omzetDoel)}</span>
+                    </div>
+                    <Progress value={targetVoortgang.omzetPct} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Verlies-analyse</CardTitle></CardHeader>

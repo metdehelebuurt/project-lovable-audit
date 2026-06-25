@@ -129,7 +129,108 @@ Deno.serve(async (req) => {
       await admin.from('affiliate_referrals').update({ trial_laatste_herinnering_op: nu.toISOString() }).eq('id', r.id)
     }
 
-    return new Response(JSON.stringify({ ok: true, herinnering: herinneringCount, escalatie: escalatieCount }), {
+    // 4. Demo/terugbel reminders T-24u en T-1u (affiliate + klant)
+    const reminderCounts = { r24: 0, r1: 0 }
+    const toekomst24 = new Date(nu.getTime() + 25 * 3600 * 1000).toISOString()
+    const { data: openAfspraken } = await admin
+      .from('affiliate_terugbel_afspraken')
+      .select('id, type, geplande_op, notitie, lead_id, collega_user_id, affiliate_id, reminder_24u_op, reminder_1u_op')
+      .is('afgehandeld_op', null)
+      .eq('noshow', false)
+      .gte('geplande_op', nu.toISOString())
+      .lte('geplande_op', toekomst24)
+      .limit(200)
+
+    for (const a of openAfspraken ?? []) {
+      const urenTot = (new Date(a.geplande_op).getTime() - nu.getTime()) / 3600000
+      const isDemo = (a as { type?: string }).type === 'demo'
+      // T-24u (binnen [23, 25] uur) — alleen voor demo's
+      if (isDemo && !a.reminder_24u_op && urenTot >= 23 && urenTot <= 25) {
+        await sendAfspraakReminder(admin, a, '24u')
+        await admin.from('affiliate_terugbel_afspraken').update({ reminder_24u_op: nu.toISOString() }).eq('id', a.id)
+        reminderCounts.r24++
+      }
+      // T-1u (binnen [0.5, 1.5] uur) — demo + terugbel
+      if (!a.reminder_1u_op && urenTot >= 0.5 && urenTot <= 1.5) {
+        await sendAfspraakReminder(admin, a, '1u')
+        await admin.from('affiliate_terugbel_afspraken').update({ reminder_1u_op: nu.toISOString() }).eq('id', a.id)
+        reminderCounts.r1++
+      }
+    }
+
+    // 5. No-show detectie — afspraken >30 min geleden, niet afgehandeld, nog niet gemeld
+    const noshowCutoff = new Date(nu.getTime() - 30 * 60 * 1000).toISOString()
+    const { data: missedAfspraken } = await admin
+      .from('affiliate_terugbel_afspraken')
+      .select('id, type, geplande_op, lead_id, affiliate_id, collega_user_id')
+      .is('afgehandeld_op', null)
+      .is('noshow_gemeld_op', null)
+      .eq('noshow', false)
+      .lt('geplande_op', noshowCutoff)
+      .limit(200)
+    let noshowCount = 0
+    for (const a of missedAfspraken ?? []) {
+      const ontvanger = a.collega_user_id || a.affiliate_id
+      const { data: lead } = a.lead_id
+        ? await admin.from('affiliate_leads').select('bedrijfsnaam, contactpersoon').eq('id', a.lead_id).maybeSingle()
+        : { data: null }
+      const klantNaam = lead?.contactpersoon || lead?.bedrijfsnaam || 'klant'
+      await admin.from('notificaties').insert({
+        user_id: ontvanger,
+        type: 'affiliate_opvolging',
+        titel: `Mogelijke no-show: ${a.type === 'demo' ? 'demo' : 'terugbel'} met ${klantNaam}`,
+        bericht: 'De afspraak stond gepland maar is nog niet afgevinkt. Volg deze klant op.',
+        entity_type: 'affiliate_terugbel_afspraak',
+        entity_id: a.id,
+      })
+      await admin.from('affiliate_terugbel_afspraken').update({ noshow: true, noshow_gemeld_op: nu.toISOString() }).eq('id', a.id)
+      if (a.lead_id) {
+        await admin.from('affiliate_opvolg_log').insert({
+          lead_id: a.lead_id,
+          affiliate_id: a.affiliate_id,
+          actie: 'noshow_gedetecteerd',
+          bron: 'cron',
+          titel: `No-show ${a.type}`,
+          details: { afspraak_id: a.id, geplande_op: a.geplande_op },
+        })
+      }
+      noshowCount++
+    }
+
+    // 6. Stale-lead detectie — leads >14 dagen geen contact, geen toekomstige actie, niet eindstaat
+    const staleCutoff = new Date(nu.getTime() - 14 * 86400000).toISOString()
+    const meldCutoff = new Date(nu.getTime() - 7 * 86400000).toISOString()
+    const { data: staleLeads } = await admin
+      .from('affiliate_leads')
+      .select('id, affiliate_id, bedrijfsnaam, contactpersoon, laatste_contact_op, volgende_actie_datum, status, stale_gemeld_op')
+      .not('status', 'in', '(gewonnen,verloren)')
+      .or(`laatste_contact_op.lt.${staleCutoff},laatste_contact_op.is.null`)
+      .or(`stale_gemeld_op.is.null,stale_gemeld_op.lt.${meldCutoff}`)
+      .limit(300)
+    let staleCount = 0
+    for (const l of staleLeads ?? []) {
+      if (l.volgende_actie_datum && new Date(l.volgende_actie_datum).getTime() > nu.getTime()) continue
+      await admin.from('notificaties').insert({
+        user_id: l.affiliate_id,
+        type: 'affiliate_opvolging',
+        titel: `Stille lead: ${l.contactpersoon || l.bedrijfsnaam || 'onbekend'}`,
+        bericht: 'Deze lead staat >14 dagen stil. Plan een actie of zet hem op verloren.',
+        entity_type: 'affiliate_lead',
+        entity_id: l.id,
+      })
+      await admin.from('affiliate_leads').update({ stale_gemeld_op: nu.toISOString() }).eq('id', l.id)
+      staleCount++
+    }
+
+    return new Response(JSON.stringify({
+      ok: true,
+      herinnering: herinneringCount,
+      escalatie: escalatieCount,
+      reminder24u: reminderCounts.r24,
+      reminder1u: reminderCounts.r1,
+      noshow: noshowCount,
+      stale: staleCount,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (e) {
@@ -137,6 +238,62 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })
+
+async function sendAfspraakReminder(admin: any, a: any, fase: '24u' | '1u') {
+  const { data: lead } = a.lead_id
+    ? await admin.from('affiliate_leads').select('bedrijfsnaam, contactpersoon, email, telefoon').eq('id', a.lead_id).maybeSingle()
+    : { data: null }
+  const ontvangerId = a.collega_user_id || a.affiliate_id
+  const { data: ontvanger } = await admin.from('users').select('email, voornaam, achternaam').eq('id', ontvangerId).maybeSingle()
+  const klantNaam = lead?.contactpersoon || lead?.bedrijfsnaam || undefined
+  const titel = `${fase === '24u' ? 'Morgen' : 'Over 1 uur'}: ${a.type === 'demo' ? 'demo' : 'terugbel'}${klantNaam ? ' met ' + klantNaam : ''}`
+  // In-app notificatie naar eigenaar van de afspraak
+  await admin.from('notificaties').insert({
+    user_id: ontvangerId,
+    type: 'affiliate_opvolging',
+    titel,
+    bericht: a.notitie ?? '',
+    entity_type: 'affiliate_terugbel_afspraak',
+    entity_id: a.id,
+  })
+  // Mail naar eigenaar
+  if (ontvanger?.email) {
+    await admin.functions.invoke('send-transactional-email', {
+      body: {
+        templateName: 'affiliate-opvolg-herinnering',
+        recipientEmail: ontvanger.email,
+        idempotencyKey: `affiliate-afspraak-reminder-${a.id}-${fase}`,
+        templateData: {
+          affiliateNaam: ontvanger.voornaam,
+          titel,
+          notitie: a.notitie ?? undefined,
+          due_op: a.geplande_op,
+          type: a.type,
+          prioriteit: 'normaal',
+          klantNaam,
+          klantTelefoon: lead?.telefoon ?? undefined,
+          klantEmail: lead?.email ?? undefined,
+        },
+      },
+    }).catch((e: unknown) => console.error('afspraak-reminder eigenaar', e))
+  }
+  // Mail naar klant — alleen bij demo's en alleen op T-24u (T-1u is intern)
+  if (fase === '24u' && a.type === 'demo' && lead?.email) {
+    await admin.functions.invoke('send-transactional-email', {
+      body: {
+        templateName: 'affiliate-afspraak-klant',
+        recipientEmail: lead.email,
+        idempotencyKey: `affiliate-afspraak-klant-reminder-${a.id}-${fase}`,
+        templateData: {
+          klantNaam,
+          type: a.type,
+          gepland: a.geplande_op,
+          notitie: a.notitie ?? undefined,
+        },
+      },
+    }).catch((e: unknown) => console.error('afspraak-reminder klant', e))
+  }
+}
 
 async function notifyEnMail(admin: any, t: any, templateName: string, titel: string, escalatie: boolean, regelLeadType?: string) {
   const { data: aff } = await admin.from('users').select('email, voornaam').eq('id', t.affiliate_id).maybeSingle()
