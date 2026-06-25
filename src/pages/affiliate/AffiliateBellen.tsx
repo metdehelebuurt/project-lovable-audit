@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock, MessageCircle, CalendarPlus, Globe, MapPin, Briefcase, Headphones, History as HistoryIcon, Building2, Sparkles } from "lucide-react";
+import { Phone, Mail, SkipForward, CheckCircle2, XCircle, Calendar, FileText, Clock, MessageCircle, CalendarPlus, Globe, MapPin, Briefcase, Headphones, History as HistoryIcon, Building2, Sparkles, PhoneOff, PhoneMissed, Presentation, Trophy } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads, useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLogContactmoment, useLeadContactmomenten } from "@/hooks/affiliate/useAffiliateLeadContact";
@@ -19,6 +19,9 @@ import { useBelStats } from "@/hooks/affiliate/useBelStats";
 import { BedrijfSamenvattingKaart } from "@/components/affiliate/BedrijfSamenvattingKaart";
 import { BelQueueStrip } from "@/components/affiliate/BelQueueStrip";
 import { VerrijkLeadDialog } from "@/components/affiliate/VerrijkLeadDialog";
+import { vereistDialog, type UitkomstWaarde } from "@/lib/affiliate/uitkomstAutomatisering";
+import { UitkomstGroep, UitkomstKnop } from "@/components/affiliate/UitkomstSoundboard";
+import { toast } from "sonner";
 
 const AffiliateBellen = () => {
   const { data: leads = [] } = useAffiliateLeads("mine");
@@ -33,6 +36,9 @@ const AffiliateBellen = () => {
   const [seconden, setSeconden] = useState(0);
   const tickRef = useRef<number | null>(null);
   const [openTerugbel, setOpenTerugbel] = useState(false);
+  const [openAfspraak, setOpenAfspraak] = useState(false);
+  const [afspraakType, setAfspraakType] = useState<"terugbel" | "demo">("terugbel");
+  const [pendingUitkomst, setPendingUitkomst] = useState<typeof CONTACT_UITKOMST_OPTIES[number] | null>(null);
   const [openVerrijk, setOpenVerrijk] = useState(false);
 
   const belQueue = useMemo(() => {
@@ -91,6 +97,45 @@ const AffiliateBellen = () => {
       await voltooiTaak.mutateAsync(t.id).catch(() => undefined);
     }
     next();
+  };
+
+  /** Slimme afhandeling: dwingt afspraak/terugbel-popup af voordat de status wordt gezet. */
+  const handleUitkomstSmart = async (uitkomst: typeof CONTACT_UITKOMST_OPTIES[number]) => {
+    if (!current) return;
+    // Verloren-reden verplicht
+    if (uitkomst.value === "niet_interessant" && !notitie.trim()) {
+      toast.warning("Geef kort de reden in de gespreksnotitie voor je verliest.");
+      return;
+    }
+    const dialog = vereistDialog(uitkomst.value as UitkomstWaarde, current, terugbelAfspraken);
+    if (dialog) {
+      setAfspraakType(dialog);
+      setPendingUitkomst(uitkomst);
+      setOpenAfspraak(true);
+      return;
+    }
+    await handleUitkomst(uitkomst);
+    if (uitkomst.value === "voorstel") {
+      toast.success("Status op 'voorstel verstuurd'. Open de lead om een offerte te maken.");
+    }
+  };
+
+  /** Knop "Demo inplannen" — opent direct demo-dialog en zet daarna status. */
+  const handleDemoInplannen = () => {
+    if (!current) return;
+    setAfspraakType("demo");
+    setPendingUitkomst({ value: "gesprek_gepland", label: "Demo gepland", nextStatus: "gesprek_gepland" });
+    setOpenAfspraak(true);
+  };
+
+  const onAfspraakSaved = async () => {
+    const u = pendingUitkomst;
+    setPendingUitkomst(null);
+    if (u) {
+      await handleUitkomst(u);
+    } else {
+      toast.success("Afspraak ingepland");
+    }
   };
 
   const handleTrialGestart = async () => {
@@ -279,37 +324,81 @@ const AffiliateBellen = () => {
           <div className="lg:sticky lg:top-4">
             <Card className="border-2">
               <CardHeader className="pb-2 bg-muted/40 border-b">
-                <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Hoe ging het?</CardTitle>
+                <CardTitle className="text-sm font-semibold">Volgende stap</CardTitle>
+                <p className="text-[11px] text-muted-foreground">Kies hoe het gesprek eindigde</p>
               </CardHeader>
-              <CardContent className="p-2 space-y-1.5">
-                {CONTACT_UITKOMST_OPTIES.map((u) => {
-                  const Icon = u.value === "gewonnen" ? CheckCircle2 : u.value === "niet_interessant" ? XCircle : u.value === "gesprek_gepland" ? Calendar : u.value === "voorstel" ? FileText : Phone;
-                  const accent =
-                    u.value === "gewonnen" ? "hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300" :
-                    u.value === "niet_interessant" ? "hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300" :
-                    u.value === "gesprek_gepland" ? "hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300" :
-                    u.value === "voorstel" ? "hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300" :
-                    "hover:bg-muted";
-                  return (
-                    <Button
-                      key={u.value}
-                      variant="outline"
-                      className={`w-full justify-start h-11 text-sm font-medium transition-colors ${accent}`}
-                      onClick={() => handleUitkomst(u)}
-                    >
-                      <Icon className="h-4 w-4 mr-2.5 shrink-0" /> {u.label}
-                    </Button>
-                  );
-                })}
-                {current && (
-                  <TrialStartenButton
-                    lead={current}
-                    variant="outline"
-                    className="w-full justify-start h-11 text-sm font-medium hover:bg-primary/5 hover:text-primary hover:border-primary/40"
-                    onStarted={handleTrialGestart}
+              <CardContent className="p-3 space-y-4">
+                {/* Groep: Niet bereikt */}
+                <UitkomstGroep titel="Niet bereikt">
+                  <UitkomstKnop
+                    icon={PhoneMissed}
+                    label="Geen gehoor"
+                    accent="muted"
+                    onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "geen_gehoor")!)}
                   />
-                )}
-                <div className="pt-2 mt-2 border-t">
+                  <UitkomstKnop
+                    icon={Phone}
+                    label="Terugbellen"
+                    hint="Verplicht inplannen"
+                    accent="amber"
+                    onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "terugbellen")!)}
+                  />
+                </UitkomstGroep>
+
+                {/* Groep: Niet relevant */}
+                <UitkomstGroep titel="Niet relevant">
+                  <UitkomstKnop
+                    icon={XCircle}
+                    label="Niet interessant"
+                    hint="Notitie verplicht"
+                    accent="rose"
+                    onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "niet_interessant")!)}
+                  />
+                </UitkomstGroep>
+
+                {/* Groep: Bereikt & vervolg */}
+                <UitkomstGroep titel="Bereikt &amp; vervolg">
+                  <UitkomstKnop
+                    icon={Calendar}
+                    label="Afspraak gepland"
+                    hint="Check: staat de afspraak?"
+                    accent="blue"
+                    onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "gesprek_gepland")!)}
+                  />
+                  <UitkomstKnop
+                    icon={Presentation}
+                    label="Demo inplannen"
+                    hint="Plant demo + mail"
+                    accent="blue"
+                    onClick={handleDemoInplannen}
+                  />
+                  <UitkomstKnop
+                    icon={FileText}
+                    label="Voorstel doen"
+                    accent="violet"
+                    onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "voorstel")!)}
+                  />
+                </UitkomstGroep>
+
+                {/* Groep: Deal */}
+                <UitkomstGroep titel="Deal">
+                  <UitkomstKnop
+                    icon={Trophy}
+                    label="Gewonnen"
+                    accent="emerald"
+                    onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "gewonnen")!)}
+                  />
+                  {current && (
+                    <TrialStartenButton
+                      lead={current}
+                      variant="outline"
+                      className="w-full justify-start h-10 text-sm font-medium hover:bg-primary/5 hover:text-primary hover:border-primary/40"
+                      onStarted={handleTrialGestart}
+                    />
+                  )}
+                </UitkomstGroep>
+
+                <div className="pt-2 border-t">
                   <Button variant="ghost" className="w-full justify-start text-muted-foreground h-9" onClick={next}>
                     <SkipForward className="h-4 w-4 mr-2" /> Overslaan
                   </Button>
@@ -321,6 +410,20 @@ const AffiliateBellen = () => {
       )}
       {current && (
         <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={current.id} leadNaam={current.bedrijfsnaam} />
+      )}
+      {current && (
+        <TerugbelDialog
+          open={openAfspraak}
+          onOpenChange={(o) => {
+            setOpenAfspraak(o);
+            if (!o) setPendingUitkomst(null);
+          }}
+          leadId={current.id}
+          leadNaam={current.bedrijfsnaam}
+          klantEmail={current.email}
+          afspraakType={afspraakType}
+          onSaved={onAfspraakSaved}
+        />
       )}
       {current && (
         <VerrijkLeadDialog open={openVerrijk} onOpenChange={setOpenVerrijk} lead={current} />
