@@ -78,13 +78,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verifieer dat affiliate bestaat en actief is
+    // Verifieer dat affiliate bestaat en actief is.
+    // Belangrijk: hybride users (bv. partner_admin met additieve affiliate-rol) moeten
+    // óók geaccepteerd worden, dus we checken via user_has_role i.p.v. users.rol.
     const { data: aff } = await admin
       .from("users")
-      .select("id, voornaam, achternaam, email, rol, status")
+      .select("id, voornaam, achternaam, email, partner_id, rol, status")
       .eq("id", body.affiliate_id!)
       .maybeSingle();
-    if (!aff || aff.rol !== "affiliate" || aff.status !== "actief") {
+    if (!aff || aff.status !== "actief") {
+      return new Response(JSON.stringify({ error: "affiliate_not_found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: hasAffiliateRol } = await admin.rpc("user_has_role", {
+      _user_id: aff.id, _rol: "affiliate",
+    });
+    if (!hasAffiliateRol) {
       return new Response(JSON.stringify({ error: "affiliate_not_found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -177,6 +187,26 @@ Deno.serve(async (req) => {
         google_error = e instanceof Error ? e.message : "onbekend";
       }
     }
+
+    // Audit-log: wie heeft welke afspraak gepland, en wat is het Google-resultaat?
+    await admin.from("audit_log").insert({
+      partner_id: aff.partner_id ?? null,
+      actor_id: callerId,
+      target_user_id: aff.id,
+      actie: body.type === "demo"
+        ? "demo_afspraak_gepland_door_sales"
+        : "terugbel_afspraak_gepland_door_sales",
+      entity_type: "affiliate_terugbel_afspraken",
+      entity_id: afspraak.id,
+      nieuwe_waarde: {
+        type: body.type,
+        geplande_op: body.geplande_op,
+        duur_minuten: body.duur_minuten,
+        lead_id: body.lead_id ?? null,
+        google_sync,
+        google_error: google_error ?? null,
+      },
+    });
 
     return new Response(
       JSON.stringify({ afspraak, google_sync, google_error }),
