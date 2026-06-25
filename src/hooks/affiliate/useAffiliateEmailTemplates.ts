@@ -11,6 +11,7 @@ export interface AffiliateEmailTemplateRow {
   body_html: string;
   afzender_naam: string | null;
   actief: boolean;
+  actie_default: string | null;
   updated_at: string;
 }
 
@@ -41,6 +42,7 @@ export function useAffiliateEmailTemplates() {
       body_html: string;
       afzender_naam?: string | null;
       actief?: boolean;
+      actie_default?: string | null;
     }) => {
       if (!user?.id) throw new Error("Niet ingelogd");
       const { error } = await supabase
@@ -53,6 +55,7 @@ export function useAffiliateEmailTemplates() {
             body_html: input.body_html,
             afzender_naam: input.afzender_naam ?? null,
             actief: input.actief ?? true,
+            ...(input.actie_default !== undefined ? { actie_default: input.actie_default } : {}),
           },
           { onConflict: "user_id,template_key" },
         );
