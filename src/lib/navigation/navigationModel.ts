@@ -108,6 +108,8 @@ const ITEMS = {
     synoniemen: ["agenda", "terugbel", "afspraken"] } as NavigatieItem,
   salesAgenda: { id: "sales-agenda", label: "Sales-agenda", icon: Calendar, url: "/sales/agenda",
     synoniemen: ["agenda affiliates", "affiliate agenda", "planning sales"] } as NavigatieItem,
+  salesAffiliates: { id: "sales-affiliates", label: "Mijn affiliates", icon: Users, url: "/sales/affiliates",
+    synoniemen: ["affiliates beheer", "mijn team", "affiliate overzicht"] } as NavigatieItem,
   affiliateOpvolging: { id: "affiliate-opvolging", label: "Opvolging", icon: Sparkles, url: "/affiliates/opvolging",
     synoniemen: ["taken", "herinneringen", "ai opvolging", "follow-up"] } as NavigatieItem,
   affiliateAnalytics: { id: "affiliate-analytics", label: "Analytics", icon: BarChart3, url: "/affiliates/analytics",
@@ -241,6 +243,7 @@ function salesManagerNav(): NavigatieGroep[] {
   return [
     { id: "werk", label: "Werk", items: [ITEMS.affiliateLinks, ITEMS.berichten] },
     { id: "sales", label: "Sales CRM", items: [
+      ITEMS.salesAffiliates,
       ITEMS.salesAgenda,
       ITEMS.affiliatePipeline, ITEMS.affiliateBellen, ITEMS.affiliatePool,
       ITEMS.affiliateAgenda, ITEMS.affiliateOpvolging,
