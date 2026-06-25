@@ -441,7 +441,14 @@ const AffiliateBellen = () => {
         </div>
       )}
       {current && (
-        <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={current.id} leadNaam={current.bedrijfsnaam} affiliateId={current.eigenaar_id} />
+        <TerugbelDialog
+          open={openTerugbel}
+          onOpenChange={setOpenTerugbel}
+          leadId={current.id}
+          leadNaam={current.bedrijfsnaam}
+          klantEmail={current.email}
+          affiliateId={current.eigenaar_id}
+        />
       )}
       {current && (
         <TerugbelDialog
