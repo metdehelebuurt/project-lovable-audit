@@ -43,7 +43,7 @@ export function useAiSchrijfstijl() {
       const { error } = await supabase
         .from("ai_template_schrijfstijl")
         .upsert(
-          { user_id: user.id, ...input },
+          { user_id: user.id, ...input } as never,
           { onConflict: "user_id" },
         );
       if (error) throw error;
