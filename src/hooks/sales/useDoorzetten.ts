@@ -24,6 +24,22 @@ export function useAffiliateGebruikers() {
   });
 }
 
+/** Alle actieve sales managers ophalen voor de doorzet-dropdown. */
+export function useSalesManagerGebruikers() {
+  return useQuery({
+    queryKey: ["sales-managers"],
+    queryFn: async (): Promise<AffiliateOptie[]> => {
+      const { data, error } = await supabase.rpc("admin_lijst_sales_managers");
+      if (error) throw error;
+      return (data ?? []).map((u: { id: string; voornaam: string | null; achternaam: string | null; email: string | null }) => ({
+        id: u.id,
+        email: u.email ?? "",
+        naam: [u.voornaam, u.achternaam].filter(Boolean).join(" ").trim() || u.email || "Onbekend",
+      }));
+    },
+  });
+}
+
 import type { Temperatuur } from "@/lib/sales/temperatuur";
 
 export interface DoorzetInput {
