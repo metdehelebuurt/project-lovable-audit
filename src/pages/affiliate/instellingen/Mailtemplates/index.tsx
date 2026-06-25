@@ -50,7 +50,8 @@ export default function MailtemplatesPage() {
                 <TemplateKaart
                   key={t.key}
                   template={t}
-                  aangepast={!!aangepast?.[t.key]}
+                  row={aangepast?.[t.key] ?? null}
+                  allRows={aangepast}
                   onOpen={() => setOpenKey(t.key)}
                 />
               ))}
