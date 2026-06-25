@@ -489,6 +489,7 @@ export type Database = {
       }
       affiliate_email_templates: {
         Row: {
+          actie_default: string | null
           actief: boolean
           afzender_naam: string | null
           body_html: string
@@ -501,6 +502,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actie_default?: string | null
           actief?: boolean
           afzender_naam?: string | null
           body_html: string
@@ -513,6 +515,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actie_default?: string | null
           actief?: boolean
           afzender_naam?: string | null
           body_html?: string

@@ -40,8 +40,16 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { data: userRow } = await adminClient.from("users").select("partner_id").eq("id", userId).maybeSingle();
+    const { data: userRow } = await adminClient
+      .from("users")
+      .select("partner_id, voornaam, achternaam")
+      .eq("id", userId)
+      .maybeSingle();
     const partnerId: string | null = userRow?.partner_id ?? null;
+
+    // Bouw "Voornaam Achternaam | mijnhuis.nu" als display-name voor de From-header.
+    const fullName = [userRow?.voornaam, userRow?.achternaam].filter(Boolean).join(" ").trim();
+    const displayName = fullName ? `${fullName} | mijnhuis.nu` : "mijnhuis.nu";
 
     // Bepaal mailbox via routing-config (per documenttype configureerbaar door partner_admin).
     // Voor affiliates / users zonder partner: val direct terug op persoonlijke mailbox.
@@ -86,9 +94,9 @@ Deno.serve(async (req) => {
           accessToken = await refreshAccessToken(adminClient, emailAccount);
         }
         if (emailAccount.provider === "google") {
-          await sendViaGmail(accessToken, emailAccount.email_adres, to, subject, html_body);
+          await sendViaGmail(accessToken, emailAccount.email_adres, displayName, to, subject, html_body);
         } else if (emailAccount.provider === "microsoft") {
-          await sendViaMsGraph(accessToken, to, subject, html_body);
+          await sendViaMsGraph(accessToken, displayName, emailAccount.email_adres, to, subject, html_body);
         }
         sendMethod = "oauth_api";
       } catch (e) {
@@ -105,7 +113,7 @@ Deno.serve(async (req) => {
           email_adres: emailAccount.email_adres,
           smtp_host: emailAccount.smtp_host, smtp_port: emailAccount.smtp_port,
           app_password_plain: plain,
-        }, { from: emailAccount.email_adres, to, subject, html: html_body });
+        }, { from: emailAccount.email_adres, fromName: displayName, to, subject, html: html_body });
         sendMethod = "smtp_app_password";
         lastErr = null;
       } catch (e) {
@@ -233,9 +241,17 @@ async function refreshAccessToken(adminClient: any, account: any): Promise<strin
   return data.access_token;
 }
 
-async function sendViaGmail(accessToken: string, from: string, to: string, subject: string, html: string) {
+function escapeQuotes(s: string): string {
+  // Quote-escaping voor RFC 5322 display-names; verwijder CR/LF om header-injectie te voorkomen.
+  return s.replace(/[\r\n]/g, " ").replace(/"/g, "");
+}
+
+async function sendViaGmail(accessToken: string, fromEmail: string, fromName: string, to: string, subject: string, html: string) {
+  const fromHeader = fromName
+    ? `"${escapeQuotes(fromName)}" <${fromEmail}>`
+    : fromEmail;
   const rawMessage = [
-    `From: ${from}`,
+    `From: ${fromHeader}`,
     `To: ${to}`,
     `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
     `MIME-Version: 1.0`,
@@ -262,7 +278,7 @@ async function sendViaGmail(accessToken: string, from: string, to: string, subje
   }
 }
 
-async function sendViaMsGraph(accessToken: string, to: string, subject: string, html: string) {
+async function sendViaMsGraph(accessToken: string, fromName: string, fromEmail: string, to: string, subject: string, html: string) {
   const resp = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
     method: "POST",
     headers: {
@@ -274,6 +290,7 @@ async function sendViaMsGraph(accessToken: string, to: string, subject: string, 
         subject,
         body: { contentType: "HTML", content: html },
         toRecipients: [{ emailAddress: { address: to } }],
+        from: { emailAddress: { address: fromEmail, name: escapeQuotes(fromName) } },
       },
       saveToSentItems: true,
     }),
