@@ -144,10 +144,10 @@ serve(async (req) => {
       : "onbekend";
     const affiliateNaam = `${profile.voornaam ?? ""} ${profile.achternaam ?? ""}`.trim() || profile.email;
 
-    // Lead bijwerken
+    // Lead bijwerken — trial gestart, partner gekoppeld. 'Gewonnen' is gereserveerd voor betalende klant.
     await admin
       .from("affiliate_leads")
-      .update({ status: "gewonnen", gewonnen_partner_id: partnerId })
+      .update({ status: "trial_gestart", gewonnen_partner_id: partnerId })
       .eq("id", body.lead_id);
 
     // Contactmoment
