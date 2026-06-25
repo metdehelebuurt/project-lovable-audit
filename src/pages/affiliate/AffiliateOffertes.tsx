@@ -38,7 +38,7 @@ const AffiliateOffertes = () => {
   const totaal = offertes.reduce((s, o) => s + Number(o.totaal_bedrag ?? 0), 0);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="h-6 w-6" /> Mijn offertes</h1>
