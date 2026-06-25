@@ -20,6 +20,7 @@ interface UserProfile {
   timezone: string | null;
   land: string | null;
   stad: string | null;
+  extra_rollen: AppRole[];
 }
 
 interface AuthContextType {
@@ -51,7 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Error fetching profile:", error);
       return null;
     }
-    return data as UserProfile;
+    // Haal extra (additieve) rollen op via user_roles
+    const { data: extra } = await supabase
+      .from("user_roles")
+      .select("rol")
+      .eq("user_id", userId);
+    const extra_rollen = (extra ?? []).map((r) => r.rol as AppRole);
+    return { ...(data as Omit<UserProfile, "extra_rollen">), extra_rollen } as UserProfile;
   };
 
   const provisionGoogleUser = async (): Promise<UserProfile | null> => {
