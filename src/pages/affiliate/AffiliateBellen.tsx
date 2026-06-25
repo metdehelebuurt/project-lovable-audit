@@ -56,7 +56,12 @@ const AffiliateBellen = () => {
       // Leads zonder telefoon kunnen we niet bellen — verberg ze in de cockpit.
       if (!l.telefoon) return false;
       if (dueLeadIds.has(l.id)) return true;
-      if (l.status !== "nieuw" && l.status !== "gebeld_geen_gehoor" && l.status !== "terugbel_gepland") return false;
+      if (
+        l.status !== "nieuw" &&
+        l.status !== "gebeld_geen_gehoor" &&
+        l.status !== "mail_gestuurd" &&
+        l.status !== "terugbel_gepland"
+      ) return false;
       if (!l.volgende_actie_datum) return true;
       return new Date(l.volgende_actie_datum) <= vandaag;
     });
@@ -126,7 +131,7 @@ const AffiliateBellen = () => {
   const handleDemoInplannen = () => {
     if (!current) return;
     setAfspraakType("demo");
-    setPendingUitkomst({ value: "gesprek_gepland", label: "Demo gepland", nextStatus: "gesprek_gepland" });
+    setPendingUitkomst({ value: "gesprek_gepland", label: "Demo gepland", nextStatus: "demo_gepland" });
     setOpenAfspraak(true);
   };
 
@@ -142,7 +147,7 @@ const AffiliateBellen = () => {
     });
     toast.success("Mail gelogd — plan nu de nabel-afspraak");
     setAfspraakType("terugbel");
-    setPendingUitkomst({ value: "terugbellen", label: "Nabellen na mail", nextStatus: "terugbel_gepland" });
+    setPendingUitkomst({ value: "terugbellen", label: "Nabellen na mail", nextStatus: "mail_gestuurd" });
     setOpenAfspraak(true);
   };
 
