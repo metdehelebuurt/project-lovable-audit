@@ -25,7 +25,7 @@ export default function MailtemplatesPage() {
   const huidigeTemplate = openKey ? AFFILIATE_TEMPLATES.find((t) => t.key === openKey) ?? null : null;
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="p-6">
       <AffiliateSubnav />
       <header className="mb-6">
         <h1 className="text-2xl font-bold">E-mailtemplates</h1>
