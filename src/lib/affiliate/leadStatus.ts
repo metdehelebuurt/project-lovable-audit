@@ -7,10 +7,13 @@ export type AffiliateContactType = Database["public"]["Enums"]["affiliate_contac
 export const STATUS_VOLGORDE: AffiliateLeadStatus[] = [
   "nieuw",
   "gebeld_geen_gehoor",
+  "mail_gestuurd",
   "terugbel_gepland",
   "gesprek_gepland",
+  "demo_gepland",
   "in_gesprek",
   "voorstel_verstuurd",
+  "trial_gestart",
   "gewonnen",
   "verloren",
 ];
@@ -18,10 +21,13 @@ export const STATUS_VOLGORDE: AffiliateLeadStatus[] = [
 export const STATUS_LABEL: Record<AffiliateLeadStatus, string> = {
   nieuw: "Nieuw",
   gebeld_geen_gehoor: "Gebeld, geen gehoor",
+  mail_gestuurd: "Mail gestuurd",
   terugbel_gepland: "Terugbel gepland",
   gesprek_gepland: "Gesprek gepland",
+  demo_gepland: "Demo gepland",
   in_gesprek: "In gesprek",
   voorstel_verstuurd: "Voorstel verstuurd",
+  trial_gestart: "Trial gestart",
   gewonnen: "Gewonnen",
   verloren: "Verloren",
 };
@@ -29,10 +35,13 @@ export const STATUS_LABEL: Record<AffiliateLeadStatus, string> = {
 export const STATUS_KLEUR: Record<AffiliateLeadStatus, string> = {
   nieuw: "bg-slate-100 text-slate-700",
   gebeld_geen_gehoor: "bg-amber-100 text-amber-800",
+  mail_gestuurd: "bg-cyan-100 text-cyan-800",
   terugbel_gepland: "bg-sky-100 text-sky-800",
   gesprek_gepland: "bg-blue-100 text-blue-800",
+  demo_gepland: "bg-violet-100 text-violet-800",
   in_gesprek: "bg-indigo-100 text-indigo-800",
-  voorstel_verstuurd: "bg-violet-100 text-violet-800",
+  voorstel_verstuurd: "bg-fuchsia-100 text-fuchsia-800",
+  trial_gestart: "bg-teal-100 text-teal-800",
   gewonnen: "bg-emerald-100 text-emerald-800",
   verloren: "bg-rose-100 text-rose-800",
 };
