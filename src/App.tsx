@@ -73,6 +73,7 @@ import AffiliateOpvolging from "@/pages/affiliate/AffiliateOpvolging";
 import Sales from "@/pages/sales";
 import SalesLeadDetail from "@/pages/sales/LeadDetail";
 import SalesAgenda from "@/pages/sales/SalesAgenda";
+import SalesAffiliates from "@/pages/sales/Affiliates";
 import LeadDetail from "@/pages/LeadDetail";
 import OfferteFeedback from "@/pages/OfferteFeedback";
 import AfspraakNieuw from "@/pages/AfspraakNieuw";
