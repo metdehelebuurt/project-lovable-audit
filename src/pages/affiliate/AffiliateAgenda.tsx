@@ -2,18 +2,29 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Calendar, Phone } from "lucide-react";
+import { CheckCircle2, Calendar, Phone, UserPlus } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
-import { useTerugbelAfspraken, useAfvinkenTerugbel } from "@/hooks/affiliate/useTerugbelAfspraken";
+import { useTerugbelAfspraken, useAfvinkenTerugbel, useAfsprakenVoorMij } from "@/hooks/affiliate/useTerugbelAfspraken";
 import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 
 const AffiliateAgenda = () => {
-  const { data: afspraken = [], isLoading } = useTerugbelAfspraken("open");
+  const { data: eigen = [], isLoading } = useTerugbelAfspraken("open");
+  const { data: voorMij = [] } = useAfsprakenVoorMij("open");
   const { data: leads = [] } = useAffiliateLeads("mine");
   const afvink = useAfvinkenTerugbel();
 
   const leadById = useMemo(() => new Map(leads.map((l) => [l.id, l])), [leads]);
+
+  // Merge + dedup op id, en markeer welke door een collega aan mij zijn toegewezen.
+  const afspraken = useMemo(() => {
+    const map = new Map<string, (typeof eigen)[number] & { _voorMij?: boolean }>();
+    for (const a of eigen) map.set(a.id, { ...a });
+    for (const a of voorMij) if (!map.has(a.id)) map.set(a.id, { ...a, _voorMij: true });
+    return [...map.values()].sort(
+      (x, y) => new Date(x.geplande_op).getTime() - new Date(y.geplande_op).getTime(),
+    );
+  }, [eigen, voorMij]);
 
   const groepen = useMemo(() => {
     const vandaag = new Date(); vandaag.setHours(23, 59, 59, 999);
@@ -40,10 +51,24 @@ const AffiliateAgenda = () => {
             const lead = leadById.get(a.lead_id);
             const tel = telLink(lead?.telefoon);
             const wa = whatsappLink(lead?.telefoon);
+            const voorMij = (a as { _voorMij?: boolean })._voorMij;
+            const afspraakType = (a as { type?: string }).type;
             return (
               <div key={a.id} className="flex items-center gap-3 border rounded-md p-3">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{lead?.bedrijfsnaam ?? "Lead"}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-medium truncate">{lead?.bedrijfsnaam ?? "Lead"}</p>
+                    {afspraakType === "demo" && (
+                      <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 text-[10px]">
+                        Demo
+                      </Badge>
+                    )}
+                    {voorMij && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1">
+                        <UserPlus className="h-3 w-3" /> Aan mij toegewezen
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">{new Date(a.geplande_op).toLocaleString("nl-NL")}{a.notitie ? ` · ${a.notitie}` : ""}</p>
                 </div>
                 {tel && <Button asChild size="sm" variant="outline"><a href={tel}><Phone className="h-3 w-3 mr-1" /> Bel</a></Button>}
