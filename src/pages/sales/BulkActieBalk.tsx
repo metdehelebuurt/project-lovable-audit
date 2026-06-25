@@ -5,6 +5,7 @@ import { Send, Trash2, Tag, X, Thermometer } from "lucide-react";
 import { SALES_FASES, FASE_LABEL, type SalesFase } from "@/lib/sales/faseLabels";
 import {
   useAffiliateGebruikers,
+  useSalesManagerGebruikers,
   useBulkDoorzetten,
   useBulkFase,
   useBulkDelete,
@@ -17,13 +18,15 @@ import { toast } from "sonner";
 interface Props {
   geselecteerd: string[];
   onClear: () => void;
+  onDoorgezet?: (ids: string[]) => void;
 }
 
-export default function BulkActieBalk({ geselecteerd, onClear }: Props) {
-  const [affiliateId, setAffiliateId] = useState<string>("");
+export default function BulkActieBalk({ geselecteerd, onClear, onDoorgezet }: Props) {
+  const [doelId, setDoelId] = useState<string>("");
   const [fase, setFase] = useState<SalesFase | "">("");
   const [temperatuur, setTemperatuur] = useState<Temperatuur | "">("");
   const { data: affiliates } = useAffiliateGebruikers();
+  const { data: salesManagers } = useSalesManagerGebruikers();
   const doorzet = useBulkDoorzetten();
   const updFase = useBulkFase();
   const del = useBulkDelete();
@@ -49,9 +52,15 @@ export default function BulkActieBalk({ geselecteerd, onClear }: Props) {
   if (geselecteerd.length === 0) return null;
 
   const doorzetten = (target: string | null) => {
+    const ids = geselecteerd.slice();
     doorzet.mutate(
-      { lead_ids: geselecteerd, affiliate_id: target, temperatuur: temperatuur || undefined },
-      { onSuccess: () => onClear() },
+      { lead_ids: ids, affiliate_id: target, temperatuur: temperatuur || undefined },
+      {
+        onSuccess: () => {
+          onDoorgezet?.(ids);
+          onClear();
+        },
+      },
     );
   };
 
@@ -78,16 +87,25 @@ export default function BulkActieBalk({ geselecteerd, onClear }: Props) {
       <span className="text-sm font-medium">{geselecteerd.length} geselecteerd</span>
 
       <div className="flex items-center gap-1">
-        <Select value={affiliateId} onValueChange={setAffiliateId}>
-          <SelectTrigger className="h-9 w-56"><SelectValue placeholder="Kies affiliate…" /></SelectTrigger>
+        <Select value={doelId} onValueChange={setDoelId}>
+          <SelectTrigger className="h-9 w-64"><SelectValue placeholder="Kies affiliate of sales manager…" /></SelectTrigger>
           <SelectContent>
+            {(affiliates ?? []).length > 0 && (
+              <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Affiliates</div>
+            )}
             {(affiliates ?? []).map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.naam} — {a.email}</SelectItem>
             ))}
+            {(salesManagers ?? []).length > 0 && (
+              <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Sales managers</div>
+            )}
+            {(salesManagers ?? []).map((s) => (
+              <SelectItem key={s.id} value={s.id}>{s.naam} — {s.email}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        <Button size="sm" className="gap-1" disabled={!affiliateId || doorzet.isPending}
-          onClick={() => doorzetten(affiliateId)}>
+        <Button size="sm" className="gap-1" disabled={!doelId || doorzet.isPending}
+          onClick={() => doorzetten(doelId)}>
           <Send className="h-3.5 w-3.5" /> Doorzet
         </Button>
         <Button size="sm" variant="outline" disabled={doorzet.isPending}
