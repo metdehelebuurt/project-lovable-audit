@@ -19,13 +19,19 @@ const baseItems = [
   { to: "/affiliates/instellingen/pijplijn", label: "Pijplijn-config", icon: Settings },
 ];
 
+/** Legacy in-page subnav — nu geïntegreerd in de top header op affiliate routes. */
 export function AffiliateSubnav() {
+  return null;
+}
+
+/** Top-bar navigatie voor affiliate module, rendered binnen de paarse AppHeader. */
+export function AffiliateTopnav() {
   const magReview = useIsLostReviewAdmin();
   const items = magReview
     ? [...baseItems, { to: "/affiliates/verloren-review", label: "Verloren review", icon: AlertTriangle }]
     : baseItems;
   return (
-    <nav className="flex flex-wrap gap-2 bg-primary rounded-lg px-3 py-2 mb-6 shadow-sm">
+    <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1 min-w-0">
       {items.map((i) => (
         <NavLink
           key={i.to}
@@ -33,7 +39,7 @@ export function AffiliateSubnav() {
           end={i.end}
           className={({ isActive }) =>
             cn(
-              "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+              "inline-flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
               isActive
                 ? "bg-primary-foreground text-primary"
                 : "text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground",
@@ -41,7 +47,7 @@ export function AffiliateSubnav() {
           }
         >
           <i.icon className="h-4 w-4" />
-          {i.label}
+          <span className="whitespace-nowrap">{i.label}</span>
         </NavLink>
       ))}
     </nav>
