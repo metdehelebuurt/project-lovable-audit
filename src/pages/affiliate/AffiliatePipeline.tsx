@@ -105,7 +105,15 @@ const AffiliatePipeline = () => {
 
   const advance = (lead: AffiliateLead) => {
     const idx = ZICHTBARE_STATUSSEN.indexOf(lead.status as AffiliateLeadStatus);
-    const next = ZICHTBARE_STATUSSEN[Math.min(idx + 1, ZICHTBARE_STATUSSEN.length - 3)];
+    if (idx < 0) return;
+    // Pijltje stopt op `voorstel_verstuurd`. Gewonnen/verloren vereist
+    // bewuste actie (drag-and-drop of detailweergave) zodat we niet per
+    // ongeluk een lead afsluiten.
+    const eindIdx = ZICHTBARE_STATUSSEN.indexOf("voorstel_verstuurd");
+    const maxIdx = eindIdx >= 0 ? eindIdx : ZICHTBARE_STATUSSEN.length - 1;
+    const nextIdx = Math.min(idx + 1, maxIdx);
+    if (nextIdx === idx) return;
+    const next = ZICHTBARE_STATUSSEN[nextIdx];
     if (next) update.mutate({ id: lead.id, patch: { status: next } });
   };
 
