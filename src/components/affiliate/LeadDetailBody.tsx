@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus,
-  Presentation, FileCheck2, Sparkles, MapPin, Building2, Briefcase, Flame,
+  Presentation, FileCheck2, Sparkles, Flame,
   Star, Rocket, Tag, CalendarClock, ListChecks, Activity, History, StickyNote, Wand2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
