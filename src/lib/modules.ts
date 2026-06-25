@@ -50,8 +50,8 @@ export const MODULES: ModuleDefinition[] = [
   { key: "partners", label: "Partners", groep: "Beheer", defaultRoles: ["superadmin"], configurable: false },
   { key: "adviseurs", label: "Adviseurs", groep: "Beheer", defaultRoles: ["superadmin", "partner_admin"], configurable: false },
   { key: "gebruikers", label: "Gebruikers", groep: "Beheer", defaultRoles: ["superadmin", "partner_admin"], configurable: false },
-  { key: "instellingen", label: "Instellingen", groep: "Beheer", defaultRoles: ["superadmin", "partner_admin", "partner_staff", "affiliate"], configurable: false },
-  { key: "affiliate_beheer", label: "Affiliate beheer", groep: "Beheer", defaultRoles: ["superadmin"], configurable: false },
+  { key: "instellingen", label: "Instellingen", groep: "Beheer", defaultRoles: ["superadmin", "partner_admin", "partner_staff", "affiliate", "sales_manager"], configurable: false },
+  { key: "affiliate_beheer", label: "Affiliate beheer", groep: "Beheer", defaultRoles: ["superadmin", "sales_manager"], configurable: false },
   { key: "admin_abonnementen", label: "Abonnementen-beheer", groep: "Beheer", defaultRoles: ["superadmin"], configurable: false },
 ];
 

@@ -56,6 +56,8 @@ const AfspraakNieuw = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useAuth();
+  const userTz = (profile as { timezone?: string | null } | null)?.timezone || browserTz;
+  const tzAfwijktVanNL = userTz !== NL_TZ;
   const [saving, setSaving] = useState(false);
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -297,16 +299,18 @@ const AfspraakNieuw = () => {
           </div>
 
           {/* Tijdzone-indicator — voorkomt verwarring als gebruiker in andere tz zit (bv. Portugal) */}
-          <div className={`rounded-lg border p-3 text-xs space-y-1.5 ${browserTz !== NL_TZ ? "border-amber-500/40 bg-amber-500/5" : "bg-muted/40"}`}>
+          <div className={`rounded-lg border p-3 text-xs space-y-1.5 ${tzAfwijktVanNL ? "border-amber-500/40 bg-amber-500/5" : "bg-muted/40"}`}>
             <div className="flex items-center gap-2 font-medium">
-              {browserTz !== NL_TZ ? <AlertCircle className="h-3.5 w-3.5 text-amber-600" /> : <Globe className="h-3.5 w-3.5 text-muted-foreground" />}
+              {tzAfwijktVanNL ? <AlertCircle className="h-3.5 w-3.5 text-amber-600" /> : <Globe className="h-3.5 w-3.5 text-muted-foreground" />}
               <span>
-                Tijden worden opgeslagen in jouw lokale tijdzone:{" "}
-                <span className="font-semibold">{browserTz}</span>
-                {tzOffsetLabel(browserTz) && <span className="text-muted-foreground"> ({tzOffsetLabel(browserTz)})</span>}
+                Je plant deze afspraak in <span className="font-semibold">{userTz}</span>
+                {tzOffsetLabel(userTz) && <span className="text-muted-foreground"> ({tzOffsetLabel(userTz)})</span>}
+                {profile && (profile as { timezone?: string | null }).timezone
+                  ? <span className="text-muted-foreground"> — jouw profiel-tijdzone</span>
+                  : <span className="text-muted-foreground"> — browser-tijdzone (stel je profiel in voor consistentie)</span>}
               </span>
             </div>
-            {browserTz !== NL_TZ && form.start_tijd && (
+            {tzAfwijktVanNL && form.start_tijd && (
               <div className="pl-5 text-muted-foreground">
                 <div>
                   <span className="font-medium text-foreground">In Nederland (Europe/Amsterdam):</span>{" "}
@@ -315,7 +319,7 @@ const AfspraakNieuw = () => {
                   <span className="text-muted-foreground"> ({tzOffsetLabel(NL_TZ)})</span>
                 </div>
                 <div className="mt-1 text-[11px]">
-                  Je zit nu in een andere tijdzone dan Nederland. Controleer of je de juiste lokale tijd kiest — de klant en collega's zien deze afspraak in hun eigen tijdzone.
+                  Je werkt vanuit een andere tijdzone dan Nederland. Vul hierboven de tijd in zoals jij die wilt — wij tonen ter controle ook de Nederlandse tijd. De klant en collega's zien de afspraak in hun eigen tijdzone.
                 </div>
               </div>
             )}

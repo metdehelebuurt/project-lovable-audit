@@ -318,46 +318,46 @@ const App = () => (
               } />
               <Route path="/instellingen" element={<Instellingen />} />
               <Route path="/affiliates" element={
-                <ProtectedRoute allowedRoles={["affiliate"]}><Affiliates /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","sales_manager"]}><Affiliates /></ProtectedRoute>
               } />
               <Route path="/affiliates/links" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><Affiliates /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><Affiliates /></ProtectedRoute>
               } />
               <Route path="/affiliates/pipeline" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliatePipeline /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliatePipeline /></ProtectedRoute>
               } />
               <Route path="/affiliates/leads/:id" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateLeadDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateLeadDetail /></ProtectedRoute>
               } />
               <Route path="/affiliates/bellen" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateBellen /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateBellen /></ProtectedRoute>
               } />
               <Route path="/affiliates/pool" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliatePool /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliatePool /></ProtectedRoute>
               } />
               <Route path="/affiliates/klanten" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateMijnKlanten /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateMijnKlanten /></ProtectedRoute>
               } />
               <Route path="/affiliates/trials" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateTrials /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateTrials /></ProtectedRoute>
               } />
               <Route path="/affiliates/agenda" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateAgenda /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateAgenda /></ProtectedRoute>
               } />
               <Route path="/affiliates/verloren-review" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><LostReviewPage /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><LostReviewPage /></ProtectedRoute>
               } />
               <Route path="/affiliates/instellingen/mailtemplates" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><MailtemplatesPage /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><MailtemplatesPage /></ProtectedRoute>
               } />
               <Route path="/affiliates/opvolging" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateOpvolging /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateOpvolging /></ProtectedRoute>
               } />
               <Route path="/affiliates/analytics" element={
-                <ProtectedRoute allowedRoles={["affiliate","superadmin"]}><AffiliateAnalytics /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateAnalytics /></ProtectedRoute>
               } />
               <Route path="/affiliate-beheer" element={
-                <ProtectedRoute allowedRoles={["superadmin"]}><AffiliateBeheer /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><AffiliateBeheer /></ProtectedRoute>
               } />
               <Route path="/sales" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><Sales /></ProtectedRoute>

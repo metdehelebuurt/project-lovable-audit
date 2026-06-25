@@ -247,6 +247,7 @@ export function getNavigation(rol: AppRole | undefined | null): NavigatieGroep[]
     case "installateur": return installateurNav();
     case "consument": return consumentNav();
     case "affiliate": return affiliateNav();
+    case "sales_manager": return affiliateNav();
     default: return consumentNav();
   }
 }

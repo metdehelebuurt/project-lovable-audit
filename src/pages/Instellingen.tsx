@@ -43,6 +43,7 @@ const rolLabels: Record<string, string> = {
   superadmin: "Platformbeheerder", partner_admin: "Organisatiebeheerder",
   partner_staff: "Medewerker", adviseur: "Energieadviseur",
   installateur: "Installateur", consument: "Consument",
+  affiliate: "Affiliate", sales_manager: "Sales Manager",
 };
 
 interface SettingsTab {
@@ -54,7 +55,7 @@ interface SettingsTab {
 }
 
 const ALLE_ROLLEN: AppRole[] = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur", "installateur"];
-const ALLE_ROLLEN_MET_AFFILIATE: AppRole[] = [...ALLE_ROLLEN, "affiliate"];
+const ALLE_ROLLEN_MET_AFFILIATE: AppRole[] = [...ALLE_ROLLEN, "affiliate", "sales_manager"];
 const ADMIN_ROLLEN: AppRole[] = ["superadmin", "partner_admin"];
 const UITVOEREND_PLUS_ADMIN: AppRole[] = [...ALLE_ROLLEN];
 
@@ -176,18 +177,38 @@ function ProfielTab() {
   const [voornaam, setVoornaam] = useState(profile?.voornaam ?? "");
   const [achternaam, setAchternaam] = useState(profile?.achternaam ?? "");
   const [telefoon, setTelefoon] = useState(profile?.telefoon ?? "");
+  const [timezone, setTimezone] = useState<string>((profile as { timezone?: string | null })?.timezone ?? "Europe/Amsterdam");
+  const [land, setLand] = useState<string>((profile as { land?: string | null })?.land ?? "");
+  const [stad, setStad] = useState<string>((profile as { stad?: string | null })?.stad ?? "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     if (!voornaam.trim() || !achternaam.trim()) { toast.error("Voornaam en achternaam zijn verplicht"); return; }
     setSaving(true);
     const { error } = await supabase.from("users").update({
-      voornaam: voornaam.trim(), achternaam: achternaam.trim(), telefoon: telefoon.trim() || null,
+      voornaam: voornaam.trim(),
+      achternaam: achternaam.trim(),
+      telefoon: telefoon.trim() || null,
+      timezone: timezone || "Europe/Amsterdam",
+      land: land.trim() || null,
+      stad: stad.trim() || null,
     }).eq("id", user!.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Profiel bijgewerkt");
   };
+
+  const browserTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "Europe/Amsterdam"; } })();
+  const tzOpties = (() => {
+    try {
+      const fn = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf;
+      if (typeof fn === "function") return fn("timeZone");
+    } catch { /* noop */ }
+    return [
+      "Europe/Amsterdam","Europe/Brussels","Europe/Berlin","Europe/Paris","Europe/London",
+      "Europe/Lisbon","Europe/Madrid","Europe/Rome","Atlantic/Canary","UTC",
+    ];
+  })();
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
@@ -200,6 +221,32 @@ function ProfielTab() {
         <div><Label>E-mail</Label><Input value={profile?.email ?? ""} disabled className="bg-muted" /></div>
         <div><Label>Telefoon</Label><Input value={telefoon} onChange={e => setTelefoon(e.target.value)} /></div>
         <div><Label>Rol</Label><Input value={rolLabels[profile?.rol ?? ""] ?? profile?.rol ?? ""} disabled className="bg-muted" /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label>Land</Label>
+            <Input value={land} onChange={e => setLand(e.target.value)} placeholder="Nederland" />
+          </div>
+          <div>
+            <Label>Stad</Label>
+            <Input value={stad} onChange={e => setStad(e.target.value)} placeholder="Amsterdam" />
+          </div>
+        </div>
+        <div>
+          <Label className="flex items-center gap-1"><Globe className="h-3 w-3" /> Tijdzone</Label>
+          <select
+            value={timezone}
+            onChange={e => setTimezone(e.target.value)}
+            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            {tzOpties.map((tz: string) => <option key={tz} value={tz}>{tz}</option>)}
+          </select>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Afspraken worden gepland en weergegeven in deze tijdzone. Je browser staat nu op <span className="font-medium text-foreground">{browserTz}</span>.
+            {timezone !== "Europe/Amsterdam" && (
+              <> Bij afspraken zie je altijd ook de Nederlandse tijd (Europe/Amsterdam) om verwarring te voorkomen.</>
+            )}
+          </p>
+        </div>
         <Button onClick={handleSave} disabled={saving}>{saving ? "Opslaan..." : "Profiel opslaan"}</Button>
       </CardContent>
     </Card>

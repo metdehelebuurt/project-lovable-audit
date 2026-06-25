@@ -7912,6 +7912,7 @@ export type Database = {
           handtekening_html: string | null
           ical_token: string | null
           id: string
+          land: string | null
           last_login_at: string | null
           mfa_enabled: boolean | null
           onboarding_overgeslagen_op: string | null
@@ -7921,6 +7922,7 @@ export type Database = {
           opmerking: string | null
           partner_id: string | null
           rol: Database["public"]["Enums"]["app_role"]
+          stad: string | null
           status: Database["public"]["Enums"]["user_status"]
           taal: string | null
           telefoon: string | null
@@ -7946,6 +7948,7 @@ export type Database = {
           handtekening_html?: string | null
           ical_token?: string | null
           id: string
+          land?: string | null
           last_login_at?: string | null
           mfa_enabled?: boolean | null
           onboarding_overgeslagen_op?: string | null
@@ -7955,6 +7958,7 @@ export type Database = {
           opmerking?: string | null
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
+          stad?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           taal?: string | null
           telefoon?: string | null
@@ -7980,6 +7984,7 @@ export type Database = {
           handtekening_html?: string | null
           ical_token?: string | null
           id?: string
+          land?: string | null
           last_login_at?: string | null
           mfa_enabled?: boolean | null
           onboarding_overgeslagen_op?: string | null
@@ -7989,6 +7994,7 @@ export type Database = {
           opmerking?: string | null
           partner_id?: string | null
           rol?: Database["public"]["Enums"]["app_role"]
+          stad?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           taal?: string | null
           telefoon?: string | null
@@ -8906,6 +8912,8 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_sales_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_sales_manager: { Args: { _user_id: string }; Returns: boolean }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       kan_agenda_bekijken: {
         Args: { _target: string; _viewer: string }
@@ -9099,6 +9107,7 @@ export type Database = {
         | "consument"
         | "affiliate"
         | "backoffice"
+        | "sales_manager"
       document_entity_type: "lead" | "schouw" | "offerte" | "installatie"
       document_type: "contract" | "foto" | "certificaat" | "rapport" | "overig"
       financieel_document_status:
@@ -9421,6 +9430,7 @@ export const Constants = {
         "consument",
         "affiliate",
         "backoffice",
+        "sales_manager",
       ],
       document_entity_type: ["lead", "schouw", "offerte", "installatie"],
       document_type: ["contract", "foto", "certificaat", "rapport", "overig"],

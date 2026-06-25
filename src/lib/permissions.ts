@@ -54,4 +54,5 @@ export const ROL_LABEL: Record<AppRole, string> = {
   installateur: "Installateur",
   consument: "Consument",
   affiliate: "Affiliate",
+  sales_manager: "Sales Manager",
 };
