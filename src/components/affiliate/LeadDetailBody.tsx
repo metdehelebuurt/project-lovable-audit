@@ -29,6 +29,10 @@ import { AiOpvolgKaart } from "./AiOpvolgKaart";
 import { OpvolgLogLijst } from "./OpvolgLogLijst";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
 import { useSearchParams } from "react-router-dom";
+import { ContactpersonenKaart } from "./LeadDetail/ContactpersonenKaart";
+import { BedrijfsKaartUitgebreid } from "./LeadDetail/BedrijfsKaartUitgebreid";
+import { BewerkBanner } from "./LeadDetail/BewerkBanner";
+import { HistorieTab } from "./LeadDetail/HistorieTab";
 
 const BRON_LABEL: Record<string, string> = {
   platform_pool: "Platform pool",
@@ -135,6 +139,7 @@ export function LeadDetailBody({ lead }: Props) {
 
   return (
     <div className="space-y-4">
+      <BewerkBanner leadId={lead.id} eigenaarId={lead.eigenaar_id} />
       {/* Sticky header */}
       <div className="sticky top-0 z-20 -mx-4 px-4 py-3 bg-background/85 backdrop-blur border-b">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -243,10 +248,10 @@ export function LeadDetailBody({ lead }: Props) {
             </Button>
           </div>
 
-          {/* Contact */}
+          {/* Contact (lead-niveau) */}
           <div className="rounded-lg border bg-card p-4 space-y-2">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" /> Contact
+              <Phone className="h-4 w-4 text-muted-foreground" /> Hoofdcontact lead
             </h3>
             <dl className="text-sm space-y-1.5">
               <Rij icon={<Phone className="h-3.5 w-3.5" />} label="Telefoon" value={lead.telefoon} />
@@ -255,32 +260,11 @@ export function LeadDetailBody({ lead }: Props) {
             </dl>
           </div>
 
-          {/* Bedrijfsgegevens */}
-          <div className="rounded-lg border bg-card p-4 space-y-2">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" /> Bedrijfsgegevens
-            </h3>
-            <dl className="text-sm space-y-1.5">
-              <Rij icon={<Briefcase className="h-3.5 w-3.5" />} label="Branche" value={lead.branche} />
-              <Rij icon={<MapPin className="h-3.5 w-3.5" />} label="Regio" value={lead.regio} />
-              {adresRegels.length > 0 && (
-                <div className="flex gap-2">
-                  <MapPin className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Adres</dt>
-                    <dd>{adresRegels.map((r, i) => <div key={i}>{r}</div>)}</dd>
-                  </div>
-                </div>
-              )}
-              <Rij icon={<Tag className="h-3.5 w-3.5" />} label="Bron" value={bronLabel} />
-            </dl>
-            {lead.ai_bedrijf_samenvatting && (
-              <p className="text-xs text-muted-foreground border-t pt-2 mt-2 italic">
-                <Sparkles className="h-3 w-3 inline mr-1 text-primary" />
-                {lead.ai_bedrijf_samenvatting}
-              </p>
-            )}
-          </div>
+          {/* Contactpersonen (nieuwe tabel) */}
+          <ContactpersonenKaart leadId={lead.id} />
+
+          {/* Uitgebreide bedrijfsgegevens */}
+          <BedrijfsKaartUitgebreid lead={lead} bronLabel={bronLabel} />
 
           {/* Trial CTA als nog niet gestart */}
           {!gewonnenPartnerId && (
@@ -391,8 +375,12 @@ export function LeadDetailBody({ lead }: Props) {
             </TabsContent>
 
             <TabsContent value="historie" className="mt-4">
-              <div className="rounded-lg border bg-card p-4">
-                <OpvolgLogLijst leadId={lead.id} />
+              <div className="rounded-lg border bg-card p-4 space-y-4">
+                <HistorieTab leadId={lead.id} />
+                <div className="border-t pt-3">
+                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Opvolg-log</h4>
+                  <OpvolgLogLijst leadId={lead.id} />
+                </div>
               </div>
             </TabsContent>
           </Tabs>
