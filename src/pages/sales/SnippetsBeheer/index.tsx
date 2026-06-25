@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, Mail, MessageCircle, Smartphone } from "lucide-react";
+import { Plus, FileText, Mail, MessageCircle, Smartphone, Sparkles } from "lucide-react";
 import { useSnippets, useUpsertSnippet, useDeleteSnippet, type SalesSnippet } from "@/hooks/sales/useSnippets";
 import { TEMPERATUREN, TEMP_LABEL, TEMP_COLOR, type Temperatuur } from "@/lib/sales/temperatuur";
+import { AiVerbeterPaneel } from "@/components/mailtemplates/AiVerbeterPaneel";
 
 const KANALEN = ["email", "whatsapp", "sms"] as const;
 const KANAAL_ICON = { email: Mail, whatsapp: MessageCircle, sms: Smartphone };
@@ -85,9 +86,17 @@ export default function SnippetsBeheer() {
 
 function SnippetEditor({ snippet, onClose, onSave }: { snippet: SalesSnippet; onClose: () => void; onSave: (s: SalesSnippet) => void }) {
   const [s, setS] = useState(snippet);
+  const [aiOpen, setAiOpen] = useState(false);
   return (
     <Card className="p-4 fixed inset-x-4 bottom-4 top-4 z-50 overflow-y-auto md:inset-x-auto md:right-4 md:w-[480px] shadow-2xl">
-      <h3 className="font-semibold mb-3">{snippet.id ? "Snippet bewerken" : "Nieuwe snippet"}</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold">{snippet.id ? "Snippet bewerken" : "Nieuwe snippet"}</h3>
+        {s.kanaal === "email" && (
+          <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAiOpen(true)}>
+            <Sparkles className="h-3.5 w-3.5 text-primary" /> AI verbeteren
+          </Button>
+        )}
+      </div>
       <div className="space-y-3">
         <div>
           <Label>Titel</Label>
@@ -127,6 +136,21 @@ function SnippetEditor({ snippet, onClose, onSave }: { snippet: SalesSnippet; on
         <Button variant="ghost" onClick={onClose}>Annuleren</Button>
         <Button onClick={() => onSave(snippet.id ? s : { ...s, id: undefined })}>Opslaan</Button>
       </div>
+
+      <AiVerbeterPaneel
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        bron="sales"
+        templateKey={s.id || s.titel || null}
+        templateNaam={s.titel || "Snippet"}
+        onderwerp={s.onderwerp ?? ""}
+        body={s.body}
+        bodyFormaat="tekst"
+        onApply={({ onderwerp: o, body: b }) => {
+          setS({ ...s, onderwerp: o, body: b });
+          setAiOpen(false);
+        }}
+      />
     </Card>
   );
 }
