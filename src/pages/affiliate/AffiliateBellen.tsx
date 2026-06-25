@@ -56,7 +56,7 @@ const AffiliateBellen = () => {
       // Leads zonder telefoon kunnen we niet bellen — verberg ze in de cockpit.
       if (!l.telefoon) return false;
       if (dueLeadIds.has(l.id)) return true;
-      if (l.status !== "nieuw" && l.status !== "gebeld_geen_gehoor") return false;
+      if (l.status !== "nieuw" && l.status !== "gebeld_geen_gehoor" && l.status !== "terugbel_gepland") return false;
       if (!l.volgende_actie_datum) return true;
       return new Date(l.volgende_actie_datum) <= vandaag;
     });
