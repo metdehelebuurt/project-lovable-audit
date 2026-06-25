@@ -56,6 +56,8 @@ const AfspraakNieuw = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useAuth();
+  const userTz = (profile as { timezone?: string | null } | null)?.timezone || browserTz;
+  const tzAfwijktVanNL = userTz !== NL_TZ;
   const [saving, setSaving] = useState(false);
   const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
