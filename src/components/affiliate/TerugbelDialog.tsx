@@ -67,7 +67,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
     if (!moment) return;
     if (canPlanForAffiliate && !geselecteerdeAffiliateId) return;
     if (!canPlanForAffiliate && !collegaId) return;
-    if (stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email)) return;
+    if (!canPlanForAffiliate && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email)) return;
     if (isSalesProxy) {
       await planViaSales.mutateAsync({
         affiliate_id: geselecteerdeAffiliateId,
