@@ -11,6 +11,7 @@ import { useInterneCollegas } from "@/hooks/affiliate/useInterneCollegas";
 import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanAfspraakViaSales } from "@/hooks/sales/useSalesAgenda";
+import { useAffiliatesMetAgenda } from "@/hooks/sales/useAffiliatesMetAgenda";
 
 interface Props {
   open: boolean;
@@ -28,12 +29,9 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
   const create = useCreateTerugbel();
   const planViaSales = usePlanAfspraakViaSales();
   const { user, profile } = useAuth();
-  // Sales-manager / superadmin die NIET zelf de affiliate is plant via de sales-endpoint.
-  const isSalesProxy =
-    !!affiliateId &&
-    user?.id !== affiliateId &&
-    (profile?.rol === "sales_manager" || profile?.rol === "superadmin");
+  const canPlanForAffiliate = profile?.rol === "sales_manager" || profile?.rol === "superadmin";
   const { data: collegas = [], isLoading: collegasLoading } = useInterneCollegas();
+  const { data: affiliates = [], isLoading: affiliatesLoading } = useAffiliatesMetAgenda();
   // datetime-local verwacht LOKALE tijd (zonder timezone). toISOString() geeft UTC
   // en zou daardoor in bv. Portugal het uur verkeerd voorinvullen.
   const morgen = (() => {
@@ -43,10 +41,13 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
   })();
   const [moment, setMoment] = useState(morgen);
   const [collegaId, setCollegaId] = useState<string>("");
+  const [targetAffiliateId, setTargetAffiliateId] = useState<string>(affiliateId ?? "");
   const [notitie, setNotitie] = useState("");
   const [stuurBevestiging, setStuurBevestiging] = useState(true);
   const [email, setEmail] = useState(klantEmail ?? "");
   const isDemo = afspraakType === "demo";
+  const geselecteerdeAffiliateId = targetAffiliateId || affiliateId || "";
+  const isSalesProxy = canPlanForAffiliate && !!geselecteerdeAffiliateId;
   const titel = isDemo ? "Demo inplannen" : "Terugbelafspraak plannen";
   const placeholder = isDemo
     ? "Bijv. demo van schouwmodule, met wie, link naar meeting..."
@@ -54,11 +55,12 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
 
   const opslaan = async () => {
     if (!moment) return;
-    if (!isSalesProxy && !collegaId) return;
+    if (canPlanForAffiliate && !geselecteerdeAffiliateId) return;
+    if (!canPlanForAffiliate && !collegaId) return;
     if (stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email)) return;
-    if (isSalesProxy && affiliateId) {
+    if (isSalesProxy) {
       await planViaSales.mutateAsync({
-        affiliate_id: affiliateId,
+        affiliate_id: geselecteerdeAffiliateId,
         lead_id: leadId,
         type: afspraakType,
         geplande_op: new Date(moment).toISOString(),
@@ -98,7 +100,29 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
             <Input type="datetime-local" value={moment} onChange={(e) => setMoment(e.target.value)} />
             <TijdzoneBanner moment={moment} className="mt-2" />
           </div>
-          {!isSalesProxy && (
+          {canPlanForAffiliate ? (
+          <div className="space-y-1">
+            <Label>Affiliate-agenda</Label>
+            <Select value={geselecteerdeAffiliateId} onValueChange={setTargetAffiliateId}>
+              <SelectTrigger>
+                <SelectValue placeholder={affiliatesLoading ? "Laden..." : "Kies een affiliate"} />
+              </SelectTrigger>
+              <SelectContent>
+                {affiliates.map((a) => {
+                  const naam = `${a.voornaam ?? ""} ${a.achternaam ?? ""}`.trim() || a.email || "Onbekend";
+                  return (
+                    <SelectItem key={a.id} value={a.id}>
+                      {naam}{a.has_google_calendar ? " · Google gekoppeld" : ""}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              De afspraak wordt in de agenda van deze affiliate gezet.
+            </p>
+          </div>
+          ) : (
           <div className="space-y-1">
             <Label>Voor welke collega?</Label>
             <Select value={collegaId} onValueChange={setCollegaId}>
@@ -121,8 +145,8 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
             </p>
           </div>
           )}
-          {isSalesProxy && (
-            <div className="rounded-md border border-violet-200 bg-violet-50 p-3 text-xs text-violet-900">
+          {canPlanForAffiliate && (
+            <div className="rounded-md border bg-primary/5 p-3 text-xs text-primary">
               Je plant deze afspraak namens de affiliate. De afspraak komt in hun agenda
               (en Google-agenda indien gekoppeld); jij wordt geregistreerd als planner.
             </div>
@@ -162,8 +186,9 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
             disabled={
               create.isPending || planViaSales.isPending ||
               !moment ||
-              (!isSalesProxy && !collegaId) ||
-              (!isSalesProxy && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email))
+              (canPlanForAffiliate && !geselecteerdeAffiliateId) ||
+              (!canPlanForAffiliate && !collegaId) ||
+              (!canPlanForAffiliate && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email))
             }
           >
             Plannen
