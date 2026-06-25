@@ -11,7 +11,7 @@ import {
 import {
   Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus,
   Presentation, FileCheck2, Sparkles, MapPin, Building2, Briefcase, Flame,
-  Star, Rocket, Tag, CalendarClock, MoreHorizontal, ListChecks, Activity, History, StickyNote,
+  Star, Rocket, Tag, CalendarClock, ListChecks, Activity, History, StickyNote, Wand2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { STATUS_LABEL, STATUS_VOLGORDE, STATUS_KLEUR, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
