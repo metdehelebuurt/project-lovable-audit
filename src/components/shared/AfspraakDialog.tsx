@@ -302,6 +302,7 @@ export function AfspraakDialog({ open, onOpenChange, leadId, klantId, defaultTit
               <Input type="time" value={form.eind_tijd} onChange={e => update("eind_tijd", e.target.value)} />
             </div>
           </div>
+          <TijdzoneBanner datum={form.datum} tijd={form.start_tijd} compact />
           <div>
             <Label>Locatie</Label>
             <Input value={form.locatie} onChange={e => update("locatie", e.target.value)} placeholder="Adres of videocall link" />
