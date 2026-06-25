@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAffiliateGebruikers, useDoorzetten } from "@/hooks/sales/useDoorzetten";
+import { useAffiliateGebruikers, useSalesManagerGebruikers, useDoorzetten } from "@/hooks/sales/useDoorzetten";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
 import { TEMPERATUREN, TEMP_LABEL, TEMP_ICON, TEMP_COLOR, TEMP_SUGGESTIE, type Temperatuur } from "@/lib/sales/temperatuur";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
@@ -19,20 +19,25 @@ interface Props {
 }
 
 export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
-  const [modus, setModus] = useState<"direct" | "pool">("direct");
+  const [modus, setModus] = useState<"direct" | "pool" | "sales_manager">("direct");
   const [affiliateId, setAffiliateId] = useState<string>("");
+  const [salesManagerId, setSalesManagerId] = useState<string>("");
   const [notitie, setNotitie] = useState("");
   const [temperatuur, setTemperatuur] = useState<Temperatuur>("lauw");
   const [snelheid, setSnelheid] = useState<string>("none");
   const [bronId, setBronId] = useState<string>("");
   const { data: affiliates, isLoading } = useAffiliateGebruikers();
+  const { data: salesManagers, isLoading: smLoading } = useSalesManagerGebruikers();
   const { data: bronnen } = useLeadBronnen();
   const doorzetten = useDoorzetten();
 
   const onSubmit = async () => {
     if (!lead) return;
-    const targetId = modus === "direct" ? affiliateId : null;
-    if (modus === "direct" && !targetId) return;
+    const targetId =
+      modus === "direct" ? affiliateId :
+      modus === "sales_manager" ? salesManagerId :
+      null;
+    if ((modus === "direct" || modus === "sales_manager") && !targetId) return;
     const volgende = snelheidNaarTimestamp(snelheid);
     if (bronId && bronId !== (lead.bron_id ?? "")) {
       await supabase.from("affiliate_leads").update({ bron_id: bronId }).eq("id", lead.id);
@@ -46,6 +51,7 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
     });
     setNotitie("");
     setAffiliateId("");
+    setSalesManagerId("");
     setSnelheid("none");
     setBronId("");
     onOpenChange(false);
@@ -89,12 +95,19 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
             <p className="text-xs text-muted-foreground">{TEMP_SUGGESTIE[temperatuur]}</p>
           </div>
 
-          <RadioGroup value={modus} onValueChange={(v) => setModus(v as "direct" | "pool")}>
+          <RadioGroup value={modus} onValueChange={(v) => setModus(v as "direct" | "pool" | "sales_manager")}>
             <div className="flex items-start gap-2">
               <RadioGroupItem value="direct" id="modus-direct" className="mt-1" />
               <Label htmlFor="modus-direct" className="font-normal">
                 <span className="font-medium">Direct toewijzen aan affiliate</span>
                 <p className="text-xs text-muted-foreground">Verschijnt meteen in hun dashboard.</p>
+              </Label>
+            </div>
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="sales_manager" id="modus-sm" className="mt-1" />
+              <Label htmlFor="modus-sm" className="font-normal">
+                <span className="font-medium">Toewijzen aan sales manager</span>
+                <p className="text-xs text-muted-foreground">Sales manager pakt de lead zelf op of verdeelt hem verder.</p>
               </Label>
             </div>
             <div className="flex items-start gap-2">
@@ -114,6 +127,22 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
                   {(affiliates ?? []).map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.naam} — {a.email}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {modus === "sales_manager" && (
+            <div className="space-y-1.5">
+              <Label>Sales manager</Label>
+              <Select value={salesManagerId} onValueChange={setSalesManagerId}>
+                <SelectTrigger><SelectValue placeholder={smLoading ? "Laden..." : "Kies sales manager"} /></SelectTrigger>
+                <SelectContent>
+                  {(salesManagers ?? []).map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.naam} — {a.email}</SelectItem>
+                  ))}
+                  {!smLoading && (salesManagers ?? []).length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">Geen actieve sales managers</div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -160,7 +189,11 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Annuleren</Button>
           <Button
             onClick={onSubmit}
-            disabled={doorzetten.isPending || (modus === "direct" && !affiliateId)}
+            disabled={
+              doorzetten.isPending ||
+              (modus === "direct" && !affiliateId) ||
+              (modus === "sales_manager" && !salesManagerId)
+            }
           >
             {doorzetten.isPending ? "Bezig…" : "Doorzetten"}
           </Button>

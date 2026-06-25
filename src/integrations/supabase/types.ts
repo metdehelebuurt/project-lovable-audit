@@ -8701,6 +8701,16 @@ export type Database = {
           voornaam: string
         }[]
       }
+      admin_lijst_sales_managers: {
+        Args: never
+        Returns: {
+          achternaam: string
+          email: string
+          id: string
+          partner_id: string
+          voornaam: string
+        }[]
+      }
       bereken_inkoop_match: {
         Args: { _inkoopfactuur_id: string }
         Returns: string
