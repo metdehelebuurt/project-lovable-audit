@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,16 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
   const placeholder = isDemo
     ? "Bijv. demo van schouwmodule, met wie, link naar meeting..."
     : "Waar bel je over terug?";
+
+  useEffect(() => {
+    if (!open || !canPlanForAffiliate) return;
+    const klantMail = klantEmail?.trim().toLowerCase();
+    const match = klantMail
+      ? affiliates.find((a) => a.email?.trim().toLowerCase() === klantMail)
+      : null;
+    setTargetAffiliateId(match?.id ?? affiliateId ?? "");
+    setEmail(klantEmail ?? "");
+  }, [affiliateId, affiliates, canPlanForAffiliate, klantEmail, open]);
 
   const opslaan = async () => {
     if (!moment) return;
