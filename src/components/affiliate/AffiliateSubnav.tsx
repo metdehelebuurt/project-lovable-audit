@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3, Sparkles, AlertTriangle, Mail, Settings } from "lucide-react";
+import { LayoutDashboard, Kanban, PhoneCall, Users, AlertCircle, Link2, FileText, Calendar, BarChart3, Sparkles, AlertTriangle, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsLostReviewAdmin } from "@/hooks/affiliate/useIsLostReviewAdmin";
 
@@ -14,9 +14,8 @@ const baseItems = [
   { to: "/affiliates/trials", label: "Trials", icon: AlertCircle },
   { to: "/affiliates/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/affiliates/links", label: "Links & codes", icon: Link2 },
-  { to: "/offertes", label: "Offertes", icon: FileText },
-  { to: "/affiliates/instellingen/mailtemplates", label: "Mailtemplates", icon: Mail },
-  { to: "/affiliates/instellingen/pijplijn", label: "Pijplijn-config", icon: Settings },
+  { to: "/affiliates/offertes", label: "Offertes", icon: FileText },
+  { to: "/affiliates/instellingen", label: "Instellingen", icon: Settings },
 ];
 
 /** Legacy in-page subnav — nu geïntegreerd in de top header op affiliate routes. */
