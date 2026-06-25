@@ -19,6 +19,7 @@ import { useBelStats } from "@/hooks/affiliate/useBelStats";
 import { BedrijfSamenvattingKaart } from "@/components/affiliate/BedrijfSamenvattingKaart";
 import { BelQueueStrip } from "@/components/affiliate/BelQueueStrip";
 import { VerrijkLeadDialog } from "@/components/affiliate/VerrijkLeadDialog";
+import { VerlorenRedenDialog } from "@/components/affiliate/VerlorenRedenDialog";
 import { vereistDialog, type UitkomstWaarde } from "@/lib/affiliate/uitkomstAutomatisering";
 import { UitkomstGroep, UitkomstKnop } from "@/components/affiliate/UitkomstSoundboard";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ const AffiliateBellen = () => {
   const [afspraakType, setAfspraakType] = useState<"terugbel" | "demo">("terugbel");
   const [pendingUitkomst, setPendingUitkomst] = useState<typeof CONTACT_UITKOMST_OPTIES[number] | null>(null);
   const [openVerrijk, setOpenVerrijk] = useState(false);
+  const [openVerloren, setOpenVerloren] = useState(false);
 
   const belQueue = useMemo(() => {
     const vandaag = new Date(); vandaag.setHours(23, 59, 59, 999);
@@ -109,9 +111,9 @@ const AffiliateBellen = () => {
   /** Slimme afhandeling: dwingt afspraak/terugbel-popup af voordat de status wordt gezet. */
   const handleUitkomstSmart = async (uitkomst: typeof CONTACT_UITKOMST_OPTIES[number]) => {
     if (!current) return;
-    // Verloren-reden verplicht
-    if (uitkomst.value === "niet_interessant" && !notitie.trim()) {
-      toast.warning("Geef kort de reden in de gespreksnotitie voor je verliest.");
+    // Verloren: verplichte popup met categorie + reden.
+    if (uitkomst.value === "niet_interessant") {
+      setOpenVerloren(true);
       return;
     }
     const dialog = vereistDialog(uitkomst.value as UitkomstWaarde, current, terugbelAfspraken);
