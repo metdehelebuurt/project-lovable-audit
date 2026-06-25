@@ -648,6 +648,7 @@ export type Database = {
           postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
@@ -693,6 +694,7 @@ export type Database = {
           postcode?: string | null
           regio?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
           tags?: string[]
           telefoon?: string | null
@@ -738,6 +740,7 @@ export type Database = {
           postcode?: string | null
           regio?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
           tags?: string[]
           telefoon?: string | null
@@ -1138,7 +1141,11 @@ export type Database = {
           geplande_op: string
           id: string
           lead_id: string
+          noshow: boolean
+          noshow_gemeld_op: string | null
           notitie: string | null
+          reminder_1u_op: string | null
+          reminder_24u_op: string | null
           type: string
           updated_at: string
         }
@@ -1150,7 +1157,11 @@ export type Database = {
           geplande_op: string
           id?: string
           lead_id: string
+          noshow?: boolean
+          noshow_gemeld_op?: string | null
           notitie?: string | null
+          reminder_1u_op?: string | null
+          reminder_24u_op?: string | null
           type?: string
           updated_at?: string
         }
@@ -1162,7 +1173,11 @@ export type Database = {
           geplande_op?: string
           id?: string
           lead_id?: string
+          noshow?: boolean
+          noshow_gemeld_op?: string | null
           notitie?: string | null
+          reminder_1u_op?: string | null
+          reminder_24u_op?: string | null
           type?: string
           updated_at?: string
         }
@@ -8481,6 +8496,7 @@ export type Database = {
           postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
@@ -8541,6 +8557,7 @@ export type Database = {
           postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
@@ -8613,6 +8630,7 @@ export type Database = {
           postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
@@ -8875,6 +8893,7 @@ export type Database = {
           postcode: string | null
           regio: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
+          stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
           tags: string[]
           telefoon: string | null
@@ -8916,6 +8935,7 @@ export type Database = {
       affiliate_lead_status:
         | "nieuw"
         | "gebeld_geen_gehoor"
+        | "terugbel_gepland"
         | "gesprek_gepland"
         | "in_gesprek"
         | "voorstel_verstuurd"
@@ -9218,6 +9238,7 @@ export const Constants = {
       affiliate_lead_status: [
         "nieuw",
         "gebeld_geen_gehoor",
+        "terugbel_gepland",
         "gesprek_gepland",
         "in_gesprek",
         "voorstel_verstuurd",
