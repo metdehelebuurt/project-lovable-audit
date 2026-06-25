@@ -11,6 +11,7 @@ export interface StartTrialInput {
   telefoon?: string | null;
   password: string;
   toestemming: true;
+  trial_dagen?: number;
 }
 
 export interface StartTrialResult {

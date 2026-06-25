@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode, tijdelijk_wachtwoord, aangemaakt_door } = await req.json();
+    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode, tijdelijk_wachtwoord, aangemaakt_door, trial_dagen } = await req.json();
 
     // Validation
     if (!bedrijfsnaam || !voornaam || !achternaam || !email || !password) {
@@ -51,10 +51,12 @@ serve(async (req) => {
       );
     }
 
-    // 2. Create partner (trial) with 30-day trial
+    // 2. Create partner (trial) — standaard 30 dagen, configureerbaar (1-30)
+    const dagenRaw = Number.isFinite(Number(trial_dagen)) ? Math.floor(Number(trial_dagen)) : 30;
+    const dagen = Math.min(30, Math.max(1, dagenRaw));
     const trialStart = new Date();
     const trialEnd = new Date(trialStart);
-    trialEnd.setDate(trialEnd.getDate() + 30);
+    trialEnd.setDate(trialEnd.getDate() + dagen);
 
     const { data: partner, error: partnerError } = await supabaseAdmin
       .from("partners")
