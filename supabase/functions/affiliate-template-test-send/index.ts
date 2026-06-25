@@ -12,6 +12,7 @@ const BodySchema = z.object({
   template_key: z.string().min(1).max(100),
   onderwerp: z.string().min(1).max(300),
   body_html: z.string().min(1).max(50000),
+  recipient_email: z.string().email().max(320).optional(),
 });
 
 Deno.serve(async (req) => {
@@ -49,11 +50,13 @@ Deno.serve(async (req) => {
     const naam = [profile.voornaam, profile.achternaam].filter(Boolean).join(" ").trim() || null;
     const html = wrapInMijnhuisTemplate(parsed.data.body_html, naam);
 
+    const to = parsed.data.recipient_email?.trim() || profile.email;
+
     await sendUserEmail({
       adminClient,
       userId: user.id,
       partnerId: profile.partner_id ?? "",
-      to: profile.email,
+      to,
       subject: `[TEST] ${parsed.data.onderwerp}`,
       html,
       type: "affiliate-template-test",
