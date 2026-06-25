@@ -151,6 +151,9 @@ export function TemplateEditor({ template, row, open, onClose }: Props) {
                   className="text-sm"
                   placeholder="Wat ziet de klant in zijn inbox?"
                 />
+                <p className={`text-[11px] ${onderwerp.length > 78 ? "text-amber-600" : "text-muted-foreground"}`}>
+                  {onderwerp.length} tekens · Gmail toont ±70 tekens, mobiel ±40.
+                </p>
               </div>
 
               <div className="space-y-1.5">
