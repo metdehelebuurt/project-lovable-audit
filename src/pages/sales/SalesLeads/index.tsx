@@ -155,6 +155,28 @@ export default function SalesLeads() {
             <SelectItem value="platform">Bij platform ({counts.platform})</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={doorgezetAan} onValueChange={setDoorgezetAan}>
+          <SelectTrigger className="w-52"><SelectValue placeholder="Doorgezet aan" /></SelectTrigger>
+          <SelectContent className="max-h-80">
+            <SelectItem value="alle">Doorgezet aan: iedereen</SelectItem>
+            {(affiliates ?? []).length > 0 && (
+              <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Affiliates</div>
+            )}
+            {(affiliates ?? []).map((a) => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.naam} {perEigenaarCounts.get(a.id) ? `(${perEigenaarCounts.get(a.id)})` : ""}
+              </SelectItem>
+            ))}
+            {(salesManagers ?? []).length > 0 && (
+              <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Sales managers</div>
+            )}
+            {(salesManagers ?? []).map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.naam} {perEigenaarCounts.get(s.id) ? `(${perEigenaarCounts.get(s.id)})` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <span className="text-sm text-muted-foreground ml-auto">{gefilterd.length} leads</span>
         <Button
           size="sm"
@@ -200,7 +222,9 @@ export default function SalesLeads() {
               const f = faseLookup.get(l.fase_slug ?? "nieuw");
               const isDoorgezet = !!l.eigenaar_id;
               const isPool = !l.eigenaar_id && l.bron === "platform_pool";
-              const affiliateNaam = l.eigenaar_id ? (affiliateLookup.get(l.eigenaar_id) ?? "Affiliate") : null;
+              const eigenaarInfo = l.eigenaar_id ? eigenaarLookup.get(l.eigenaar_id) : null;
+              const eigenaarNaam = eigenaarInfo?.naam ?? (isDoorgezet ? "Onbekende gebruiker" : null);
+              const eigenaarRol = eigenaarInfo?.rol;
               return (
                 <TableRow
                   key={l.id}
@@ -238,7 +262,23 @@ export default function SalesLeads() {
                           <CheckCircle2 className="h-3 w-3" />
                           Doorgezet
                         </Badge>
-                        <span className="text-xs font-medium">{affiliateNaam}</span>
+                        <span className="text-sm font-semibold leading-tight">{eigenaarNaam}</span>
+                        {eigenaarRol && (
+                          <Badge
+                            variant="outline"
+                            className={`w-fit gap-1 text-[10px] py-0 h-4 ${
+                              eigenaarRol === "sales_manager"
+                                ? "border-violet-300 text-violet-800 bg-violet-50"
+                                : "border-sky-300 text-sky-800 bg-sky-50"
+                            }`}
+                          >
+                            {eigenaarRol === "sales_manager" ? (
+                              <><Briefcase className="h-2.5 w-2.5" /> Sales manager</>
+                            ) : (
+                              <><UserCircle2 className="h-2.5 w-2.5" /> Affiliate</>
+                            )}
+                          </Badge>
+                        )}
                         {l.doorgezet_op && (
                           <span className="text-[11px] text-muted-foreground">
                             {format(new Date(l.doorgezet_op as string), "d MMM yyyy", { locale: nl })}
@@ -258,12 +298,12 @@ export default function SalesLeads() {
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <Button
                       size="sm"
-                      variant={isDoorgezet ? "ghost" : "outline"}
+                      variant={isDoorgezet ? "outline" : "default"}
                       className="gap-1"
                       onClick={() => setBulkDoorzet(l)}
                     >
                       <Send className="h-3.5 w-3.5" />
-                      {isDoorgezet ? "Heropnieuw" : "Doorzet"}
+                      {isDoorgezet ? "Wijzig toewijzing" : "Doorzetten"}
                     </Button>
                   </TableCell>
                 </TableRow>
