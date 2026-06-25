@@ -8935,10 +8935,13 @@ export type Database = {
       affiliate_lead_status:
         | "nieuw"
         | "gebeld_geen_gehoor"
+        | "mail_gestuurd"
         | "terugbel_gepland"
         | "gesprek_gepland"
+        | "demo_gepland"
         | "in_gesprek"
         | "voorstel_verstuurd"
+        | "trial_gestart"
         | "gewonnen"
         | "verloren"
       affiliate_tier: "brons" | "zilver" | "goud"
@@ -9238,10 +9241,13 @@ export const Constants = {
       affiliate_lead_status: [
         "nieuw",
         "gebeld_geen_gehoor",
+        "mail_gestuurd",
         "terugbel_gepland",
         "gesprek_gepland",
+        "demo_gepland",
         "in_gesprek",
         "voorstel_verstuurd",
+        "trial_gestart",
         "gewonnen",
         "verloren",
       ],
