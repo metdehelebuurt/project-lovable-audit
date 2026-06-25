@@ -4,15 +4,20 @@ import { toast } from "sonner";
 
 export function useSendTestTemplate() {
   return useMutation({
-    mutationFn: async (input: { template_key: string; onderwerp: string; body_html: string }) => {
+    mutationFn: async (input: { template_key: string; onderwerp: string; body_html: string; recipient_email?: string }) => {
       const { data, error } = await supabase.functions.invoke("affiliate-template-test-send", {
         body: input,
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-      return data;
+      return data as { ok: true };
     },
-    onSuccess: () => toast.success("Testmail verzonden naar je eigen inbox"),
+    onSuccess: (_d, vars) =>
+      toast.success(
+        vars.recipient_email
+          ? `Testmail verzonden naar ${vars.recipient_email}`
+          : "Testmail verzonden naar je eigen inbox",
+      ),
     onError: (e: Error) => toast.error(e.message || "Versturen mislukt"),
   });
 }
