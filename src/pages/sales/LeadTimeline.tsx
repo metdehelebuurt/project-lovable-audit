@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Activity, UserPlus, Send, Phone, Tag, Clock } from "lucide-react";
-import { useAffiliateGebruikers } from "@/hooks/sales/useDoorzetten";
+import { useAffiliateGebruikers, useSalesManagerGebruikers } from "@/hooks/sales/useDoorzetten";
 import { FASE_LABEL, type SalesFase } from "@/lib/sales/faseLabels";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
 
@@ -18,6 +18,7 @@ function fmt(d: string) {
 
 export default function LeadTimeline({ lead }: { lead: SalesLead }) {
   const { data: affiliates } = useAffiliateGebruikers();
+  const { data: salesManagers } = useSalesManagerGebruikers();
 
   const { data: contactmomenten = [] } = useQuery({
     queryKey: ["lead-contactmomenten", lead.id],
@@ -48,7 +49,9 @@ export default function LeadTimeline({ lead }: { lead: SalesLead }) {
   });
 
   const eigenaarNaam = lead.eigenaar_id
-    ? (affiliates ?? []).find((a) => a.id === lead.eigenaar_id)?.naam ?? "affiliate"
+    ? ((affiliates ?? []).find((a) => a.id === lead.eigenaar_id)?.naam
+        ?? (salesManagers ?? []).find((s) => s.id === lead.eigenaar_id)?.naam
+        ?? "gebruiker")
     : null;
 
   const events: TimelineEvent[] = [];

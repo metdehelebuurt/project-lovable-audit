@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSalesLeads, useCreateSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Send, CheckCircle2, Users, Building2, UserCircle2, Briefcase } from "lucide-react";
+import { Plus, Send, CheckCircle2, Users, Building2, UserCircle2, Briefcase, ArrowUpDown, Sparkles, Search } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { kleurClasses } from "@/lib/sales/pipeline";
@@ -20,6 +20,8 @@ import DoorzetDialog from "../DoorzetDialog";
 import BulkActieBalk from "../BulkActieBalk";
 
 type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
+type SorteerVeld = "updated" | "doorgezet" | "naam" | "eigenaar" | "aangemaakt";
+type SorteerRichting = "asc" | "desc";
 
 export default function SalesLeads() {
   const navigate = useNavigate();
@@ -37,6 +39,24 @@ export default function SalesLeads() {
   const [doorgezetAan, setDoorgezetAan] = useState<string>("alle");
   const [selectie, setSelectie] = useState<Set<string>>(new Set());
   const [bulkDoorzet, setBulkDoorzet] = useState<SalesLead | null>(null);
+  const [sorteer, setSorteer] = useState<SorteerVeld>("updated");
+  const [richting, setRichting] = useState<SorteerRichting>("desc");
+  const [recentDoorgezet, setRecentDoorgezet] = useState<Set<string>>(new Set());
+
+  /** Vlag leads als 'net doorgezet' voor ~6s zodat er een duidelijke inline chip verschijnt. */
+  const markeerDoorgezet = (ids: string[] | string) => {
+    const arr = Array.isArray(ids) ? ids : [ids];
+    setRecentDoorgezet((prev) => {
+      const n = new Set(prev);
+      arr.forEach((id) => n.add(id));
+      return n;
+    });
+  };
+  useEffect(() => {
+    if (recentDoorgezet.size === 0) return;
+    const t = setTimeout(() => setRecentDoorgezet(new Set()), 6000);
+    return () => clearTimeout(t);
+  }, [recentDoorgezet]);
 
   const fases = useMemo(() => (pipeline ?? []).filter((f) => f.zichtbaar !== false), [pipeline]);
   const faseLookup = useMemo(() => {
@@ -55,7 +75,7 @@ export default function SalesLeads() {
     const z = zoek.toLowerCase().trim();
     const pc = postcodeFilter.toLowerCase().replace(/\s+/g, "").trim();
     const pl = plaatsFilter.toLowerCase().trim();
-    return (leads ?? []).filter((l) => {
+    const lijst = (leads ?? []).filter((l) => {
       if (fase !== "alle" && (l.fase_slug ?? "nieuw") !== fase) return false;
       if (temp !== "alle" && (l.temperatuur ?? "koud") !== temp) return false;
       if (eigenaar === "pool" && (l.eigenaar_id !== null || l.bron !== "platform_pool")) return false;
@@ -78,7 +98,28 @@ export default function SalesLeads() {
       }
       return true;
     });
-  }, [leads, zoek, fase, temp, eigenaar, postcodeFilter, plaatsFilter, doorgezetAan]);
+    const richtingFactor = richting === "asc" ? 1 : -1;
+    const naamVan = (l: SalesLead) => (l.bedrijfsnaam ?? "").toLowerCase();
+    const eigenaarVan = (l: SalesLead) =>
+      (l.eigenaar_id ? eigenaarLookup.get(l.eigenaar_id)?.naam ?? "zzz" : "zzz_onbekend").toLowerCase();
+    const tijdVan = (v: string | null | undefined) => (v ? new Date(v).getTime() : 0);
+    const sorted = [...lijst].sort((a, b) => {
+      switch (sorteer) {
+        case "naam":
+          return naamVan(a).localeCompare(naamVan(b)) * richtingFactor;
+        case "eigenaar":
+          return eigenaarVan(a).localeCompare(eigenaarVan(b)) * richtingFactor;
+        case "aangemaakt":
+          return (tijdVan(a.created_at) - tijdVan(b.created_at)) * richtingFactor;
+        case "doorgezet":
+          return (tijdVan(a.doorgezet_op as string | null) - tijdVan(b.doorgezet_op as string | null)) * richtingFactor;
+        case "updated":
+        default:
+          return (tijdVan(a.updated_at) - tijdVan(b.updated_at)) * richtingFactor;
+      }
+    });
+    return sorted;
+  }, [leads, zoek, fase, temp, eigenaar, postcodeFilter, plaatsFilter, doorgezetAan, sorteer, richting, eigenaarLookup]);
 
   const tempCounts = useMemo(() => {
     const c: Record<string, number> = { alle: (leads ?? []).length };
@@ -121,12 +162,15 @@ export default function SalesLeads() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-center">
-        <Input
-          placeholder="Zoek op bedrijf, contact, e-mail…"
-          value={zoek}
-          onChange={(e) => setZoek(e.target.value)}
-          className="max-w-sm"
-        />
+        <div className="relative max-w-sm flex-1 min-w-[220px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Zoek op bedrijf, contact, e-mail, adres…"
+            value={zoek}
+            onChange={(e) => setZoek(e.target.value)}
+            className="pl-8"
+          />
+        </div>
         <Input
           placeholder="Postcode (bv. 1011 of 10)"
           value={postcodeFilter}
@@ -177,6 +221,26 @@ export default function SalesLeads() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={sorteer} onValueChange={(v) => setSorteer(v as SorteerVeld)}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="Sorteer op" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="updated">Sorteer: laatst gewijzigd</SelectItem>
+            <SelectItem value="aangemaakt">Sorteer: aangemaakt</SelectItem>
+            <SelectItem value="doorgezet">Sorteer: doorgezet op</SelectItem>
+            <SelectItem value="naam">Sorteer: bedrijfsnaam</SelectItem>
+            <SelectItem value="eigenaar">Sorteer: eigenaar</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1"
+          onClick={() => setRichting((r) => (r === "asc" ? "desc" : "asc"))}
+          title={richting === "asc" ? "Oplopend" : "Aflopend"}
+        >
+          <ArrowUpDown className="h-3.5 w-3.5" />
+          {richting === "asc" ? "A→Z / oud→nieuw" : "Z→A / nieuw→oud"}
+        </Button>
         <span className="text-sm text-muted-foreground ml-auto">{gefilterd.length} leads</span>
         <Button
           size="sm"
@@ -190,7 +254,11 @@ export default function SalesLeads() {
 
       <TemperatuurFilter waarde={temp} onWijzig={setTemp} counts={tempCounts as never} />
 
-      <BulkActieBalk geselecteerd={Array.from(selectie)} onClear={() => setSelectie(new Set())} />
+      <BulkActieBalk
+        geselecteerd={Array.from(selectie)}
+        onClear={() => setSelectie(new Set())}
+        onDoorgezet={markeerDoorgezet}
+      />
 
       <div className="rounded-md border">
         <Table>
@@ -225,10 +293,17 @@ export default function SalesLeads() {
               const eigenaarInfo = l.eigenaar_id ? eigenaarLookup.get(l.eigenaar_id) : null;
               const eigenaarNaam = eigenaarInfo?.naam ?? (isDoorgezet ? "Onbekende gebruiker" : null);
               const eigenaarRol = eigenaarInfo?.rol;
+              const netDoorgezet = recentDoorgezet.has(l.id);
               return (
                 <TableRow
                   key={l.id}
-                  className={`cursor-pointer ${isDoorgezet ? "bg-emerald-50/40 hover:bg-emerald-50/70" : ""}`}
+                  className={`cursor-pointer transition-colors ${
+                    netDoorgezet
+                      ? "bg-emerald-100/70 hover:bg-emerald-100 ring-1 ring-inset ring-emerald-300"
+                      : isDoorgezet
+                        ? "bg-emerald-50/40 hover:bg-emerald-50/70"
+                        : ""
+                  }`}
                   onClick={() => navigate(`/sales/leads/${l.id}`)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -256,6 +331,11 @@ export default function SalesLeads() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
+                    {netDoorgezet && (
+                      <Badge className="mb-1 w-fit gap-1 bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-600 animate-pulse">
+                        <Sparkles className="h-3 w-3" /> Net doorgezet
+                      </Badge>
+                    )}
                     {isDoorgezet ? (
                       <div className="flex flex-col gap-0.5">
                         <Badge className="w-fit gap-1 bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
@@ -313,7 +393,12 @@ export default function SalesLeads() {
         </Table>
       </div>
 
-      <DoorzetDialog lead={bulkDoorzet} open={!!bulkDoorzet} onOpenChange={(o) => !o && setBulkDoorzet(null)} />
+      <DoorzetDialog
+        lead={bulkDoorzet}
+        open={!!bulkDoorzet}
+        onOpenChange={(o) => !o && setBulkDoorzet(null)}
+        onDoorgezet={(id) => markeerDoorgezet(id)}
+      />
     </div>
   );
 }
