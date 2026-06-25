@@ -40,13 +40,14 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await adminClient
       .from("users")
-      .select("partner_id, email, naam")
+      .select("partner_id, email, voornaam, achternaam")
       .eq("id", user.id)
       .maybeSingle();
 
     if (!profile?.email) return json({ error: "Geen e-mailadres bekend op profiel" }, 400);
 
-    const html = wrapInMijnhuisTemplate(parsed.data.body_html, profile.naam ?? null);
+    const naam = [profile.voornaam, profile.achternaam].filter(Boolean).join(" ").trim() || null;
+    const html = wrapInMijnhuisTemplate(parsed.data.body_html, naam);
 
     await sendUserEmail({
       adminClient,
