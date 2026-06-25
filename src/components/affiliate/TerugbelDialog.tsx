@@ -55,16 +55,18 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
 
   useEffect(() => {
     if (!open || !canPlanForAffiliate) return;
+    if (affiliatesLoading) return;
     const klantMail = klantEmail?.trim().toLowerCase();
     const match = klantMail
       ? affiliates.find((a) => a.email?.trim().toLowerCase() === klantMail)
       : null;
     setTargetAffiliateId(match?.id ?? affiliateId ?? "");
     setEmail(klantEmail ?? "");
-  }, [affiliateId, affiliates, canPlanForAffiliate, klantEmail, open]);
+  }, [affiliateId, affiliates, affiliatesLoading, canPlanForAffiliate, klantEmail, open]);
 
   const opslaan = async () => {
     if (!moment) return;
+    if (canPlanForAffiliate && affiliatesLoading) return;
     if (canPlanForAffiliate && !geselecteerdeAffiliateId) return;
     if (!canPlanForAffiliate && !collegaId) return;
     if (!canPlanForAffiliate && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email)) return;
@@ -196,6 +198,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
             disabled={
               create.isPending || planViaSales.isPending ||
               !moment ||
+              (canPlanForAffiliate && affiliatesLoading) ||
               (canPlanForAffiliate && !geselecteerdeAffiliateId) ||
               (!canPlanForAffiliate && !collegaId) ||
               (!canPlanForAffiliate && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email))
