@@ -78,13 +78,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verifieer dat affiliate bestaat en actief is
+    // Verifieer dat affiliate bestaat en actief is.
+    // Belangrijk: hybride users (bv. partner_admin met additieve affiliate-rol) moeten
+    // óók geaccepteerd worden, dus we checken via user_has_role i.p.v. users.rol.
     const { data: aff } = await admin
       .from("users")
-      .select("id, voornaam, achternaam, email, rol, status")
+      .select("id, voornaam, achternaam, email, partner_id, rol, status")
       .eq("id", body.affiliate_id!)
       .maybeSingle();
-    if (!aff || aff.rol !== "affiliate" || aff.status !== "actief") {
+    if (!aff || aff.status !== "actief") {
+      return new Response(JSON.stringify({ error: "affiliate_not_found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: hasAffiliateRol } = await admin.rpc("user_has_role", {
+      _user_id: aff.id, _rol: "affiliate",
+    });
+    if (!hasAffiliateRol) {
       return new Response(JSON.stringify({ error: "affiliate_not_found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -182,6 +192,13 @@ Deno.serve(async (req) => {
       JSON.stringify({ afspraak, google_sync, google_error }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ error: "internal", message: e instanceof Error ? e.message : "onbekend" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+});
   } catch (e) {
     return new Response(
       JSON.stringify({ error: "internal", message: e instanceof Error ? e.message : "onbekend" }),
