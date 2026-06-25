@@ -53,6 +53,16 @@ const GebruikerDetail = () => {
     enabled: !!id,
   });
 
+  const { data: extraRollen = [] } = useQuery({
+    queryKey: ["gebruiker-extra-rollen", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("user_roles").select("rol").eq("user_id", id!);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.rol as AppRole);
+    },
+    enabled: !!id,
+  });
+
   useEffect(() => {
     if (!user) return;
     setVoornaam(user.voornaam || ""); setAchternaam(user.achternaam || "");
@@ -120,11 +130,14 @@ const GebruikerDetail = () => {
           <p className="text-muted-foreground text-sm">{user.email}</p>
         </div>
         <Badge variant="outline">{ROL_LABELS[user.rol]}</Badge>
+        {extraRollen.map((r) => (
+          <Badge key={r} variant="outline" className="border-dashed">+ {ROL_LABELS[r] ?? r}</Badge>
+        ))}
         <Badge className={user.status === "actief" ? "bg-success-light text-success" : "bg-muted text-muted-foreground"}>
           {user.status}
         </Badge>
         {me?.rol === "superadmin" && me.id !== user.id && (
-          <PromoteToAffiliateButton userId={user.id} currentRol={user.rol} />
+          <PromoteToAffiliateButton userId={user.id} currentRol={user.rol} extraRollen={extraRollen} />
         )}
       </div>
 
