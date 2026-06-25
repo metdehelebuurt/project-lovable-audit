@@ -2,13 +2,18 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Trophy, X, Euro, Target } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
+import { useAffiliateTargets } from "@/hooks/affiliate/useAffiliateTargets";
+import { useAuth } from "@/contexts/AuthContext";
 
 const fmtEur = (n: number) => n.toLocaleString("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
 const AffiliateAnalytics = () => {
   const { data: leads = [], isLoading } = useAffiliateLeads("mine");
+  const { user } = useAuth();
+  const { data: targets = [] } = useAffiliateTargets(user?.id);
 
   const stats = useMemo(() => {
     const gewonnen = leads.filter((l) => l.status === "gewonnen");
@@ -30,6 +35,33 @@ const AffiliateAnalytics = () => {
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [stats.verloren]);
+
+  const targetVoortgang = useMemo(() => {
+    const nu = new Date();
+    const jaar = nu.getFullYear();
+    const maand = nu.getMonth() + 1;
+    const target = targets.find((t) => t.jaar === jaar && t.maand === maand);
+    if (!target) return null;
+    const startMaand = new Date(jaar, maand - 1, 1).getTime();
+    const gewonnenDezeMaand = stats.gewonnen.filter((l) => {
+      const d = l.updated_at ? new Date(l.updated_at).getTime() : 0;
+      return d >= startMaand;
+    });
+    const aantal = gewonnenDezeMaand.length;
+    const omzet = gewonnenDezeMaand.reduce((s, l) => s + Number(l.geschatte_waarde ?? 0), 0);
+    const aantalDoel = Number((target as { aantal_deals_doel?: number }).aantal_deals_doel ?? 0);
+    const omzetDoel = Number((target as { omzet_doel?: number }).omzet_doel ?? 0);
+    return {
+      jaar,
+      maand,
+      aantal,
+      aantalDoel,
+      omzet,
+      omzetDoel,
+      aantalPct: aantalDoel > 0 ? Math.min(100, Math.round((aantal / aantalDoel) * 100)) : 0,
+      omzetPct: omzetDoel > 0 ? Math.min(100, Math.round((omzet / omzetDoel) * 100)) : 0,
+    };
+  }, [targets, stats.gewonnen]);
 
   return (
     <div className="p-6 space-y-4">
