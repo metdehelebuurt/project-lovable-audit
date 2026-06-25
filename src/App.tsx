@@ -353,6 +353,9 @@ const App = () => (
               <Route path="/affiliates/instellingen/mailtemplates" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><MailtemplatesPage /></ProtectedRoute>
               } />
+              <Route path="/affiliates/instellingen/pijplijn" element={
+                <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager","partner_admin"]}><AffiliatePijplijnInstellingen /></ProtectedRoute>
+              } />
               <Route path="/affiliates/opvolging" element={
                 <ProtectedRoute allowedRoles={["affiliate","superadmin","sales_manager"]}><AffiliateOpvolging /></ProtectedRoute>
               } />
