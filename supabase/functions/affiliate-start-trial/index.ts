@@ -125,6 +125,7 @@ serve(async (req) => {
         ref_code: link!.code,
         tijdelijk_wachtwoord: body.password,
         aangemaakt_door: `${profile.voornaam ?? ""} ${profile.achternaam ?? ""}`.trim() || profile.email,
+        trial_dagen: effectieveTrialDagen,
       },
     });
     if (signupRes.error) {
