@@ -115,6 +115,9 @@ const AffiliateBellen = () => {
       return;
     }
     await handleUitkomst(uitkomst);
+    if (uitkomst.value === "voorstel") {
+      toast.success("Status op 'voorstel verstuurd'. Open de lead om een offerte te maken.");
+    }
   };
 
   /** Knop "Demo inplannen" — opent direct demo-dialog en zet daarna status. */
