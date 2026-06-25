@@ -21,7 +21,7 @@ export default function DedupeBevestigingDialog({ open, onOpenChange, resultaat,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl overflow-hidden">
         <DialogHeader>
           <DialogTitle>Bevestig import</DialogTitle>
           <DialogDescription>
@@ -59,13 +59,13 @@ export default function DedupeBevestigingDialog({ open, onOpenChange, resultaat,
                   <p className="text-xs text-muted-foreground">Vergelijk op e-mail, telefoon, website en bedrijfsnaam (genormaliseerd). Duplicaten worden standaard overgeslagen.</p>
                 </div>
               </div>
-              <ScrollArea className="h-56 rounded-md border">
-                <ul className="divide-y text-sm">
+              <ScrollArea className="h-56 rounded-md border w-full">
+                <ul className="divide-y text-sm w-full">
                   {duplicaten.map((d) => {
                     const rij = rijen[d.rij_index] ?? {};
                     return (
-                      <li key={d.rij_index} className="p-2 flex items-start justify-between gap-2">
-                        <div className="min-w-0">
+                      <li key={d.rij_index} className="p-2 flex items-start justify-between gap-2 w-full min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="font-medium truncate">
                             Rij {d.rij_index + 1}: {rij.bedrijfsnaam || rij.contactpersoon || rij.email || "—"}
                           </p>
@@ -73,9 +73,9 @@ export default function DedupeBevestigingDialog({ open, onOpenChange, resultaat,
                             {rij.email ?? ""} {rij.telefoon ? `· ${rij.telefoon}` : ""}
                           </p>
                         </div>
-                        <div className="flex flex-wrap gap-1 justify-end">
+                        <div className="flex flex-wrap gap-1 justify-end shrink-0 max-w-[45%]">
                           {d.redenen.map((r, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">{r}</Badge>
+                            <Badge key={i} variant="outline" className="text-[10px] whitespace-nowrap">{r}</Badge>
                           ))}
                         </div>
                       </li>
