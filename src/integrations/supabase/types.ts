@@ -1564,6 +1564,131 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_template_feedback: {
+        Row: {
+          created_at: string
+          feedback: string
+          generatie_id: string | null
+          id: string
+          sentiment: string | null
+          user_id: string
+          verwerkt_in_profiel: boolean
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          generatie_id?: string | null
+          id?: string
+          sentiment?: string | null
+          user_id: string
+          verwerkt_in_profiel?: boolean
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          generatie_id?: string | null
+          id?: string
+          sentiment?: string | null
+          user_id?: string
+          verwerkt_in_profiel?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_template_feedback_generatie_id_fkey"
+            columns: ["generatie_id"]
+            isOneToOne: false
+            referencedRelation: "ai_template_generaties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_template_generaties: {
+        Row: {
+          bron: string
+          created_at: string
+          finale_body: string | null
+          finale_onderwerp: string | null
+          id: string
+          input_body: string | null
+          input_onderwerp: string | null
+          instellingen: Json
+          mode: string
+          output_body: string | null
+          output_onderwerp: string | null
+          output_uitleg: string | null
+          status: string
+          template_key: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bron: string
+          created_at?: string
+          finale_body?: string | null
+          finale_onderwerp?: string | null
+          id?: string
+          input_body?: string | null
+          input_onderwerp?: string | null
+          instellingen?: Json
+          mode?: string
+          output_body?: string | null
+          output_onderwerp?: string | null
+          output_uitleg?: string | null
+          status?: string
+          template_key?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bron?: string
+          created_at?: string
+          finale_body?: string | null
+          finale_onderwerp?: string | null
+          id?: string
+          input_body?: string | null
+          input_onderwerp?: string | null
+          instellingen?: Json
+          mode?: string
+          output_body?: string | null
+          output_onderwerp?: string | null
+          output_uitleg?: string | null
+          status?: string
+          template_key?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_template_schrijfstijl: {
+        Row: {
+          created_at: string
+          generaties_sinds_consolidatie: number
+          laatst_geconsolideerd_at: string | null
+          profiel_samenvatting: string | null
+          updated_at: string
+          user_id: string
+          voorkeuren: Json
+        }
+        Insert: {
+          created_at?: string
+          generaties_sinds_consolidatie?: number
+          laatst_geconsolideerd_at?: string | null
+          profiel_samenvatting?: string | null
+          updated_at?: string
+          user_id: string
+          voorkeuren?: Json
+        }
+        Update: {
+          created_at?: string
+          generaties_sinds_consolidatie?: number
+          laatst_geconsolideerd_at?: string | null
+          profiel_samenvatting?: string | null
+          updated_at?: string
+          user_id?: string
+          voorkeuren?: Json
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           actie: string

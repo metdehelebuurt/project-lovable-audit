@@ -15,7 +15,9 @@ import type { AffiliateTemplate } from "@/lib/affiliateTemplates/registry";
 import {
   Send, RotateCcw, Save, X, Monitor, Smartphone,
   PencilLine, Eye, SplitSquareHorizontal,
+  Sparkles,
 } from "lucide-react";
+import { AiVerbeterPaneel } from "@/components/mailtemplates/AiVerbeterPaneel";
 
 interface Props {
   template: AffiliateTemplate;
@@ -38,6 +40,7 @@ export function TemplateEditor({ template, row, open, onClose }: Props) {
   const [testEmail, setTestEmail] = useState("");
   const [view, setView] = useState<View>("split");
   const [device, setDevice] = useState<Device>("desktop");
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -137,6 +140,12 @@ export function TemplateEditor({ template, row, open, onClose }: Props) {
           </div>
         </div>
 
+        <div className="flex items-center justify-end px-5 py-2 border-b bg-muted/20 shrink-0">
+          <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAiOpen(true)}>
+            <Sparkles className="h-3.5 w-3.5 text-primary" /> AI verbeteren
+          </Button>
+        </div>
+
         {/* Main */}
         <div className="flex-1 min-h-0 grid md:grid-cols-2 grid-cols-1 gap-0 bg-muted/30">
           {/* Editor pane */}
@@ -221,6 +230,22 @@ export function TemplateEditor({ template, row, open, onClose }: Props) {
             </Button>
           </div>
         </div>
+
+        <AiVerbeterPaneel
+          open={aiOpen}
+          onClose={() => setAiOpen(false)}
+          bron="affiliate"
+          templateKey={template.key}
+          templateNaam={template.displayName}
+          onderwerp={onderwerp}
+          body={bodyHtml}
+          bodyFormaat="html"
+          onApply={({ onderwerp: o, body: b }) => {
+            setOnderwerp(o);
+            setBodyHtml(b);
+            setAiOpen(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
