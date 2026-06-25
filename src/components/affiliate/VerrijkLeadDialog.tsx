@@ -24,6 +24,7 @@ const VELDEN: { key: VeldKey; label: string; doelKolom: string }[] = [
   { key: "postcode", label: "Postcode", doelKolom: "postcode" },
   { key: "plaats", label: "Plaats", doelKolom: "plaats" },
   { key: "branche", label: "Branche", doelKolom: "branche" },
+  { key: "samenvatting", label: "AI-samenvatting", doelKolom: "ai_bedrijf_samenvatting" },
 ];
 
 export function VerrijkLeadDialog({ open, onOpenChange, lead }: Props) {
