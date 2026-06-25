@@ -76,6 +76,7 @@ const Instellingen = () => {
     { id: "huisstijl", label: "Huisstijl", icon: Palette, roles: ADMIN_ROLLEN },
     { id: "email", label: "E-mail (organisatie)", icon: Mail, roles: ADMIN_ROLLEN },
     { id: "email-templates", label: "E-mailtemplates", icon: Mail, roles: ADMIN_ROLLEN },
+    { id: "sales-mailtemplates", label: "Sales mailtemplates", icon: Mail, roles: ["affiliate", "sales_manager", "superadmin"], href: "/affiliates/instellingen/mailtemplates" },
     { id: "producten", label: "Producten", icon: Package, roles: ADMIN_ROLLEN },
     { id: "offertes", label: "Offertes", icon: FileText, roles: ADMIN_ROLLEN },
     { id: "webtools-api", label: "Webtools & API", icon: Globe, roles: ADMIN_ROLLEN },
