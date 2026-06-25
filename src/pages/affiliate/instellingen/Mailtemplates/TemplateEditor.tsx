@@ -24,6 +24,7 @@ export function TemplateEditor({ template, row, open, onClose }: Props) {
   const testSend = useSendTestTemplate();
   const [onderwerp, setOnderwerp] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
+  const [testEmail, setTestEmail] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -61,6 +62,19 @@ export function TemplateEditor({ template, row, open, onClose }: Props) {
         setOnderwerp(template.defaultOnderwerp);
         setBodyHtml(template.defaultBodyHtml);
       },
+    });
+  };
+
+  const verstuurTest = () => {
+    const recipient = testEmail.trim();
+    if (recipient && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+      return;
+    }
+    testSend.mutate({
+      template_key: template.key,
+      onderwerp,
+      body_html: bodyHtml,
+      recipient_email: recipient || undefined,
     });
   };
 
@@ -116,13 +130,24 @@ export function TemplateEditor({ template, row, open, onClose }: Props) {
           <Button onClick={opslaan} disabled={upsert.isPending}>
             <Save className="h-4 w-4 mr-1.5" /> Opslaan
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => testSend.mutate({ template_key: template.key, onderwerp, body_html: bodyHtml })}
-            disabled={testSend.isPending}
-          >
-            <Send className="h-4 w-4 mr-1.5" /> Test naar mij sturen
-          </Button>
+          <div className="flex flex-1 min-w-[260px] items-center gap-2">
+            <Input
+              type="email"
+              placeholder="Testadres (leeg = naar mijzelf)"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              className="h-9"
+            />
+            <Button
+              variant="outline"
+              onClick={verstuurTest}
+              disabled={testSend.isPending}
+              className="shrink-0"
+            >
+              <Send className="h-4 w-4 mr-1.5" />
+              {testEmail.trim() ? "Test versturen" : "Test naar mij"}
+            </Button>
+          </div>
           {row && (
             <Button variant="ghost" onClick={herstellen} disabled={reset.isPending}>
               <RotateCcw className="h-4 w-4 mr-1.5" /> Herstel standaard
