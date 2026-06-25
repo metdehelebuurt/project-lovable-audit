@@ -460,6 +460,15 @@ const AffiliateBellen = () => {
       {current && (
         <VerrijkLeadDialog open={openVerrijk} onOpenChange={setOpenVerrijk} lead={current} />
       )}
+      {current && (
+        <VerlorenRedenDialog
+          open={openVerloren}
+          onOpenChange={setOpenVerloren}
+          leadId={current.id}
+          leadNaam={current.bedrijfsnaam}
+          onSaved={next}
+        />
+      )}
     </div>
   );
 };
