@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { UserCog } from "lucide-react";
 import { updateInstallatie } from "./api/installatieApi";
 import type { Installatie } from "./api/installatieApi";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 interface Monteur {
   id: string;
@@ -116,6 +117,7 @@ export default function MonteurWijzigDialog({ open, onOpenChange, installatie, o
               <Input type="time" value={eindtijd} onChange={(e) => setEindtijd(e.target.value)} />
             </div>
           </div>
+          <TijdzoneBanner datum={startdatum} tijd={starttijd} compact />
         </div>
         <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>

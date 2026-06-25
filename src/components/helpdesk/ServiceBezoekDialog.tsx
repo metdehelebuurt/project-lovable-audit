@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateServiceBezoek } from "@/hooks/helpdesk/useServiceBezoeken";
 import type { HelpdeskTicket } from "@/hooks/helpdesk/useTickets";
+import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 
 function useMonteurs(partnerId: string) {
   return useQuery({
