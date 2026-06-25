@@ -130,6 +130,22 @@ const AffiliateBellen = () => {
     setOpenAfspraak(true);
   };
 
+  /** Knop "Mail gestuurd → nabellen" — logt mailmoment en plant verplicht terugbelafspraak. */
+  const handleMailGestuurd = async () => {
+    if (!current) return;
+    await log.mutateAsync({
+      lead_id: current.id,
+      type: "email",
+      uitkomst: "Mail gestuurd",
+      notitie: notitie || null,
+      duur_seconden: seconden,
+    });
+    toast.success("Mail gelogd — plan nu de nabel-afspraak");
+    setAfspraakType("terugbel");
+    setPendingUitkomst({ value: "terugbellen", label: "Nabellen na mail", nextStatus: "terugbel_gepland" });
+    setOpenAfspraak(true);
+  };
+
   const onAfspraakSaved = async () => {
     const u = pendingUitkomst;
     setPendingUitkomst(null);
@@ -344,6 +360,13 @@ const AffiliateBellen = () => {
                     hint="Verplicht inplannen"
                     accent="amber"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "terugbellen")!)}
+                  />
+                  <UitkomstKnop
+                    icon={Mail}
+                    label="Mail gestuurd / nabellen"
+                    hint="Logt mail + plant nabel"
+                    accent="amber"
+                    onClick={handleMailGestuurd}
                   />
                 </UitkomstGroep>
 
