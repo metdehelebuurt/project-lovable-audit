@@ -16,9 +16,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: SalesLead | null;
+  onDoorgezet?: (leadId: string) => void;
 }
 
-export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
+export default function DoorzetDialog({ open, onOpenChange, lead, onDoorgezet }: Props) {
   const [modus, setModus] = useState<"direct" | "pool" | "sales_manager">("direct");
   const [affiliateId, setAffiliateId] = useState<string>("");
   const [salesManagerId, setSalesManagerId] = useState<string>("");
@@ -49,6 +50,7 @@ export default function DoorzetDialog({ open, onOpenChange, lead }: Props) {
       temperatuur,
       volgende_actie_op: volgende,
     });
+    onDoorgezet?.(lead.id);
     setNotitie("");
     setAffiliateId("");
     setSalesManagerId("");
