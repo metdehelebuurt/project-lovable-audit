@@ -35,6 +35,30 @@ export function useTerugbelAfspraken(scope: "open" | "alle" = "open") {
   });
 }
 
+/**
+ * Afspraken die door een collega zijn ingepland en waar ik (`collega_user_id`)
+ * de eigenaar van ben. Zo zie ik handovers in mijn agenda.
+ */
+export function useAfsprakenVoorMij(scope: "open" | "alle" = "open") {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [...KEY, "voor-mij", scope, user?.id],
+    enabled: !!user?.id,
+    queryFn: async (): Promise<TerugbelAfspraak[]> => {
+      let q = supabase
+        .from("affiliate_terugbel_afspraken")
+        .select("*")
+        .eq("collega_user_id", user!.id)
+        .neq("affiliate_id", user!.id)
+        .order("geplande_op", { ascending: true });
+      if (scope === "open") q = q.is("afgehandeld_op", null);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useCreateTerugbel() {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -87,13 +111,32 @@ export function useAfvinkenTerugbel() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      // Haal eerst de afspraak op zodat we `volgende_actie_datum` op de lead
+      // kunnen opruimen als die nog matcht — anders blijft de lead eeuwig
+      // in de belqueue staan op basis van een stale datum.
+      const { data: afs } = await supabase
+        .from("affiliate_terugbel_afspraken")
+        .select("id, lead_id, geplande_op")
+        .eq("id", id)
+        .maybeSingle();
       const { error } = await supabase
         .from("affiliate_terugbel_afspraken")
         .update({ afgehandeld_op: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      if (afs?.lead_id && afs.geplande_op) {
+        await supabase
+          .from("affiliate_leads")
+          .update({ volgende_actie_datum: null })
+          .eq("id", afs.lead_id)
+          .eq("volgende_actie_datum", afs.geplande_op);
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["affiliate-leads"] });
+      toast.success("Afspraak afgevinkt");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
