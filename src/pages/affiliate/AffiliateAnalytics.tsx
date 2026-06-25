@@ -82,6 +82,36 @@ const AffiliateAnalytics = () => {
             <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><TrendingUp className="h-7 w-7 text-amber-600" /><div><p className="text-2xl font-bold">{stats.winRate}%</p><p className="text-xs text-muted-foreground">Win-rate</p></div></div></CardContent></Card>
           </div>
 
+          {targetVoortgang && (targetVoortgang.aantalDoel > 0 || targetVoortgang.omzetDoel > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Target className="h-4 w-4 text-blue-600" /> Maanddoel — {String(targetVoortgang.maand).padStart(2, "0")}/{targetVoortgang.jaar}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {targetVoortgang.aantalDoel > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span>Aantal deals</span>
+                      <span className="text-muted-foreground">{targetVoortgang.aantal} / {targetVoortgang.aantalDoel}</span>
+                    </div>
+                    <Progress value={targetVoortgang.aantalPct} />
+                  </div>
+                )}
+                {targetVoortgang.omzetDoel > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span>Omzet</span>
+                      <span className="text-muted-foreground">{fmtEur(targetVoortgang.omzet)} / {fmtEur(targetVoortgang.omzetDoel)}</span>
+                    </div>
+                    <Progress value={targetVoortgang.omzetPct} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Verlies-analyse</CardTitle></CardHeader>
             <CardContent>
