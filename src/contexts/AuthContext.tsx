@@ -17,6 +17,9 @@ interface UserProfile {
   berichten_zichtbaarheid: "alle" | "toegewezen" | "geen";
   dashboard_view: "klassiek" | "apps";
   dashboard_apps_layout: Record<string, unknown>;
+  timezone: string | null;
+  land: string | null;
+  stad: string | null;
 }
 
 interface AuthContextType {
