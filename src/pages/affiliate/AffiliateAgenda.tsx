@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 
 const AffiliateAgenda = () => {
+  const navigate = useNavigate();
   const { data: eigen = [], isLoading } = useTerugbelAfspraken("open");
   const { data: voorMij = [] } = useAfsprakenVoorMij("open");
   const { data: leads = [] } = useAffiliateLeads("mine");
@@ -54,7 +56,14 @@ const AffiliateAgenda = () => {
             const voorMij = (a as { _voorMij?: boolean })._voorMij;
             const afspraakType = (a as { type?: string }).type;
             return (
-              <div key={a.id} className="flex items-center gap-3 border rounded-md p-3">
+              <div
+                key={a.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/affiliate/leads/${a.lead_id}`)}
+                onKeyDown={(e) => { if (e.key === "Enter") navigate(`/affiliate/leads/${a.lead_id}`); }}
+                className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-muted/40 transition-colors"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium truncate">{lead?.bedrijfsnaam ?? "Lead"}</p>
@@ -71,9 +80,9 @@ const AffiliateAgenda = () => {
                   </div>
                   <p className="text-xs text-muted-foreground">{new Date(a.geplande_op).toLocaleString("nl-NL")}{a.notitie ? ` · ${a.notitie}` : ""}</p>
                 </div>
-                {tel && <Button asChild size="sm" variant="outline"><a href={tel}><Phone className="h-3 w-3 mr-1" /> Bel</a></Button>}
-                {wa && <Button asChild size="sm" variant="outline" className="text-emerald-700 border-emerald-300"><a href={wa} target="_blank" rel="noreferrer">WhatsApp</a></Button>}
-                <Button size="sm" variant="ghost" onClick={() => afvink.mutate(a.id)}><CheckCircle2 className="h-4 w-4" /></Button>
+                {tel && <Button asChild size="sm" variant="outline" onClick={(e) => e.stopPropagation()}><a href={tel}><Phone className="h-3 w-3 mr-1" /> Bel</a></Button>}
+                {wa && <Button asChild size="sm" variant="outline" className="text-emerald-700 border-emerald-300" onClick={(e) => e.stopPropagation()}><a href={wa} target="_blank" rel="noreferrer">WhatsApp</a></Button>}
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); afvink.mutate(a.id); }}><CheckCircle2 className="h-4 w-4" /></Button>
               </div>
             );
           })}
