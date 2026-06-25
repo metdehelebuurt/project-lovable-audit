@@ -4,10 +4,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import {
   Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus,
   Presentation, FileCheck2, Sparkles, MapPin, Building2, Briefcase, Flame,
-  Star, Rocket, Tag, CalendarClock,
+  Star, Rocket, Tag, CalendarClock, MoreHorizontal, ListChecks, Activity, History, StickyNote,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { STATUS_LABEL, STATUS_VOLGORDE, STATUS_KLEUR, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
@@ -27,6 +31,7 @@ import EmailCompose from "@/components/email/EmailCompose";
 import { AiOpvolgKaart } from "./AiOpvolgKaart";
 import { OpvolgLogLijst } from "./OpvolgLogLijst";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
+import { useSearchParams } from "react-router-dom";
 
 const BRON_LABEL: Record<string, string> = {
   platform_pool: "Platform pool",
