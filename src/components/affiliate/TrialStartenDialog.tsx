@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Copy, Rocket, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useStartTrialVoorLead } from "@/hooks/affiliate/useStartTrialVoorLead";
+import { useCanCustomizeTrialDuration } from "@/hooks/affiliate/useCanCustomizeTrialDuration";
 import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 
 interface Props {
@@ -40,6 +41,8 @@ export function TrialStartenDialog({ open, onOpenChange, lead, onStarted }: Prop
   const [telefoon, setTelefoon] = useState(lead.telefoon ?? "");
   const [password, setPassword] = useState(() => genereerWachtwoord());
   const [toestemming, setToestemming] = useState(false);
+  const [trialDagen, setTrialDagen] = useState<number>(30);
+  const magDuurAanpassen = useCanCustomizeTrialDuration();
 
   const start = useStartTrialVoorLead();
 
@@ -53,10 +56,12 @@ export function TrialStartenDialog({ open, onOpenChange, lead, onStarted }: Prop
       setTelefoon(lead.telefoon ?? "");
       setPassword(genereerWachtwoord());
       setToestemming(false);
+      setTrialDagen(30);
     }
   }, [open, lead]);
 
-  const valide = bedrijfsnaam.trim() && voornaam.trim() && achternaam.trim() && email.trim() && password.length >= 8 && toestemming;
+  const dagenValide = Number.isInteger(trialDagen) && trialDagen >= 1 && trialDagen <= 30;
+  const valide = bedrijfsnaam.trim() && voornaam.trim() && achternaam.trim() && email.trim() && password.length >= 8 && toestemming && dagenValide;
 
   const versturen = async () => {
     if (!valide) return;
@@ -70,6 +75,7 @@ export function TrialStartenDialog({ open, onOpenChange, lead, onStarted }: Prop
         telefoon: telefoon.trim() || null,
         password,
         toestemming: true,
+        trial_dagen: magDuurAanpassen ? trialDagen : undefined,
       });
       onOpenChange(false);
       onStarted?.();
