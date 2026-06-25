@@ -1,102 +1,87 @@
-# Belsessie + Pijplijn opwaardering
+# AI-mailtemplate verbeteraar met persoonlijk geheugen
 
-## 1. Belsessie — queue logica fix
+Een AI-assistent in de WYSIWYG-editor van zowel de affiliate- als sales-mailtemplates die het onderwerp + body herschrijft op basis van doel, schrijfstijl, doelgroep en conversiedoel. Per gebruiker wordt **schrijfstijl-feedback** opgeslagen zodat elke volgende generatie consistenter wordt met de voorkeuren van die specifieke gebruiker.
 
-**Probleem:** Leads met status `terugbel_gepland` blijven in de queue staan, ook als de terugbel-afspraak maanden in de toekomst ligt. Oorzaak: `belQueue`-filter (`AffiliateBellen.tsx`) zet leads op basis van status in de queue, niet alleen op due-afspraak.
+## Wat de gebruiker kan
 
-**Fix in `src/pages/affiliate/AffiliateBellen.tsx`:**
-- Strikte regel: een lead is alleen in de queue als
-  - `dueLeadIds` bevat de lead (terugbel- of opvolg-taak met `geplande_op/due_op <= einde vandaag`), OF
-  - status ∈ {`nieuw`, `nieuw_campagne`, `nieuw_demo_voltooid`, `gebeld_geen_gehoor`, `mail_gestuurd`} EN (`volgende_actie_datum` is null OF `volgende_actie_datum <= einde vandaag`) EN er bestaat **geen** open toekomstige terugbel-afspraak voor deze lead.
-- `terugbel_gepland` wordt expliciet alleen via due-afspraak getoond, nooit via status alleen.
-- Helper `heeftToekomstigeAfspraak(leadId)` op basis van `terugbelAfspraken`.
+In een nieuwe **"AI verbeteren"**-knop in de top-bar van `TemplateEditor` opent een rechter-zijpaneel met:
 
-## 2. Handmatige gesprekstimer
+1. **Doel van de mail** (vrij tekstveld + presets: "afspraak inplannen", "review vragen", "lead heractiveren", "demo bevestigen", "no-show opvolgen", "warm houden")
+2. **Schrijfstijl** (chips, multi-select): zakelijk · persoonlijk · kort & krachtig · empathisch · urgentie · vriendelijk-direct · storytelling
+3. **Doelgroep** (chips): particulier · zzp · MKB · woningcorporatie · architect · adviseur
+4. **Conversie-element** (chips): duidelijke CTA-knop · agenda-link · tel-link · social proof · scarcity · garantie
+5. **Lengte** (slider): zeer kort / gemiddeld / uitgebreid
+6. **Vrije instructie** (textarea: "noem altijd subsidieregeling 2026", "begin met de voornaam", etc.)
+7. **Knoppen**: `Genereer verbetering`, `Pas alleen onderwerp aan`, `Maak A/B-variant`
 
-**`AffiliateBellen.tsx`:**
-- `seconden` blijft, maar interval start niet automatisch.
-- Nieuwe state `timerLoopt`. Knoppen Start/Pauze/Reset naast de timer (vervangt huidige automatische teller).
-- Bij wissel van lead: timer reset naar 0, status pauze.
-- Bij uitkomst-knop: `seconden` wordt altijd meegelogd in `useLogContactmoment` (gebeurt al), zelfs als 0.
+Onder de knop een **diff-weergave** (oud → nieuw) met `Toepassen` / `Verwerpen` / `Regenereer met extra hint`.
 
-## 3. AI-briefing in Belsessie
+Onderaan het paneel: **"Mijn AI-schrijfstijl"** — een levende samenvatting van wat het systeem over de stijl van deze gebruiker heeft geleerd, met knop `Bewerken` en `Reset`.
 
-**Nieuwe Edge Function `affiliate-bel-briefing`:**
-- Input: `lead_id`.
-- Server-side: haal lead + laatste 10 contactmomenten + bedrijf-samenvatting op.
-- Gemini 2.5 Flash via Lovable AI Gateway → JSON met `{ samenvatting, gesprekspunten[], mogelijke_bezwaren[], usps[], aanbevolen_volgende_actie }`.
+## Hoe het leert per gebruiker
 
-**Nieuwe component `BriefingKaart.tsx`** in `src/components/affiliate/Belsessie/`:
-- Knop "Genereer briefing" bovenin de Gesprek-tab.
-- Toont 5 secties (samenvatting + lijstjes).
-- Resultaat wordt gecached in TanStack Query (`["bel-briefing", leadId]`).
+Drie soorten signalen worden per `user_id` opgeslagen in `ai_template_schrijfstijl`:
 
-## 4. Belsessie info-verrijking
+- **Expliciete feedback**: na elke "Toepassen" of "Verwerpen" vraagt een micro-prompt "Wat vond je hier goed/slecht aan?" (1 zin, optioneel).
+- **Impliciete edits**: wanneer de gebruiker de AI-output handmatig aanpast vóór opslaan, wordt de diff tussen AI-suggestie en uiteindelijke versie als leermoment vastgelegd.
+- **Voorkeursinstellingen**: gekozen schrijfstijl/doelgroep/lengte worden geaggregeerd → meest gekozen waarden worden defaults.
 
-**Statusbadge op leadkaart** in Belsessie (boven bedrijfsnaam): kleur + label volgens nieuwe pipeline-config (zie §5). Vervangt impliciete status.
+De edge function `ai-template-verbeteren` consolideert deze signalen periodiek tot een **stijlprofiel** (max ~1500 tokens samenvatting per gebruiker) dat als system-prompt-suffix wordt meegestuurd bij elke generatie. Zo blijft de prompt compact terwijl de AI weet:
+> "Deze gebruiker schrijft graag persoonlijk, opent met voornaam, vermijdt uitroeptekens, eindigt altijd met een vraag, gebruikt zelden emoji."
 
-**`current.notities`** wordt ook bovenaan de Gesprek-tab samengevat (niet alleen in Bedrijf-tab).
+## Werking AI-call
 
-## 5. Affiliate-pijplijn configureerbaar maken
+Edge function `ai-template-verbeteren` (Lovable AI Gateway, model `google/gemini-3-flash-preview`):
 
-**Nieuwe tabel `affiliate_pipeline_config`** (per partner):
-- `partner_id`, `status_key` (matcht `affiliate_leads.status`), `label`, `kleur` (token uit `PIPELINE_KLEUREN`), `volgorde`, `zichtbaar`, `is_systeem` (bool).
-- Seed per partner met huidige statussen + de nieuwe drie:
-  - `nieuw` → "Nieuw - Koude leads" (slate)
-  - `nieuw_campagne` → "Nieuw - Campagne" (blue)
-  - `nieuw_demo_voltooid` → "Nieuw - Demo voltooid" (emerald)
-  - `gebeld_geen_gehoor` (amber), `mail_gestuurd` (cyan), `terugbel_gepland` (violet), `demo_gepland` (fuchsia), `voorstel_verstuurd` (orange), `gewonnen` (emerald), `verloren` (rose).
-- RLS: lezen voor leden van de partner; muteren voor `partner_admin` + `sales_manager` + `superadmin`.
-- Migratie voegt enum-waarden `nieuw_campagne` en `nieuw_demo_voltooid` toe aan de bestaande affiliate-status (of via tekstkolom).
+- input: `template_key`, `huidige_onderwerp`, `huidige_body_html`, `doel`, `stijl[]`, `doelgroep[]`, `conversie[]`, `lengte`, `vrije_instructie`, `mode` (`volledig` | `alleen_onderwerp` | `ab_variant`), `feedback_hint`
+- bouwt prompt met:
+  - system: rol + huisstijl-regels + Nederlandse tone-of-voice + variabele-syntax `{{...}}`
+  - system-suffix: stijlprofiel van deze user
+  - few-shot: laatste 3 goedgekeurde edits van deze user (als die er zijn)
+  - user: huidige template + instructies
+- output via AI SDK `Output.object`: `{ onderwerp, body_html, uitleg, vertrouwen, suggesties[] }`
+- response wordt gelogd in `ai_template_generaties` (input + output + status)
 
-**Auto-regels (DB-trigger / hook in `useUpdateAffiliateLead`):**
-- Bij aanmaak met `bron_type='campagne'` → status = `nieuw_campagne` (alleen als nog `nieuw`).
-- Bij afronden demo-afspraak in `affiliate_terugbel_afspraken` (type=demo, afgehandeld_op gezet) → status = `nieuw_demo_voltooid` (alleen als status nog niet verder is).
-- Beide via trigger op respectievelijk INSERT/UPDATE — handmatige override blijft mogelijk.
+## Database
 
-**Nieuwe pagina `src/pages/affiliate/instellingen/Pijplijn/index.tsx`:**
-- Tabel met fases (sleep volgorde, label inline edit, kleurkiezer uit `PIPELINE_KLEUREN`, zichtbaar-toggle).
-- Geen verwijder-actie voor `is_systeem=true` (alleen kleur/label/volgorde).
-- Hergebruikt `kleurClasses` uit `src/lib/sales/pipeline.ts`.
-- Route in `App.tsx` onder `/affiliate/instellingen/pijplijn` (rol: `affiliate`, `partner_admin`, `sales_manager`, `superadmin`).
+Drie nieuwe tabellen in `public`, allemaal met RLS op `user_id = auth.uid()`:
 
-**Hook `useAffiliatePipelineConfig`** met `useFases`, `useUpsertFase`, `useHerorden`.
+```sql
+ai_template_schrijfstijl    -- 1 rij per user, stijlprofiel samenvatting + voorkeuren JSONB
+ai_template_generaties      -- log van elke AI-call (input, output, status: toegepast/verworpen/bewerkt)
+ai_template_feedback        -- losse feedback-zinnen ("dit was te formeel", "perfecte CTA")
+```
 
-## 6. Kleuren in Pijplijn-kolomkoppen
+Periodieke consolidatie: bij elke 5e nieuwe feedback/generatie wordt het stijlprofiel her-samengevat door een aparte AI-call (`ai-stijlprofiel-consolideren`).
 
-In `src/pages/affiliate/AffiliatePipeline.tsx`:
-- Vervang de blauwe punt door `kleurClasses(fase.kleur)` (volle dot + tekst).
-- Zet ook de statuslabel/-naam ernaast (zelfde kleur).
-- LeadKaart in pijplijn krijgt linkerrand-streep in de fase-kleur.
+## Bestanden
 
-## Technische details
+**Nieuw:**
+- `supabase/migrations/<ts>_ai_template_verbetering.sql` — 3 tabellen + RLS + grants
+- `supabase/functions/ai-template-verbeteren/index.ts` — hoofdcall
+- `supabase/functions/ai-stijlprofiel-consolideren/index.ts` — periodieke samenvatting
+- `src/components/mailtemplates/AiVerbeterPaneel/index.tsx` — zijpaneel-UI (gedeeld tussen affiliate + sales)
+- `src/components/mailtemplates/AiVerbeterPaneel/DoelStap.tsx`
+- `src/components/mailtemplates/AiVerbeterPaneel/StijlChips.tsx`
+- `src/components/mailtemplates/AiVerbeterPaneel/DiffWeergave.tsx`
+- `src/components/mailtemplates/AiVerbeterPaneel/StijlprofielSamenvatting.tsx`
+- `src/hooks/mailtemplates/useAiVerbeterTemplate.ts` — mutation
+- `src/hooks/mailtemplates/useAiSchrijfstijl.ts` — read/write profiel
+- `src/lib/mailtemplates/diffHtml.ts` — kleine HTML-diff helper
 
-**Bestanden gewijzigd/nieuw:**
+**Aanpassen:**
+- `src/pages/affiliate/instellingen/Mailtemplates/TemplateEditor.tsx` — knop `AI verbeteren` + paneel inhaken
+- `src/pages/sales/SnippetsBeheer/...` of sales-equivalent (kort verifiëren waar sales-mailtemplates leven) — zelfde paneel inhaken
+- `src/integrations/supabase/types.ts` — auto-regen
 
-Belsessie (frontend):
-- `src/pages/affiliate/AffiliateBellen.tsx` — queue-filter, statusbadge, briefing-mount.
-- `src/components/affiliate/Belsessie/Timer.tsx` (nieuw, ≤80 regels).
-- `src/components/affiliate/Belsessie/BriefingKaart.tsx` (nieuw).
-- `src/hooks/affiliate/useBelBriefing.ts` (nieuw).
+## Belangrijke uitgangspunten
 
-Pijplijn-config:
-- Migratie: enum extend + `affiliate_pipeline_config` met GRANT/RLS/policies, seed-functie per partner, 2 triggers (campagne / demo voltooid).
-- `src/hooks/affiliate/useAffiliatePipelineConfig.ts` (nieuw).
-- `src/lib/affiliate/pipelineKleur.ts` (nieuw, re-export van `kleurClasses` + status→fase mapper).
-- `src/pages/affiliate/instellingen/Pijplijn/index.tsx` + `FaseRij.tsx` (nieuw, ≤200 regels totaal, hergebruik shadcn).
-- `src/pages/affiliate/AffiliatePipeline.tsx` — fase-kleuren in koppen + kaartrand.
-- `src/App.tsx` — route + sidebar link.
+- Werkt zowel voor affiliate-templates (`affiliate_email_templates`) als voor sales-templates — paneel is template-bron-agnostisch (krijgt `onderwerp` + `bodyHtml` props + `onApply` callback).
+- Stijlprofiel is **strikt per `user_id`** — geen lekkage tussen gebruikers (RLS afgedwongen, edge function valideert JWT).
+- AI Disclaimer-regel uit project-memory wordt **niet** in mail-content gepropt (geldt voor offerte-PDFs), maar in het AI-paneel zelf staat wel: *"Suggesties van AI — controleer altijd voor je verstuurt."*
+- Diff toont onderwerp + body apart; gebruiker kan onderwerp of body afzonderlijk overnemen.
+- Geen externe diff-library — kleine eigen helper (`diffHtml.ts`, < 80 regels) die op blok-niveau highlight.
 
-Edge function:
-- `supabase/functions/affiliate-bel-briefing/index.ts` — Gemini 2.5 Flash, JSON-output via `Output.object`.
+## Open vraag (1)
 
-**Buiten scope:** Geen wijzigingen aan sales-CRM `pipeline_configuraties`, geen UI-wijzigingen in mailtemplates, leads-detail of agenda.
-
-## Stappen
-1. Migratie (enum, tabel, seed-functie, triggers, RLS+GRANT).
-2. Hooks (`useAffiliatePipelineConfig`, `useBelBriefing`).
-3. Edge function `affiliate-bel-briefing` + deploy.
-4. Belsessie-fix: queue-filter + Timer-component + BriefingKaart + statusbadge.
-5. Instellingen-pagina pijplijn + route + sidebar.
-6. Kleur in `AffiliatePipeline` koppen + kaartranden.
-7. Smoke test: nieuwe terugbel over 6 maanden → lead verdwijnt; campagne-lead → juiste status; demo afgehandeld → status update; instellingenpagina kleurwijziging zichtbaar in Pipeline.
+Voor sales-managers: leven hun e-mailtemplates in `email_templates` (algemeen) of in een sales-specifieke tabel? Ik check kort `src/pages/sales/...` om het juiste integratiepunt te kiezen — geen aparte vraag nodig tenzij blijkt dat sales geen eigen template-editor heeft.
