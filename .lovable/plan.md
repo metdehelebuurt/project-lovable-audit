@@ -1,87 +1,158 @@
 ## Doel
-1. Bij elke statuswijziging naar **Verloren** een verplichte popup met reden + categorie.
-2. Aparte **Lost Leads Review**-pagina, alleen toegankelijk voor `bas@mijnhuis.nu` en `superadmin`, waar verloren leads opnieuw beoordeeld worden en in vervolgbuckets gezet kunnen worden (3 maanden, 6 maanden, echt verloren, terugbellen).
+Een affiliate ziet in zijn eigen instellingen één overzicht met álle e-mails die het platform namens hem naar leads/klanten kan sturen, kan ze customizen (onderwerp + body, variabelen, afzendernaam), preview-en en testen. Templates krijgen een strakke, professionele mijnhuis.nu-huisstijl en worden grondig functioneel getest.
 
-## 1. Database
+## 1. Inventarisatie — welke e-mails verstuurt een affiliate?
 
-Nieuwe kolommen op `affiliate_leads`:
-- `verloren_categorie` (enum `affiliate_verloren_categorie`: `geen_interesse`, `geen_budget`, `concurrent`, `timing`, `geen_contact`, `anders`) — verplichte reden-categorie.
-- `verloren_op` (timestamptz) — wanneer op verloren gezet.
-- `review_bucket` (enum `affiliate_lost_review_bucket`: `te_beoordelen`, `terugbellen`, `wacht_3_maanden`, `wacht_6_maanden`, `echt_verloren`) default `te_beoordelen`.
-- `review_door_id` (uuid → users.id), `review_op` (timestamptz), `review_notitie` (text).
-- `terug_in_pipeline_op` (date) — datum waarop een lead met bucket `wacht_3/6_maanden` of `terugbellen` weer opgepakt moet worden.
+Op basis van bestaande triggers + ontbrekende flows:
 
-Trigger: zodra `status` overgaat naar `verloren` wordt `verloren_op = now()` gezet en `review_bucket` reset naar `te_beoordelen` als die nog leeg is.
+**Lead-fase**
+1. `lead-welkom` — Nieuwe lead aangemaakt (intro affiliate stelt zich voor)
+2. `lead-kennismaking-bevestiging` — Bevestiging na eerste telefonisch contact
+3. `lead-info-pakket` — Algemene productinfo/brochure na gesprek
 
-RLS: bestaande affiliate-policies blijven gelden voor eigen leads. Extra policy op `affiliate_leads` voor de review-tabel: `SELECT` en `UPDATE` (alleen review-kolommen) voor `superadmin` én voor de specifieke gebruiker `bas@mijnhuis.nu` via een security-definer functie `is_lost_review_admin(uid)`.
+**Afspraken (al deels aanwezig: `affiliate-afspraak-klant`)**
+4. `afspraak-bevestiging` — Afspraak ingepland (datum/tijd/locatie/Teams-link)
+5. `afspraak-herinnering-24u` — 24u voor afspraak
+6. `afspraak-herinnering-1u` — 1u voor (digitale) afspraak
+7. `afspraak-gewijzigd` — Verzet
+8. `afspraak-geannuleerd` — Geannuleerd
+9. `afspraak-no-show-followup` — Klant niet verschenen
 
-## 2. Verplichte popup bij Verloren
+**Demo / Trial (al deels: `affiliate-trial-opvolging`)**
+10. `demo-uitnodiging` — Demo-link + agenda
+11. `demo-herinnering` — Dag van de demo
+12. `demo-followup` — Na demo: samenvatting + CTA
+13. `trial-gestart` — Trial-account klaar, inloggegevens
+14. `trial-halverwege` — Tips + check-in
+15. `trial-verloopt-binnenkort` — 3 dagen voor einde
+16. `trial-verlopen` — Conversie-CTA
 
-Nieuwe component `VerlorenRedenDialog.tsx`:
-- Velden: categorie (Select, verplicht), reden (Textarea ≥ 10 tekens, verplicht).
-- Wordt geopend op alle plekken waar status naar `verloren` gaat:
-  - `LeadDetailBody` (Select Status → verloren).
-  - `AffiliatePipeline` drag-and-drop naar Verloren-kolom.
-  - `AffiliateBellen` uitkomst "Niet interessant" (vervangt de huidige inline-notitie-check).
-  - `UitkomstSoundboard` "Niet interessant".
-- Bij opslaan: `update({ status: "verloren", verloren_reden, verloren_categorie })` + entry in `affiliate_lead_contactmomenten`.
-- Annuleren = status blijft ongewijzigd.
+**Offerte / Commercieel**
+17. `offerte-verstuurd` — Persoonlijke begeleidingsmail bij offerte
+18. `offerte-herinnering` — Nog geen reactie
+19. `offerte-laatste-herinnering` — Final nudge
 
-## 3. Lost Leads Review-pagina
+**Opvolging / Nurture (al deels: `affiliate-opvolg-herinnering`)**
+20. `terugbel-bevestiging` — Bevestiging terugbel-afspraak
+21. `algemene-followup` — Generieke check-in
+22. `lang-niet-gesproken` — 3/6 maanden re-engagement
+23. `verloren-afscheid` — Vriendelijke afsluiter bij verloren lead
 
-Route: `/affiliate/verloren-review` (en `/admin/affiliate/lost-review` alias).
+**Klant / Post-sale**
+24. `welkom-als-klant` — Eerste mail als klant
+25. `bedankt-voor-aanbeveling` — Referral bedanken
 
-Toegang via `ProtectedRoute`: `allowedRoles=["superadmin"]` OR e-mail = `bas@mijnhuis.nu`. We voegen een kleine helper toe (`useIsLostReviewAdmin`) die zowel rol als e-mail checkt.
+Totaal: 25 templates. Allemaal aanpasbaar door affiliate; vallen terug op platform-defaults.
 
-Layout:
-- **Header** met counts per bucket.
-- **Kanban met 5 kolommen**: `Te beoordelen`, `Terugbellen`, `Wacht 3 mnd`, `Wacht 6 mnd`, `Echt verloren`.
-- Lead-kaarten tonen: bedrijfsnaam, affiliate-eigenaar, verloren_op, categorie, reden (kort), waarde.
-- Drag-and-drop verplaatst lead tussen buckets → update `review_bucket` + zet `terug_in_pipeline_op` automatisch (3/6 mnd vanaf nu, of NULL voor echt_verloren).
-- Klik op kaart → opent volledige LeadDetail in drawer/modal.
-- Filters: affiliate-eigenaar, categorie, datumrange.
+## 2. Data-model
 
-## 4. Automatische herinneringen (lichte uitbreiding)
-De bestaande `affiliate-opvolg-cron` krijgt een extra check: leads met `review_bucket IN (terugbellen, wacht_3_maanden, wacht_6_maanden)` en `terug_in_pipeline_op <= today` → status terug op `nieuw`, `review_bucket` op `te_beoordelen`, notificatie naar affiliate-eigenaar.
+Nieuwe tabel `affiliate_email_templates`:
+- `id`, `user_id` (affiliate-eigenaar), `partner_id`
+- `template_key` (enum-string uit bovenstaande lijst)
+- `onderwerp`, `body_html`, `afzender_naam`
+- `actief` (boolean — anders fallback naar default)
+- `updated_at`, `created_at`
+- Unique (`user_id`, `template_key`)
+- RLS: affiliate ziet/edit eigen rijen; superadmin alles
 
-## Technische details
+Default content komt uit een nieuwe registry `supabase/functions/_shared/affiliate-templates/registry.ts` met per `template_key`: `displayName`, `categorie`, `beschrijving`, `variabelen[]`, `defaultOnderwerp`, `defaultBodyHtml`, `previewData`.
+
+## 3. Backend
+
+- Migration: tabel + RLS + GRANT.
+- Edge Function `affiliate-send-template`: input `{ template_key, lead_id?, klant_id?, extra_data? }`, haalt custom template óf default op, rendert variabelen, verstuurt via bestaande `sendUserEmail` (vanuit eigen postvak van affiliate), logt in `email_log`/`email_berichten`.
+- Edge Function `affiliate-email-template-preview`: rendert template met `previewData` voor UI-preview (geen send).
+- Refactor bestaande affiliate-mailtriggers (`affiliate-afspraak-notify`, `affiliate-opvolg-cron`) zodat ze via `affiliate-send-template` lopen met de juiste `template_key` → één pad, één override-mechanisme.
+- Variabelen-systeem: hergebruik `_shared/render-template.ts` (`{{lead.voornaam}}`, `{{afspraak.datum_lang}}`, `{{affiliate.naam}}`, `{{affiliate.bedrijf}}`, `{{platform.url}}`, etc.).
+
+## 4. UI — Instellingen affiliate
+
+Nieuwe route `/affiliates/instellingen/mailtemplates`:
 
 ```text
-affiliate_leads
-  ├ status: verloren  ──trigger──▶  verloren_op = now()
-  ├ verloren_categorie  ── verplicht via dialog
-  ├ verloren_reden      ── verplicht via dialog
-  ├ review_bucket       ── default te_beoordelen
-  └ terug_in_pipeline_op
+┌─ E-mailtemplates ─────────────────────────────┐
+│  [Categorie-tabs: Leads | Afspraken | Demo/   │
+│   Trial | Offerte | Opvolging | Klant]        │
+│                                               │
+│  ┌─ Template-kaart ──────────────────────┐    │
+│  │ ● Afspraak bevestiging                │    │
+│  │   Verstuurd bij: nieuwe afspraak      │    │
+│  │   Status: Aangepast / Standaard       │    │
+│  │   [Bewerken] [Preview] [Test sturen]  │    │
+│  └───────────────────────────────────────┘    │
+│  ...                                          │
+└───────────────────────────────────────────────┘
 ```
 
-```text
-/affiliate/verloren-review (alleen bas + superadmin)
- ┌───────────────┬─────────────┬─────────────┬─────────────┬───────────────┐
- │ Te beoordelen │ Terugbellen │ Wacht 3 mnd │ Wacht 6 mnd │ Echt verloren │
- └───────────────┴─────────────┴─────────────┴─────────────┴───────────────┘
-```
+Editor-drawer:
+- Onderwerp (input) + body (Tiptap rich text, zelfde stack als offertes)
+- Variabelen-chips klikbaar invoegbaar
+- Live preview-paneel (rendert met previewData)
+- Knop "Test naar mij sturen" → verstuurt naar eigen e-mail
+- Knop "Herstel standaard"
+- Opslaan = upsert in `affiliate_email_templates`
 
-## Bestanden
+Componenten (allemaal <800 regels, gesplitst):
+- `pages/affiliate/instellingen/Mailtemplates/index.tsx`
+- `pages/affiliate/instellingen/Mailtemplates/TemplateLijst.tsx`
+- `pages/affiliate/instellingen/Mailtemplates/TemplateKaart.tsx`
+- `pages/affiliate/instellingen/Mailtemplates/TemplateEditor.tsx`
+- `pages/affiliate/instellingen/Mailtemplates/TemplatePreview.tsx`
+- `pages/affiliate/instellingen/Mailtemplates/VariabelenPicker.tsx`
+- `hooks/affiliate/useAffiliateEmailTemplates.ts` (TanStack Query)
+- `hooks/affiliate/useSendTestTemplate.ts`
 
-Nieuw:
-- `supabase/migrations/…_lost_review.sql`
-- `src/components/affiliate/VerlorenRedenDialog.tsx`
-- `src/pages/affiliate/LostReview/index.tsx`
-- `src/pages/affiliate/LostReview/ReviewKolom.tsx`
-- `src/pages/affiliate/LostReview/ReviewKaart.tsx`
-- `src/hooks/affiliate/useLostReview.ts`
-- `src/hooks/affiliate/useIsLostReviewAdmin.ts`
+Menu-entry in `AffiliateSubnav.tsx` onder "Instellingen".
 
-Aangepast:
-- `src/lib/affiliate/leadStatus.ts` (categorie-enums export).
-- `src/components/affiliate/LeadDetailBody.tsx` (popup-trigger).
-- `src/components/affiliate/UitkomstSoundboard.tsx` (popup-trigger).
-- `src/pages/affiliate/AffiliateBellen.tsx` (popup-trigger).
-- `src/pages/affiliate/AffiliatePipeline.tsx` (popup bij drop op Verloren).
-- `src/App.tsx` (route).
-- `src/components/affiliate/AffiliateSubnav.tsx` (link "Verloren review", alleen voor admins).
-- `supabase/functions/affiliate-opvolg-cron/index.ts` (terug-in-pipeline check).
+## 5. Huisstijl mijnhuis.nu
 
-## Vraag
-Akkoord met deze opzet, of wil je de bucket-namen / categorieën aanpassen?
+Hergebruik bestaande `wrapInMijnhuisTemplate` (paars `#6d28d9` → `#8b5cf6` gradient header, witte body, voet met disclaimer-link). Alle default-bodies herschreven:
+- Strak, zakelijk, Nederlands, kort
+- Geen emoji's, geen uitroeptekens
+- CTA-button consistent: paarse pill, 14px, "Bekijk offerte" / "Plan demo in"
+- Footer met afzender-naam + handtekening-blok
+- AI-disclaimer waar van toepassing (memory-regel)
+
+## 6. Testen (grondig en functioneel)
+
+**Unit (Vitest)**
+- `render-template`: variabele-substitutie, ontbrekende keys → leeg
+- Template-registry: alle 25 keys hebben `defaultOnderwerp` + `defaultBodyHtml` + `previewData`
+- Fallback-logica: geen custom row → default; `actief=false` → default
+
+**Edge function tests**
+- `affiliate-send-template`: ongeldige key → 400; geen mailbox gekoppeld → 400 met duidelijke melding; succesvolle send logt rij in `email_berichten` + `email_log`
+
+**E2E (Playwright)**
+- Login als affiliate → naar `/affiliates/instellingen/mailtemplates` → categorie wisselen → template openen → wijzigen → opslaan → preview update → test-mail versturen → toast "Test verzonden"
+- Een trigger-flow simuleren (nieuwe afspraak aanmaken) en in `email_log` verifiëren dat de aangepaste template is gebruikt
+- Reset-naar-default werkt
+- RLS: andere affiliate ziet eigen rij niet (db-test via service-role check)
+
+**Visuele check**
+- Screenshot van gerenderde HTML per template via Playwright, handmatige review op huisstijl
+
+## 7. Bestanden (overzicht)
+
+**Nieuw**
+- `supabase/migrations/<ts>_affiliate_email_templates.sql`
+- `supabase/functions/_shared/affiliate-templates/registry.ts`
+- `supabase/functions/_shared/affiliate-templates/defaults/*.ts` (25 default bodies)
+- `supabase/functions/affiliate-send-template/index.ts`
+- `supabase/functions/affiliate-email-template-preview/index.ts`
+- `src/pages/affiliate/instellingen/Mailtemplates/` (6 bestanden)
+- `src/hooks/affiliate/useAffiliateEmailTemplates.ts`
+- `src/hooks/affiliate/useSendTestTemplate.ts`
+- `tests/affiliate-mailtemplates.spec.ts`
+
+**Edits**
+- `src/components/affiliate/AffiliateSubnav.tsx` (menu-entry)
+- `src/App.tsx` (route)
+- `supabase/functions/affiliate-afspraak-notify/index.ts` (via send-template)
+- `supabase/functions/affiliate-opvolg-cron/index.ts` (via send-template)
+- `src/integrations/supabase/types.ts` (auto)
+
+## Vragen voor jou
+1. Akkoord met de 25 templates hierboven, of wil je nog categorieën toevoegen/schrappen (bv. WhatsApp-notificaties, SMS)?
+2. Mag elke affiliate elk template aanpassen, of wil je dat een partner_admin er ook nog overheen kan met partner-defaults (3-laagse fallback: affiliate → partner → platform)?
+3. Moet ik óók de bestaande affiliate triggers (`affiliate-afspraak-notify`, `affiliate-opvolg-cron`) meteen omzetten naar dit nieuwe pad, of pas in een volgende stap?

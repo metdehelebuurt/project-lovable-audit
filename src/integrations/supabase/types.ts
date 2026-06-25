@@ -487,6 +487,60 @@ export type Database = {
           },
         ]
       }
+      affiliate_email_templates: {
+        Row: {
+          actief: boolean
+          afzender_naam: string | null
+          body_html: string
+          created_at: string
+          id: string
+          onderwerp: string
+          partner_id: string | null
+          template_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actief?: boolean
+          afzender_naam?: string | null
+          body_html: string
+          created_at?: string
+          id?: string
+          onderwerp: string
+          partner_id?: string | null
+          template_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actief?: boolean
+          afzender_naam?: string | null
+          body_html?: string
+          created_at?: string
+          id?: string
+          onderwerp?: string
+          partner_id?: string | null
+          template_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_email_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_email_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_instellingen: {
         Row: {
           auto_rotatie_actief: boolean
