@@ -128,7 +128,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { data: counts = {} } = useModuleNotificatieCounts();
 
-  const groepen = getNavigation(profile?.rol).filter((g) => g.items.length > 0);
+  const groepen = getNavigation(profile?.rol, profile?.extra_rollen ?? []).filter((g) => g.items.length > 0);
 
   // Notificaties worden niet langer automatisch op gelezen gezet bij navigatie:
   // dat gebeurt nu via de popover op de badge of bij het openen van het detail.
