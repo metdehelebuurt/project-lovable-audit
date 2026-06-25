@@ -5,13 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useCreateTerugbel } from "@/hooks/affiliate/useTerugbelAfspraken";
 import { useInterneCollegas } from "@/hooks/affiliate/useInterneCollegas";
 import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanAfspraakViaSales } from "@/hooks/sales/useSalesAgenda";
 import { useAffiliatesMetAgenda } from "@/hooks/sales/useAffiliatesMetAgenda";
+import { MailReviewDialog } from "@/components/email/MailReviewDialog";
+import { supabase } from "@/integrations/supabase/client";
+import type { PlanningContextInput } from "@/lib/email/planningContext";
 
 interface Props {
   open: boolean;
@@ -28,7 +30,7 @@ interface Props {
 export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmail, afspraakType = "terugbel", affiliateId, onSaved }: Props) {
   const create = useCreateTerugbel();
   const planViaSales = usePlanAfspraakViaSales();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const canPlanForAffiliate = profile?.rol === "sales_manager" || profile?.rol === "superadmin";
   const { data: collegas = [], isLoading: collegasLoading } = useInterneCollegas();
   const { data: affiliates = [], isLoading: affiliatesLoading } = useAffiliatesMetAgenda();
@@ -43,8 +45,10 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
   const [collegaId, setCollegaId] = useState<string>("");
   const [targetAffiliateId, setTargetAffiliateId] = useState<string>(affiliateId ?? "");
   const [notitie, setNotitie] = useState("");
-  const [stuurBevestiging, setStuurBevestiging] = useState(true);
   const [email, setEmail] = useState(klantEmail ?? "");
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewContext, setReviewContext] = useState<PlanningContextInput | null>(null);
+  const [reviewCollega, setReviewCollega] = useState<{ email: string | null; show: boolean }>({ email: null, show: false });
   const isDemo = afspraakType === "demo";
   const geselecteerdeAffiliateId = targetAffiliateId || affiliateId || "";
   const isSalesProxy = canPlanForAffiliate && !!geselecteerdeAffiliateId;
@@ -69,7 +73,39 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
     if (canPlanForAffiliate && affiliatesLoading) return;
     if (canPlanForAffiliate && !geselecteerdeAffiliateId) return;
     if (!canPlanForAffiliate && !collegaId) return;
-    if (!canPlanForAffiliate && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email)) return;
+
+    // Bouw context voor MailReviewDialog (na opslaan).
+    const buildContext = async (): Promise<PlanningContextInput> => {
+      const { data: lead } = await supabase
+        .from("affiliate_leads")
+        .select("voornaam, achternaam, contactpersoon, bedrijfsnaam, email, telefoon")
+        .eq("id", leadId)
+        .maybeSingle();
+      const affiliateBronId = geselecteerdeAffiliateId || user?.id || null;
+      const { data: affiliate } = affiliateBronId
+        ? await supabase
+            .from("users").select("voornaam, achternaam, email, telefoon")
+            .eq("id", affiliateBronId).maybeSingle()
+        : { data: null };
+      const { data: collega } = collegaId
+        ? await supabase
+            .from("users").select("voornaam, achternaam, email, telefoon")
+            .eq("id", collegaId).maybeSingle()
+        : { data: null };
+      return {
+        lead, affiliate, collega,
+        planner: profile ? {
+          voornaam: profile.voornaam, achternaam: profile.achternaam, email: profile.email,
+        } : null,
+        afspraak: {
+          type: afspraakType,
+          gepland_op: new Date(moment).toISOString(),
+          duur_minuten: isDemo ? 45 : 30,
+          notitie: notitie || null,
+        },
+      };
+    };
+
     if (isSalesProxy) {
       await planViaSales.mutateAsync({
         affiliate_id: geselecteerdeAffiliateId,
@@ -79,7 +115,10 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
         duur_minuten: isDemo ? 45 : 30,
         notitie: notitie || null,
       });
-      setNotitie("");
+      const ctx = await buildContext();
+      setReviewContext(ctx);
+      setReviewCollega({ email: null, show: false });
+      setReviewOpen(true);
       onOpenChange(false);
       onSaved?.();
       return;
@@ -90,10 +129,13 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
       notitie: notitie || null,
       type: afspraakType,
       collega_user_id: collegaId,
-      klant_bevestiging: stuurBevestiging,
-      klant_email: stuurBevestiging ? email.trim() : null,
+      skip_auto_notify: true,
     });
-    setNotitie("");
+    const ctx = await buildContext();
+    setReviewContext(ctx);
+    const colEmail = collegas.find((c) => c.id === collegaId)?.email ?? null;
+    setReviewCollega({ email: colEmail, show: !!colEmail });
+    setReviewOpen(true);
     setCollegaId("");
     onOpenChange(false);
     onSaved?.();
@@ -167,29 +209,9 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
             <Label>Notitie (optioneel)</Label>
             <Textarea rows={3} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder={placeholder} />
           </div>
-          {!isSalesProxy && (
-          <div className="rounded-md border p-3 space-y-2 bg-muted/30">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <Checkbox
-                checked={stuurBevestiging}
-                onCheckedChange={(v) => setStuurBevestiging(!!v)}
-                className="mt-0.5"
-              />
-              <span className="text-sm font-medium">Bevestigingsmail naar klant sturen</span>
-            </label>
-            {stuurBevestiging && (
-              <div className="space-y-1 pl-6">
-                <Label className="text-xs">E-mailadres klant</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="naam@bedrijf.nl"
-                />
-              </div>
-            )}
+          <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+            Na het plannen kun je nog kiezen of je de klant {(!isSalesProxy) ? "en collega" : ""} mailt — je ziet de mail eerst en kunt 'm bewerken.
           </div>
-          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
@@ -200,14 +222,25 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
               !moment ||
               (canPlanForAffiliate && affiliatesLoading) ||
               (canPlanForAffiliate && !geselecteerdeAffiliateId) ||
-              (!canPlanForAffiliate && !collegaId) ||
-              (!canPlanForAffiliate && stuurBevestiging && !/^\S+@\S+\.\S+$/.test(email))
+              (!canPlanForAffiliate && !collegaId)
             }
           >
             Plannen
           </Button>
         </DialogFooter>
       </DialogContent>
+      {reviewContext && (
+        <MailReviewDialog
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          afspraakType={afspraakType}
+          contextInput={reviewContext}
+          toonCollega={reviewCollega.show}
+          klantEmail={email || klantEmail || reviewContext.lead?.email || null}
+          collegaEmail={reviewCollega.email}
+          affiliateLeadId={leadId}
+        />
+      )}
     </Dialog>
   );
 }

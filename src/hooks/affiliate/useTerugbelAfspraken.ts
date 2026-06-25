@@ -12,6 +12,9 @@ type Insert = InsertBase & {
   klant_bevestiging?: boolean;
   /** Overschrijving van het e-mailadres waar de klantbevestiging naartoe moet. */
   klant_email?: string | null;
+  /** Sla de automatische transactionele bevestigingsmail over — de
+   *  UI stuurt zelf via MailReviewDialog. */
+  skip_auto_notify?: boolean;
 };
 
 const KEY = ["affiliate-terugbel"] as const;
@@ -64,7 +67,7 @@ export function useCreateTerugbel() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (input: Omit<Insert, "affiliate_id">) => {
-      const { klant_bevestiging, klant_email, ...insertInput } = input;
+      const { klant_bevestiging, klant_email, skip_auto_notify, ...insertInput } = input;
       const { data, error } = await supabase
         .from("affiliate_terugbel_afspraken")
         .insert({ ...insertInput, affiliate_id: user!.id } as InsertBase)
@@ -80,6 +83,8 @@ export function useCreateTerugbel() {
           .eq("id", input.lead_id);
       }
       // Verstuur bevestigingsmails (klant + collega). Niet blokkerend.
+      // Wordt overgeslagen als de UI zelf via MailReviewDialog mailt.
+      if (skip_auto_notify) return data;
       try {
         const { error: mailErr } = await supabase.functions.invoke("affiliate-afspraak-notify", {
           body: {
