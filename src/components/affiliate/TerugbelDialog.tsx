@@ -78,7 +78,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
     const buildContext = async (): Promise<PlanningContextInput> => {
       const { data: lead } = await supabase
         .from("affiliate_leads")
-        .select("voornaam, achternaam, contactpersoon, bedrijfsnaam, email, telefoon")
+        .select("contactpersoon, bedrijfsnaam, email, telefoon")
         .eq("id", leadId)
         .maybeSingle();
       const affiliateBronId = geselecteerdeAffiliateId || user?.id || null;
