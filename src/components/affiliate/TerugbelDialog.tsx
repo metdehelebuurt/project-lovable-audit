@@ -28,7 +28,7 @@ interface Props {
 export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmail, afspraakType = "terugbel", affiliateId, onSaved }: Props) {
   const create = useCreateTerugbel();
   const planViaSales = usePlanAfspraakViaSales();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const canPlanForAffiliate = profile?.rol === "sales_manager" || profile?.rol === "superadmin";
   const { data: collegas = [], isLoading: collegasLoading } = useInterneCollegas();
   const { data: affiliates = [], isLoading: affiliatesLoading } = useAffiliatesMetAgenda();
