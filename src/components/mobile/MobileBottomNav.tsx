@@ -22,6 +22,7 @@ const TOP_ITEMS_PER_ROL: Record<AppRole, string[]> = {
   installateur: ["vandaag", "installaties", "planning", "voorraad"],
   consument: ["mijn-woning", "offertes", "schouwen", "planning"],
   affiliate: ["vandaag", "affiliate-links", "offertes", "feedback"],
+  sales_manager: ["vandaag", "affiliate-pipeline", "affiliate-pool", "affiliate-analytics"],
 };
 
 function selecteerTopItems(rol: AppRole | undefined | null): NavigatieItem[] {
