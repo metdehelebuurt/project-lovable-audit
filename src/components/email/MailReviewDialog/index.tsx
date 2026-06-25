@@ -99,7 +99,7 @@ export function MailReviewDialog(props: MailReviewDialogProps) {
         senderName: afzenderNaam,
         senderEmail: user?.email ?? null,
         senderTelefoon: contextInput.affiliate?.telefoon ?? null,
-        bedrijf: contextInput.affiliate?.bedrijf ?? null,
+        bedrijf: contextInput.affiliate?.bedrijfsnaam ?? null,
       });
       try {
         await send.mutateAsync({
