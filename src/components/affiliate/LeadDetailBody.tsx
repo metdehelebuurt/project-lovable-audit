@@ -130,155 +130,275 @@ export function LeadDetailBody({ lead }: Props) {
   };
 
   return (
-    <div className="space-y-5">
-      {/* Header chips: status, temperatuur, bron, AI-score, trial */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge className={STATUS_KLEUR[status]}>{STATUS_LABEL[status]}</Badge>
-        {lead.temperatuur && (
-          <Badge variant="outline" className={TEMP_KLEUR[lead.temperatuur] ?? ""}>
-            <Flame className="h-3 w-3 mr-1" /> {lead.temperatuur}
-          </Badge>
-        )}
-        {bronLabel && (
-          <Badge variant="outline" className="bg-muted/40">
-            <Tag className="h-3 w-3 mr-1" /> {bronLabel}
-          </Badge>
-        )}
-        {typeof lead.ai_score === "number" && (
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/30">
-            <Star className="h-3 w-3 mr-1" /> AI {lead.ai_score}/100
-          </Badge>
-        )}
-        {lead.contactpersoon && <Badge variant="outline">{lead.contactpersoon}</Badge>}
-        {gewonnenPartnerId && <TrialStatusBadge trialEinddatum={partnerInfo?.trial_einddatum ?? null} />}
-      </div>
-
-      {/* Trial CTA */}
-      {!gewonnenPartnerId && (
-        <div className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5 p-4 flex items-center justify-between gap-3">
-          <div className="text-sm">
-            <p className="font-semibold flex items-center gap-2"><Rocket className="h-4 w-4 text-primary" /> Klaar om te starten?</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Start direct een 30-daagse trial op naam van deze klant. Jij wordt automatisch gekoppeld als affiliate.</p>
-          </div>
-          <TrialStartenButton lead={lead} size="sm" />
-        </div>
-      )}
-
-      {/* Quick contact + actions */}
-      <div className="flex flex-wrap gap-2">
-        {tel && <Button asChild size="sm" variant="outline"><a href={tel}><Phone className="h-4 w-4 mr-1" />{lead.telefoon}</a></Button>}
-        {wa && <Button asChild size="sm" variant="outline" className="text-emerald-700 border-emerald-300"><a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</a></Button>}
-        {lead.email && <Button asChild size="sm" variant="outline"><a href={`mailto:${lead.email}`}><Mail className="h-4 w-4 mr-1" />{lead.email}</a></Button>}
-        {lead.website && <Button asChild size="sm" variant="outline"><a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer"><Globe className="h-4 w-4 mr-1" />Website</a></Button>}
-        <Button size="sm" variant="outline" onClick={() => setOpenTerugbel(true)}><CalendarPlus className="h-4 w-4 mr-1" /> Terugbel plannen</Button>
-        <Button size="sm" variant="outline" onClick={() => setOpenDemo(true)}><Presentation className="h-4 w-4 mr-1" /> Demo inplannen</Button>
-        <Button size="sm" variant="outline" onClick={() => setOpenOrder(true)} disabled={!lead.email}><FileCheck2 className="h-4 w-4 mr-1" /> Orderbevestiging sturen</Button>
-        <Button size="sm" variant="outline" onClick={() => setOpenVerrijk(true)} className="text-primary border-primary/40 hover:bg-primary/10">
-          <Sparkles className="h-4 w-4 mr-1" /> Verrijken met AI
-        </Button>
-      </div>
-
-      {/* Bedrijfsgegevens + Sales kerngegevens */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border bg-card p-4 space-y-2">
-          <h3 className="text-sm font-semibold flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /> Bedrijfsgegevens</h3>
-          <dl className="text-sm space-y-1.5">
-            <Rij icon={<Briefcase className="h-3.5 w-3.5" />} label="Branche" value={lead.branche} />
-            <Rij icon={<MapPin className="h-3.5 w-3.5" />} label="Regio" value={lead.regio} />
-            {adresRegels.length > 0 && (
-              <div className="flex gap-2">
-                <MapPin className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                <div>
-                  <dt className="text-xs text-muted-foreground">Adres</dt>
-                  <dd>{adresRegels.map((r, i) => <div key={i}>{r}</div>)}</dd>
-                </div>
-              </div>
+    <div className="space-y-4">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-20 -mx-4 px-4 py-3 bg-background/85 backdrop-blur border-b">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <Badge className={STATUS_KLEUR[status]}>{STATUS_LABEL[status]}</Badge>
+            {lead.temperatuur && (
+              <Badge variant="outline" className={TEMP_KLEUR[lead.temperatuur] ?? ""}>
+                <Flame className="h-3 w-3 mr-1" /> {lead.temperatuur}
+              </Badge>
             )}
-            <Rij icon={<Tag className="h-3.5 w-3.5" />} label="Bron" value={bronLabel} />
-          </dl>
-          {lead.ai_bedrijf_samenvatting && (
-            <p className="text-xs text-muted-foreground border-t pt-2 mt-2 italic">
-              <Sparkles className="h-3 w-3 inline mr-1 text-primary" />
-              {lead.ai_bedrijf_samenvatting}
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-lg border bg-card p-4 space-y-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2"><Star className="h-4 w-4 text-muted-foreground" /> Sales kerngegevens</h3>
-          <div>
-            <Label className="text-xs">Status</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as AffiliateLeadStatus)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {STATUS_VOLGORDE.map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {bronLabel && (
+              <Badge variant="outline" className="bg-muted/40">
+                <Tag className="h-3 w-3 mr-1" /> {bronLabel}
+              </Badge>
+            )}
+            {typeof lead.ai_score === "number" && (
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/30">
+                <Star className="h-3 w-3 mr-1" /> AI {lead.ai_score}/100
+              </Badge>
+            )}
+            {lead.contactpersoon && <Badge variant="outline">{lead.contactpersoon}</Badge>}
+            {gewonnenPartnerId && <TrialStatusBadge trialEinddatum={partnerInfo?.trial_einddatum ?? null} />}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2">
+            {tel && (
+              <Button asChild size="sm" variant="outline">
+                <a href={tel}><Phone className="h-4 w-4 mr-1" />Bel</a>
+              </Button>
+            )}
+            {wa && (
+              <Button asChild size="sm" variant="outline" className="text-emerald-700 border-emerald-300">
+                <a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</a>
+              </Button>
+            )}
+            {lead.email && (
+              <Button asChild size="sm" variant="outline">
+                <a href={`mailto:${lead.email}`}><Mail className="h-4 w-4 mr-1" />Mail</a>
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline"><MoreHorizontal className="h-4 w-4 mr-1" /> Acties</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setOpenTerugbel(true)}>
+                  <CalendarPlus className="h-4 w-4 mr-2" /> Terugbel plannen
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOpenDemo(true)}>
+                  <Presentation className="h-4 w-4 mr-2" /> Demo inplannen
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOpenOrder(true)} disabled={!lead.email}>
+                  <FileCheck2 className="h-4 w-4 mr-2" /> Orderbevestiging sturen
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOpenVerrijk(true)} className="text-primary">
+                  <Sparkles className="h-4 w-4 mr-2" /> Verrijken met AI
+                </DropdownMenuItem>
+                {lead.website && (
+                  <DropdownMenuItem asChild>
+                    <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer">
+                      <Globe className="h-4 w-4 mr-2" /> Website openen
+                    </a>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {!gewonnenPartnerId && <TrialStartenButton lead={lead} size="sm" />}
+          </div>
+        </div>
+      </div>
+
+      {/* 2-koloms workspace */}
+      <div className="grid gap-5 lg:grid-cols-[360px,1fr]">
+        {/* LINKERPANEEL */}
+        <aside className="space-y-4 lg:sticky lg:top-[88px] lg:self-start">
+          {/* Sales kerngegevens */}
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Star className="h-4 w-4 text-muted-foreground" /> Sales kerngegevens
+            </h3>
             <div>
-              <Label className="text-xs">Temperatuur</Label>
-              <Select value={temperatuur} onValueChange={setTemperatuur}>
+              <Label className="text-xs">Status</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as AffiliateLeadStatus)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {TEMP_OPTIES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  {STATUS_VOLGORDE.map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-xs">Waarde (€)</Label>
-              <Input type="number" value={waarde} onChange={(e) => setWaarde(e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs flex items-center gap-1"><CalendarClock className="h-3 w-3" /> Volgende actie</Label>
-            <Input type="date" value={volgendeActie} onChange={(e) => setVolgendeActie(e.target.value)} />
-          </div>
-          <Button onClick={opslaan} disabled={update.isPending} className="w-full" size="sm">
-            <Save className="h-4 w-4 mr-2" /> Opslaan
-          </Button>
-        </div>
-      </div>
-
-      <div>
-        <Label>Notities</Label>
-        <Textarea rows={3} value={notitie} onChange={(e) => setNotitie(e.target.value)} onBlur={opslaan} placeholder="Korte interne notities — automatisch opgeslagen na verlaten van veld" />
-      </div>
-
-      <AiOpvolgKaart lead={lead} />
-
-      <div className="border-t pt-4">
-        <OpvolgLogLijst leadId={lead.id} />
-      </div>
-
-      <div className="border-t pt-4 space-y-2">
-        <Label className="flex items-center gap-2"><MessageSquarePlus className="h-4 w-4" /> Gespreksnotitie loggen</Label>
-        <Textarea rows={2} value={contactNotitie} onChange={(e) => setContactNotitie(e.target.value)} placeholder="Wat besproken, vervolgactie..." />
-        <Button size="sm" onClick={logGesprek} disabled={!contactNotitie.trim() || log.isPending}>Loggen</Button>
-      </div>
-
-      {history.length > 0 && (
-        <div className="space-y-2">
-          <Label>Geschiedenis</Label>
-          {history.map((h) => (
-            <div key={h.id} className="text-sm border rounded-md p-2 bg-muted/30">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{h.type} {h.uitkomst ? `· ${h.uitkomst}` : ""}</span>
-                <span>{new Date(h.created_at).toLocaleString("nl-NL")}</span>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Temperatuur</Label>
+                <Select value={temperatuur} onValueChange={setTemperatuur}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TEMP_OPTIES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              {h.notitie && <p className="mt-1 whitespace-pre-wrap">{h.notitie}</p>}
+              <div>
+                <Label className="text-xs">Waarde (€)</Label>
+                <Input type="number" value={waarde} onChange={(e) => setWaarde(e.target.value)} />
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div>
+              <Label className="text-xs flex items-center gap-1"><CalendarClock className="h-3 w-3" /> Volgende actie</Label>
+              <Input type="date" value={volgendeActie} onChange={(e) => setVolgendeActie(e.target.value)} />
+            </div>
+            <Button onClick={opslaan} disabled={update.isPending} className="w-full" size="sm">
+              <Save className="h-4 w-4 mr-2" /> Opslaan
+            </Button>
+          </div>
 
-      <div className="border-t pt-4 space-y-2">
-        <Label>E-mails</Label>
-        <p className="text-xs text-muted-foreground">
-          In- en uitgaande mails vanuit jouw gekoppelde Gmail/Outlook worden hier automatisch getoond.
-        </p>
-        <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
+          {/* Contact */}
+          <div className="rounded-lg border bg-card p-4 space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" /> Contact
+            </h3>
+            <dl className="text-sm space-y-1.5">
+              <Rij icon={<Phone className="h-3.5 w-3.5" />} label="Telefoon" value={lead.telefoon} />
+              <Rij icon={<Mail className="h-3.5 w-3.5" />} label="E-mail" value={lead.email} />
+              <Rij icon={<Globe className="h-3.5 w-3.5" />} label="Website" value={lead.website} />
+            </dl>
+          </div>
+
+          {/* Bedrijfsgegevens */}
+          <div className="rounded-lg border bg-card p-4 space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" /> Bedrijfsgegevens
+            </h3>
+            <dl className="text-sm space-y-1.5">
+              <Rij icon={<Briefcase className="h-3.5 w-3.5" />} label="Branche" value={lead.branche} />
+              <Rij icon={<MapPin className="h-3.5 w-3.5" />} label="Regio" value={lead.regio} />
+              {adresRegels.length > 0 && (
+                <div className="flex gap-2">
+                  <MapPin className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Adres</dt>
+                    <dd>{adresRegels.map((r, i) => <div key={i}>{r}</div>)}</dd>
+                  </div>
+                </div>
+              )}
+              <Rij icon={<Tag className="h-3.5 w-3.5" />} label="Bron" value={bronLabel} />
+            </dl>
+            {lead.ai_bedrijf_samenvatting && (
+              <p className="text-xs text-muted-foreground border-t pt-2 mt-2 italic">
+                <Sparkles className="h-3 w-3 inline mr-1 text-primary" />
+                {lead.ai_bedrijf_samenvatting}
+              </p>
+            )}
+          </div>
+
+          {/* Trial CTA als nog niet gestart */}
+          {!gewonnenPartnerId && (
+            <div className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-4 space-y-2">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <Rocket className="h-4 w-4 text-primary" /> Klaar om te starten?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Start een 30-daagse trial op naam van deze klant. Jij wordt automatisch gekoppeld als affiliate.
+              </p>
+              <TrialStartenButton lead={lead} size="sm" />
+            </div>
+          )}
+        </aside>
+
+        {/* RECHTERPANEEL — TABS */}
+        <section>
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
+              <TabsTrigger value="overzicht" className="text-xs sm:text-sm">
+                <ListChecks className="h-3.5 w-3.5 mr-1.5" /> Overzicht
+              </TabsTrigger>
+              <TabsTrigger value="activiteit" className="text-xs sm:text-sm">
+                <Activity className="h-3.5 w-3.5 mr-1.5" /> Activiteit
+              </TabsTrigger>
+              <TabsTrigger value="email" className="text-xs sm:text-sm">
+                <Mail className="h-3.5 w-3.5 mr-1.5" /> E-mail
+              </TabsTrigger>
+              <TabsTrigger value="notities" className="text-xs sm:text-sm">
+                <StickyNote className="h-3.5 w-3.5 mr-1.5" /> Notities
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="text-xs sm:text-sm">
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> AI
+              </TabsTrigger>
+              <TabsTrigger value="historie" className="text-xs sm:text-sm">
+                <History className="h-3.5 w-3.5 mr-1.5" /> Historie
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overzicht" className="mt-4 space-y-4">
+              <AiOpvolgKaart lead={lead} />
+              <div className="rounded-lg border bg-card p-4">
+                <OpvolgLogLijst leadId={lead.id} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="activiteit" className="mt-4 space-y-4">
+              <div className="rounded-lg border bg-card p-4 space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MessageSquarePlus className="h-4 w-4" /> Gespreksnotitie loggen
+                </Label>
+                <Textarea rows={3} value={contactNotitie} onChange={(e) => setContactNotitie(e.target.value)} placeholder="Wat besproken, vervolgactie..." />
+                <Button size="sm" onClick={logGesprek} disabled={!contactNotitie.trim() || log.isPending}>
+                  Loggen
+                </Button>
+              </div>
+              {history.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">Nog geen contactmomenten gelogd.</p>
+              ) : (
+                <div className="space-y-2">
+                  {history.map((h) => (
+                    <div key={h.id} className="text-sm border rounded-md p-3 bg-muted/30">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{h.type} {h.uitkomst ? `· ${h.uitkomst}` : ""}</span>
+                        <span>{new Date(h.created_at).toLocaleString("nl-NL")}</span>
+                      </div>
+                      {h.notitie && <p className="mt-1 whitespace-pre-wrap">{h.notitie}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="email" className="mt-4 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                In- en uitgaande mails vanuit jouw gekoppelde Gmail/Outlook worden hier automatisch getoond.
+              </p>
+              <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
+            </TabsContent>
+
+            <TabsContent value="notities" className="mt-4">
+              <div className="rounded-lg border bg-card p-4 space-y-2">
+                <Label>Interne notities</Label>
+                <Textarea
+                  rows={14}
+                  value={notitie}
+                  onChange={(e) => setNotitie(e.target.value)}
+                  onBlur={opslaan}
+                  placeholder="Korte interne notities — automatisch opgeslagen na verlaten van veld"
+                />
+                <p className="text-xs text-muted-foreground">Wordt automatisch opgeslagen.</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="ai" className="mt-4 space-y-4">
+              <AiOpvolgKaart lead={lead} />
+              {lead.ai_bedrijf_samenvatting && (
+                <div className="rounded-lg border bg-card p-4">
+                  <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-primary" /> AI-bedrijfssamenvatting
+                  </h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lead.ai_bedrijf_samenvatting}</p>
+                </div>
+              )}
+              <Button variant="outline" onClick={() => setOpenVerrijk(true)} className="w-full">
+                <Sparkles className="h-4 w-4 mr-2" /> Verrijk lead opnieuw met AI
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="historie" className="mt-4">
+              <div className="rounded-lg border bg-card p-4">
+                <OpvolgLogLijst leadId={lead.id} />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </section>
       </div>
+
       <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={lead.id} leadNaam={lead.bedrijfsnaam} klantEmail={lead.email} />
       <TerugbelDialog open={openDemo} onOpenChange={setOpenDemo} leadId={lead.id} leadNaam={lead.bedrijfsnaam} klantEmail={lead.email} afspraakType="demo" />
       <VerrijkLeadDialog open={openVerrijk} onOpenChange={setOpenVerrijk} lead={lead} />
