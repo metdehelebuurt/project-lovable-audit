@@ -6,12 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import {
   Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus,
   Presentation, FileCheck2, Sparkles, MapPin, Building2, Briefcase, Flame,
-  Star, Rocket, Tag, CalendarClock, MoreHorizontal, ListChecks, Activity, History, StickyNote,
+  Star, Rocket, Tag, CalendarClock, ListChecks, Activity, History, StickyNote, Wand2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { STATUS_LABEL, STATUS_VOLGORDE, STATUS_KLEUR, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
@@ -161,7 +158,7 @@ export function LeadDetailBody({ lead }: Props) {
             {lead.contactpersoon && <Badge variant="outline">{lead.contactpersoon}</Badge>}
             {gewonnenPartnerId && <TrialStatusBadge trialEinddatum={partnerInfo?.trial_einddatum ?? null} />}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 justify-end">
             {tel && (
               <Button asChild size="sm" variant="outline">
                 <a href={tel}><Phone className="h-4 w-4 mr-1" />Bel</a>
@@ -177,32 +174,28 @@ export function LeadDetailBody({ lead }: Props) {
                 <a href={`mailto:${lead.email}`}><Mail className="h-4 w-4 mr-1" />Mail</a>
               </Button>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline"><MoreHorizontal className="h-4 w-4 mr-1" /> Acties</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => setOpenTerugbel(true)}>
-                  <CalendarPlus className="h-4 w-4 mr-2" /> Terugbel plannen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOpenDemo(true)}>
-                  <Presentation className="h-4 w-4 mr-2" /> Demo inplannen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOpenOrder(true)} disabled={!lead.email}>
-                  <FileCheck2 className="h-4 w-4 mr-2" /> Orderbevestiging sturen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOpenVerrijk(true)} className="text-primary">
-                  <Sparkles className="h-4 w-4 mr-2" /> Verrijken met AI
-                </DropdownMenuItem>
-                {lead.website && (
-                  <DropdownMenuItem asChild>
-                    <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer">
-                      <Globe className="h-4 w-4 mr-2" /> Website openen
-                    </a>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button size="sm" variant="outline" onClick={() => setOpenTerugbel(true)}>
+              <CalendarPlus className="h-4 w-4 mr-1" /> Terugbel
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setOpenDemo(true)}>
+              <Presentation className="h-4 w-4 mr-1" /> Demo
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setOpenOrder(true)} disabled={!lead.email}>
+              <FileCheck2 className="h-4 w-4 mr-1" /> Order
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setTab("opvolging")} className="text-primary border-primary/40 hover:bg-primary/5">
+              <Wand2 className="h-4 w-4 mr-1" /> AI-opvolging
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setOpenVerrijk(true)} className="text-primary border-primary/40 hover:bg-primary/5">
+              <Sparkles className="h-4 w-4 mr-1" /> Verrijken
+            </Button>
+            {lead.website && (
+              <Button asChild size="sm" variant="outline">
+                <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer">
+                  <Globe className="h-4 w-4 mr-1" /> Website
+                </a>
+              </Button>
+            )}
             {!gewonnenPartnerId && <TrialStartenButton lead={lead} size="sm" />}
           </div>
         </div>
@@ -319,8 +312,8 @@ export function LeadDetailBody({ lead }: Props) {
               <TabsTrigger value="notities" className="text-xs sm:text-sm">
                 <StickyNote className="h-3.5 w-3.5 mr-1.5" /> Notities
               </TabsTrigger>
-              <TabsTrigger value="ai" className="text-xs sm:text-sm">
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> AI
+              <TabsTrigger value="opvolging" className="text-xs sm:text-sm">
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Opvolging
               </TabsTrigger>
               <TabsTrigger value="historie" className="text-xs sm:text-sm">
                 <History className="h-3.5 w-3.5 mr-1.5" /> Historie
@@ -382,7 +375,7 @@ export function LeadDetailBody({ lead }: Props) {
               </div>
             </TabsContent>
 
-            <TabsContent value="ai" className="mt-4 space-y-4">
+            <TabsContent value="opvolging" className="mt-4 space-y-4">
               <AiOpvolgKaart lead={lead} />
               {lead.ai_bedrijf_samenvatting && (
                 <div className="rounded-lg border bg-card p-4">
