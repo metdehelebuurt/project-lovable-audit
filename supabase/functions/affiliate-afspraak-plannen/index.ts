@@ -188,17 +188,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Audit-log: wie heeft welke afspraak gepland, en wat is het Google-resultaat?
+    await admin.from("audit_log").insert({
+      partner_id: aff.partner_id ?? null,
+      actor_id: callerId,
+      target_user_id: aff.id,
+      actie: body.type === "demo"
+        ? "demo_afspraak_gepland_door_sales"
+        : "terugbel_afspraak_gepland_door_sales",
+      entity_type: "affiliate_terugbel_afspraken",
+      entity_id: afspraak.id,
+      nieuwe_waarde: {
+        type: body.type,
+        geplande_op: body.geplande_op,
+        duur_minuten: body.duur_minuten,
+        lead_id: body.lead_id ?? null,
+        google_sync,
+        google_error: google_error ?? null,
+      },
+    });
+
     return new Response(
       JSON.stringify({ afspraak, google_sync, google_error }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ error: "internal", message: e instanceof Error ? e.message : "onbekend" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-});
   } catch (e) {
     return new Response(
       JSON.stringify({ error: "internal", message: e instanceof Error ? e.message : "onbekend" }),
