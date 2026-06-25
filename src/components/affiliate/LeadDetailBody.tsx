@@ -74,6 +74,13 @@ export function LeadDetailBody({ lead }: Props) {
   const [openOrder, setOpenOrder] = useState(false);
   const [openVerrijk, setOpenVerrijk] = useState(false);
   const [openVerloren, setOpenVerloren] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") ?? "overzicht";
+  const setTab = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
     setStatus(lead.status as AffiliateLeadStatus);
