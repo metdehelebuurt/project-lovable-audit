@@ -34,8 +34,8 @@ const AffiliateLeadDetail = () => {
       {error && <p className="text-sm text-destructive">Lead kon niet geladen worden.</p>}
       {!isLoading && !lead && <p className="text-sm text-muted-foreground">Lead niet gevonden.</p>}
       {lead && (
-        <div className="max-w-3xl">
-          <h1 className="text-2xl font-bold mb-4">{lead.bedrijfsnaam}</h1>
+        <div className="max-w-[1400px]">
+          <h1 className="text-2xl font-bold mb-3">{lead.bedrijfsnaam}</h1>
           <div className="mb-4">
             <AffiliateDuplicaatWaarschuwing leadId={lead.id} />
           </div>
