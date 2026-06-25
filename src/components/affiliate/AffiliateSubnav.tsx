@@ -24,7 +24,7 @@ export function AffiliateSubnav() {
     ? [...baseItems, { to: "/affiliates/verloren-review", label: "Verloren review", icon: AlertTriangle }]
     : baseItems;
   return (
-    <nav className="flex flex-wrap gap-2 border-b border-border pb-2 mb-6">
+    <nav className="flex flex-wrap gap-2 bg-primary rounded-lg px-3 py-2 mb-6 shadow-sm">
       {items.map((i) => (
         <NavLink
           key={i.to}
@@ -33,7 +33,9 @@ export function AffiliateSubnav() {
           className={({ isActive }) =>
             cn(
               "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-              isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+              isActive
+                ? "bg-primary-foreground text-primary"
+                : "text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground",
             )
           }
         >
