@@ -16,9 +16,10 @@ interface Props {
   leadNaam: string;
   klantEmail?: string | null;
   afspraakType?: "terugbel" | "demo";
+  onSaved?: () => void;
 }
 
-export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmail, afspraakType = "terugbel" }: Props) {
+export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmail, afspraakType = "terugbel", onSaved }: Props) {
   const create = useCreateTerugbel();
   const { data: collegas = [], isLoading: collegasLoading } = useInterneCollegas();
   const morgen = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
@@ -48,6 +49,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
     setNotitie("");
     setCollegaId("");
     onOpenChange(false);
+    onSaved?.();
   };
 
   return (
