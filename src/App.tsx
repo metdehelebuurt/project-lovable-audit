@@ -67,6 +67,7 @@ import AffiliateMijnKlanten from "@/pages/affiliate/AffiliateMijnKlanten";
 import AffiliateTrials from "@/pages/affiliate/AffiliateTrials";
 import AffiliateAgenda from "@/pages/affiliate/AffiliateAgenda";
 import LostReviewPage from "@/pages/affiliate/LostReview";
+import MailtemplatesPage from "@/pages/affiliate/instellingen/Mailtemplates";
 import AffiliateAnalytics from "@/pages/affiliate/AffiliateAnalytics";
 import AffiliateOpvolging from "@/pages/affiliate/AffiliateOpvolging";
 import Sales from "@/pages/sales";
