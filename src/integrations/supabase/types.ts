@@ -7898,6 +7898,30 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          rol: Database["public"]["Enums"]["app_role"]
+          toegekend_door: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rol: Database["public"]["Enums"]["app_role"]
+          toegekend_door?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rol?: Database["public"]["Enums"]["app_role"]
+          toegekend_door?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           achternaam: string
@@ -8885,6 +8909,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
       get_voorraad_stand: { Args: { _product_id: string }; Returns: number }
       has_break_glass_access: {
         Args: { _partner_id: string; _user_id: string }
@@ -9072,6 +9100,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      user_has_role: {
+        Args: {
+          _rol: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       user_kan_module: {
         Args: { _module_key: string; _user_id: string }
