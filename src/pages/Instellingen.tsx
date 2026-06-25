@@ -55,7 +55,7 @@ interface SettingsTab {
 }
 
 const ALLE_ROLLEN: AppRole[] = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur", "installateur"];
-const ALLE_ROLLEN_MET_AFFILIATE: AppRole[] = [...ALLE_ROLLEN, "affiliate"];
+const ALLE_ROLLEN_MET_AFFILIATE: AppRole[] = [...ALLE_ROLLEN, "affiliate", "sales_manager"];
 const ADMIN_ROLLEN: AppRole[] = ["superadmin", "partner_admin"];
 const UITVOEREND_PLUS_ADMIN: AppRole[] = [...ALLE_ROLLEN];
 
