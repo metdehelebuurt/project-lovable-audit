@@ -1,87 +1,50 @@
-# AI-mailtemplate verbeteraar met persoonlijk geheugen
 
-Een AI-assistent in de WYSIWYG-editor van zowel de affiliate- als sales-mailtemplates die het onderwerp + body herschrijft op basis van doel, schrijfstijl, doelgroep en conversiedoel. Per gebruiker wordt **schrijfstijl-feedback** opgeslagen zodat elke volgende generatie consistenter wordt met de voorkeuren van die specifieke gebruiker.
+## Bevindingen RLS-audit feedback-module
 
-## Wat de gebruiker kan
+Drie lekken gevonden waardoor gewone gebruikers (consument, affiliate, partner_staff, adviseur, installateur) feedback van anderen kunnen zien:
 
-In een nieuwe **"AI verbeteren"**-knop in de top-bar van `TemplateEditor` opent een rechter-zijpaneel met:
+1. **`feedback_verzoeken` → policy "Partner users zien partner feedback"**: iedere geauthenticeerde user ziet álle feedback van zijn partner-organisatie (via `partner_id = get_user_partner_id(auth.uid())`).
+2. **`feedback_verzoeken` → policy "Roadmap publiek leesbaar"**: `anon` én `authenticated` mogen alle niet-gearchiveerde, niet-afgewezen feedback lezen — incl. titel + beschrijving + indieners-vrije tekst.
+3. **`feedback_reacties` → policy "Partner ziet partner reacties niet-intern"**: zelfde partner-leak voor reacties. En de INSERT-policy laat een user reageren op elke feedback waar zijn partner_id matcht.
 
-1. **Doel van de mail** (vrij tekstveld + presets: "afspraak inplannen", "review vragen", "lead heractiveren", "demo bevestigen", "no-show opvolgen", "warm houden")
-2. **Schrijfstijl** (chips, multi-select): zakelijk · persoonlijk · kort & krachtig · empathisch · urgentie · vriendelijk-direct · storytelling
-3. **Doelgroep** (chips): particulier · zzp · MKB · woningcorporatie · architect · adviseur
-4. **Conversie-element** (chips): duidelijke CTA-knop · agenda-link · tel-link · social proof · scarcity · garantie
-5. **Lengte** (slider): zeer kort / gemiddeld / uitgebreid
-6. **Vrije instructie** (textarea: "noem altijd subsidieregeling 2026", "begin met de voornaam", etc.)
-7. **Knoppen**: `Genereer verbetering`, `Pas alleen onderwerp aan`, `Maak A/B-variant`
+## Aanpak (jouw keuze)
 
-Onder de knop een **diff-weergave** (oud → nieuw) met `Toepassen` / `Verwerpen` / `Regenereer met extra hint`.
+- **Roadmap volledig privé**: anon-toegang verdwijnt, geen brede roadmap-zichtbaarheid meer.
+- **Toegestane brede zichtbaarheid**: alleen `superadmin` (alles) en `sales_manager` (alles). `partner_admin` ziet alleen feedback binnen eigen `partner_id`. Alle overige rollen (partner_staff, adviseur, installateur, consument, affiliate, backoffice) zien uitsluitend hun eigen ingediende items.
 
-Onderaan het paneel: **"Mijn AI-schrijfstijl"** — een levende samenvatting van wat het systeem over de stijl van deze gebruiker heeft geleerd, met knop `Bewerken` en `Reset`.
+## Database-migratie (één migratie, alleen RLS — geen schema-wijziging)
 
-## Hoe het leert per gebruiker
+**`feedback_verzoeken`**
+- DROP policy `Partner users zien partner feedback`
+- DROP policy `Roadmap publiek leesbaar`
+- REVOKE SELECT ON `public.feedback_verzoeken` FROM `anon`
+- BEHOUD policy `Users zien eigen feedback` (eigen `user_id`)
+- BEHOUD policy `Superadmin ziet alle feedback`
+- NIEUWE policy `Sales manager ziet alle feedback` → `public.is_sales_manager(auth.uid())`
+- NIEUWE policy `Partner admin ziet partner feedback` → `user_has_role(auth.uid(), 'partner_admin') AND partner_id = get_user_partner_id(auth.uid())`
+- UPDATE policy `Admin bewerkt feedback`: `user_id = auth.uid() OR is_superadmin(...) OR is_sales_manager(...) OR (partner_admin van eigen partner)` — eigen indiener houdt bewerkrecht; partner_staff verliest het.
 
-Drie soorten signalen worden per `user_id` opgeslagen in `ai_template_schrijfstijl`:
+**`feedback_reacties`**
+- DROP policy `Partner ziet partner reacties niet-intern`
+- BEHOUD `Indiener leest eigen niet-interne reacties` + `Superadmin alles op feedback_reacties`
+- NIEUWE policy `Sales manager leest reacties` (alle niet-interne reacties)
+- NIEUWE policy `Partner admin leest partner reacties` (niet-intern, feedback hoort bij eigen partner)
+- VERVANG INSERT-policy: user mag alleen reageren op feedback waarvan `fv.user_id = auth.uid()` (of superadmin/sales_manager/partner_admin van eigen partner)
 
-- **Expliciete feedback**: na elke "Toepassen" of "Verwerpen" vraagt een micro-prompt "Wat vond je hier goed/slecht aan?" (1 zin, optioneel).
-- **Impliciete edits**: wanneer de gebruiker de AI-output handmatig aanpast vóór opslaan, wordt de diff tussen AI-suggestie en uiteindelijke versie als leermoment vastgelegd.
-- **Voorkeursinstellingen**: gekozen schrijfstijl/doelgroep/lengte worden geaggregeerd → meest gekozen waarden worden defaults.
+**`feedback_stemmen`** — laat ongewijzigd: stemmen mag iedereen blijven (anders breekt voting op eigen feedback). SELECT-policy is `true` → niet kritiek want bevat geen content, alleen tellingen via `feedback_verzoeken.stemmen` kolom (RLS-gefilterd).
 
-De edge function `ai-template-verbeteren` consolideert deze signalen periodiek tot een **stijlprofiel** (max ~1500 tokens samenvatting per gebruiker) dat als system-prompt-suffix wordt meegestuurd bij elke generatie. Zo blijft de prompt compact terwijl de AI weet:
-> "Deze gebruiker schrijft graag persoonlijk, opent met voornaam, vermijdt uitroeptekens, eindigt altijd met een vraag, gebruikt zelden emoji."
+## Frontend-gevolgen
 
-## Werking AI-call
+`src/pages/FeedbackOverzicht.tsx`, `FeedbackRoadmap.tsx`, `FeedbackDetail.tsx` doen `select *` zonder eigen filtering — RLS doet het werk. Geen code-changes nodig voor de privacy zelf.
 
-Edge function `ai-template-verbeteren` (Lovable AI Gateway, model `google/gemini-3-flash-preview`):
+Wel checken in een tweede stap (na migratie):
+- `FeedbackRoadmap.tsx`: pagina was bedoeld als publieke roadmap. Nu wordt het effectief een "mijn feedback + status"-lijst voor externe users. Beslis later of die route überhaupt nog zinvol is voor consument/affiliate, of dat hij alleen voor admin/sales_manager moet blijven (UI-aanpassing, geen security).
+- `FeedbackDetail.tsx` toont reacties via `ReactiesThread`; werkt automatisch met de strakkere RLS.
 
-- input: `template_key`, `huidige_onderwerp`, `huidige_body_html`, `doel`, `stijl[]`, `doelgroep[]`, `conversie[]`, `lengte`, `vrije_instructie`, `mode` (`volledig` | `alleen_onderwerp` | `ab_variant`), `feedback_hint`
-- bouwt prompt met:
-  - system: rol + huisstijl-regels + Nederlandse tone-of-voice + variabele-syntax `{{...}}`
-  - system-suffix: stijlprofiel van deze user
-  - few-shot: laatste 3 goedgekeurde edits van deze user (als die er zijn)
-  - user: huidige template + instructies
-- output via AI SDK `Output.object`: `{ onderwerp, body_html, uitleg, vertrouwen, suggesties[] }`
-- response wordt gelogd in `ai_template_generaties` (input + output + status)
+## Validatie na migratie
 
-## Database
+1. `supabase--linter` draaien.
+2. Read-query met `auth.uid()` simuleren via service role: bevestigen dat zonder superadmin/sales_manager/partner_admin-rol alleen rijen met `user_id = auth.uid()` terugkomen.
+3. Bevestigen dat `anon` 0 rijen krijgt op `feedback_verzoeken`.
 
-Drie nieuwe tabellen in `public`, allemaal met RLS op `user_id = auth.uid()`:
-
-```sql
-ai_template_schrijfstijl    -- 1 rij per user, stijlprofiel samenvatting + voorkeuren JSONB
-ai_template_generaties      -- log van elke AI-call (input, output, status: toegepast/verworpen/bewerkt)
-ai_template_feedback        -- losse feedback-zinnen ("dit was te formeel", "perfecte CTA")
-```
-
-Periodieke consolidatie: bij elke 5e nieuwe feedback/generatie wordt het stijlprofiel her-samengevat door een aparte AI-call (`ai-stijlprofiel-consolideren`).
-
-## Bestanden
-
-**Nieuw:**
-- `supabase/migrations/<ts>_ai_template_verbetering.sql` — 3 tabellen + RLS + grants
-- `supabase/functions/ai-template-verbeteren/index.ts` — hoofdcall
-- `supabase/functions/ai-stijlprofiel-consolideren/index.ts` — periodieke samenvatting
-- `src/components/mailtemplates/AiVerbeterPaneel/index.tsx` — zijpaneel-UI (gedeeld tussen affiliate + sales)
-- `src/components/mailtemplates/AiVerbeterPaneel/DoelStap.tsx`
-- `src/components/mailtemplates/AiVerbeterPaneel/StijlChips.tsx`
-- `src/components/mailtemplates/AiVerbeterPaneel/DiffWeergave.tsx`
-- `src/components/mailtemplates/AiVerbeterPaneel/StijlprofielSamenvatting.tsx`
-- `src/hooks/mailtemplates/useAiVerbeterTemplate.ts` — mutation
-- `src/hooks/mailtemplates/useAiSchrijfstijl.ts` — read/write profiel
-- `src/lib/mailtemplates/diffHtml.ts` — kleine HTML-diff helper
-
-**Aanpassen:**
-- `src/pages/affiliate/instellingen/Mailtemplates/TemplateEditor.tsx` — knop `AI verbeteren` + paneel inhaken
-- `src/pages/sales/SnippetsBeheer/...` of sales-equivalent (kort verifiëren waar sales-mailtemplates leven) — zelfde paneel inhaken
-- `src/integrations/supabase/types.ts` — auto-regen
-
-## Belangrijke uitgangspunten
-
-- Werkt zowel voor affiliate-templates (`affiliate_email_templates`) als voor sales-templates — paneel is template-bron-agnostisch (krijgt `onderwerp` + `bodyHtml` props + `onApply` callback).
-- Stijlprofiel is **strikt per `user_id`** — geen lekkage tussen gebruikers (RLS afgedwongen, edge function valideert JWT).
-- AI Disclaimer-regel uit project-memory wordt **niet** in mail-content gepropt (geldt voor offerte-PDFs), maar in het AI-paneel zelf staat wel: *"Suggesties van AI — controleer altijd voor je verstuurt."*
-- Diff toont onderwerp + body apart; gebruiker kan onderwerp of body afzonderlijk overnemen.
-- Geen externe diff-library — kleine eigen helper (`diffHtml.ts`, < 80 regels) die op blok-niveau highlight.
-
-## Open vraag (1)
-
-Voor sales-managers: leven hun e-mailtemplates in `email_templates` (algemeen) of in een sales-specifieke tabel? Ik check kort `src/pages/sales/...` om het juiste integratiepunt te kiezen — geen aparte vraag nodig tenzij blijkt dat sales geen eigen template-editor heeft.
+Geen data-migratie nodig; alleen policies en één GRANT-revoke.
