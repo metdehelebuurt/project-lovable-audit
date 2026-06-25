@@ -10,6 +10,7 @@ import { STATUS_LABEL, STATUS_VOLGORDE, type AffiliateLeadStatus } from "@/lib/a
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLeadContactmomenten, useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
+import { toast } from "sonner";
 import { TerugbelDialog } from "./TerugbelDialog";
 import { TrialStartenButton } from "./TrialStartenButton";
 import { TrialStatusBadge } from "./TrialStatusBadge";
@@ -59,10 +60,15 @@ export function LeadDetailBody({ lead }: Props) {
   });
 
   const opslaan = async () => {
-    await update.mutateAsync({
-      id: lead.id,
-      patch: { status, geschatte_waarde: parseFloat(waarde) || 0, notities: notitie },
-    });
+    try {
+      await update.mutateAsync({
+        id: lead.id,
+        patch: { status, geschatte_waarde: parseFloat(waarde) || 0, notities: notitie },
+      });
+      toast.success("Lead opgeslagen");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
+    }
   };
 
   const logGesprek = async () => {
