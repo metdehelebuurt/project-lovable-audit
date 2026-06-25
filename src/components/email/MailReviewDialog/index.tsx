@@ -9,6 +9,7 @@ import { MailTab, type MailTabState } from "./MailTab";
 import { useSendPlanningMail } from "@/hooks/email/useSendPlanningMail";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { wrapInMijnhuisTemplateClient } from "@/lib/affiliateTemplates/mijnhuisWrapper";
 
 export interface MailReviewDialogProps {
   open: boolean;
@@ -93,7 +94,13 @@ export function MailReviewDialog(props: MailReviewDialogProps) {
     let mislukt = 0;
     for (const t of taken) {
       const subject = renderWithContext(t.state.onderwerp, context).trim() || "(geen onderwerp)";
-      const html = renderWithContext(t.state.bodyHtml, context);
+      const renderedBody = renderWithContext(t.state.bodyHtml, context);
+      const html = wrapInMijnhuisTemplateClient(renderedBody, {
+        senderName: afzenderNaam,
+        senderEmail: user?.email ?? null,
+        senderTelefoon: contextInput.affiliate?.telefoon ?? null,
+        bedrijf: contextInput.affiliate?.bedrijfsnaam ?? null,
+      });
       try {
         await send.mutateAsync({
           to: t.state.aan.trim(),
