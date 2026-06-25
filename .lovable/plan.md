@@ -1,88 +1,91 @@
 ## Doel
 
-Bas (sales manager) krijgt volledige zichtbaarheid en plancontrole over alle affiliates: hij ziet en bewerkt platform-afspraken in hun agenda, en ziet alleen "bezet"-blokken voor afspraken die de affiliate zélf in zijn Google-agenda heeft gezet (zonder titel, locatie of deelnemers).
+Een gebruiker met een bestaande rol (bv. `partner_admin` voor esteban@cenora.nl) kan affiliate-functionaliteit erbij krijgen **zonder** dat zijn primaire rol, partnerkoppeling, navigatie of data verandert. De affiliate-modules verschijnen er **bovenop**.
 
-## Wat al klopt
+Sales-manager (`bas@mijnhuis.nu`) blijft het affiliate-gedeelte van zo'n hybride gebruiker zien (bestaande `sales_admin_*` policies blijven werken).
 
-- `affiliate_terugbel_afspraken` heeft al een `sales_admin_full_access`-policy — sales_manager kan dus read/insert/update/delete op álle rijen. RLS is dus oké.
-- `google_calendar_accounts` bewaart access/refresh-tokens per gebruiker. Service-role kan namens elke gekoppelde affiliate Google-calls doen.
-- Affiliate-agendapagina toont nu alleen eigen + aan-mij-toegewezen terugbel-afspraken.
+## Aanpak: additieve rollen via `user_roles`
 
-## Wat nog ontbreekt (en hier wordt gebouwd)
+Vandaag staat de rol als enkel veld op `public.users.rol`. Promoveren overschrijft die rol en zet `partner_id = NULL` — dat is precies wat we willen vermijden. We introduceren een aparte tabel voor **extra** rollen naast de primaire rol.
 
-### 1. Database / RLS
+### 1. Database
 
-- Functie `public.is_sales_manager_or_super(uid)` (bestaat al via `is_sales_admin`) — niets te doen.
-- Nieuwe view `public.v_affiliates_voor_sales_manager` met `id, voornaam, achternaam, email, has_google_calendar` zodat de UI alle affiliates kan tonen zonder users-tabel direct te lezen.
-- Geen wijziging aan `afspraken` (die tabel is voor partner-flow, niet voor affiliate-flow).
+Nieuwe migratie:
 
-### 2. Edge function: `affiliate-busy-blocks` (nieuw)
+- `CREATE TABLE public.user_roles (user_id uuid → auth.users, rol app_role, ...)` met unique `(user_id, rol)`.
+- GRANTs + RLS: alleen de gebruiker zelf + superadmin/partner_admin van zelfde partner mogen lezen, alleen superadmin mag schrijven.
+- Security-definer functies:
+  - `public.user_has_role(_uid uuid, _rol app_role) returns boolean` → true als `users.rol = _rol` óf rij in `user_roles`.
+  - `public.get_user_roles(_uid uuid) returns app_role[]` → primair + secundair, voor frontend.
+- Backfill: niks (lege tabel; bestaande affiliates blijven via `users.rol`).
 
-- Input: `{ affiliate_ids: uuid[], from: ISO, to: ISO }`
-- Auth: alleen `is_sales_admin(auth.uid())` of `is_superadmin` — anders 403.
-- Voor elke affiliate met actieve `google_calendar_accounts`-rij: roept Google `freeBusy` aan via opgeslagen refresh-token (service-role), refresht access-token wanneer verlopen.
-- Output: `{ [affiliate_id]: [{ start, end }, ...] }` — alléén tijdvakken, geen titel/details.
-- Faalt graceful per affiliate: kan één calendar de freeBusy niet ophalen, dan staat die affiliate op `null` met `error`-veld; rest werkt door.
-- Caching: korte in-function memo (60s) tegen rate limits.
+### 2. RLS-aanpassingen (alleen affiliate-tabellen)
 
-### 3. Edge function: `affiliate-afspraak-plannen` (nieuw)
+Op tabellen die nu `get_user_role(uid) = 'affiliate'` of `users.rol = 'affiliate'` checken, vervangen door `user_has_role(uid, 'affiliate')`. Scope: 
 
-- Input: `{ affiliate_id, lead_id, type ('terugbel'|'demo'), geplande_op, duur_minuten, notitie }`
-- Auth: alleen `is_sales_admin(auth.uid())`.
-- Maakt rij in `affiliate_terugbel_afspraken` (met sales_manager als `collega_user_id` zodat affiliate de afspraak ook ziet als "aan mij toegewezen").
-- Als affiliate Google heeft gekoppeld én `sync_afspraken=true`: maakt Google-event + mapping-rij. Reden voor edge function: clientcode kan affiliate's tokens niet aanraken; alleen service-role mag dat.
-- Bij Google-fout: platform-afspraak blijft staan, edge function geeft `{ created: true, google_sync: 'failed', message }` terug. Geen halve writes.
+- `affiliate_links`, `affiliate_leads`, `affiliate_lead_contactmomenten`, `affiliate_terugbel_afspraken`, `affiliate_opvolg_*`, `affiliate_instellingen`, `affiliate_email_templates`, `affiliate_targets`, `affiliate_referrals`, `affiliate_commissies`, `affiliate_onboarding_taken`, `affiliate_lead_imports`, `affiliate_opvolg_log`, `lead_duplicaat_negeerlijst_affiliate`.
 
-### 4. UI: nieuwe sales-manager planning-pagina
+Alle andere policies (partners, klanten, leads, offertes, …) **niet aanraken** — die blijven op `users.rol` zodat de partner-admin-rechten 100% intact blijven.
 
-- Route: `/sales/agenda` (alleen voor `sales_manager`/`superadmin`).
-- **Affiliate-picker** (multi-select) → lijst van alle affiliates met Google-koppel-icoon.
-- **Week-/dagweergave** (react-day-picker bestaat al) met per affiliate een rij:
-  - Platform-afspraken: volledige kaart (lead-naam, type, notitie, knoppen "Bewerken", "Verzetten", "Annuleren").
-  - Externe Google-events: grijs blok "Bezet" met alleen begin/eind. Geen on-click detail.
-- **"Afspraak plannen"-knop** opent dialog met affiliate-keuze, lead-keuze, type (terugbel/demo), datum/tijd, duur, notitie → roept `affiliate-afspraak-plannen` aan.
+### 3. Edge function `user-management`
 
-### 5. Hardening / tests
+Twee nieuwe acties, oude blijven werken voor pure affiliates:
 
-- Negatieve tests in `tests/sales-agenda.spec.ts`:
-  - Affiliate-account roept `affiliate-busy-blocks` → 403.
-  - Affiliate-account leest een platform-afspraak van een andere affiliate via REST → RLS denied.
-  - Bas roept `affiliate-busy-blocks` met onbekende affiliate-id → lege array, geen crash.
-  - Bas plant een afspraak voor affiliate zonder Google-koppeling → `google_sync: 'skipped'`, platform-rij staat.
-- Edge-function unit test (Deno) voor de refresh-token-flow en het maskeren van event-details.
-- Build & typecheck gate moet groen draaien voordat we klaar zeggen.
+- `add_affiliate_role`: insert in `user_roles (user_id, 'affiliate')`, seed default `affiliate_links` rij (skip als er al een actief is), audit-log, **raakt `users.rol`/`partner_id` niet aan**.
+- `remove_affiliate_role`: delete uit `user_roles`, deactiveer `affiliate_links.actief=false`, audit-log; `users.rol` blijft.
 
-## Bestanden die wijzigen / nieuw
+Bestaande `promote_to_affiliate` / `revoke_affiliate` blijven voor het scenario "puur affiliate" (rol = affiliate, geen partner).
 
-```text
-supabase/migrations/<ts>_sales_manager_agenda.sql        (view + grants)
-supabase/functions/affiliate-busy-blocks/index.ts        (nieuw)
-supabase/functions/affiliate-busy-blocks/index_test.ts   (nieuw)
-supabase/functions/affiliate-afspraak-plannen/index.ts   (nieuw)
-supabase/functions/affiliate-afspraak-plannen/index_test (nieuw)
-src/hooks/sales/useSalesAgenda.ts                        (nieuw)
-src/hooks/sales/useAffiliatesMetAgenda.ts                (nieuw)
-src/pages/sales/SalesAgenda/index.tsx                    (nieuw)
-src/pages/sales/SalesAgenda/AffiliatePicker.tsx          (nieuw)
-src/pages/sales/SalesAgenda/AgendaWeek.tsx               (nieuw)
-src/pages/sales/SalesAgenda/PlanAfspraakDialog.tsx       (nieuw)
-src/App.tsx                                              (route toevoegen)
-src/lib/navigation/navigationModel.ts                    (menu-item voor sales_manager)
-tests/sales-agenda.spec.ts                               (nieuw)
-```
+### 4. AuthContext + permissions
 
-## Volgorde van uitvoering
+- `AuthContext` haalt `get_user_roles(auth.uid())` op en exposeert `profile.rol` (primair, ongewijzigd) + `profile.extraRollen: AppRole[]`.
+- Helper `hasRole(profile, rol)` in `src/lib/permissions.ts`: true als `profile.rol === rol || profile.extraRollen?.includes(rol)`.
+- ProtectedRoute / route-guards die `rol === 'affiliate'` checken → vervangen door `hasRole(profile, 'affiliate')`. Geen enkele andere rolcheck wijzigen.
 
-1. Migratie (view + grants) — review en goedkeuren.
-2. Edge functions `affiliate-busy-blocks` + `affiliate-afspraak-plannen` + Deno-tests.
-3. Hooks + UI-pagina.
-4. Playwright e2e tegen lokale dev-server, daarna build + typecheck.
-5. Pas afronden als alle tests groen zijn — geen "100% resultaat" zonder bewijs.
+### 5. Navigatie
 
-## Open vragen vóór ik bouw
+`getNavigation(profile)` (i.p.v. alleen `rol`):
 
-1. **Duur van een afspraak**: hard 30 min voor "terugbel" en 45 min voor "demo", of altijd configureerbaar in de dialog? (Default: configureerbaar, voorinstelling per type.)
-2. **Mag de sales-manager bestaande affiliate-afspraken *bewerken/annuleren*** óók als die door de affiliate zelf op het platform zijn aangemaakt? Aanname: ja (anders is "onder zich hebben" inhoudelijk leeg).
-3. **Reikwijdte affiliates**: álle users met `rol = 'affiliate'` (ongeacht partner), of alleen die actief zijn (`status='actief'`)? Aanname: alleen actief.
+- Bouw eerst de groepen voor de **primaire** rol (ongewijzigd).
+- Als `extraRollen` `'affiliate'` bevat: voeg de affiliate-groep uit `affiliateNav()` toe als **extra sectie** aan het einde ("Affiliate") in plaats van de hele nav te vervangen.
+- Geen wijziging voor pure affiliates: hun primaire rol is nog steeds `affiliate` → exact dezelfde nav.
 
-Bevestig vraag 1–3, dan begin ik met de migratie.
+### 6. UI
+
+`PromoteToAffiliateButton`:
+
+- Beslis op basis van `currentRol` + nieuwe prop `extraRollen`:
+  - Pure user zonder partner-rol → bestaande "Maak affiliate" flow (overschrijft rol).
+  - User mét partner-rol (`partner_admin/partner_staff/adviseur/backoffice/installateur`) → label **"Affiliate-module toevoegen"** → roept `add_affiliate_role` aan; bevestigt expliciet dat huidige rol behouden blijft.
+  - User die affiliate-module al heeft → "Affiliate-module verwijderen" → `remove_affiliate_role`.
+- `Gebruikers.tsx` / `GebruikerDetail.tsx`: rol-badge ongewijzigd, extra badge "Affiliate" als gebruiker een extra rol heeft.
+
+### 7. Sales-manager-zichtbaarheid
+
+Geen wijziging nodig: de bestaande `sales_admin_*` RLS-policies op `affiliate_terugbel_afspraken`, `affiliate_leads` etc. werken al ongeacht of de eigenaar puur affiliate is of hybride. De sales-agenda haalt afspraken op basis van `collega_user_id` / affiliate user_id — `user_roles`-rij zorgt ervoor dat `user_has_role(..., 'affiliate')` true is en de policies dus matchen.
+
+### 8. Verificatie
+
+1. Database-test (read_query): als `esteban@cenora.nl` `user_roles`-rij krijgt, levert `get_user_roles` `[partner_admin, affiliate]`, blijft `users.rol = partner_admin` en `partner_id` gevuld.
+2. Frontend-test (Playwright):
+   - Login als esteban → primair partner-dashboard zichtbaar (klanten, offertes), extra sectie "Affiliate" in nav, `/affiliates/...` routes openen zonder redirect.
+   - Affiliate-link wordt aangemaakt en zichtbaar in `/affiliates`.
+   - Login als bas (sales-manager) → ziet esteban in sales-agenda als affiliate, kan diens platform-afspraken zien/bewerken; partner-data van cenora blijft buiten beeld (geen wijziging in partner-policies).
+3. Negatieve test: `add_affiliate_role` zonder superadmin → 403; `user_roles` insert via supabase-client als non-superadmin → RLS-fout.
+
+## Niet in scope
+
+- Promotie van pure affiliate → partner-admin (omgekeerde richting).
+- Multi-role voor andere combinaties dan `+ affiliate` (uitbreidbaar via dezelfde infrastructuur als later nodig).
+- Bestaande affiliate-only gebruikers migreren naar de nieuwe structuur — die blijven werken op `users.rol`.
+
+## Bestandenoverzicht
+
+- `supabase/migrations/<ts>_user_roles_additive.sql` — tabel, RLS, `user_has_role`, `get_user_roles`, RLS-updates op affiliate-tabellen.
+- `supabase/functions/user-management/index.ts` — nieuwe acties `add_affiliate_role` / `remove_affiliate_role`.
+- `src/contexts/AuthContext.tsx` — laad `extraRollen`.
+- `src/lib/permissions.ts` — `hasRole` helper.
+- `src/lib/navigation/navigationModel.ts` — `getNavigation(profile)` met extra-secties.
+- `src/components/ProtectedRoute.tsx` — affiliate-routes via `hasRole`.
+- `src/components/affiliate/PromoteToAffiliateButton.tsx` — nieuwe modus voor hybride toevoeging.
+- `src/pages/Gebruikers.tsx` + `GebruikerDetail.tsx` — extra affiliate-badge.
