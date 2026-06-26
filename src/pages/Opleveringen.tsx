@@ -11,6 +11,7 @@ import type { Opleverrapport } from "@/components/oplever/types";
 import { Plus, FileText, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchOpleverPdfVersies } from "@/components/oplever/api/opleverPdfVersies";
 
 export default function Opleveringen() {
   const { profile } = useAuth();
@@ -35,19 +36,24 @@ export default function Opleveringen() {
   }, [rows, zoek]);
 
   const handleDownload = async (r: Opleverrapport) => {
-    if (!r.pdf_url) {
-      toast({
-        title: "Nog geen PDF beschikbaar",
-        description: "Open het rapport en klik op 'PDF downloaden' om een versie te genereren.",
-      });
-      nav(`/opleveringen/${r.id}`);
-      return;
-    }
     try {
       setDownloadingId(r.id);
+      let pdfPath = r.pdf_url;
+      if (!pdfPath) {
+        const versies = await fetchOpleverPdfVersies(r.id);
+        pdfPath = versies[0]?.pdf_path ?? null;
+      }
+      if (!pdfPath) {
+        toast({
+          title: "Nog geen PDF beschikbaar",
+          description: "Open het rapport en klik op 'PDF downloaden' om een versie te genereren.",
+        });
+        nav(`/opleveringen/${r.id}`);
+        return;
+      }
       const { data, error } = await supabase.storage
         .from("oplever-media")
-        .createSignedUrl(r.pdf_url, 300, { download: `${r.rapportnummer ?? "opleverrapport"}.pdf` });
+        .createSignedUrl(pdfPath, 300, { download: `${r.rapportnummer ?? "opleverrapport"}.pdf` });
       if (error || !data?.signedUrl) throw new Error(error?.message ?? "Geen download-link");
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch (e) {
