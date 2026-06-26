@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
  */
 export function useModuleNotificatieCounts() {
   const { user } = useAuth();
-  const qc = useQueryClient();
+  useQueryClient();
 
   const query = useQuery({
     queryKey: ["module-notificatie-counts", user?.id],
@@ -30,20 +29,6 @@ export function useModuleNotificatieCounts() {
     },
     refetchInterval: 60000,
   });
-
-  // Realtime updates
-  useEffect(() => {
-    if (!user) return;
-    const channelName = `module-notificatie-counts:${user.id}:${Math.random().toString(36).slice(2, 8)}`;
-    const channel = supabase
-      .channel(channelName)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "notificaties", filter: `user_id=eq.${user.id}` },
-        () => qc.invalidateQueries({ queryKey: ["module-notificatie-counts"] })
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, qc]);
 
   return query;
 }
