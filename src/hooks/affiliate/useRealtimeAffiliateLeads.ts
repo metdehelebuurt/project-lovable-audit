@@ -9,8 +9,9 @@ import { useQueryClient } from "@tanstack/react-query";
 export function useRealtimeAffiliateLeads() {
   const qc = useQueryClient();
   useEffect(() => {
+    const channelName = `affiliate-leads-rt:${Math.random().toString(36).slice(2, 8)}`;
     const channel = supabase
-      .channel("affiliate-leads-rt")
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "affiliate_leads" },
