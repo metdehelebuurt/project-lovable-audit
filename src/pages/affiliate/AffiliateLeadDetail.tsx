@@ -25,7 +25,7 @@ const AffiliateLeadDetail = () => {
   });
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6 min-w-0 w-full overflow-x-hidden">
       <AffiliateSubnav />
       <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
         <ArrowLeft className="h-4 w-4 mr-1" /> Terug
@@ -34,9 +34,8 @@ const AffiliateLeadDetail = () => {
       {error && <p className="text-sm text-destructive">Lead kon niet geladen worden.</p>}
       {!isLoading && !lead && <p className="text-sm text-muted-foreground">Lead niet gevonden.</p>}
       {lead && (
-        <div className="max-w-[1400px]">
-          <h1 className="text-2xl font-bold mb-3">{lead.bedrijfsnaam}</h1>
-          <div className="mb-4">
+        <div className="w-full min-w-0">
+          <div className="mb-3">
             <AffiliateDuplicaatWaarschuwing leadId={lead.id} />
           </div>
           <LeadDetailBody lead={lead} />

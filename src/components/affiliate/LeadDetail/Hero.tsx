@@ -1,20 +1,27 @@
 import { useMemo } from "react";
-import { Phone, Mail, MessageCircle, Globe, MoreHorizontal, Presentation, FileCheck2, Sparkles, Wand2, CalendarPlus, Tag, Star, Flame, Euro, Clock, Activity, MailOpen } from "lucide-react";
+import { Phone, Mail, MessageCircle, Globe, MoreHorizontal, Presentation, FileCheck2, Sparkles, Wand2, CalendarPlus, Tag, Star, Flame, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { STATUS_KLEUR, STATUS_LABEL, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
-import { TrialStartenButton } from "../TrialStartenButton";
 import { TrialStatusBadge } from "../TrialStatusBadge";
 import type { TijdlijnItem } from "./Tijdlijn/useLeadTijdlijn";
+import { cn } from "@/lib/utils";
 
 const TEMP_KLEUR: Record<string, string> = {
   koud: "bg-slate-100 text-slate-700",
   lauw: "bg-amber-100 text-amber-800",
   warm: "bg-orange-100 text-orange-800",
   heet: "bg-rose-100 text-rose-800",
+};
+
+const TEMP_ACCENT: Record<string, string> = {
+  koud: "bg-slate-400",
+  lauw: "bg-amber-400",
+  warm: "bg-orange-500",
+  heet: "bg-rose-500",
 };
 
 interface Props {
@@ -34,12 +41,14 @@ export function LeadDetailHero({ lead, bronLabel, tijdlijn, gewonnenPartnerId, t
 
   const kpis = useMemo(() => berekenKpis(lead, tijdlijn), [lead, tijdlijn]);
   const deadlineKleur = kleurVoorDeadline(lead.volgende_actie_datum);
+  const accent = TEMP_ACCENT[lead.temperatuur ?? "lauw"] ?? "bg-slate-400";
 
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-2">
-          <h1 className="text-2xl font-bold leading-tight truncate">{lead.bedrijfsnaam}</h1>
+    <div className="relative overflow-hidden rounded-xl border bg-card p-4 sm:p-5 space-y-3 min-w-0">
+      <span className={cn("absolute left-0 top-0 bottom-0 w-1.5", accent)} aria-hidden />
+      <div className="flex flex-wrap items-start justify-between gap-3 pl-2">
+        <div className="min-w-0 space-y-1.5 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold leading-tight truncate">{lead.bedrijfsnaam}</h1>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge className={STATUS_KLEUR[status]}>{STATUS_LABEL[status]}</Badge>
             {lead.temperatuur && (
@@ -57,14 +66,9 @@ export function LeadDetailHero({ lead, bronLabel, tijdlijn, gewonnenPartnerId, t
             )}
             {gewonnenPartnerId && <TrialStatusBadge trialEinddatum={trialEinddatum} />}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {[lead.contactpersoon, lead.plaats, `aangemaakt ${dagenGeleden(lead.created_at)} dgn geleden`]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 justify-end">
+        <div className="flex flex-wrap items-center gap-1.5 justify-end shrink-0">
           {tel && (
             <Button asChild size="sm">
               <a href={tel}><Phone className="h-4 w-4 mr-1.5" />Bel</a>
@@ -82,7 +86,7 @@ export function LeadDetailHero({ lead, bronLabel, tijdlijn, gewonnenPartnerId, t
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline"><MoreHorizontal className="h-4 w-4 mr-1" />Meer</Button>
+              <Button size="sm" variant="outline"><MoreHorizontal className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Meer</span></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => onActie("terugbel")}>
@@ -113,37 +117,40 @@ export function LeadDetailHero({ lead, bronLabel, tijdlijn, gewonnenPartnerId, t
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          {!gewonnenPartnerId && <TrialStartenButton lead={lead} size="sm" />}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-        <KpiTegel icon={Euro} label="Waarde" value={kpis.waarde} />
-        <KpiTegel icon={Clock} label="Stil sinds" value={kpis.stil} kleur={kpis.stilKleur} />
-        <KpiTegel icon={MailOpen} label="E-mails" value={String(kpis.mails)} />
-        <KpiTegel icon={Activity} label="Contactmomenten" value={String(kpis.contact)} />
+      <div className="pl-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+        <Kpi label="Waarde" value={kpis.waarde} kleur="text-emerald-700" />
+        <span className="text-border">·</span>
+        <Kpi label="Stil sinds" value={kpis.stil} kleur={kpis.stilTextKleur} />
+        <span className="text-border">·</span>
+        <Kpi label="E-mails" value={String(kpis.mails)} kleur="text-purple-700" />
+        <span className="text-border">·</span>
+        <Kpi label="Contact" value={String(kpis.contact)} kleur="text-blue-700" />
+        <span className="text-border">·</span>
+        <span className="text-xs text-muted-foreground">
+          aangemaakt {dagenGeleden(lead.created_at)} dgn geleden
+        </span>
       </div>
 
       {lead.volgende_actie_datum && (
-        <div className={`rounded-lg border px-3 py-2 text-sm flex items-center gap-2 ${deadlineKleur}`}>
+        <div className={cn("ml-2 rounded-lg border px-3 py-1.5 text-sm flex items-center gap-2", deadlineKleur)}>
           <Clock className="h-4 w-4" />
           <span className="font-medium">Volgende actie</span>
           <span>{new Date(lead.volgende_actie_datum).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "short" })}</span>
-          {/* notitie veld bestaat niet op deze tabel; weggelaten */}
         </div>
       )}
     </div>
   );
 }
 
-function KpiTegel({ icon: Icon, label, value, kleur }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; kleur?: string }) {
+function Kpi({ label, value, kleur }: { label: string; value: string; kleur?: string }) {
   return (
-    <div className={`rounded-lg border bg-muted/30 px-3 py-2 ${kleur ?? ""}`}>
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
-        <Icon className="h-3 w-3" />{label}
-      </div>
-      <div className="text-lg font-semibold leading-tight mt-0.5">{value}</div>
-    </div>
+    <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className={cn("font-semibold", kleur)}>{value}</span>
+    </span>
   );
 }
 
@@ -153,11 +160,11 @@ function berekenKpis(lead: AffiliateLead, tijdlijn: TijdlijnItem[]) {
   const laatste = tijdlijn.find((i) => i.type === "contactmoment" || i.type === "mail_in" || i.type === "mail_uit");
   const stilDgn = laatste ? dagenGeleden(laatste.datum) : dagenGeleden(lead.created_at);
   const stil = laatste ? `${stilDgn} dgn` : "Nooit";
-  const stilKleur = stilDgn > 14 ? "border-rose-200 bg-rose-50/60" : stilDgn > 7 ? "border-amber-200 bg-amber-50/60" : "";
+  const stilTextKleur = stilDgn > 14 ? "text-rose-700" : stilDgn > 7 ? "text-amber-700" : "text-slate-700";
   const waarde = lead.geschatte_waarde
     ? new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(lead.geschatte_waarde))
     : "—";
-  return { waarde, stil, stilKleur, mails, contact };
+  return { waarde, stil, stilTextKleur, mails, contact };
 }
 
 function dagenGeleden(datum: string | null | undefined): number {
