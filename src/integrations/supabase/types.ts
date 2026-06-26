@@ -9284,6 +9284,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_ical_token: { Args: never; Returns: string }
       get_my_pipeline: {
         Args: never
         Returns: {
