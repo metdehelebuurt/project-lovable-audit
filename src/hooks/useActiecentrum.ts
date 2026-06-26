@@ -116,8 +116,9 @@ export function useActiecentrum() {
   // Realtime
   useEffect(() => {
     if (!userId) return;
+    const channelName = `actiecentrum:${userId}:${Math.random().toString(36).slice(2, 8)}`;
     const ch = supabase
-      .channel("actiecentrum")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "notificaties", filter: `user_id=eq.${userId}` }, () => notif.refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "helpdesk_ticket_taken", filter: `toegewezen_aan=eq.${userId}` }, () => taken.refetch())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "email_berichten" }, () => berichten.refetch())

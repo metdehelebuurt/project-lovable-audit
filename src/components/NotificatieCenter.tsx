@@ -97,8 +97,9 @@ export function NotificatieCenter() {
   // Realtime subscription
   useEffect(() => {
     if (!user) return;
+    const channelName = `notificaties-realtime:${user.id}:${Math.random().toString(36).slice(2, 8)}`;
     const channel = supabase
-      .channel("notificaties-realtime")
+      .channel(channelName)
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",

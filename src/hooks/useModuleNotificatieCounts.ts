@@ -34,8 +34,9 @@ export function useModuleNotificatieCounts() {
   // Realtime updates
   useEffect(() => {
     if (!user) return;
+    const channelName = `module-notificatie-counts:${user.id}:${Math.random().toString(36).slice(2, 8)}`;
     const channel = supabase
-      .channel("module-notificatie-counts")
+      .channel(channelName)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "notificaties", filter: `user_id=eq.${user.id}` },
         () => qc.invalidateQueries({ queryKey: ["module-notificatie-counts"] })
