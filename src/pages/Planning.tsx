@@ -277,9 +277,9 @@ const Planning = () => {
   const handleSubscribe = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Je moet ingelogd zijn"); return; }
-    const { data } = await supabase.from("users").select("ical_token").eq("id", user.id).single();
-    if (data?.ical_token) {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/planning-ical-feed?token=${data.ical_token}`;
+    const { data: token } = await supabase.rpc("get_my_ical_token");
+    if (token) {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/planning-ical-feed?token=${token}`;
       setFeedUrl(url);
       await navigator.clipboard.writeText(url);
       toast.success("Feed URL gekopieerd naar klembord!");
