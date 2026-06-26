@@ -1,38 +1,32 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Phone, Mail, Globe, Save, MessageSquarePlus, MessageCircle, CalendarPlus,
-  Presentation, FileCheck2, Sparkles, Flame,
-  Star, Rocket, Tag, CalendarClock, ListChecks, Activity, History, StickyNote, Wand2,
-} from "lucide-react";
-import { useState, useEffect } from "react";
-import { STATUS_LABEL, STATUS_VOLGORDE, STATUS_KLEUR, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
-import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
-import { useLeadContactmomenten, useLogContactmoment } from "@/hooks/affiliate/useAffiliateLeadContact";
-import { telLink, whatsappLink } from "@/lib/affiliate/contact";
-import { toast } from "sonner";
-import { TerugbelDialog } from "./TerugbelDialog";
-import { TrialStartenButton } from "./TrialStartenButton";
-import { TrialStatusBadge } from "./TrialStatusBadge";
-import { VerrijkLeadDialog } from "./VerrijkLeadDialog";
-import { VerlorenRedenDialog } from "./VerlorenRedenDialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Phone, Mail, Globe, Save, Activity, MailOpen, StickyNote, Sparkles, History, Star, CalendarClock, Rocket } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { STATUS_LABEL, STATUS_VOLGORDE, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
+import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
+import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
 import EmailTab from "@/components/email/EmailTab";
 import EmailCompose from "@/components/email/EmailCompose";
+import { TerugbelDialog } from "./TerugbelDialog";
+import { TrialStartenButton } from "./TrialStartenButton";
+import { VerrijkLeadDialog } from "./VerrijkLeadDialog";
+import { VerlorenRedenDialog } from "./VerlorenRedenDialog";
 import { AiOpvolgKaart } from "./AiOpvolgKaart";
-import { OpvolgLogLijst } from "./OpvolgLogLijst";
-import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
-import { useSearchParams } from "react-router-dom";
 import { ContactpersonenKaart } from "./LeadDetail/ContactpersonenKaart";
 import { BedrijfsKaartUitgebreid } from "./LeadDetail/BedrijfsKaartUitgebreid";
 import { BewerkBanner } from "./LeadDetail/BewerkBanner";
 import { HistorieTab } from "./LeadDetail/HistorieTab";
+import { LeadDetailHero } from "./LeadDetail/Hero";
+import { LeadActiviteitenTijdlijn } from "./LeadDetail/Tijdlijn";
+import { useLeadTijdlijn } from "./LeadDetail/Tijdlijn/useLeadTijdlijn";
 
 const BRON_LABEL: Record<string, string> = {
   platform_pool: "Platform pool",
@@ -48,35 +42,27 @@ const TEMP_OPTIES = [
   { value: "heet", label: "Heet" },
 ];
 
-const TEMP_KLEUR: Record<string, string> = {
-  koud: "bg-slate-100 text-slate-700",
-  lauw: "bg-amber-100 text-amber-800",
-  warm: "bg-orange-100 text-orange-800",
-  heet: "bg-rose-100 text-rose-800",
-};
+interface Props { lead: AffiliateLead }
 
-interface Props {
-  lead: AffiliateLead;
-}
-
+/**
+ * Orchestrator voor de affiliate lead/klant-detailpagina.
+ * Houdt alleen layout + dialog-state vast; alle blokken zijn losse componenten.
+ */
 export function LeadDetailBody({ lead }: Props) {
   const update = useUpdateAffiliateLead();
-  const log = useLogContactmoment();
-  const { data: history = [] } = useLeadContactmomenten(lead.id);
   const { data: bronnen = [] } = useLeadBronnen();
   const [status, setStatus] = useState<AffiliateLeadStatus>(lead.status as AffiliateLeadStatus);
   const [waarde, setWaarde] = useState(String(lead.geschatte_waarde ?? ""));
   const [notitie, setNotitie] = useState(lead.notities ?? "");
   const [temperatuur, setTemperatuur] = useState<string>(lead.temperatuur ?? "lauw");
   const [volgendeActie, setVolgendeActie] = useState<string>(lead.volgende_actie_datum ?? "");
-  const [contactNotitie, setContactNotitie] = useState("");
   const [openTerugbel, setOpenTerugbel] = useState(false);
   const [openDemo, setOpenDemo] = useState(false);
   const [openOrder, setOpenOrder] = useState(false);
   const [openVerrijk, setOpenVerrijk] = useState(false);
   const [openVerloren, setOpenVerloren] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get("tab") ?? "overzicht";
+  const tab = searchParams.get("tab") ?? "tijdlijn";
   const setTab = (v: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("tab", v);
@@ -89,15 +75,11 @@ export function LeadDetailBody({ lead }: Props) {
     setNotitie(lead.notities ?? "");
     setTemperatuur(lead.temperatuur ?? "lauw");
     setVolgendeActie(lead.volgende_actie_datum ?? "");
-    setContactNotitie("");
   }, [lead.id, lead.status, lead.geschatte_waarde, lead.notities, lead.temperatuur, lead.volgende_actie_datum]);
 
-  const tel = telLink(lead.telefoon);
-  const wa = whatsappLink(lead.telefoon);
   const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
   const bronRecord = bronnen.find((b) => b.id === lead.bron_id);
   const bronLabel = bronRecord?.label ?? (lead.bron ? BRON_LABEL[lead.bron] ?? lead.bron : null);
-  const adresRegels = [lead.adres, [lead.postcode, lead.plaats].filter(Boolean).join(" ")].filter(Boolean);
 
   const { data: partnerInfo } = useQuery({
     queryKey: ["affiliate-lead-partner", gewonnenPartnerId],
@@ -108,9 +90,10 @@ export function LeadDetailBody({ lead }: Props) {
     },
   });
 
+  const { data: tijdlijn = [] } = useLeadTijdlijn({ leadId: lead.id, email: lead.email });
+
   const opslaan = async () => {
     try {
-      // Als gebruiker status naar 'verloren' zet → verplichte reden via dialog.
       if (status === "verloren" && lead.status !== "verloren") {
         setOpenVerloren(true);
         return;
@@ -131,86 +114,29 @@ export function LeadDetailBody({ lead }: Props) {
     }
   };
 
-  const logGesprek = async () => {
-    if (!contactNotitie.trim()) return;
-    await log.mutateAsync({ lead_id: lead.id, type: "telefoon", notitie: contactNotitie, uitkomst: "gelogd" });
-    setContactNotitie("");
+  const onActie = (a: "terugbel" | "demo" | "order" | "verrijken" | "ai") => {
+    if (a === "terugbel") setOpenTerugbel(true);
+    else if (a === "demo") setOpenDemo(true);
+    else if (a === "order") setOpenOrder(true);
+    else if (a === "verrijken") setOpenVerrijk(true);
+    else if (a === "ai") setTab("opvolging");
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <BewerkBanner leadId={lead.id} eigenaarId={lead.eigenaar_id} />
-      {/* Sticky header */}
-      <div className="sticky top-0 z-20 -mx-4 px-4 py-3 bg-background/85 backdrop-blur border-b">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <Badge className={STATUS_KLEUR[status]}>{STATUS_LABEL[status]}</Badge>
-            {lead.temperatuur && (
-              <Badge variant="outline" className={TEMP_KLEUR[lead.temperatuur] ?? ""}>
-                <Flame className="h-3 w-3 mr-1" /> {lead.temperatuur}
-              </Badge>
-            )}
-            {bronLabel && (
-              <Badge variant="outline" className="bg-muted/40">
-                <Tag className="h-3 w-3 mr-1" /> {bronLabel}
-              </Badge>
-            )}
-            {typeof lead.ai_score === "number" && (
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/30">
-                <Star className="h-3 w-3 mr-1" /> AI {lead.ai_score}/100
-              </Badge>
-            )}
-            {lead.contactpersoon && <Badge variant="outline">{lead.contactpersoon}</Badge>}
-            {gewonnenPartnerId && <TrialStatusBadge trialEinddatum={partnerInfo?.trial_einddatum ?? null} />}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 justify-end">
-            {tel && (
-              <Button asChild size="sm" variant="outline">
-                <a href={tel}><Phone className="h-4 w-4 mr-1" />Bel</a>
-              </Button>
-            )}
-            {wa && (
-              <Button asChild size="sm" variant="outline" className="text-emerald-700 border-emerald-300">
-                <a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</a>
-              </Button>
-            )}
-            {lead.email && (
-              <Button asChild size="sm" variant="outline">
-                <a href={`mailto:${lead.email}`}><Mail className="h-4 w-4 mr-1" />Mail</a>
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={() => setOpenTerugbel(true)}>
-              <CalendarPlus className="h-4 w-4 mr-1" /> Terugbel
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setOpenDemo(true)}>
-              <Presentation className="h-4 w-4 mr-1" /> Demo
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setOpenOrder(true)} disabled={!lead.email}>
-              <FileCheck2 className="h-4 w-4 mr-1" /> Order
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setTab("opvolging")} className="text-primary border-primary/40 hover:bg-primary/5">
-              <Wand2 className="h-4 w-4 mr-1" /> AI-opvolging
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setOpenVerrijk(true)} className="text-primary border-primary/40 hover:bg-primary/5">
-              <Sparkles className="h-4 w-4 mr-1" /> Verrijken
-            </Button>
-            {lead.website && (
-              <Button asChild size="sm" variant="outline">
-                <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer">
-                  <Globe className="h-4 w-4 mr-1" /> Website
-                </a>
-              </Button>
-            )}
-            {!gewonnenPartnerId && <TrialStartenButton lead={lead} size="sm" />}
-          </div>
-        </div>
-      </div>
 
-      {/* 2-koloms workspace */}
-      <div className="grid gap-5 lg:grid-cols-[360px,1fr]">
-        {/* LINKERPANEEL */}
-        <aside className="space-y-4 lg:sticky lg:top-[88px] lg:self-start">
-          {/* Sales kerngegevens */}
+      <LeadDetailHero
+        lead={lead}
+        bronLabel={bronLabel}
+        tijdlijn={tijdlijn}
+        gewonnenPartnerId={gewonnenPartnerId}
+        trialEinddatum={partnerInfo?.trial_einddatum ?? null}
+        onActie={onActie}
+      />
+
+      <div className="grid gap-5 lg:grid-cols-[340px,1fr]">
+        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
           <div className="rounded-lg border bg-card p-4 space-y-3">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Star className="h-4 w-4 text-muted-foreground" /> Sales kerngegevens
@@ -248,10 +174,9 @@ export function LeadDetailBody({ lead }: Props) {
             </Button>
           </div>
 
-          {/* Contact (lead-niveau) */}
           <div className="rounded-lg border bg-card p-4 space-y-2">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" /> Hoofdcontact lead
+              <Phone className="h-4 w-4 text-muted-foreground" /> Hoofdcontact
             </h3>
             <dl className="text-sm space-y-1.5">
               <Rij icon={<Phone className="h-3.5 w-3.5" />} label="Telefoon" value={lead.telefoon} />
@@ -260,38 +185,31 @@ export function LeadDetailBody({ lead }: Props) {
             </dl>
           </div>
 
-          {/* Contactpersonen (nieuwe tabel) */}
           <ContactpersonenKaart leadId={lead.id} />
 
-          {/* Uitgebreide bedrijfsgegevens */}
           <BedrijfsKaartUitgebreid lead={lead} bronLabel={bronLabel} />
 
-          {/* Trial CTA als nog niet gestart */}
           {!gewonnenPartnerId && (
             <div className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-4 space-y-2">
               <p className="text-sm font-semibold flex items-center gap-2">
                 <Rocket className="h-4 w-4 text-primary" /> Klaar om te starten?
               </p>
               <p className="text-xs text-muted-foreground">
-                Start een 30-daagse trial op naam van deze klant. Jij wordt automatisch gekoppeld als affiliate.
+                Start een 30-daagse trial op naam van deze klant.
               </p>
               <TrialStartenButton lead={lead} size="sm" />
             </div>
           )}
         </aside>
 
-        {/* RECHTERPANEEL — TABS */}
         <section>
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
-              <TabsTrigger value="overzicht" className="text-xs sm:text-sm">
-                <ListChecks className="h-3.5 w-3.5 mr-1.5" /> Overzicht
-              </TabsTrigger>
-              <TabsTrigger value="activiteit" className="text-xs sm:text-sm">
-                <Activity className="h-3.5 w-3.5 mr-1.5" /> Activiteit
+            <TabsList className="grid w-full grid-cols-5 h-auto">
+              <TabsTrigger value="tijdlijn" className="text-xs sm:text-sm">
+                <Activity className="h-3.5 w-3.5 mr-1.5" /> Tijdlijn
               </TabsTrigger>
               <TabsTrigger value="email" className="text-xs sm:text-sm">
-                <Mail className="h-3.5 w-3.5 mr-1.5" /> E-mail
+                <MailOpen className="h-3.5 w-3.5 mr-1.5" /> E-mail
               </TabsTrigger>
               <TabsTrigger value="notities" className="text-xs sm:text-sm">
                 <StickyNote className="h-3.5 w-3.5 mr-1.5" /> Notities
@@ -304,43 +222,13 @@ export function LeadDetailBody({ lead }: Props) {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overzicht" className="mt-4 space-y-4">
-              <AiOpvolgKaart lead={lead} />
-              <div className="rounded-lg border bg-card p-4">
-                <OpvolgLogLijst leadId={lead.id} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="activiteit" className="mt-4 space-y-4">
-              <div className="rounded-lg border bg-card p-4 space-y-2">
-                <Label className="flex items-center gap-2">
-                  <MessageSquarePlus className="h-4 w-4" /> Gespreksnotitie loggen
-                </Label>
-                <Textarea rows={3} value={contactNotitie} onChange={(e) => setContactNotitie(e.target.value)} placeholder="Wat besproken, vervolgactie..." />
-                <Button size="sm" onClick={logGesprek} disabled={!contactNotitie.trim() || log.isPending}>
-                  Loggen
-                </Button>
-              </div>
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">Nog geen contactmomenten gelogd.</p>
-              ) : (
-                <div className="space-y-2">
-                  {history.map((h) => (
-                    <div key={h.id} className="text-sm border rounded-md p-3 bg-muted/30">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{h.type} {h.uitkomst ? `· ${h.uitkomst}` : ""}</span>
-                        <span>{new Date(h.created_at).toLocaleString("nl-NL")}</span>
-                      </div>
-                      {h.notitie && <p className="mt-1 whitespace-pre-wrap">{h.notitie}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <TabsContent value="tijdlijn" className="mt-4">
+              <LeadActiviteitenTijdlijn leadId={lead.id} email={lead.email} />
             </TabsContent>
 
             <TabsContent value="email" className="mt-4 space-y-2">
               <p className="text-xs text-muted-foreground">
-                In- en uitgaande mails vanuit jouw gekoppelde Gmail/Outlook worden hier automatisch getoond.
+                In- en uitgaande mails vanuit je gekoppelde Gmail/Outlook.
               </p>
               <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
             </TabsContent>
@@ -375,12 +263,8 @@ export function LeadDetailBody({ lead }: Props) {
             </TabsContent>
 
             <TabsContent value="historie" className="mt-4">
-              <div className="rounded-lg border bg-card p-4 space-y-4">
+              <div className="rounded-lg border bg-card p-4">
                 <HistorieTab leadId={lead.id} />
-                <div className="border-t pt-3">
-                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Opvolg-log</h4>
-                  <OpvolgLogLijst leadId={lead.id} />
-                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -401,7 +285,7 @@ export function LeadDetailBody({ lead }: Props) {
         onOpenChange={setOpenOrder}
         defaultTo={lead.email ?? ""}
         defaultSubject={`Orderbevestiging mijnhuis.nu — ${lead.bedrijfsnaam}`}
-        defaultBody={`Beste ${lead.contactpersoon ?? "klant"},\n\nHartelijk dank voor je vertrouwen in mijnhuis.nu. Hierbij bevestigen we je order voor ${lead.bedrijfsnaam}.\n\nWat je kunt verwachten:\n- Onze 30-daagse trial start direct na activatie\n- Je ontvangt persoonlijke onboarding via je affiliate\n- Bij vragen ben ik je vaste contactpersoon\n\nWelkom bij mijnhuis.nu!`}
+        defaultBody={`Beste ${lead.contactpersoon ?? "klant"},\n\nHartelijk dank voor je vertrouwen in mijnhuis.nu. Hierbij bevestigen we je order voor ${lead.bedrijfsnaam}.\n\nWelkom bij mijnhuis.nu!`}
         affiliateLeadId={lead.id}
       />
     </div>
@@ -415,7 +299,7 @@ function Rij({ icon, label, value }: { icon: React.ReactNode; label: string; val
       <span className="text-muted-foreground mt-0.5 shrink-0">{icon}</span>
       <div>
         <dt className="text-xs text-muted-foreground">{label}</dt>
-        <dd>{value}</dd>
+        <dd className="break-all">{value}</dd>
       </div>
     </div>
   );

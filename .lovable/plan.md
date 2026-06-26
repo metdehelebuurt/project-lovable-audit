@@ -1,96 +1,164 @@
+# Plan: Affiliate lead-/klantdetail professionaliseren
 
-## Huidige pijnpunten (uit screenshot + code)
+## Probleemanalyse (huidige situatie)
 
-- Kaarten zijn ~120px hoog met enorm veel verticale lucht; één scherm toont ~6 items terwijl er ruimte is voor 12+.
-- Rechterhelft van het scherm is leeg — content stopt rond 1000px terwijl viewport 1700px+ is.
-- "Meer tonen" verbergt juist de relevante info (beschrijving, admin-reactie, bijlagen) — gebruiker moet per item klikken.
-- Status, categorie en type-icoon staan los van elkaar; geen kleurcodering voor status (alles "outline").
-- Geen zicht op opvolging: geplande release-versie (`verwacht_klaar_op`, `verwerkt_in_versie`), bevestiging (`bevestiging_status`), CSAT (`csat_score`), aantal reacties, of of er al een admin-reactie is.
-- Datum is weggestopt onderaan in muted 10px tekst.
-- Filters (type + status) staan los; geen tellingen, geen zoek, geen sortering.
+Op basis van de screenshot en `LeadDetailBody.tsx` (422 r.):
 
-## Scope
+- **Veel witruimte rechts**: de Activiteit-tab toont alleen een leeg gespreksnotitie-formulier en een grijze "nog niets gelogd"-regel — de rest van het paneel is leeg.
+- **Sticky header oogt rommelig**: 9 knoppen op één rij (Bel/WhatsApp/Mail/Terugbel/Demo/Order/AI-opvolging/Verrijken/Trial) zonder hiërarchie; primaire CTA's verzuipen.
+- **Geen kerncijfers in beeld**: waarde, AI-score, dagen sinds laatste contact, deadline volgende actie en aantal contactmomenten staan verspreid of ontbreken.
+- **Hoofdcontact-kaart toont placeholders**: "test" als telefoonnummer ziet er stuk uit; geen één-klik bel/mail/WhatsApp-actie op contactrijniveau zelf.
+- **Bedrijfsgegevens-kaart vaak leeg** (alleen "Bron: Eigen import" zichtbaar) → toont geen empty state of CTA om te verrijken.
+- **Vier tabs (Overzicht / Activiteit / E-mail / Notities / Opvolging / Historie) overlappen**: AI-opvolging staat zowel op Overzicht als op Opvolging; contactmomenten staan op Activiteit maar e-mail/opvolg-log/historie elders → geen unified timeline.
+- **Geen indicatie van trial-status / klant-conversie** wanneer lead → klant is geworden, behalve een kleine badge.
+- **Mobile**: sticky header met 9 knoppen scrollt horizontaal en wordt onbruikbaar.
 
-Alleen de UX/UI van de feedback-module voor gewone gebruikers (`src/pages/FeedbackOverzicht.tsx` + `src/components/feedback/FeedbackKaart.tsx`). Geen wijziging aan RLS, data-model, edge functions, of de admin-pagina `FeedbackAdmin.tsx`. Detail-pagina blijft functioneel hetzelfde.
+## Doelen
 
-## Redesign
+1. Eén oogopslag = situatie begrepen (status, waarde, hot/koud, volgende actie, dagen stil).
+2. Eén klik = volgende beste actie (bel, mail, terugbel inplannen, trial starten).
+3. Eén tijdlijn = alles wat ooit gebeurde (gesprekken, mails, opvolg-acties, status-mutaties).
+4. Lege staten zijn nooit gewoon "Nog niets" — altijd een suggestie/CTA.
+5. Strakker, rustiger, professioneler ogend (klantgericht, geen rommelige knoppenrij).
 
-### 1. Layout-shell
-
-- Vervang single-column `space-y-3` door **2-koloms grid op ≥xl** (`grid-cols-1 xl:grid-cols-2 gap-4`). Tegels worden compacter en de rechter helft van het scherm wordt gevuld zonder dat individuele kaarten breed-en-leeg worden.
-- Header krijgt links titel + sub, rechts: zoekveld (titel/beschrijving full-text op client), type-filter, status-filter, sort (Nieuwste/Meeste stemmen), "Nieuw verzoek".
-- Filterchips met **tellingen** per status: `Nieuw 4 · In behandeling 2 · Gepland 1 · Afgerond 8` — klikbaar als snelfilter naast het Select-dropdown.
-
-### 2. Postcard (FeedbackKaart, herontworpen)
-
-Compacte kaart in 3 stroken (geen "Meer tonen" meer — relevante info staat al in de kaart):
+## Nieuw layout-model
 
 ```text
-┌──────────────────────────────────────────────────────────┐
-│ [▲ 12]  🐛 Bug · Workflow              [Status pill]      │  ← header strook
-│         Verwijderen van leads uit pijplijn               │
-│         De gebruiker wenst de mogelijkheid om leads…     │  ← 2-regel clamp samenvatting
-│                                                          │
-│ 🏷 leads  verwijderen  pijplijn-mgmt   +2                │  ← tags max 3 + "+n"
-│                                                          │
-│ 📅 23 jun · 🗓 v2.4 (verwacht 30 jun) · 💬 3 · ⭐ 4/5    │  ← meta-strook
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ HERO                                                            │
+│  Esteban test BV   [● Hot] [Nieuw – Koude leads] [⭐ AI 72/100] │
+│  Eigen import · KvK 12345678 · Amsterdam · sinds 12 dgn         │
+│                                                                 │
+│  ┌─KPI─┐  ┌─KPI─┐  ┌─KPI─┐  ┌─KPI─┐                             │
+│  │€1.234│ │ 5d  │ │ 0   │ │ 3   │  [Bel] [Mail] [WhatsApp]      │
+│  │waarde│ │ stil│ │mails│ │cont.│  · · ·  [▾ Meer acties]       │
+│  └─────┘ └─────┘ └─────┘ └─────┘                                │
+│                                                                 │
+│  Volgende actie: ⏰ Donderdag 27 jun — "Demo inplannen"         │
+└─────────────────────────────────────────────────────────────────┘
+┌─────────────────┐ ┌─────────────────────────────────────────────┐
+│ LINKER (320px)  │ │ RECHTER (workspace)                         │
+│ • Sales kern    │ │  [Tijdlijn] [E-mail] [Notities] [Bedrijf]   │
+│   (status/temp/ │ │                                             │
+│    waarde/      │ │  Tijdlijn = samengevoegd:                   │
+│    deadline)    │ │   • Gespreks-notitie                        │
+│ • Snel loggen   │ │   • Verzonden/ontvangen mail                │
+│   (1-klik)      │ │   • Status-wijziging                        │
+│ • Hoofdcontact  │ │   • AI-opvolg suggestie                     │
+│ • Contactperso- │ │   • Terugbelafspraak                        │
+│   nen           │ │   • Trial gestart                           │
+│ • Trial/Klant   │ │  Met filterchips: Alles · Calls · Mail ·    │
+│   blok          │ │   AI · Status                               │
+└─────────────────┘ └─────────────────────────────────────────────┘
 ```
 
-Concreet:
-- **Stem-knop** links: pijl-omhoog ikoon + getal (groter, primary-kleur als gestemd), niet meer disabled-grijs voor eigen item maar verborgen en vervangen door 👤 "Door jou"-badge.
-- **Type + categorie**: één rij met domein-icoon (bug/lightbulb/message), categorie-chip + status-pill **met semantische kleur** (`nieuw`=blue, `in_behandeling`=amber, `gepland`=violet, `afgerond`=green, `afgewezen`=muted). Status pill rechts uitgelijnd.
-- **Titel** medium-bold 14px, één regel met truncate.
-- **Samenvatting** `ai_samenvatting` (fallback `beschrijving` als plain text) 2-regel clamp (`line-clamp-2`), 13px muted.
-- **Tags-strook**: max 3 chips zichtbaar, overflow als `+n`. Wordt overgeslagen als geen tags.
-- **Meta-strook** (12px muted, gescheiden door `·`):
-  - 📅 ingediend-datum (`23 jun`)
-  - 🗓 Indien `verwerkt_in_versie`: `v{versie}`; anders indien `verwacht_klaar_op`: `verwacht {datum}` — alleen tonen voor status `gepland`/`in_behandeling`.
-  - 💬 aantal reacties (count via aparte query `feedback_reacties` group-by feedback_id, zie sectie 4).
-  - ⭐ CSAT score `csat_score`/5 als afgerond + score aanwezig.
-  - 📎 indien `bijlagen.length > 0`: aantal bijlagen.
-  - "Door jou" badge als eigen item.
-- **Actie-bevestiging hint**: indien `status='afgerond'` én `bevestiging_status` is `null` én eigen item → kleine inline call-to-action onderaan kaart: "✅ Bevestig of probeer opnieuw" — link naar detail. Trekt direct aandacht voor opvolging.
-- **Klik op kaart** opent altijd `/feedback/${id}` (de detail-pagina); de aparte superadmin-redirect verdwijnt uit de gebruikersweergave.
+## Concrete wijzigingen
 
-### 3. Tonen van beschrijving zonder uitklap
+### 1. Nieuwe Hero (`LeadDetailHero.tsx`)
+- Bedrijfsnaam (XL), inline pillrij (status, temperatuur, AI-score, trial/klant-badge).
+- Sub-regel: bron · KvK · plaats · "aangemaakt X dgn geleden".
+- **KPI-strip** (4 tegels): Waarde €, Dagen stil (laatste contactmoment), # E-mails, # Contactmomenten + indicator volgende-actie deadline (groen/oranje/rood).
+- **Actie-cluster**: primair (Bel · Mail · WhatsApp), secundair gegroepeerd in dropdown "Meer acties" (Terugbel, Demo plannen, Order, Verrijken, AI-opvolging).
+- "Volgende actie"-bar onder KPI's met inline date-edit en quick-shift (+1d / +1w / klaar).
+- Verwijdert de huidige drukke knoppenrij; alles via primair + dropdown.
 
-`ai_samenvatting` (al door AI gegenereerd, één regel) is de primaire korte versie. Volledige beschrijving + bijlagen + admin-reactie staan in de detail-pagina — daar zijn ze rijker en met reacties-thread. De inline accordion `Meer tonen` vervalt: kaart blijft kort, klik = detail.
+### 2. Linkerkolom inkrimpen (`LeadDetailSidebar.tsx`)
+- Collapsibles per blok (kerngegevens default open, rest dicht).
+- **Snel-loggen-blok** verplaatsen naar de sidebar als 1-klik chips: 📞 Belpoging · 🗣️ Gesproken · 📧 Mail gestuurd · 🚫 Niet bereikbaar → opent compacte popover voor notitie + uitkomst en logt direct.
+- Hoofdcontact: bel/mail/WhatsApp-icoonknoppen rechtstreeks op de regel.
+- Bedrijfsgegevens met **lege-staat-CTA**: "Geen extra data — Verrijk met AI" (i.p.v. de huidige bijna-lege kaart).
 
-### 4. Reactie-tellingen ophalen
+### 3. Unified Timeline (`LeadActiviteitenTijdlijn.tsx`) — vervangt `Activiteit`+`Overzicht`-tabs
+- Eén `useLeadTijdlijn(leadId)`-hook die samenvoegt:
+  - `affiliate_lead_contactmomenten` (bestaand)
+  - `affiliate_opvolg_log` (bestaand)
+  - `email_messages` voor deze lead (bestaand via EmailTab)
+  - `entiteit_historie` (status/temperatuur/eigenaar mutaties)
+  - Terugbelafspraken
+- Render als verticale timeline met type-icoon, datum, actor, samenvatting, expand voor detail.
+- **Filterchips boven**: Alles · Calls · Mail · AI · Status · Notities.
+- **Inline composer** bovenaan (zoals de huidige "Gespreksnotitie loggen") maar slanker + type-selector (telefoon/whatsapp/notitie/mail-handmatig).
+- Lege staat: ascii-illustratie + 2 CTA's ("Eerste gesprek loggen", "Mail sturen").
 
-Eén extra query parallel aan de hoofdquery:
-```ts
-supabase.from('feedback_reacties').select('feedback_id').eq('intern', false)
+### 4. Tabs hervormen
+Van 6 → 4 tabs (alles wat dubbel was wordt samengevoegd):
+
+| Oude tab | Nieuwe locatie |
+| --- | --- |
+| Overzicht (AI + opvolg-log) | Onderdeel van **Tijdlijn** (filter "AI") + sidebar-blok "Opvolgsuggestie" bovenaan |
+| Activiteit | → **Tijdlijn** |
+| E-mail | **E-mail** (blijft) |
+| Notities | **Notities** (blijft, met markdown-toolbar mini) |
+| Opvolging | → AI-kaart bovenaan tijdlijn + sidebar |
+| Historie | → tijdlijn-filter "Status" |
+
+### 5. Klant-modus (na trial-start)
+- Wanneer `gewonnen_partner_id` gezet is: hero krijgt extra "Klant sinds dd-mm"-badge + trial-countdown progressbar.
+- Trial CTA-blok in sidebar wordt **klantblok**: trial-status, einddatum, link naar partner-dashboard, MRR-indicatie als beschikbaar.
+
+### 6. Mobile
+- Hero KPI's stacken 2x2; actie-cluster wordt een sticky bottom-bar (Bel · Mail · ⋯).
+- Linkerkolom wordt boven workspace gestapeld, collapsibles standaard dicht behalve "Sales kern".
+
+### 7. Lege-staten standaardiseren
+- Component `LegeStaatBlok` (icoon + titel + subtitel + CTA) wordt op 4 plekken hergebruikt (tijdlijn, e-mail, bedrijfsgegevens, contactpersonen).
+
+## Bestandsstructuur (alles ≤ 800 r., functies ≤ 50 r.)
+
+```text
+src/components/affiliate/LeadDetail/
+  Hero/
+    index.tsx              # <LeadDetailHero />
+    KpiTegels.tsx
+    ActieCluster.tsx
+    VolgendeActieBar.tsx
+  Sidebar/
+    index.tsx              # <LeadDetailSidebar />
+    SalesKernBlok.tsx      # bestaande velden, ingekort
+    SnelLoggenBlok.tsx     # NIEUW: 1-klik logging
+    HoofdcontactBlok.tsx
+    KlantTrialBlok.tsx
+  Tijdlijn/
+    index.tsx              # <LeadActiviteitenTijdlijn />
+    TijdlijnItem.tsx
+    TijdlijnFilters.tsx
+    TijdlijnComposer.tsx
+    useLeadTijdlijn.ts     # samenvoegende hook
+  LegeStaatBlok.tsx        # gedeeld
+  ContactpersonenKaart.tsx # bestaand, kleine polish
+  BedrijfsKaartUitgebreid.tsx # bestaand, empty-state-CTA toevoegen
 ```
-Client-side reducen tot `Record<feedback_id, count>` en doorgeven aan de kaart. Geen schema-wijziging.
 
-### 5. Lege staat + loading
+`LeadDetailBody.tsx` wordt orchestrator (< 150 r.), bevat alleen layout + Tabs.
 
-- Loading: 6 skeleton-kaarten in dezelfde grid (niet meer alleen "Laden…").
-- Lege staat: illustratie + tekst "Nog geen feedback" + duidelijke primary-knop "Nieuw verzoek".
-- Gefilterde lege staat: "Geen resultaten voor deze filters" + "Filters wissen" knop.
+## Datalaag (geen schemawijzigingen)
 
-### 6. Bestanden
+Alle data bestaat al:
+- `affiliate_leads`, `affiliate_lead_contactmomenten`, `affiliate_opvolg_log`, `email_messages`, `entiteit_historie`, `affiliate_lead_contactpersonen`, `terugbel_afspraken`.
 
-- **Edit** `src/pages/FeedbackOverzicht.tsx`: nieuwe header, filterbalk met zoek/sort/tellingen, 2-koloms grid, reactie-count query, skeleton/lege staat.
-- **Edit** `src/components/feedback/FeedbackKaart.tsx` (bestaat al, 143 regels): vervang body door nieuwe compacte 3-stroken layout. Houd dezelfde props-shape; voeg props toe voor `reactieCount`, en behoud `compact`-variant indien aanwezig.
-- **Niet** wijzigen: detail-pagina, nieuwe-verzoek-pagina, admin-pagina, kanban, notificatie-log, RLS.
+Nieuwe hook `useLeadTijdlijn(leadId)` voert 5 parallelle queries uit (`Promise.all` in queryFn) en mergt op `created_at` desc. Geen RLS-wijzigingen nodig — alles is al per affiliate gescoped.
 
-### 7. Status-kleuren als design-tokens
+## Visueel/design
 
-Voeg semantische tokens toe in `src/index.css` (HSL):
-- `--feedback-status-nieuw`, `--feedback-status-behandeling`, `--feedback-status-gepland`, `--feedback-status-afgerond`, `--feedback-status-afgewezen`
-en bijbehorende `-foreground` paren, geregistreerd in `tailwind.config.ts`. Geen hardcoded `bg-blue-500` in componenten — alles via tokens, conform project knowledge.
+- Pas bestaande semantische tokens toe (purple primary, `--muted`, `--accent`).
+- Statusbadges: behoud `STATUS_KLEUR` mapping; KPI-tegels via `bg-muted/40` + `border`.
+- Geen nieuwe kleuren; alleen ritme/spacing verbeteren (gap-3 ↔ gap-5 consistent, kaarten p-4, hero p-5).
+- Iconen via `lucide-react` (PhoneCall, MailPlus, Timer, Activity, TrendingUp, Zap).
+- Tijdlijn: links 28px-rail met type-icoonbol + horizontale lijn naar kaart, in pure Tailwind.
 
-### 8. Responsive
+## Validatie
 
-- `<md`: 1 kolom, stem-knop blijft links, meta-strook wrapt; tags max 2 + `+n`.
-- `md–xl`: 1 kolom maar bredere kaart (zelfde layout).
-- `≥xl`: 2 kolommen grid.
+1. `tsgo` + `bun run build` clean.
+2. Playwright (1741×1249) op `/affiliate/leads/<id>?tab=tijdlijn`:
+   - Hero KPI's zichtbaar.
+   - Primaire actiebar < 4 knoppen + dropdown.
+   - Tijdlijn toont gemixte items (mail + contactmoment + status).
+   - Lege-staat-CTA op een lead zonder activiteit.
+3. Viewport 390×844 voor mobile sanity-check (sticky action-bar onderaan).
 
-## Wat valideer ik na implementatie
+## Out of scope (expliciet)
 
-1. `tsgo` + `bun run build`.
-2. Playwright: navigeer naar `/feedback`, screenshot op 1741×1249 viewport, controleer dat (a) twee kolommen zichtbaar zijn, (b) status-pill kleur heeft, (c) reactie-count en datum-meta tonen, (d) geen "Meer tonen" knop meer aanwezig is.
-3. Klik op kaart → opent detailpagina.
+- Geen schema/RLS-wijzigingen.
+- Geen edge-functie-aanpassingen.
+- Geen wijziging aan e-mail-sync, AI-opvolg-edge-function, of trial-start-flow — alleen presentation-layer.
+- Sales-kant (`/sales/leads/:id`) blijft ongewijzigd.
