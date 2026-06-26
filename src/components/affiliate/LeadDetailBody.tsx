@@ -23,7 +23,7 @@ import { LeadDetailHero } from "./LeadDetail/Hero";
 import { LeadActiviteitenTijdlijn } from "./LeadDetail/Tijdlijn";
 import { useLeadTijdlijn } from "./LeadDetail/Tijdlijn/useLeadTijdlijn";
 import { LeadKlantStrip } from "./LeadDetail/LeadKlantStrip";
-import { GekleurdeTabsList } from "./LeadDetail/GekleurdeTabsList";
+import { GekleurdeTabsList, TabCallout } from "./LeadDetail/GekleurdeTabsList";
 
 const BRON_LABEL: Record<string, string> = {
   platform_pool: "Platform pool",
@@ -81,6 +81,14 @@ export function LeadDetailBody({ lead }: Props) {
   });
 
   const { data: tijdlijn = [] } = useLeadTijdlijn({ leadId: lead.id, email: lead.email });
+
+  const tabCounts = {
+    tijdlijn: tijdlijn.length,
+    email: tijdlijn.filter((i) => i.type === "mail_in" || i.type === "mail_uit").length,
+    notities: notitie.trim() ? 1 : 0,
+    opvolging: lead.ai_bedrijf_samenvatting ? 1 : 0,
+    historie: tijdlijn.filter((i) => i.type === "status" || i.type === "veld").length,
+  };
 
   const opslaan = async () => {
     try {
@@ -143,53 +151,59 @@ export function LeadDetailBody({ lead }: Props) {
 
       <section className="min-w-0">
         <Tabs value={tab} onValueChange={setTab}>
-          <GekleurdeTabsList />
+          <GekleurdeTabsList counts={tabCounts} />
 
-          <TabsContent value="tijdlijn" className="mt-4">
-              <LeadActiviteitenTijdlijn leadId={lead.id} email={lead.email} />
-            </TabsContent>
+          <TabsContent value="tijdlijn" className="mt-4 space-y-3 min-w-0">
+            <TabCallout tab="tijdlijn" />
+            <LeadActiviteitenTijdlijn leadId={lead.id} email={lead.email} />
+          </TabsContent>
 
-            <TabsContent value="email" className="mt-4 space-y-2">
-              <p className="text-xs text-muted-foreground">
-                In- en uitgaande mails vanuit je gekoppelde Gmail/Outlook.
-              </p>
-              <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
-            </TabsContent>
+          <TabsContent value="email" className="mt-4 space-y-3 min-w-0">
+            <TabCallout tab="email" />
+            <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
+          </TabsContent>
 
-            <TabsContent value="notities" className="mt-4">
-            <div className="rounded-xl border bg-card p-4 space-y-2 border-l-4 border-l-amber-400">
-                <Label>Interne notities</Label>
-                <Textarea
-                  rows={14}
-                  value={notitie}
-                  onChange={(e) => setNotitie(e.target.value)}
-                  onBlur={opslaan}
-                  placeholder="Korte interne notities — automatisch opgeslagen na verlaten van veld"
-                />
-                <p className="text-xs text-muted-foreground">Wordt automatisch opgeslagen.</p>
-              </div>
-            </TabsContent>
+          <TabsContent value="notities" className="mt-4 space-y-3 min-w-0">
+            <TabCallout tab="notities" />
+            <div className="rounded-xl border bg-card p-4 space-y-2">
+              <Label>Interne notities</Label>
+              <Textarea
+                rows={14}
+                value={notitie}
+                onChange={(e) => setNotitie(e.target.value)}
+                onBlur={opslaan}
+                placeholder="Korte interne notities — automatisch opgeslagen na verlaten van veld"
+              />
+              <p className="text-xs text-muted-foreground">Wordt automatisch opgeslagen.</p>
+            </div>
+          </TabsContent>
 
-            <TabsContent value="opvolging" className="mt-4 space-y-4">
-              <AiOpvolgKaart lead={lead} />
-              {lead.ai_bedrijf_samenvatting && (
+          <TabsContent value="opvolging" className="mt-4 space-y-3 min-w-0">
+            <TabCallout
+              tab="opvolging"
+              actie={
+                <Button size="sm" variant="outline" onClick={() => setOpenVerrijk(true)}>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Verrijk
+                </Button>
+              }
+            />
+            <AiOpvolgKaart lead={lead} />
+            {lead.ai_bedrijf_samenvatting && (
               <div className="rounded-xl border bg-card p-4 border-l-4 border-l-emerald-400">
-                  <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                    <Sparkles className="h-4 w-4 text-primary" /> AI-bedrijfssamenvatting
-                  </h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lead.ai_bedrijf_samenvatting}</p>
-                </div>
-              )}
-              <Button variant="outline" onClick={() => setOpenVerrijk(true)} className="w-full">
-                <Sparkles className="h-4 w-4 mr-2" /> Verrijk lead opnieuw met AI
-              </Button>
-            </TabsContent>
-
-            <TabsContent value="historie" className="mt-4">
-            <div className="rounded-xl border bg-card p-4 border-l-4 border-l-slate-400">
-                <HistorieTab leadId={lead.id} />
+                <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-primary" /> AI-bedrijfssamenvatting
+                </h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lead.ai_bedrijf_samenvatting}</p>
               </div>
-            </TabsContent>
+            )}
+          </TabsContent>
+
+          <TabsContent value="historie" className="mt-4 space-y-3 min-w-0">
+            <TabCallout tab="historie" />
+            <div className="rounded-xl border bg-card p-4">
+              <HistorieTab leadId={lead.id} />
+            </div>
+          </TabsContent>
         </Tabs>
       </section>
 

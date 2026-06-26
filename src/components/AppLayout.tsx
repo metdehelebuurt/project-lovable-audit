@@ -9,11 +9,11 @@ import { Outlet } from "react-router-dom";
 export function AppLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full overflow-x-hidden">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 min-w-0 flex flex-col">
           <AppHeader />
-          <main className="flex-1 p-3 md:p-8 pb-24 md:pb-8 bg-background overflow-auto">
+          <main className="flex-1 min-w-0 p-3 md:p-8 pb-24 md:pb-8 bg-background overflow-x-hidden overflow-y-auto">
             <Outlet />
           </main>
         </div>

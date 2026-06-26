@@ -101,16 +101,16 @@ function TijdlijnRij({ item }: { item: TijdlijnItem }) {
       <span className={`absolute left-0 top-1 inline-flex items-center justify-center h-8 w-8 rounded-full border bg-background ${KLEUR[item.type]}`}>
         <Icon className="h-4 w-4" />
       </span>
-      <div className="rounded-lg border bg-card px-3 py-2.5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-sm font-medium leading-tight">{item.titel}</p>
+      <div className="rounded-lg border bg-card px-3 py-2.5 min-w-0 overflow-hidden">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 min-w-0">
+          <p className="text-sm font-medium leading-tight break-words min-w-0">{item.titel}</p>
           <time className="text-xs text-muted-foreground shrink-0">
             {new Date(item.datum).toLocaleString("nl-NL", { dateStyle: "short", timeStyle: "short" })}
           </time>
         </div>
-        {item.subtitel && <p className="text-xs text-muted-foreground mt-0.5">{item.subtitel}</p>}
+        {item.subtitel && <p className="text-xs text-muted-foreground mt-0.5 break-words">{item.subtitel}</p>}
         {item.body && (
-          <p className="text-sm mt-1.5 whitespace-pre-wrap text-foreground/90 line-clamp-4">{item.body}</p>
+          <p className="text-sm mt-1.5 whitespace-pre-wrap break-words text-foreground/90 line-clamp-4">{item.body}</p>
         )}
       </div>
     </li>
