@@ -1,32 +1,29 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Phone, Mail, Globe, Save, Activity, MailOpen, StickyNote, Sparkles, History, Star, CalendarClock, Rocket } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { STATUS_LABEL, STATUS_VOLGORDE, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
+import { type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
 import EmailTab from "@/components/email/EmailTab";
 import EmailCompose from "@/components/email/EmailCompose";
 import { TerugbelDialog } from "./TerugbelDialog";
-import { TrialStartenButton } from "./TrialStartenButton";
 import { VerrijkLeadDialog } from "./VerrijkLeadDialog";
 import { VerlorenRedenDialog } from "./VerlorenRedenDialog";
 import { AiOpvolgKaart } from "./AiOpvolgKaart";
-import { ContactpersonenKaart } from "./LeadDetail/ContactpersonenKaart";
-import { BedrijfsKaartUitgebreid } from "./LeadDetail/BedrijfsKaartUitgebreid";
 import { BewerkBanner } from "./LeadDetail/BewerkBanner";
 import { HistorieTab } from "./LeadDetail/HistorieTab";
 import { LeadDetailHero } from "./LeadDetail/Hero";
 import { LeadActiviteitenTijdlijn } from "./LeadDetail/Tijdlijn";
 import { useLeadTijdlijn } from "./LeadDetail/Tijdlijn/useLeadTijdlijn";
+import { LeadKlantStrip } from "./LeadDetail/LeadKlantStrip";
+import { GekleurdeTabsList } from "./LeadDetail/GekleurdeTabsList";
 
 const BRON_LABEL: Record<string, string> = {
   platform_pool: "Platform pool",
@@ -34,13 +31,6 @@ const BRON_LABEL: Record<string, string> = {
   referral_klik: "Referral klik",
   sales_admin: "Sales admin",
 };
-
-const TEMP_OPTIES = [
-  { value: "koud", label: "Koud" },
-  { value: "lauw", label: "Lauw" },
-  { value: "warm", label: "Warm" },
-  { value: "heet", label: "Heet" },
-];
 
 interface Props { lead: AffiliateLead }
 
@@ -123,7 +113,7 @@ export function LeadDetailBody({ lead }: Props) {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 min-w-0 w-full">
       <BewerkBanner leadId={lead.id} eigenaarId={lead.eigenaar_id} />
 
       <LeadDetailHero
@@ -135,94 +125,27 @@ export function LeadDetailBody({ lead }: Props) {
         onActie={onActie}
       />
 
-      <div className="grid gap-5 lg:grid-cols-[340px,1fr]">
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <div className="rounded-lg border bg-card p-4 space-y-3">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Star className="h-4 w-4 text-muted-foreground" /> Sales kerngegevens
-            </h3>
-            <div>
-              <Label className="text-xs">Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as AffiliateLeadStatus)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUS_VOLGORDE.map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Temperatuur</Label>
-                <Select value={temperatuur} onValueChange={setTemperatuur}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TEMP_OPTIES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Waarde (€)</Label>
-                <Input type="number" value={waarde} onChange={(e) => setWaarde(e.target.value)} />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><CalendarClock className="h-3 w-3" /> Volgende actie</Label>
-              <Input type="date" value={volgendeActie} onChange={(e) => setVolgendeActie(e.target.value)} />
-            </div>
-            <Button onClick={opslaan} disabled={update.isPending} className="w-full" size="sm">
-              <Save className="h-4 w-4 mr-2" /> Opslaan
-            </Button>
-          </div>
+      <LeadKlantStrip
+        lead={lead}
+        bronLabel={bronLabel}
+        status={status}
+        setStatus={setStatus}
+        temperatuur={temperatuur}
+        setTemperatuur={setTemperatuur}
+        waarde={waarde}
+        setWaarde={setWaarde}
+        volgendeActie={volgendeActie}
+        setVolgendeActie={setVolgendeActie}
+        isPending={update.isPending}
+        onOpslaan={opslaan}
+        gewonnenPartnerId={gewonnenPartnerId}
+      />
 
-          <div className="rounded-lg border bg-card p-4 space-y-2">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" /> Hoofdcontact
-            </h3>
-            <dl className="text-sm space-y-1.5">
-              <Rij icon={<Phone className="h-3.5 w-3.5" />} label="Telefoon" value={lead.telefoon} />
-              <Rij icon={<Mail className="h-3.5 w-3.5" />} label="E-mail" value={lead.email} />
-              <Rij icon={<Globe className="h-3.5 w-3.5" />} label="Website" value={lead.website} />
-            </dl>
-          </div>
+      <section className="min-w-0">
+        <Tabs value={tab} onValueChange={setTab}>
+          <GekleurdeTabsList />
 
-          <ContactpersonenKaart leadId={lead.id} />
-
-          <BedrijfsKaartUitgebreid lead={lead} bronLabel={bronLabel} />
-
-          {!gewonnenPartnerId && (
-            <div className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-4 space-y-2">
-              <p className="text-sm font-semibold flex items-center gap-2">
-                <Rocket className="h-4 w-4 text-primary" /> Klaar om te starten?
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Start een 30-daagse trial op naam van deze klant.
-              </p>
-              <TrialStartenButton lead={lead} size="sm" />
-            </div>
-          )}
-        </aside>
-
-        <section>
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid w-full grid-cols-5 h-auto">
-              <TabsTrigger value="tijdlijn" className="text-xs sm:text-sm">
-                <Activity className="h-3.5 w-3.5 mr-1.5" /> Tijdlijn
-              </TabsTrigger>
-              <TabsTrigger value="email" className="text-xs sm:text-sm">
-                <MailOpen className="h-3.5 w-3.5 mr-1.5" /> E-mail
-              </TabsTrigger>
-              <TabsTrigger value="notities" className="text-xs sm:text-sm">
-                <StickyNote className="h-3.5 w-3.5 mr-1.5" /> Notities
-              </TabsTrigger>
-              <TabsTrigger value="opvolging" className="text-xs sm:text-sm">
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Opvolging
-              </TabsTrigger>
-              <TabsTrigger value="historie" className="text-xs sm:text-sm">
-                <History className="h-3.5 w-3.5 mr-1.5" /> Historie
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="tijdlijn" className="mt-4">
+          <TabsContent value="tijdlijn" className="mt-4">
               <LeadActiviteitenTijdlijn leadId={lead.id} email={lead.email} />
             </TabsContent>
 
@@ -234,7 +157,7 @@ export function LeadDetailBody({ lead }: Props) {
             </TabsContent>
 
             <TabsContent value="notities" className="mt-4">
-              <div className="rounded-lg border bg-card p-4 space-y-2">
+            <div className="rounded-xl border bg-card p-4 space-y-2 border-l-4 border-l-amber-400">
                 <Label>Interne notities</Label>
                 <Textarea
                   rows={14}
@@ -250,7 +173,7 @@ export function LeadDetailBody({ lead }: Props) {
             <TabsContent value="opvolging" className="mt-4 space-y-4">
               <AiOpvolgKaart lead={lead} />
               {lead.ai_bedrijf_samenvatting && (
-                <div className="rounded-lg border bg-card p-4">
+              <div className="rounded-xl border bg-card p-4 border-l-4 border-l-emerald-400">
                   <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
                     <Sparkles className="h-4 w-4 text-primary" /> AI-bedrijfssamenvatting
                   </h4>
@@ -263,13 +186,12 @@ export function LeadDetailBody({ lead }: Props) {
             </TabsContent>
 
             <TabsContent value="historie" className="mt-4">
-              <div className="rounded-lg border bg-card p-4">
+            <div className="rounded-xl border bg-card p-4 border-l-4 border-l-slate-400">
                 <HistorieTab leadId={lead.id} />
               </div>
             </TabsContent>
-          </Tabs>
-        </section>
-      </div>
+        </Tabs>
+      </section>
 
       <TerugbelDialog open={openTerugbel} onOpenChange={setOpenTerugbel} leadId={lead.id} leadNaam={lead.bedrijfsnaam} klantEmail={lead.email} affiliateId={lead.eigenaar_id} />
       <TerugbelDialog open={openDemo} onOpenChange={setOpenDemo} leadId={lead.id} leadNaam={lead.bedrijfsnaam} klantEmail={lead.email} afspraakType="demo" affiliateId={lead.eigenaar_id} />
@@ -288,19 +210,6 @@ export function LeadDetailBody({ lead }: Props) {
         defaultBody={`Beste ${lead.contactpersoon ?? "klant"},\n\nHartelijk dank voor je vertrouwen in mijnhuis.nu. Hierbij bevestigen we je order voor ${lead.bedrijfsnaam}.\n\nWelkom bij mijnhuis.nu!`}
         affiliateLeadId={lead.id}
       />
-    </div>
-  );
-}
-
-function Rij({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) {
-  if (!value) return null;
-  return (
-    <div className="flex gap-2">
-      <span className="text-muted-foreground mt-0.5 shrink-0">{icon}</span>
-      <div>
-        <dt className="text-xs text-muted-foreground">{label}</dt>
-        <dd className="break-all">{value}</dd>
-      </div>
     </div>
   );
 }
