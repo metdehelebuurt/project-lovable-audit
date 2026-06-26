@@ -129,7 +129,7 @@ export function LeadDetailHero({ lead, bronLabel, tijdlijn, gewonnenPartnerId, t
           <Clock className="h-4 w-4" />
           <span className="font-medium">Volgende actie</span>
           <span>{new Date(lead.volgende_actie_datum).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "short" })}</span>
-          {lead.volgende_actie_notitie && <span className="text-muted-foreground truncate">— {lead.volgende_actie_notitie}</span>}
+          {/* notitie veld bestaat niet op deze tabel; weggelaten */}
         </div>
       )}
     </div>
