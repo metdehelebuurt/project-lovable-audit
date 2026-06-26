@@ -119,7 +119,7 @@ const GebruikerDetail = () => {
 
   const isOwn = me?.id === user.id;
   const canManage = me?.rol === "superadmin" || (me?.rol === "partner_admin" && me?.partner_id === user.partner_id);
-  const isUitgenodigd = !!(user as any).uitnodiging_token && !user.last_login_at;
+  const isUitgenodigd = !!(user as any).uitgenodigd_op && !user.last_login_at;
 
   return (
     <div className="space-y-6">
