@@ -40,7 +40,7 @@ export function useLeadTijdlijn({ leadId, email }: Args) {
           .limit(50),
         supabase
           .from("affiliate_opvolg_log")
-          .select("id,created_at,actie,resultaat,details")
+          .select("id,created_at,actie,titel,bron,details")
           .eq("lead_id", leadId!)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -81,8 +81,8 @@ export function useLeadTijdlijn({ leadId, email }: Args) {
           id: `o-${o.id}`,
           type: "ai_opvolg",
           datum: o.created_at,
-          titel: opvolgTitel(o.actie),
-          subtitel: o.resultaat ?? null,
+          titel: o.titel || opvolgTitel(o.actie),
+          subtitel: o.bron ?? null,
           body: samenvatting,
         });
       });
