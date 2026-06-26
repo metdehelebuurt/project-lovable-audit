@@ -119,7 +119,7 @@ function TijdlijnRij({ item }: { item: TijdlijnItem }) {
 
 function TijdlijnComposer({ leadId }: { leadId: string }) {
   const log = useLogContactmoment();
-  const [type, setType] = useState<"telefoon" | "whatsapp" | "email" | "notitie">("telefoon");
+  const [type, setType] = useState<"telefoon" | "email" | "notitie" | "afspraak">("telefoon");
   const [uitkomst, setUitkomst] = useState<string>("gesproken");
   const [notitie, setNotitie] = useState("");
 
@@ -141,7 +141,7 @@ function TijdlijnComposer({ leadId }: { leadId: string }) {
           <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="telefoon">📞 Telefoon</SelectItem>
-            <SelectItem value="whatsapp">💬 WhatsApp</SelectItem>
+          <SelectItem value="afspraak">📅 Afspraak</SelectItem>
           <SelectItem value="email">📧 Mail (handmatig)</SelectItem>
             <SelectItem value="notitie">📝 Notitie</SelectItem>
           </SelectContent>
