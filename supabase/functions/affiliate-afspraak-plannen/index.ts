@@ -149,14 +149,69 @@ Deno.serve(async (req) => {
         const endIso = new Date(
           new Date(body.geplande_op!).getTime() + body.duur_minuten * 60_000,
         ).toISOString();
-        const titel = body.type === "demo" ? "Demo Mijnhuis" : "Terugbelafspraak";
-        const resp = await gcalFetch(gcalAcc as GoogleAccount, `/calendars/${encodeURIComponent(gcalAcc.calendar_id || "primary")}/events`, {
+
+        // Haal lead + hoofdcontactpersoon op voor een sprekende titel + uitnodiging
+        const { data: leadInfo } = body.lead_id
+          ? await admin
+              .from("affiliate_leads")
+              .select("bedrijfsnaam, contactpersoon, email, telefoon")
+              .eq("id", body.lead_id)
+              .maybeSingle()
+          : { data: null };
+        const { data: hoofdContact } = body.lead_id
+          ? await admin
+              .from("affiliate_lead_contactpersonen")
+              .select("naam, email, telefoon_mobiel, telefoon_kantoor")
+              .eq("lead_id", body.lead_id)
+              .eq("is_hoofdcontact", true)
+              .maybeSingle()
+          : { data: null };
+
+        const bedrijf = (leadInfo?.bedrijfsnaam ?? "").trim() || null;
+        const contactNaam = (hoofdContact?.naam ?? leadInfo?.contactpersoon ?? "").trim() || null;
+        const contactEmail = (hoofdContact?.email ?? leadInfo?.email ?? "").trim() || null;
+        const contactTel = (
+          hoofdContact?.telefoon_mobiel ?? hoofdContact?.telefoon_kantoor ?? leadInfo?.telefoon ?? ""
+        ).trim() || null;
+
+        let summary: string;
+        if (body.type === "demo") {
+          if (bedrijf && contactNaam) summary = `Demo ${bedrijf} – ${contactNaam}`;
+          else if (bedrijf) summary = `Demo ${bedrijf}`;
+          else if (contactNaam) summary = `Demo – ${contactNaam}`;
+          else summary = "Demo Mijnhuis";
+        } else {
+          if (bedrijf && contactNaam) summary = `Terugbel ${bedrijf} – ${contactNaam}`;
+          else if (bedrijf) summary = `Terugbelafspraak ${bedrijf}`;
+          else if (contactNaam) summary = `Terugbelafspraak – ${contactNaam}`;
+          else summary = "Terugbelafspraak";
+        }
+
+        const descrRegels: string[] = [];
+        if (bedrijf) descrRegels.push(`Bedrijf: ${bedrijf}`);
+        if (contactNaam) descrRegels.push(`Contact: ${contactNaam}`);
+        if (contactEmail) descrRegels.push(`E-mail: ${contactEmail}`);
+        if (contactTel) descrRegels.push(`Telefoon: ${contactTel}`);
+        if (body.notitie) descrRegels.push("", `Notitie: ${body.notitie}`);
+        descrRegels.push("", "— Gepland via mijnhuis.nu");
+
+        const attendees = contactEmail
+          ? [{ email: contactEmail, displayName: contactNaam ?? undefined }]
+          : undefined;
+
+        const eventsPath = `/calendars/${encodeURIComponent(gcalAcc.calendar_id || "primary")}/events${
+          attendees ? "?sendUpdates=all" : ""
+        }`;
+
+        const resp = await gcalFetch(gcalAcc as GoogleAccount, eventsPath, {
           method: "POST",
           body: JSON.stringify({
-            summary: `${titel} (via sales)`,
-            description: `${body.notitie ?? ""}\n\n— Gepland door sales-manager via Mijnhuis.nu`,
+            summary,
+            description: descrRegels.join("\n"),
             start: { dateTime: startIso, timeZone: "Europe/Amsterdam" },
             end: { dateTime: endIso, timeZone: "Europe/Amsterdam" },
+            attendees,
+            guestsCanSeeOtherGuests: true,
             extendedProperties: {
               private: {
                 mijnhuis_type: "afspraak",
