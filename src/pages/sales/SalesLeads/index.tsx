@@ -312,7 +312,12 @@ export default function SalesLeads() {
                   <TableCell className="font-medium">{l.bedrijfsnaam}</TableCell>
                   <TableCell className="text-sm">
                     <div>{l.contactpersoon}</div>
-                    <div className="text-xs text-muted-foreground">{l.email || l.telefoon}</div>
+                    {l.email && (
+                      <div className="text-xs text-muted-foreground truncate">{l.email}</div>
+                    )}
+                    {l.telefoon && (
+                      <div className="text-xs text-muted-foreground">{l.telefoon}</div>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">
                     <div>{l.plaats || l.regio || "—"}</div>
