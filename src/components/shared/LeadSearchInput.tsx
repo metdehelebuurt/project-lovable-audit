@@ -53,19 +53,44 @@ export function LeadSearchInput({ selectedLead, onSelectLead, onClearLead }: Lea
     if (q.length < 2) { setResults([]); return; }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("leads")
-        .select("id, voornaam, achternaam, email, telefoon, adres, postcode, plaats")
-        .or(`voornaam.ilike.%${q}%,achternaam.ilike.%${q}%,email.ilike.%${q}%`)
-        .limit(10);
-      if (error) throw error;
-      setResults(data || []);
+      if (profile?.rol === "affiliate") {
+        const { data, error } = await supabase
+          .from("affiliate_leads")
+          .select("id, bedrijfsnaam, contactpersoon, email, telefoon, adres, postcode, plaats")
+          .or(`bedrijfsnaam.ilike.%${q}%,contactpersoon.ilike.%${q}%,email.ilike.%${q}%`)
+          .limit(10);
+        if (error) throw error;
+        const mapped: Lead[] = (data ?? []).map((r) => {
+          const naamParts = (r.contactpersoon ?? r.bedrijfsnaam ?? "").trim().split(/\s+/);
+          return {
+            id: r.id,
+            voornaam: naamParts[0] ?? "",
+            achternaam: naamParts.slice(1).join(" ") || (r.bedrijfsnaam ?? ""),
+            email: r.email ?? "",
+            telefoon: r.telefoon ?? null,
+            adres: r.adres ?? null,
+            postcode: r.postcode ?? null,
+            plaats: r.plaats ?? null,
+            _bedrijfsnaam: r.bedrijfsnaam ?? null,
+            _isAffiliate: true,
+          } as Lead;
+        });
+        setResults(mapped);
+      } else {
+        const { data, error } = await supabase
+          .from("leads")
+          .select("id, voornaam, achternaam, email, telefoon, adres, postcode, plaats")
+          .or(`voornaam.ilike.%${q}%,achternaam.ilike.%${q}%,email.ilike.%${q}%`)
+          .limit(10);
+        if (error) throw error;
+        setResults(data || []);
+      }
     } catch {
       setResults([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile?.rol]);
 
   const handleInputChange = (val: string) => {
     setQuery(val);
