@@ -212,6 +212,11 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
           <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
             Na het plannen kun je nog kiezen of je de klant {(!isSalesProxy) ? "en collega" : ""} mailt — je ziet de mail eerst en kunt 'm bewerken.
           </div>
+          {isDemo && isSalesProxy && (
+            <div className="rounded-md border bg-emerald-50 border-emerald-200 p-3 text-xs text-emerald-800">
+              De hoofdcontactpersoon van deze lead ontvangt automatisch een Google-agenda-uitnodiging zodra je plant. Titel in de agenda: <em>Demo {leadNaam}</em>.
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
