@@ -128,7 +128,7 @@ export default function FeedbackAdmin() {
       if (status === "afgerond" || status === "in_review") {
         update.bevestiging_status = "wachten_op_indiener";
       }
-      const { error } = await supabase.from("feedback_verzoeken").update(update).eq("id", id);
+      const { error } = await supabase.from("feedback_verzoeken").update(update as never).eq("id", id);
       if (error) throw error;
       supabase.functions.invoke("feedback-notify", {
         body: { event: "status_wijziging", feedback_id: id, oude_status: oude, nieuwe_status: status },

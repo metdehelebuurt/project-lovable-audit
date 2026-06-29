@@ -71,7 +71,7 @@ export default function BevestigingBlok({ feedbackId, huidigeStatus, onAfgehande
     }
     const { error } = await supabase
       .from("feedback_verzoeken")
-      .update(update)
+      .update(update as never)
       .eq("id", feedbackId);
     setBusy(false);
     if (error) return toast.error(error.message);

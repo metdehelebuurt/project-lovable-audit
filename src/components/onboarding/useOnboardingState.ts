@@ -127,7 +127,7 @@ export function useOnboardingState(): OnboardingState {
     if (patch.mfa_enabled !== undefined) dbPatch.mfa_enabled = patch.mfa_enabled;
     if (patch.voorkeuren !== undefined) dbPatch.voorkeuren = { ...user.voorkeuren, ...patch.voorkeuren };
     if (Object.keys(dbPatch).length === 0) return;
-    await supabase.from("users").update(dbPatch).eq("id", profile.id);
+    await supabase.from("users").update(dbPatch as never).eq("id", profile.id);
   };
 
   const savePartner = async (patch: Partial<OnboardingPartnerData>) => {
@@ -144,7 +144,7 @@ export function useOnboardingState(): OnboardingState {
     if (patch.logo_url !== undefined) dbPatch.logo_url = patch.logo_url;
     if (patch.hoofdkleur !== undefined) dbPatch.primaire_kleur = patch.hoofdkleur;
     if (Object.keys(dbPatch).length === 0) return;
-    await supabase.from("partners").update(dbPatch).eq("id", profile.partner_id);
+    await supabase.from("partners").update(dbPatch as never).eq("id", profile.partner_id);
   };
 
   const markVoltooid = async () => {
