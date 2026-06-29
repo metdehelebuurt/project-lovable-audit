@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
+import { useLeadContactpersonen } from "@/hooks/affiliate/useLeadContactpersonen";
 import EmailTab from "@/components/email/EmailTab";
 import EmailCompose from "@/components/email/EmailCompose";
 import { TerugbelDialog } from "./TerugbelDialog";
