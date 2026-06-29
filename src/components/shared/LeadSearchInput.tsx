@@ -100,7 +100,9 @@ export function LeadSearchInput({ selectedLead, onSelectLead, onClearLead }: Lea
   };
 
   const handleSelect = (lead: Lead) => {
-    onSelectLead(lead);
+    // Affiliate leads have a different FK target — don't link offertes.lead_id to them.
+    const isAffiliate = (lead as Lead & { _isAffiliate?: boolean })._isAffiliate;
+    onSelectLead(isAffiliate ? { ...lead, id: "" } : lead);
     setQuery("");
     setShowDropdown(false);
   };
