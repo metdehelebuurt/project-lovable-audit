@@ -2303,6 +2303,57 @@ export type Database = {
         }
         Relationships: []
       }
+      email_oauth_attempts: {
+        Row: {
+          alias_error: string | null
+          alias_request: string | null
+          alias_status: string | null
+          created_at: string
+          email_adres_resultaat: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          partner_id: string | null
+          provider: string
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          alias_error?: string | null
+          alias_request?: string | null
+          alias_status?: string | null
+          created_at?: string
+          email_adres_resultaat?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          partner_id?: string | null
+          provider: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          alias_error?: string | null
+          alias_request?: string | null
+          alias_status?: string | null
+          created_at?: string
+          email_adres_resultaat?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          partner_id?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_routing_config: {
         Row: {
           bron: string
