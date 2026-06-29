@@ -42,6 +42,14 @@ interface Props { lead: AffiliateLead }
 export function LeadDetailBody({ lead }: Props) {
   const update = useUpdateAffiliateLead();
   const { data: bronnen = [] } = useLeadBronnen();
+  const { data: contactpersonen = [] } = useLeadContactpersonen(lead.id);
+  const contactEmails = Array.from(
+    new Set(
+      [lead.email, ...contactpersonen.map((c) => c.email)]
+        .filter((e): e is string => !!e && e.trim().length > 0)
+        .map((e) => e.trim().toLowerCase()),
+    ),
+  );
   const [status, setStatus] = useState<AffiliateLeadStatus>(lead.status as AffiliateLeadStatus);
   const [waarde, setWaarde] = useState(String(lead.geschatte_waarde ?? ""));
   const [notitie, setNotitie] = useState(lead.notities ?? "");
@@ -161,7 +169,11 @@ export function LeadDetailBody({ lead }: Props) {
 
           <TabsContent value="email" className="mt-4 space-y-3 min-w-0">
             <TabCallout tab="email" />
-            <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
+            <EmailTab
+              affiliateLeadId={lead.id}
+              email={lead.email ?? undefined}
+              emails={contactEmails}
+            />
           </TabsContent>
 
           <TabsContent value="notities" className="mt-4 space-y-3 min-w-0">
