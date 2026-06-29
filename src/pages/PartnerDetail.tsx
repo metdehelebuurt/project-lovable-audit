@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, Mail, Phone, Globe, MapPin, FileText, Handshake } from "lucide-react";
+import { ArrowLeft, Building2, Mail, Phone, Globe, MapPin, FileText, Handshake, Clock, History } from "lucide-react";
 import { PromotePartnerToAffiliateButton } from "@/components/affiliate/PromotePartnerToAffiliateButton";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -52,6 +52,25 @@ export default function PartnerDetail() {
   if (!partner) return <div className="p-6">Partner niet gevonden.</div>;
 
   const contact = [partner.contactpersoon_voornaam, partner.contactpersoon_achternaam].filter(Boolean).join(" ");
+
+  const { data: historie } = useQuery({
+    queryKey: ["partner-historie", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("entiteit_historie")
+        .select("id, actie, veld, oude_waarde, nieuwe_waarde, actor_naam, actor_rol, created_at")
+        .eq("entiteit_type", "partner")
+        .eq("entiteit_id", id!)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
+  const formatDateTime = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleString("nl-NL", { dateStyle: "medium", timeStyle: "short" }) : "—";
 
   return (
     <div className="space-y-6">
@@ -133,6 +152,20 @@ export default function PartnerDetail() {
           </CardContent>
         </Card>
 
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4" /> Administratie
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <Field label="Aangemaakt" value={formatDateTime(partner.created_at)} />
+            <Field label="Laatst gewijzigd" value={formatDateTime(partner.updated_at)} />
+            <Field label="Partner-ID" value={partner.id} />
+            <Field label="Status" value={statusLabels[partner.status]} />
+          </CardContent>
+        </Card>
+
         <Card className="rounded-2xl border-0 shadow-sm lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -143,6 +176,41 @@ export default function PartnerDetail() {
             <p className="text-sm whitespace-pre-wrap text-foreground">
               {partner.notities || <span className="text-muted-foreground">Geen notities</span>}
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-0 shadow-sm lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <History className="h-4 w-4" /> Historie
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!historie || historie.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nog geen historie vastgelegd.</p>
+            ) : (
+              <ul className="space-y-3">
+                {historie.map((h) => (
+                  <li key={h.id} className="flex gap-3 text-sm border-l-2 border-primary/30 pl-3">
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">
+                        {h.actie}{h.veld ? ` · ${h.veld}` : ""}
+                      </p>
+                      {(h.oude_waarde || h.nieuwe_waarde) && (
+                        <p className="text-xs text-muted-foreground">
+                          {h.oude_waarde ? `"${h.oude_waarde}" → ` : ""}{h.nieuwe_waarde ? `"${h.nieuwe_waarde}"` : ""}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatDateTime(h.created_at)}
+                        {h.actor_naam ? ` · ${h.actor_naam}` : ""}
+                        {h.actor_rol ? ` (${h.actor_rol})` : ""}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>
