@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
+import { useLeadContactpersonen } from "@/hooks/affiliate/useLeadContactpersonen";
 import EmailTab from "@/components/email/EmailTab";
 import EmailCompose from "@/components/email/EmailCompose";
 import { TerugbelDialog } from "./TerugbelDialog";
@@ -41,6 +42,14 @@ interface Props { lead: AffiliateLead }
 export function LeadDetailBody({ lead }: Props) {
   const update = useUpdateAffiliateLead();
   const { data: bronnen = [] } = useLeadBronnen();
+  const { data: contactpersonen = [] } = useLeadContactpersonen(lead.id);
+  const contactEmails = Array.from(
+    new Set(
+      [lead.email, ...contactpersonen.map((c) => c.email)]
+        .filter((e): e is string => !!e && e.trim().length > 0)
+        .map((e) => e.trim().toLowerCase()),
+    ),
+  );
   const [status, setStatus] = useState<AffiliateLeadStatus>(lead.status as AffiliateLeadStatus);
   const [waarde, setWaarde] = useState(String(lead.geschatte_waarde ?? ""));
   const [notitie, setNotitie] = useState(lead.notities ?? "");
@@ -160,7 +169,11 @@ export function LeadDetailBody({ lead }: Props) {
 
           <TabsContent value="email" className="mt-4 space-y-3 min-w-0">
             <TabCallout tab="email" />
-            <EmailTab affiliateLeadId={lead.id} email={lead.email ?? undefined} />
+            <EmailTab
+              affiliateLeadId={lead.id}
+              email={lead.email ?? undefined}
+              emails={contactEmails}
+            />
           </TabsContent>
 
           <TabsContent value="notities" className="mt-4 space-y-3 min-w-0">
