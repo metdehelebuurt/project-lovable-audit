@@ -195,7 +195,7 @@ const EmailConfiguratie = ({ partnerId }: Props) => {
     };
     if (smtpPass && smtpPass !== "••••••••") update.smtp_pass_encrypted = smtpPass;
     if (imapPass && imapPass !== "••••••••") update.imap_pass_encrypted = imapPass;
-    const { error } = await supabase.from("partners").update(update).eq("id", partnerId);
+    const { error } = await supabase.from("partners").update(update as never).eq("id", partnerId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("E-mailinstellingen opgeslagen");

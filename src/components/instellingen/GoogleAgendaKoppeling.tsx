@@ -139,7 +139,7 @@ export default function GoogleAgendaKoppeling() {
     setAccount({ ...account, [veld]: waarde });
     const { error } = await supabase
       .from("google_calendar_accounts")
-      .update({ [veld]: waarde })
+      .update({ [veld]: waarde } as never)
       .eq("id", account.id);
     if (error) {
       setAccount({ ...account, [veld]: oud });

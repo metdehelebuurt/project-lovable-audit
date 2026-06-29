@@ -103,7 +103,7 @@ export default function FeedbackDetail() {
       }
       const { error } = await supabase
         .from("feedback_verzoeken")
-        .update(update)
+        .update(update as never)
         .eq("id", item.id);
       if (error) throw error;
 
