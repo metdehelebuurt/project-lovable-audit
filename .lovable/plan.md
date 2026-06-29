@@ -1,121 +1,93 @@
+## Probleem
 
-# Redesign affiliate leaddetail
+Bij het inplannen van een demo via "Demo plannen" (vanuit een affiliate-lead) komt in jouw Google Agenda nu alleen `Demo Mijnhuis (via sales)` te staan — zonder bedrijfsnaam, contactpersoon of meeting-link. Ook krijgt de contactpersoon van de lead geen uitnodiging.
 
-## Wat er nu mis is
+Bron: edge function `affiliate-afspraak-plannen` (sales-/superadmin-flow) maakt een Google-event met een vaste, generieke titel en zonder `attendees`.
 
-1. **Horizontale overflow** — de pagina is breder dan het viewport, dus bij rechts-scrollen schuift de grijze hero-band onder/over de vaste sidebar (z-index/positioning conflict). Oorzaak: `AffiliateLeadDetail` heeft `max-w-[1400px]` zonder `min-w-0`/`overflow-x-hidden`, en de hero-actiebar met 5+ knoppen blaast op smalle laptops de breedte op.
-2. **Visueel saai** — alles is wit/grijs op wit. Geen accentkleuren, geen ritme.
-3. **Linker stapel te lang** — Sales kerngegevens + Hoofdcontact + Contactpersonen + Bedrijfsgegevens + Trial-CTA staan onder elkaar → ~1200px scroll vóór de gebruiker bij de tijdlijn is.
-4. **Tabs zijn neutraal grijs** — geen visuele identiteit per tab, gebruiker weet niet waar hij is.
-5. **E-mailtab is een ongesegmenteerde lijst** — geen onderscheid in/uit, geen preview.
+## Oplossing
 
-## Nieuwe opbouw
+Eén kleine, doelgerichte update in de bestaande "Demo inplannen"-flow. Niets verandert aan de status- of mail-workflow erna.
 
-```text
-┌───────────────────────────────────────────────────────────────┐
-│ HERO (compact, gekleurde accent-strip links)                  │
-│  ▎ Esteban test BV          [Bel] [Mail] [WA]  [▾ Meer]       │
-│  ▎ ● Nieuw  · 🔥 koud · 🏷 Eigen import · ⭐ AI —/100         │
-│                                                               │
-│  €1.234   ·   5 dgn stil   ·   0 mails   ·   3 contact        │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━      │
-│  ⏰ Volgende actie: do 27 jun  [+1d] [+1w] [klaar]            │
-└───────────────────────────────────────────────────────────────┘
+### 1. Sprekende titel in Google Agenda
 
-┌────────────── KLANTSTRIP (horizontaal, 3 kolommen) ───────────┐
-│ 👤 Contact          🏢 Bedrijf          📊 Sales              │
-│  T. de Jong          KvK 12345678        Status ▾             │
-│  📞 06-…  ✉️ …       Amsterdam            Temp  ▾ Waarde €    │
-│                      Bron · Sector       Volgende actie 📅    │
-│  [bewerken]          [bewerken]          [opslaan]            │
-└───────────────────────────────────────────────────────────────┘
-
-┌─── TABS (gekleurd, met emoji-icoon) ──────────────────────────┐
-│ 🔵 Tijdlijn  🟣 E-mail  🟡 Notities  ✨ AI-opvolging  🕘 Hist.│
-└───────────────────────────────────────────────────────────────┘
-        ↓
-  Werkruimte = volledige breedte (geen smalle kolom meer)
-```
-
-### Hero — slanker, met linker accent-band
-- Linkerrand 4px gekleurd op basis van temperatuur (koud=slate, lauw=amber, warm=orange, heet=rose).
-- KPI's omgezet van 4 tegels naar één compacte inline-rij (`€ · stil · mails · contact`) met dividers → bespaart verticale ruimte.
-- Actie-cluster ingekort: Bel/Mail/WhatsApp + één "Meer"-dropdown (Terugbel/Demo/Order/AI/Verrijken/Website).
-- Trial-CTA verhuist naar de klantstrip (niet langer dubbel in sidebar + hero).
-- "Volgende actie"-bar krijgt quick-shift chips (`+1d` / `+1w` / `Klaar`).
-
-### Klantstrip vervangt linkerstapel
-Nieuwe component `LeadKlantStrip.tsx` — één rij, drie cards naast elkaar (op `lg:` breekt naar 3 kolommen, op `md:` 2, mobiel stack):
-
-| Card | Inhoud | Inline edit |
-| --- | --- | --- |
-| 👤 **Contact** | Hoofdpersoon + telefoon/email/WA chips; uitklappanel toont overige contactpersonen | "Bewerken" → `ContactpersoonDialog` |
-| 🏢 **Bedrijf** | KvK · plaats · sector · bron · website | "Bewerken" → `BedrijfBewerkenDialog` |
-| 📊 **Sales** | Status select · Temperatuur · Waarde · Volgende actie · Opslaan-knop · Trial-CTA wanneer geen partner | inline selects |
-
-→ ~600px verticale ruimte bespaard t.o.v. de huidige sidebar-stapel.
-
-### Tabs krijgen kleur en identiteit
-Nieuwe component `GekleurdeTabsList.tsx`. Per tab een eigen accent (border-bottom + actieve achtergrond):
-
-- `Tijdlijn` → indigo
-- `E-mail` → purple (primary)
-- `Notities` → amber
-- `AI-opvolging` → emerald (sparkle-icoon animatie)
-- `Historie` → slate
-
-Active tab krijgt `bg-{accent}/10 text-{accent}-700 border-b-2 border-{accent}-500`, inactive `text-muted-foreground hover:bg-muted`. Iconen blijven `lucide`.
-
-### E-mailtab modernisering (los kleinere `EmailTab`-wrapper)
-- Splitsing in twee kolommen op `xl:`: lijst (40%) ↔ preview (60%).
-- Item-rij: avatar (initialen), onderwerp **bold**, snippet `text-muted-foreground` (1 regel), datumbadge rechts, kleurpunt links (in=blue, uit=primary).
-- Empty state: illustratie + CTA "Stuur eerste mail".
-
-### Tijdlijn polish
-- Tijdrail krijgt gekleurde bolletjes per type (call=blue, mail=purple, status=slate, AI=emerald).
-- "Vandaag / Deze week / Eerder" date-headers.
-- Inline composer plakt aan de bovenkant.
-
-### Bugfix horizontale overflow
-- `AffiliateLeadDetail` page wrapper: `w-full min-w-0 overflow-x-hidden` i.p.v. `max-w-[1400px]`.
-- Grid in `LeadDetailBody` krijgt `min-w-0` op de children (fix voor flex/grid intrinsic min-content overflow).
-- Hero-flex krijgt `min-w-0` op de titel-container + `truncate` op `h1` (al aanwezig, maar parent miste min-w-0).
-
-## Bestandsstructuur (alles < 800 r., functies < 50 r.)
+Nieuwe titelopbouw (alleen voor demo's; terugbel blijft `Terugbelafspraak`):
 
 ```text
-src/components/affiliate/LeadDetail/
-  Hero.tsx                       # herwerkt (slanker)
-  LeadKlantStrip/
-    index.tsx                    # <LeadKlantStrip />
-    ContactCard.tsx
-    BedrijfCard.tsx
-    SalesCard.tsx
-  GekleurdeTabsList.tsx          # nieuw
-  Email/
-    EmailLijstCompact.tsx        # nieuw, wrapped rond bestaande EmailTab data
-  Tijdlijn/
-    index.tsx                    # bestaand, kleine polish (date-headers)
+Demo {bedrijfsnaam} – {contactpersoon}
 ```
 
-`LeadDetailBody.tsx` blijft orchestrator, krimpt naar ~150 r. en verliest de hele linker `<aside>` (vervangen door klantstrip onder de hero).
+Voorbeelden:
+- `Demo Smart Accu B.V. – Hoang Nguyen`
+- `Demo Smart Accu B.V.` (als geen contactpersoon bekend)
+- `Demo – Hoang Nguyen` (als geen bedrijfsnaam, alleen privé-lead)
+- Fallback: `Demo Mijnhuis` (geen lead-gegevens beschikbaar)
 
-## Datalaag
+### 2. Uitgebreidere beschrijving
 
-Geen DB-/RLS-wijzigingen. Alleen presentation-layer.
+De Google-event description krijgt:
+- Bedrijfsnaam + contactpersoon
+- Telefoon en e-mail van de contactpersoon
+- De ingevulde notitie
+- Korte herkomst-regel ("Gepland via mijnhuis.nu")
 
-## Validatie
+### 3. Contactpersoon ontvangt uitnodiging
 
-1. `bun run build` / `tsgo` clean.
-2. Playwright op viewport **956×674** (de huidige laptopmaat van de gebruiker):
-   - Geen horizontale scrollbar op `body`.
-   - Hero past in beeld zonder overflow.
-   - Tabs in één rij, gekleurd actief.
-   - Klantstrip toont 3 kolommen.
-3. Viewport 390×844 (mobiel): hero stackt, klantstrip stackt 1-koloms.
+We voegen de lead-contactpersoon als **attendee** toe aan het Google-event en zetten `sendUpdates=all`, zodat Google direct een agenda-uitnodiging naar dat e-mailadres stuurt. De affiliate-agenda-eigenaar (organisator) wordt automatisch ook attendee.
 
-## Out of scope
+Bron voor het mailadres, in volgorde van voorkeur:
+1. Hoofdcontact uit `affiliate_lead_contactpersonen` (`is_hoofdcontact = true`)
+2. `affiliate_leads.email`
+3. Als geen mail bekend → géén attendees toevoegen (event wordt wel aangemaakt, gewoon zonder uitnodiging — voorkomt 400 van Google)
 
-- Geen schema-/RLS-/edge-function-wijzigingen.
-- Geen wijziging aan AI-opvolg-logic of trial-flow.
-- Sales-kant (`/sales/leads/:id`) ongewijzigd.
+We voegen alleen de hoofdcontactpersoon toe, niet alle contactpersonen, om te voorkomen dat secundaire contacten ongewenst meegenodigd worden. Wel-of-niet-uitnodigen blijft daarmee voorspelbaar.
+
+### 4. Dialog-tekst aanpassen
+
+In `TerugbelDialog` (modus = demo) komt onderaan een korte regel:
+
+> De hoofdcontactpersoon ontvangt een Google-agenda-uitnodiging zodra de demo gepland is.
+
+Plus: het mail-review-blok dat al bestaat blijft werken — daar kun je nog de inhoudelijke bevestigingsmail nakijken.
+
+## Wat er NIET verandert
+
+- De `MailReviewDialog`-flow (klant/collega-mail nalezen) blijft identiek.
+- Terugbelafspraken houden hun huidige titel en gedrag.
+- De flow voor reguliere affiliates (geen sales-proxy) heeft op dit moment geen Google-sync; dat staat los van deze klacht en pakken we hier niet aan.
+- Geen DB-migratie nodig — alles draait op bestaande velden (`affiliate_leads.bedrijfsnaam/contactpersoon/email/telefoon` en `affiliate_lead_contactpersonen`).
+
+## Technische uitwerking
+
+Bestand: `supabase/functions/affiliate-afspraak-plannen/index.ts`
+
+Vlak voor de bestaande `gcalFetch(...POST /events)`-call:
+
+1. Haal lead-velden op: `bedrijfsnaam, contactpersoon, email, telefoon`.
+2. Haal hoofdcontactpersoon op uit `affiliate_lead_contactpersonen` met `is_hoofdcontact = true` (één rij, kolommen `naam, email, telefoon_mobiel, telefoon_kantoor`).
+3. Bouw `titel`, `description` en `attendees[]` op basis daarvan.
+4. POST-body wordt:
+
+```ts
+{
+  summary: titel,
+  description,
+  start: { dateTime: startIso, timeZone: 'Europe/Amsterdam' },
+  end:   { dateTime: endIso,   timeZone: 'Europe/Amsterdam' },
+  attendees: attendeeEmail ? [{ email: attendeeEmail, displayName: contactNaam }] : undefined,
+  guestsCanSeeOtherGuests: true,
+  extendedProperties: { /* ongewijzigd */ },
+}
+```
+
+5. Query-param `sendUpdates=all` toevoegen aan de gcalFetch-URL zodat Google de uitnodiging direct mailt.
+
+Frontend (`src/components/affiliate/TerugbelDialog.tsx`): één regel info-tekst toevoegen onder de bestaande toelichting wanneer `isDemo` true is.
+
+## Acceptatiecriteria
+
+- [ ] Nieuwe demo voor "Smart Accu B.V." met contact "Hoang Nguyen" levert in Google Agenda: `Demo Smart Accu B.V. – Hoang Nguyen`.
+- [ ] De ingestelde contactpersoon staat in de uitnodiging als genodigde en ontvangt direct een Google-agenda-mail.
+- [ ] Description bevat bedrijfsnaam, contactpersoon, telefoon, mail, ingevulde notitie en "Gepland via mijnhuis.nu".
+- [ ] Demo zonder bekende contactpersoon werkt zonder fout (geen attendees, geen Google 400).
+- [ ] Terugbelafspraken houden hun bestaande titel/gedrag.
+- [ ] Geen TS- of edge-function errors; `affiliate-afspraak-plannen` opnieuw gedeployed.
