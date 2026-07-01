@@ -48,6 +48,7 @@ import OffertePDFPrint from "@/pages/OffertePDFPrint";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Energieadvies from "@/pages/Energieadvies";
+import OAuthReturn from "@/pages/OAuthReturn";
 import OfferteNieuw from "@/pages/OfferteNieuw";
 import OfferteTemplatePage from "@/pages/OfferteTemplatePage";
 import Tools from "@/pages/Tools";
@@ -159,6 +160,7 @@ const App = () => (
             <Route path="/c/:partnerSlug/:productSlug" element={<PublicCatalogus />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/oauth-return" element={<OAuthReturn />} />
 
             {/* Onboarding-wizard — protected, geen AppLayout */}
             <Route path="/onboarding" element={
