@@ -730,7 +730,12 @@ export default function FactuurNieuw() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <DocumentRegelEditor regels={regels} onChange={setRegels} hidePricing={docType === "pakbon"} />
+            <DocumentRegelEditor
+              regels={regels}
+              onChange={setRegels}
+              hidePricing={docType === "pakbon"}
+              voorInkoop={isInkoop(docType)}
+            />
           </CardContent>
         </Card>
       </div>
