@@ -1,0 +1,1 @@
+UPDATE installaties SET bevestiging_verzonden_op = '2026-07-01T11:48:44.475Z', status = CASE WHEN status = 'gepland' THEN 'bevestigd'::installatie_status ELSE status END WHERE id = '8593040d-b64e-4b62-ba16-596a291fed49' AND bevestiging_verzonden_op IS NULL;
