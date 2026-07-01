@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package, LifeBuoy, MailCheck } from "lucide-react";
+import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package, LifeBuoy, MailCheck, CheckCircle2 } from "lucide-react";
 import { Pencil, Save, X } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
@@ -84,6 +84,20 @@ const OpdrachtDetail = () => {
       return data;
     },
     enabled: !!opdracht?.schouw_id,
+  });
+
+  const { data: installatieInfo } = useQuery({
+    queryKey: ["installatie-bevestiging", opdracht?.installatie_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("installaties")
+        .select("id, bevestiging_verzonden_op, geplande_startdatum")
+        .eq("id", opdracht!.installatie_id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!opdracht?.installatie_id,
   });
 
   const { data: monteurs = [] } = useQuery({
