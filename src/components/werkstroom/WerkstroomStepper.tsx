@@ -81,6 +81,13 @@ export default function WerkstroomStepper({ vanaf, id, huidig }: Props) {
           const isHuidig = stap === huidig;
           const isVoltooid = i < huidigIndex || (item && !isHuidig);
           const isBeschikbaar = Boolean(item);
+          const isInstallatieGepland =
+            stap === "installatie" &&
+            !isHuidig &&
+            isBeschikbaar &&
+            item?.status != null &&
+            item.status !== "concept" &&
+            item.status !== "geannuleerd";
           const Icon = STAP_ICONS[stap];
 
           const handleKlik = () => {
@@ -97,9 +104,11 @@ export default function WerkstroomStepper({ vanaf, id, huidig }: Props) {
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors min-w-0",
                   isHuidig && "bg-primary text-primary-foreground font-medium",
-                  !isHuidig && isBeschikbaar && "bg-muted hover:bg-accent text-foreground cursor-pointer",
+                  !isHuidig && isBeschikbaar && !isInstallatieGepland && "bg-muted hover:bg-accent text-foreground cursor-pointer",
+                  isInstallatieGepland && "bg-warning-light text-warning-foreground hover:bg-warning-light/80 cursor-pointer ring-1 ring-warning/40",
                   !isBeschikbaar && "bg-muted/40 text-muted-foreground/60 cursor-not-allowed",
                 )}
+                title={isInstallatieGepland ? `Installatie ${item?.status === "gepland" ? "gepland" : item?.status}` : undefined}
               >
                 <Icon className={cn("h-4 w-4 shrink-0", isVoltooid && !isHuidig && "text-success")} />
                 <span className="flex flex-col items-start min-w-0 leading-tight">
