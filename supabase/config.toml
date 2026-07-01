@@ -87,3 +87,5 @@ project_id = "xmguipmetciwvzeyxugu"
     verify_jwt = false
   [functions.widget-submit]
     verify_jwt = false
+  [functions.admin-link-smartaccu]
+    verify_jwt = false
