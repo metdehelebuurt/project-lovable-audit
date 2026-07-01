@@ -18,6 +18,12 @@ export interface SmtpSendInput {
   html: string;
   text?: string;
   replyTo?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string | Uint8Array;
+    contentType?: string;
+    encoding?: "base64" | "binary";
+  }>;
 }
 
 function newClient(a: SmtpAccount) {
@@ -45,6 +51,7 @@ export async function smtpSend(a: SmtpAccount, msg: SmtpSendInput): Promise<void
       content: msg.text ?? "Deze e-mail bevat HTML-inhoud.",
       html: msg.html,
       replyTo: msg.replyTo,
+      attachments: msg.attachments as any,
     });
   } finally {
     try { await client.close(); } catch { /* ignore */ }
