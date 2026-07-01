@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendPartnerEmail, PartnerEmailError } from "../_shared/partner-email-send.ts";
+import { loadPartnerBrand, wrapInPartnerTemplate } from "../_shared/partner-branded-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -107,24 +108,30 @@ Deno.serve(async (req) => {
         const handleidingenBlock = handleidingen.length > 0
           ? `
             <div style="margin-top:24px;padding:16px;background:#f8fafc;border-radius:8px">
-              <p style="margin:0 0 12px;font-weight:600">📘 Handleidingen bij uw installatie</p>
+              <p style="margin:0 0 12px;font-weight:600">Handleidingen bij uw installatie</p>
               <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.8">
-                ${handleidingen.map((h) => `<li><a href="${h.url}" style="color:#7c3aed;text-decoration:underline">${h.naam} — ${h.bestandsnaam}</a></li>`).join("")}
+                ${handleidingen.map((h) => `<li><a href="${h.url}" style="color:#0f172a;text-decoration:underline">${h.naam} — ${h.bestandsnaam}</a></li>`).join("")}
               </ul>
             </div>`
           : "";
-        const html = `
-          <div style="font-family:Arial,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:24px">
-            <h2 style="margin:0 0 16px;font-size:20px">Opleverrapport ${rapport.rapportnummer}</h2>
-            <p>${begroeting}</p>
-            <p>Uw installateur heeft het opleverrapport voor uw installatie afgerond. We vragen u dit rapport te bekijken en digitaal te ondertekenen.</p>
-            <p style="margin:24px 0">
-              <a href="${link}" style="background:#7c3aed;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">Bekijk en onderteken rapport</a>
-            </p>
-            <p style="font-size:13px;color:#666">Of kopieer deze link in uw browser:<br/><span style="word-break:break-all">${link}</span></p>
-            ${handleidingenBlock}
-            <p style="font-size:13px;color:#666;margin-top:24px">Deze link is 14 dagen geldig.</p>
-          </div>`;
+        const brand = await loadPartnerBrand(admin, rapport.partner_id);
+        const primair = (brand?.primaire_kleur || "#6d28d9").trim();
+        const bodyHtml = `
+          <h2 style="margin:0 0 12px;font-size:20px;color:#0f172a;">Opleverrapport ${rapport.rapportnummer}</h2>
+          <p style="margin:0 0 12px;">${begroeting}</p>
+          <p style="margin:0 0 12px;">Uw installateur heeft het opleverrapport voor uw installatie afgerond. We vragen u dit rapport te bekijken en digitaal te ondertekenen.</p>
+          <p style="margin:24px 0;">
+            <a href="${link}" style="background:${primair};color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;font-weight:600;">Bekijk en onderteken rapport</a>
+          </p>
+          <p style="font-size:13px;color:#64748b;margin:0 0 8px;">Werkt de knop niet? Kopieer deze link in uw browser:<br/><span style="word-break:break-all;color:#0f172a;">${link}</span></p>
+          ${handleidingenBlock}
+          <p style="font-size:13px;color:#64748b;margin-top:24px;">Deze link is 14 dagen geldig.</p>`;
+        const html = wrapInPartnerTemplate({
+          brand,
+          bodyHtml,
+          senderName: brand?.afzender_naam || brand?.naam || null,
+          preheader: `Opleverrapport ${rapport.rapportnummer} — graag ondertekenen`,
+        });
         await sendPartnerEmail({
           adminClient: admin,
           partnerId: rapport.partner_id,

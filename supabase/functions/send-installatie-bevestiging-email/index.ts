@@ -3,6 +3,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendPartnerEmail, PartnerEmailError } from "../_shared/partner-email-send.ts";
+import { loadPartnerBrand, wrapInPartnerTemplate } from "../_shared/partner-branded-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +27,7 @@ function textToHtml(text: string): string {
     if (!l.trim()) return "<p>&nbsp;</p>";
     return `<p style="margin:0 0 10px 0;">${escapeHtml(l)}</p>`;
   }).join("");
-  return `<div style="font-family:Arial,sans-serif;font-size:14px;color:#111;line-height:1.55;padding:20px;">${paragraphs}</div>`;
+  return paragraphs;
 }
 
 function formatDate(d?: string | null): string {
@@ -96,8 +97,7 @@ Deno.serve(async (req) => {
     if (!to) return jsonResponse({ error: "Geen ontvanger e-mailadres. Vul het klant-e-mailadres in of vul de gegevens aan." }, 400);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return jsonResponse({ error: `Ongeldig e-mailadres: ${to}` }, 400);
 
-    const { data: partner } = await adminClient.from("partners")
-      .select("naam, afzender_naam").eq("id", userRow.partner_id).maybeSingle();
+    const brand = await loadPartnerBrand(adminClient, userRow.partner_id);
 
     const datum = formatDate(installatie.geplande_startdatum);
     const startTijd = formatTime(installatie.start_tijd);
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       : "in overleg";
     const adres = installatie.werkadres ?? installatie.klant_adres ?? "";
 
-    const orgNaam = partner?.afzender_naam || partner?.naam || "";
+    const orgNaam = brand?.afzender_naam || brand?.naam || "";
     const nummer = installatie.installatienummer ?? "";
 
     const defaultSubject = `Bevestiging installatieafspraak${nummer ? ` — ${nummer}` : ""}`;
@@ -126,9 +126,19 @@ Met vriendelijke groet,
 ${orgNaam}`;
 
     const subject = (typeof customSubject === "string" && customSubject.trim()) ? customSubject.trim() : defaultSubject;
-    const html = (typeof customHtml === "string" && customHtml.trim())
+    const innerHtml = (typeof customHtml === "string" && customHtml.trim())
       ? customHtml
       : textToHtml(typeof customText === "string" && customText.trim() ? customText : defaultText);
+    // Strip default signature uit body zodat template die netjes rendert
+    const bodyZonderGroet = innerHtml
+      .replace(/<p[^>]*>\s*Met vriendelijke groet,?\s*<\/p>\s*(<p[^>]*>[^<]*<\/p>)?/i, "")
+      .replace(/Met vriendelijke groet,?\s*\n?[^\n<]*$/i, "");
+    const html = wrapInPartnerTemplate({
+      brand,
+      bodyHtml: bodyZonderGroet,
+      senderName: orgNaam || null,
+      preheader: `Uw installatieafspraak op ${datum}`,
+    });
 
     try {
       const result = await sendPartnerEmail({
