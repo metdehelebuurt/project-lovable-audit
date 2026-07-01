@@ -185,6 +185,8 @@ function ActieveOrdersTab({ partnerId }: { partnerId: string }) {
     return <Card><CardContent className="py-10 text-center text-muted-foreground">Geen actieve inkooporders.</CardContent></Card>;
   }
 
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -202,7 +204,11 @@ function ActieveOrdersTab({ partnerId }: { partnerId: string }) {
           </TableHeader>
           <TableBody>
             {orders.map((o) => (
-              <TableRow key={o.id}>
+              <TableRow
+                key={o.id}
+                onClick={() => navigate(`/financieel/${o.id}`)}
+                className="cursor-pointer hover:bg-muted/50"
+              >
                 <TableCell className="font-medium">{o.documentnummer}</TableCell>
                 <TableCell>{o.leverancier?.naam ?? <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell><StatusBadge status={o.status} /></TableCell>
@@ -211,7 +217,7 @@ function ActieveOrdersTab({ partnerId }: { partnerId: string }) {
                 <TableCell className="text-right text-xs text-muted-foreground">
                   {o.verzonden_op ? new Date(o.verzonden_op).toLocaleDateString("nl-NL") : "—"}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Button asChild variant="ghost" size="sm">
                     <Link to={`/financieel/${o.id}`}>Open</Link>
                   </Button>
@@ -229,6 +235,7 @@ function AfgerondTab({ partnerId }: { partnerId: string }) {
   const { data: orders = [], isLoading } = useInkoopOrders(partnerId, {
     status: ["volledig_ontvangen", "betaald", "geannuleerd"],
   });
+  const navigate = useNavigate();
   if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (orders.length === 0) return <Card><CardContent className="py-10 text-center text-muted-foreground">Nog geen afgeronde inkooporders.</CardContent></Card>;
   return (
@@ -246,12 +253,16 @@ function AfgerondTab({ partnerId }: { partnerId: string }) {
           </TableHeader>
           <TableBody>
             {orders.map((o) => (
-              <TableRow key={o.id}>
+              <TableRow
+                key={o.id}
+                onClick={() => navigate(`/financieel/${o.id}`)}
+                className="cursor-pointer hover:bg-muted/50"
+              >
                 <TableCell className="font-medium">{o.documentnummer}</TableCell>
                 <TableCell>{o.leverancier?.naam ?? "—"}</TableCell>
                 <TableCell><StatusBadge status={o.status} /></TableCell>
                 <TableCell className="text-right">{fmt(Number(o.totaal_bedrag))}</TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Button asChild variant="ghost" size="sm"><Link to={`/financieel/${o.id}`}>Open</Link></Button>
                 </TableCell>
               </TableRow>
