@@ -14,6 +14,7 @@ import type { Installatie } from "./api/installatieApi";
 import { updateInstallatie } from "./api/installatieApi";
 import AiWerkomschrijvingDialog from "./AiWerkomschrijvingDialog";
 import { TijdzoneBanner } from "@/components/shared/TijdzoneBanner";
+import AdresAutocomplete from "@/components/shared/AdresAutocomplete";
 
 interface Props {
   installatie: Installatie;
@@ -98,7 +99,12 @@ export default function InstallatiePlanningCard({ installatie, onChanged, readOn
         <TijdzoneBanner datum={form.geplande_startdatum} tijd={form.start_tijd} compact />
         <div>
           <Label>Werkadres</Label>
-          <Input value={form.werkadres} onChange={(e) => setForm({ ...form, werkadres: e.target.value })} placeholder="Adres van uitvoering" disabled={readOnly} />
+          <AdresAutocomplete
+            value={form.werkadres}
+            onChange={(v) => setForm({ ...form, werkadres: v })}
+            placeholder="Straat huisnr, postcode plaats"
+            disabled={readOnly}
+          />
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
