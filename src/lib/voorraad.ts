@@ -153,27 +153,39 @@ export const vrijgevenVoorOpdracht = async (
   }
 };
 
+const normaliseerProductTekst = (waarde: string | null | undefined): string =>
+  (waarde ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+const bevatWaarde = (bron: string, waarde: string | null | undefined): boolean => {
+  const genormaliseerd = normaliseerProductTekst(waarde);
+  return genormaliseerd.length > 3 && bron.includes(genormaliseerd);
+};
+
+interface MatchbaarProduct {
+  id: string;
+  naam: string;
+  merk?: string | null;
+  model?: string | null;
+  artikelnummer?: string | null;
+  ean_code?: string | null;
+  product_code?: string | null;
+}
+
 /**
- * Best-effort match van offerte-regel-omschrijving op een productnaam.
+ * Best-effort match van documentregel-omschrijving op productnaam of codes.
  */
 export const matchProductOpRegel = (
   regelOmschrijving: string,
-  producten: { id: string; naam: string; merk?: string | null; model?: string | null }[],
+  producten: MatchbaarProduct[],
 ): { id: string; naam: string } | null => {
   if (!regelOmschrijving) return null;
-  const lc = regelOmschrijving.toLowerCase().trim();
-  // Exacte naam match
-  let hit = producten.find((p) => p.naam.toLowerCase() === lc);
+  const lc = normaliseerProductTekst(regelOmschrijving);
+  let hit = producten.find((p) => normaliseerProductTekst(p.naam) === lc);
   if (hit) return hit;
-  // Naam zit in omschrijving
-  hit = producten.find((p) => lc.includes(p.naam.toLowerCase()) && p.naam.length > 4);
+  hit = producten.find((p) => bevatWaarde(lc, p.artikelnummer) || bevatWaarde(lc, p.ean_code));
   if (hit) return hit;
-  // Merk + model
-  hit = producten.find(
-    (p) =>
-      p.merk &&
-      p.model &&
-      lc.includes(`${p.merk} ${p.model}`.toLowerCase()),
-  );
+  hit = producten.find((p) => bevatWaarde(lc, p.product_code) || bevatWaarde(lc, p.naam));
+  if (hit) return hit;
+  hit = producten.find((p) => p.merk && p.model && bevatWaarde(lc, `${p.merk} ${p.model}`));
   return hit ?? null;
 };
