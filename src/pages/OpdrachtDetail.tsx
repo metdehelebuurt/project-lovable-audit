@@ -396,8 +396,31 @@ const OpdrachtDetail = () => {
 
       {/* Offerteregels */}
       <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader><CardTitle className="text-lg">Orderregels</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Orderregels</CardTitle>
+            {isActive && !isInstallateur && !editMode && (
+              <Button size="sm" variant="outline" onClick={startEdit} className="gap-2">
+                <Pencil className="h-4 w-4" /> Bewerken
+              </Button>
+            )}
+            {editMode && (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setEditMode(false)} className="gap-2">
+                  <X className="h-4 w-4" /> Annuleren
+                </Button>
+                <Button size="sm" onClick={saveEdit} className="gap-2">
+                  <Save className="h-4 w-4" /> Opslaan
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardHeader>
         <CardContent>
+          {editMode ? (
+            <DocumentRegelEditor regels={editRegels} onChange={setEditRegels} />
+          ) : (
+          <>
           <Table>
             <TableHeader>
               <TableRow>
@@ -455,6 +478,8 @@ const OpdrachtDetail = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
         </CardContent>
       </Card>
 
