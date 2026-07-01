@@ -158,9 +158,11 @@ ${orgNaam}`;
       // Historie-log (best effort)
       await adminClient.from("installatie_historie").insert({
         installatie_id,
-        gebeurtenis: "bevestiging_verzonden",
-        details: { ontvanger: to, subject, provider: result.provider, from: result.from },
-        aangemaakt_door: userId,
+        partner_id: userRow.partner_id,
+        actor_id: userId,
+        actie: "bevestiging_verzonden",
+        veld: "bevestiging_verzonden_op",
+        nieuwe_waarde: `${to} — ${subject}`,
       }).then(({ error: histErr }) => {
         if (histErr) console.log("historie insert overgeslagen:", histErr.message);
       });
