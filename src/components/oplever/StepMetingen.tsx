@@ -32,11 +32,33 @@ export default function StepMetingen({ draft, onChange }: Props) {
     <div className="space-y-4">
       <section className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
         <h3 className="font-semibold">Gebruikte meetapparatuur</h3>
+        <p className="text-xs text-muted-foreground -mt-2">
+          Serienummer en laatste kalibratiedatum zijn verplicht voor ondertekening.
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div><Label>Merk</Label><Input value={apparatuur.merk ?? ""} onChange={(e) => onChange({ meetapparatuur: { ...apparatuur, merk: e.target.value } })} /></div>
           <div><Label>Type</Label><Input value={apparatuur.type ?? ""} onChange={(e) => onChange({ meetapparatuur: { ...apparatuur, type: e.target.value } })} /></div>
-          <div><Label>Serienummer</Label><Input value={apparatuur.serienummer ?? ""} onChange={(e) => onChange({ meetapparatuur: { ...apparatuur, serienummer: e.target.value } })} /></div>
-          <div><Label>Laatste kalibratie</Label><Input type="date" value={apparatuur.laatste_kalibratie ?? ""} onChange={(e) => onChange({ meetapparatuur: { ...apparatuur, laatste_kalibratie: e.target.value } })} /></div>
+          <div>
+            <Label>Serienummer <span className="text-destructive">*</span></Label>
+            <Input
+              required
+              aria-required
+              value={apparatuur.serienummer ?? ""}
+              onChange={(e) => onChange({ meetapparatuur: { ...apparatuur, serienummer: e.target.value } })}
+              className={!apparatuur.serienummer?.trim() ? "border-destructive/60" : ""}
+            />
+          </div>
+          <div>
+            <Label>Laatste kalibratie <span className="text-destructive">*</span></Label>
+            <Input
+              type="date"
+              required
+              aria-required
+              value={apparatuur.laatste_kalibratie ?? ""}
+              onChange={(e) => onChange({ meetapparatuur: { ...apparatuur, laatste_kalibratie: e.target.value } })}
+              className={!apparatuur.laatste_kalibratie ? "border-destructive/60" : ""}
+            />
+          </div>
         </div>
       </section>
 

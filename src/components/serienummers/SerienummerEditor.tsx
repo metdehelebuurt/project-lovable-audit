@@ -31,7 +31,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const del = useDeleteSerienummer();
   const [productId, setProductId] = useState<string>("");
   const [serienr, setSerienr] = useState("");
-  const [garantieMaanden, setGarantieMaanden] = useState<string>("60");
+  const [garantieJaren, setGarantieJaren] = useState<string>("5");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -42,31 +42,101 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     queryFn: async () => {
       const { data } = await supabase
         .from("producten")
-        .select("id, naam, merk, model, categorie")
+        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code")
         .eq("partner_id", partnerId)
         .order("naam");
       return data ?? [];
     },
   });
 
-  // Voorgestelde producten op basis van orderregels
-  const gesuggereerd = useMemo(() => {
-    if (!regels.length || !producten.length) return [];
-    const ids = new Set<string>();
-    regels.forEach((r) => {
-      const m = matchProductOpRegel(r.omschrijving, producten);
-      if (m) ids.add(m.id);
+  // Haal ook de originele orderregels uit de gekoppelde opdracht op — deze bevat
+  // álle regels (inclusief assemblage / losse componenten) die niet altijd naar
+  // installatie.producten zijn gekopieerd.
+  const { data: opdrachtRegels = [] } = useQuery({
+    queryKey: ["opdracht-regels-voor-serienummers", opdrachtId],
+    enabled: !!opdrachtId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("opdrachten")
+        .select("regels")
+        .eq("id", opdrachtId!)
+        .maybeSingle();
+      const raw = (data?.regels ?? []) as unknown;
+      if (!Array.isArray(raw)) return [] as Array<{ omschrijving: string; aantal: number }>;
+      return raw.map((r) => {
+        const o = (r ?? {}) as Record<string, unknown>;
+        return {
+          omschrijving: String(o.omschrijving ?? ""),
+          aantal: Number(o.aantal ?? 1) || 1,
+        };
+      });
+    },
+  });
+
+  // Combineer de meegegeven regels (installatie.producten) met de orderregels.
+  // We dedupliceren op omschrijving zodat dezelfde regel niet dubbel telt.
+  const alleRegels = useMemo(() => {
+    const gecombineerd = [...regels, ...opdrachtRegels];
+    const seen = new Set<string>();
+    const uniek: Array<{ omschrijving: string; aantal: number }> = [];
+    gecombineerd.forEach((r) => {
+      const key = r.omschrijving.trim().toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      uniek.push(r);
     });
-    return Array.from(ids).map((id) => producten.find((p: any) => p.id === id)).filter(Boolean);
-  }, [regels, producten]);
+    return uniek;
+  }, [regels, opdrachtRegels]);
+
+  // Alle producten uit de orderregels (incl. assemblage / meerdere regels).
+  // We houden per regel het aantal bij zodat we voortgang kunnen tonen.
+  const geplandePlekken = useMemo(() => {
+    if (!alleRegels.length || !producten.length) return [] as Array<{ product: any; aantal: number; omschrijving: string }>;
+    return alleRegels
+      .map((r) => {
+        const m = matchProductOpRegel(r.omschrijving, producten);
+        if (!m) return null;
+        return { product: m, aantal: Number(r.aantal ?? 1) || 1, omschrijving: r.omschrijving };
+      })
+      .filter(Boolean) as Array<{ product: any; aantal: number; omschrijving: string }>;
+  }, [alleRegels, producten]);
+
+  // Uniek gesuggereerde producten voor de dropdown (★ bovenaan).
+  const gesuggereerd = useMemo(() => {
+    const seen = new Set<string>();
+    const uniek: any[] = [];
+    geplandePlekken.forEach((g) => {
+      if (!seen.has(g.product.id)) {
+        seen.add(g.product.id);
+        uniek.push(g.product);
+      }
+    });
+    return uniek;
+  }, [geplandePlekken]);
 
   useEffect(() => {
     if (!productId && gesuggereerd[0]) setProductId((gesuggereerd[0] as any).id);
   }, [gesuggereerd, productId]);
 
+  // Aantal geregistreerde serienummers per product_id
+  const geregistreerdPerProduct = useMemo(() => {
+    const map = new Map<string, number>();
+    items.forEach((s: any) => {
+      if (!s.product_id) return;
+      map.set(s.product_id, (map.get(s.product_id) ?? 0) + 1);
+    });
+    return map;
+  }, [items]);
+
+  const jarenNaarMaanden = (jaren: string) => {
+    const j = parseFloat(jaren.replace(",", "."));
+    if (!Number.isFinite(j) || j <= 0) return 0;
+    return Math.round(j * 12);
+  };
+
   const handleAdd = async () => {
     if (!productId || !serienr.trim()) return;
-    const months = parseInt(garantieMaanden) || 0;
+    const months = jarenNaarMaanden(garantieJaren);
     const garantieEind = months > 0
       ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
       : null;
@@ -98,7 +168,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
       toast.error("Geen serienummers gevonden");
       return;
     }
-    const months = parseInt(garantieMaanden) || 0;
+    const months = jarenNaarMaanden(garantieJaren);
     const garantieEind = months > 0
       ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
       : null;
@@ -211,8 +281,14 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             />
           </div>
           <div className="sm:col-span-2">
-            <Label className="text-xs">Garantie (mnd)</Label>
-            <Input type="number" min={0} value={garantieMaanden} onChange={(e) => setGarantieMaanden(e.target.value)} />
+            <Label className="text-xs">Garantie (jaren)</Label>
+            <Input
+              type="number"
+              min={0}
+              step="0.5"
+              value={garantieJaren}
+              onChange={(e) => setGarantieJaren(e.target.value)}
+            />
           </div>
           <div className="sm:col-span-1 flex items-end">
             <Button onClick={handleAdd} disabled={!productId || !serienr.trim() || upsert.isPending} className="w-full" aria-label="Toevoegen">
@@ -220,6 +296,29 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             </Button>
           </div>
         </div>
+
+        {geplandePlekken.length > 0 && (
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Verwacht volgens order</div>
+            <div className="space-y-1">
+              {geplandePlekken.map((g, i) => {
+                const gedaan = geregistreerdPerProduct.get(g.product.id) ?? 0;
+                const compleet = gedaan >= g.aantal;
+                return (
+                  <div key={`${g.product.id}-${i}`} className="flex items-center justify-between gap-2 text-sm">
+                    <div className="min-w-0 truncate">
+                      <span className="font-medium">{g.product.naam}</span>
+                      {g.product.merk ? <span className="text-muted-foreground"> — {g.product.merk}</span> : null}
+                    </div>
+                    <div className={`text-xs font-mono shrink-0 ${compleet ? "text-success" : "text-warning"}`}>
+                      {gedaan}/{g.aantal}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nog geen serienummers geregistreerd.</p>
