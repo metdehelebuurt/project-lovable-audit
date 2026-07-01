@@ -314,7 +314,7 @@ const OpdrachtDetail = () => {
       {isActive && !isInstallateur && (
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardContent className="py-4 flex flex-wrap gap-3">
-            {opdracht.status === "nieuw" && (
+            {opdracht.status === "nieuw" && !opdracht.bevestiging_verzonden_op && (
               <Button onClick={handleConfirm} className="gap-2"><Send className="h-4 w-4" /> Orderbevestiging mailen</Button>
             )}
             {!opdracht.schouw_id && (
@@ -323,11 +323,37 @@ const OpdrachtDetail = () => {
             {!opdracht.installatie_id && (
               <Button variant="outline" onClick={() => setInstallDialog(true)} className="gap-2"><Wrench className="h-4 w-4" /> Installatie plannen</Button>
             )}
-            <Button variant="outline" onClick={handleAfspraakBevestiging} className="gap-2">
-              <MailCheck className="h-4 w-4" /> Afspraakbevestiging
+            <Button
+              variant="outline"
+              onClick={handleAfspraakBevestiging}
+              className={`gap-2 ${installatieInfo?.bevestiging_verzonden_op ? "border-emerald-500/60 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100" : ""}`}
+              title={installatieInfo?.bevestiging_verzonden_op ? `Verzonden op ${new Date(installatieInfo.bevestiging_verzonden_op).toLocaleString("nl-NL")}` : undefined}
+            >
+              {installatieInfo?.bevestiging_verzonden_op
+                ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                : <MailCheck className="h-4 w-4" />}
+              Afspraakbevestiging
+              {installatieInfo?.bevestiging_verzonden_op && (
+                <span className="text-xs font-normal text-emerald-700 dark:text-emerald-200">
+                  · verzonden {new Date(installatieInfo.bevestiging_verzonden_op).toLocaleDateString("nl-NL")}
+                </span>
+              )}
             </Button>
-            <Button variant="outline" onClick={() => setOrderPdfOpen(true)} className="gap-2">
-              <FileText className="h-4 w-4" /> Orderbevestiging
+            <Button
+              variant="outline"
+              onClick={() => setOrderPdfOpen(true)}
+              className={`gap-2 ${opdracht.bevestiging_verzonden_op ? "border-emerald-500/60 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100" : ""}`}
+              title={opdracht.bevestiging_verzonden_op ? `Verzonden op ${new Date(opdracht.bevestiging_verzonden_op).toLocaleString("nl-NL")}` : undefined}
+            >
+              {opdracht.bevestiging_verzonden_op
+                ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                : <FileText className="h-4 w-4" />}
+              Orderbevestiging
+              {opdracht.bevestiging_verzonden_op && (
+                <span className="text-xs font-normal text-emerald-700 dark:text-emerald-200">
+                  · verzonden {new Date(opdracht.bevestiging_verzonden_op).toLocaleDateString("nl-NL")}
+                </span>
+              )}
             </Button>
             <Button
               variant="outline"
@@ -396,7 +422,18 @@ const OpdrachtDetail = () => {
           <CardContent className="space-y-2 text-sm">
             <p><span className="text-muted-foreground">Aangemaakt:</span> {new Date(opdracht.created_at).toLocaleDateString("nl-NL")}</p>
             {opdracht.bevestiging_verzonden_op && (
-              <p><span className="text-muted-foreground">Bevestigd:</span> {new Date(opdracht.bevestiging_verzonden_op).toLocaleDateString("nl-NL")}</p>
+              <p className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-muted-foreground">Orderbevestiging verzonden:</span>{" "}
+                {new Date(opdracht.bevestiging_verzonden_op).toLocaleDateString("nl-NL")}
+              </p>
+            )}
+            {installatieInfo?.bevestiging_verzonden_op && (
+              <p className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-muted-foreground">Afspraakbevestiging verzonden:</span>{" "}
+                {new Date(installatieInfo.bevestiging_verzonden_op).toLocaleDateString("nl-NL")}
+              </p>
             )}
             {opdracht.toegewezen_monteur_id && (
               <p><span className="text-muted-foreground">Monteur:</span> {monteurs.find(m => m.id === opdracht.toegewezen_monteur_id)?.voornaam || "Toegewezen"}</p>
