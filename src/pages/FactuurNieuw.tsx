@@ -18,6 +18,7 @@ import TermijnFactuurSelector, { type TermijnModus } from "@/components/financie
 import HandmatigeVoorschotVelden, { type HandmatigSubtype } from "@/components/financieel/HandmatigeVoorschotVelden";
 import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
+import { prefillRegelsUitOpdracht } from "@/lib/inkoopFromOpdracht";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
