@@ -67,8 +67,22 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
   const [regels, setRegels] = useState<OntvangstRegel[]>([]);
 
   useEffect(() => {
-    if (!open) return;
-    setRegels(initialeRegels);
+    if (!open) {
+      setRegels([]);
+      return;
+    }
+    if (initialeRegels.length === 0) return;
+    setRegels((prev) => {
+      if (prev.length === 0) return initialeRegels;
+      let isGewijzigd = false;
+      const volgendeRegels = prev.map((regel, index) => {
+        const productId = regel.product_id ?? initialeRegels[index]?.product_id ?? null;
+        if (productId === regel.product_id) return regel;
+        isGewijzigd = true;
+        return { ...regel, product_id: productId };
+      });
+      return isGewijzigd ? volgendeRegels : prev;
+    });
   }, [initialeRegels, open]);
 
   const updateRegel = (i: number, patch: Partial<OntvangstRegel>) => {
