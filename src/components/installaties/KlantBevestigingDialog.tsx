@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { updateInstallatie, type Installatie } from "./api/installatieApi";
+import { type Installatie } from "./api/installatieApi";
 
 interface Props {
   open: boolean;
@@ -45,33 +45,30 @@ Met vriendelijke groet`
 
   const verzenden = async () => {
     if (!to.trim()) { toast.error("Vul een ontvanger in"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) { toast.error("Ongeldig e-mailadres"); return; }
+    if (!subject.trim()) { toast.error("Vul een onderwerp in"); return; }
+    if (!body.trim()) { toast.error("Vul een bericht in"); return; }
     setBusy(true);
     try {
-      const html = `<div style="font-family:sans-serif;padding:20px;">${body.split("\n").map((l) => `<p>${l || "&nbsp;"}</p>`).join("")}</div>`;
-
-      const { data, error } = await supabase.functions.invoke("send-orderbevestiging-email", {
+      const { data, error } = await supabase.functions.invoke("send-installatie-bevestiging-email", {
         body: {
-          opdracht_id: installatie.opdracht_id ?? installatie.id,
+          installatie_id: installatie.id,
           ontvanger_email: to.trim(),
           subject,
-          html_body: html,
-          attachment_path: null,
+          text_body: body,
         },
       });
       if (error || data?.error) {
-        toast.error("Verzenden mislukt", { description: data?.error || error?.message });
+        const msg = data?.error || error?.message || "Onbekende fout";
+        toast.error("Verzenden mislukt", { description: msg });
         setBusy(false);
         return;
       }
-      await updateInstallatie(installatie.id, {
-        bevestiging_verzonden_op: new Date().toISOString(),
-        status: installatie.status === "gepland" ? "bevestigd" : installatie.status,
-      });
       toast.success("Bevestiging verzonden");
       onSent?.();
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error("Verzenden mislukt", { description: e?.message || String(e) });
     }
     setBusy(false);
   };
