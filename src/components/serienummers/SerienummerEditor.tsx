@@ -49,18 +49,57 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     },
   });
 
+  // Haal ook de originele orderregels uit de gekoppelde opdracht op — deze bevat
+  // álle regels (inclusief assemblage / losse componenten) die niet altijd naar
+  // installatie.producten zijn gekopieerd.
+  const { data: opdrachtRegels = [] } = useQuery({
+    queryKey: ["opdracht-regels-voor-serienummers", opdrachtId],
+    enabled: !!opdrachtId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("opdrachten")
+        .select("regels")
+        .eq("id", opdrachtId!)
+        .maybeSingle();
+      const raw = (data?.regels ?? []) as unknown;
+      if (!Array.isArray(raw)) return [] as Array<{ omschrijving: string; aantal: number }>;
+      return raw.map((r) => {
+        const o = (r ?? {}) as Record<string, unknown>;
+        return {
+          omschrijving: String(o.omschrijving ?? ""),
+          aantal: Number(o.aantal ?? 1) || 1,
+        };
+      });
+    },
+  });
+
+  // Combineer de meegegeven regels (installatie.producten) met de orderregels.
+  // We dedupliceren op omschrijving zodat dezelfde regel niet dubbel telt.
+  const alleRegels = useMemo(() => {
+    const gecombineerd = [...regels, ...opdrachtRegels];
+    const seen = new Set<string>();
+    const uniek: Array<{ omschrijving: string; aantal: number }> = [];
+    gecombineerd.forEach((r) => {
+      const key = r.omschrijving.trim().toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      uniek.push(r);
+    });
+    return uniek;
+  }, [regels, opdrachtRegels]);
+
   // Alle producten uit de orderregels (incl. assemblage / meerdere regels).
   // We houden per regel het aantal bij zodat we voortgang kunnen tonen.
   const geplandePlekken = useMemo(() => {
-    if (!regels.length || !producten.length) return [] as Array<{ product: any; aantal: number; omschrijving: string }>;
-    return regels
+    if (!alleRegels.length || !producten.length) return [] as Array<{ product: any; aantal: number; omschrijving: string }>;
+    return alleRegels
       .map((r) => {
         const m = matchProductOpRegel(r.omschrijving, producten);
         if (!m) return null;
         return { product: m, aantal: Number(r.aantal ?? 1) || 1, omschrijving: r.omschrijving };
       })
       .filter(Boolean) as Array<{ product: any; aantal: number; omschrijving: string }>;
-  }, [regels, producten]);
+  }, [alleRegels, producten]);
 
   // Uniek gesuggereerde producten voor de dropdown (★ bovenaan).
   const gesuggereerd = useMemo(() => {
