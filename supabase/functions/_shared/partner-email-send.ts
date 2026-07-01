@@ -121,9 +121,9 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
           attachments: attachment
             ? [{
                 filename: attachment.filename,
-                content: attachment.content,
+                content: attachment.bytes,
                 contentType: attachment.contentType,
-                encoding: "base64",
+                encoding: "binary",
               }]
             : undefined,
         },
