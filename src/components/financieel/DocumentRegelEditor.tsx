@@ -11,9 +11,11 @@ interface Props {
   onChange: (regels: OfferteRegel[]) => void;
   readOnly?: boolean;
   hidePricing?: boolean;
+  /** Bij inkoopdocumenten: gebruik kostprijs (inkoop) in plaats van verkoopprijs. */
+  voorInkoop?: boolean;
 }
 
-export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }: Props) {
+export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, voorInkoop }: Props) {
   const update = (idx: number, field: keyof OfferteRegel, value: any) => {
     const copy = [...regels];
     copy[idx] = { ...copy[idx], [field]: value };
@@ -26,17 +28,21 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing }:
     merk: string | null;
     model: string | null;
     prijs_excl_btw: number | null;
+    kostprijs: number | null;
     btw_percentage: number | null;
     offerte_tekst: string | null;
   }) => {
     const copy = [...regels];
     const label = [p.merk, p.model].filter(Boolean).join(" ") || p.naam;
+    const gekozenPrijs = voorInkoop
+      ? (p.kostprijs != null ? Number(p.kostprijs) : copy[idx].prijs_per_stuk)
+      : (p.prijs_excl_btw != null ? Number(p.prijs_excl_btw) : copy[idx].prijs_per_stuk);
     copy[idx] = {
       ...copy[idx],
       product_id: p.id,
       omschrijving: label,
       offerte_tekst: p.offerte_tekst ?? copy[idx].offerte_tekst,
-      prijs_per_stuk: p.prijs_excl_btw != null ? Number(p.prijs_excl_btw) : copy[idx].prijs_per_stuk,
+      prijs_per_stuk: gekozenPrijs,
       btw_percentage: p.btw_percentage != null ? Number(p.btw_percentage) : copy[idx].btw_percentage,
     };
     onChange(copy);
