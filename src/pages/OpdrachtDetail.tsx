@@ -630,6 +630,9 @@ const OpdrachtDetail = () => {
           open={klantBevestigingOpen}
           onOpenChange={setKlantBevestigingOpen}
           installatie={aangemaakteInstallatie}
+          onSent={() => {
+            queryClient.invalidateQueries({ queryKey: ["installatie-bevestiging", opdracht?.installatie_id] });
+          }}
         />
       )}
 
