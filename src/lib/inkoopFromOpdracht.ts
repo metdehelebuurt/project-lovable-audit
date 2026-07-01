@@ -38,11 +38,11 @@ export async function prefillRegelsUitOpdracht(
   if (productIds.length > 0) {
     const { data: producten } = await supabase
       .from("producten")
-      .select("id, inkoopprijs")
+      .select("id, kostprijs")
       .in("id", productIds);
-    for (const p of producten ?? []) {
-      const prijs = Number((p as { inkoopprijs: number | null }).inkoopprijs ?? 0);
-      if (prijs > 0) inkoopprijsMap.set((p as { id: string }).id, prijs);
+    for (const p of (producten ?? []) as Array<{ id: string; kostprijs: number | null }>) {
+      const prijs = Number(p.kostprijs ?? 0);
+      if (prijs > 0) inkoopprijsMap.set(p.id, prijs);
     }
   }
 
