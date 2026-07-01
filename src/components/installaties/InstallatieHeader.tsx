@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LifeBuoy, Smartphone, ShieldCheck, UserCog, UserPlus } from "lucide-react";
+import { ArrowLeft, LifeBuoy, Smartphone, ShieldCheck, UserCog, UserPlus, Mail, MailCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InstallatieStatusBadge from "./InstallatieStatusBadge";
 import MonteurWijzigDialog from "./MonteurWijzigDialog";
+import KlantBevestigingDialog from "./KlantBevestigingDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Installatie } from "./api/installatieApi";
 import type { InstallatieStatus } from "./status";
@@ -21,11 +22,15 @@ export default function InstallatieHeader({ installatie, onMaakOplevering, onCha
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [monteurDialog, setMonteurDialog] = useState(false);
+  const [bevestigingDialog, setBevestigingDialog] = useState(false);
   const showOpleverButton = ["gereed", "in_uitvoering"].includes(installatie.status);
   const isBeheerder = profile ? BEHEER_ROLLEN.includes(profile.rol) : false;
   const status = installatie.status as InstallatieStatus;
   const magMonteurWijzigen = isBeheerder && NOG_TE_PLANNEN_STATUS.includes(status);
   const heeftMonteur = Boolean(installatie.installateur_id);
+  const magBevestigen = isBeheerder && !["geannuleerd", "opgeleverd"].includes(status);
+  const bevestigingVerzonden = Boolean(installatie.bevestiging_verzonden_op);
+  const heeftKlantEmail = Boolean(installatie.klant_email);
 
   return (
     <div className="flex items-start gap-3">
@@ -58,6 +63,25 @@ export default function InstallatieHeader({ installatie, onMaakOplevering, onCha
             {heeftMonteur ? "Monteur wijzigen" : "Monteur toewijzen"}
           </Button>
         )}
+        {magBevestigen && (
+          <Button
+            variant={bevestigingVerzonden ? "outline" : "default"}
+            size="sm"
+            className="rounded-xl gap-1.5"
+            onClick={() => setBevestigingDialog(true)}
+            disabled={!heeftKlantEmail}
+            title={
+              !heeftKlantEmail
+                ? "Geen klant-e-mailadres bekend"
+                : bevestigingVerzonden
+                  ? `Verstuurd op ${new Date(installatie.bevestiging_verzonden_op!).toLocaleString("nl-NL")}`
+                  : "Afspraakbevestiging naar klant sturen"
+            }
+          >
+            {bevestigingVerzonden ? <MailCheck className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+            {bevestigingVerzonden ? "Opnieuw bevestigen" : "Klant bevestigen"}
+          </Button>
+        )}
         <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => navigate(`/installaties/${installatie.id}/werk`)}>
           <Smartphone className="h-4 w-4" /> Werkscherm
         </Button>
@@ -80,6 +104,12 @@ export default function InstallatieHeader({ installatie, onMaakOplevering, onCha
         onOpenChange={setMonteurDialog}
         installatie={installatie}
         onSaved={onChanged}
+      />
+      <KlantBevestigingDialog
+        open={bevestigingDialog}
+        onOpenChange={setBevestigingDialog}
+        installatie={installatie}
+        onSent={onChanged}
       />
     </div>
   );
