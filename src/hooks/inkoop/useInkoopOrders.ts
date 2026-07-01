@@ -143,3 +143,32 @@ export function useAnnuleerInkoopOrder() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+/**
+ * Markeert een inkooporder als 'besteld' zonder de e-mail-dialog te openen.
+ * Gebruik dit als de bestelling al buiten het systeem is geplaatst
+ * (telefonisch, portal, WhatsApp, e.d.) — de order gaat door naar
+ * de ontvangstfase.
+ */
+export function useMarkeerInkoopOrderBesteld() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("financiele_documenten")
+        .update({
+          status: "verzonden",
+          verzonden_op: new Date().toISOString(),
+          verzonden_via: "handmatig",
+        } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, id) => {
+      qc.invalidateQueries({ queryKey: ["inkooporders"] });
+      qc.invalidateQueries({ queryKey: ["inkooporder", id] });
+      toast.success("Inkooporder gemarkeerd als besteld");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
