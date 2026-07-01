@@ -146,8 +146,13 @@ Deno.serve(async (req) => {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error("admin-link-smartaccu error:", e);
+    const msg =
+      e instanceof Error ? e.message :
+      typeof e === "object" && e ? JSON.stringify(e) :
+      String(e);
     return new Response(JSON.stringify({
-      ok: false, error: e instanceof Error ? e.message : String(e),
+      ok: false, error: msg,
     }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
   }
 });
