@@ -7,6 +7,8 @@ import {
   refreshOAuthToken,
 } from "./email-send.ts";
 import { resolveEmailSender, DocumentType, EmailSenderError } from "./resolve-email-sender.ts";
+import { smtpSend } from "./smtp-send.ts";
+import { decryptAppPassword } from "./email-crypto.ts";
 
 export interface SendPartnerEmailParams {
   adminClient: any;
@@ -68,11 +70,15 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
   const partner = resolved.partner;
   const emailAccount = resolved.account;
   const useOAuth = resolved.method === "oauth";
+  // Detecteer app-password accounts (geen OAuth refresh_token, wel encrypted app password)
+  const useAppPassword = !!emailAccount
+    && !!emailAccount.app_password_encrypted
+    && !emailAccount.refresh_token;
 
   let result: SendPartnerEmailResult;
 
   try {
-    if (useOAuth) {
+    if (useOAuth && !useAppPassword) {
       let accessToken = emailAccount.access_token;
       if (!accessToken || (emailAccount.token_expiry && new Date(emailAccount.token_expiry) <= new Date())) {
         accessToken = await refreshOAuthToken(adminClient, emailAccount);
@@ -97,6 +103,35 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
         document_type: docType,
         via_account_id: emailAccount.id,
         bron_method: "oauth",
+      });
+    } else if (useAppPassword) {
+      const plain = await decryptAppPassword(emailAccount.app_password_encrypted);
+      await smtpSend(
+        {
+          email_adres: emailAccount.email_adres,
+          smtp_host: emailAccount.smtp_host,
+          smtp_port: emailAccount.smtp_port,
+          app_password_plain: plain,
+        },
+        {
+          from: emailAccount.email_adres,
+          fromName: partner.afzender_naam || partner.naam,
+          to, cc, bcc, subject, html,
+          text: undefined,
+        },
+      );
+      result = { provider: "smtp", from: emailAccount.email_adres };
+
+      await adminClient.from("email_berichten").insert({
+        email_account_id: emailAccount.id, partner_id: partnerId,
+        richting: "uitgaand", van: emailAccount.email_adres, aan: to,
+        onderwerp: subject, body_html: html, datum: new Date().toISOString(),
+        is_gelezen: true,
+        klant_id: klantId, lead_id: leadId, offerte_id: offerteId,
+        user_id: verzondenDoorId,
+        document_type: docType,
+        via_account_id: emailAccount.id,
+        bron_method: "smtp_app_password",
       });
     } else {
       await sendViaSMTP({
