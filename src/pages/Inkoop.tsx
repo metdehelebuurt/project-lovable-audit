@@ -178,14 +178,13 @@ function ActieveOrdersTab({ partnerId }: { partnerId: string }) {
     status: ["concept", "wacht_goedkeuring", "verzonden", "deels_ontvangen"],
   });
 
+  const navigate = useNavigate();
   if (isLoading) {
     return <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
   if (orders.length === 0) {
     return <Card><CardContent className="py-10 text-center text-muted-foreground">Geen actieve inkooporders.</CardContent></Card>;
   }
-
-  const navigate = useNavigate();
 
   return (
     <Card>
