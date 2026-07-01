@@ -160,6 +160,7 @@ const App = () => (
             <Route path="/c/:partnerSlug/:productSlug" element={<PublicCatalogus />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/oauth-return" element={<OAuthReturn />} />
 
             {/* Onboarding-wizard — protected, geen AppLayout */}
             <Route path="/onboarding" element={
