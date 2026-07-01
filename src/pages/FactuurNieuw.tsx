@@ -18,6 +18,7 @@ import TermijnFactuurSelector, { type TermijnModus } from "@/components/financie
 import HandmatigeVoorschotVelden, { type HandmatigSubtype } from "@/components/financieel/HandmatigeVoorschotVelden";
 import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
+import { prefillRegelsUitOpdracht } from "@/lib/inkoopFromOpdracht";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -269,6 +270,28 @@ export default function FactuurNieuw() {
           toast({ title: "Kon offerte niet laden", description: e.message, variant: "destructive" });
           setPrefilled(true);
         });
+    }
+    // Inkooporder direct vanuit een verkooporder (opdracht) — vul de regels alvast.
+    else if (isInkoop(docType) && searchParams.get("opdracht") && profile?.partner_id) {
+      const opdrachtParam = searchParams.get("opdracht")!;
+      setBronOpdrachtId(opdrachtParam);
+      void prefillRegelsUitOpdracht(opdrachtParam, profile.partner_id)
+        .then((prefill) => {
+          if (prefill.regels.length > 0) {
+            setRegels(prefill.regels);
+            const aantalMetProduct = prefill.regels.filter((r) => r.product_id).length;
+            toast({
+              title: "Regels overgenomen van verkooporder",
+              description: `${prefill.regels.length} regel(s) toegevoegd${
+                aantalMetProduct > 0 ? `, ${aantalMetProduct} met inkoopprijs` : ""
+              }. Controleer prijzen en aantallen.`,
+            });
+          }
+        })
+        .catch((e) => {
+          toast({ title: "Kon verkooporder niet laden", description: e.message, variant: "destructive" });
+        })
+        .finally(() => setPrefilled(true));
     }
   }, [searchParams, prefilled, profile?.partner_id, isEdit]);
 
