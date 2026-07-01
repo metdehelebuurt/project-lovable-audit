@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     if (!userRow?.partner_id) return jsonResponse({ error: "Geen partner gekoppeld" }, 400);
 
     const { data: opdracht } = await adminClient.from("opdrachten")
-      .select("id, klant_naam, klant_email, status, partner_id, bevestiging_verzonden_op")
+      .select("id, klant_naam, klant_email, status, partner_id, bevestiging_verzonden_op, installatie_id")
       .eq("id", opdracht_id).eq("partner_id", userRow.partner_id).single();
     if (!opdracht) return jsonResponse({ error: "Opdracht niet gevonden" }, 404);
 
@@ -74,6 +74,26 @@ Deno.serve(async (req) => {
       await adminClient.from("opdrachten")
         .update({ status: "bevestigd", bevestiging_verzonden_op: new Date().toISOString() })
         .eq("id", opdracht_id);
+    }
+
+    // Als aan deze opdracht een installatie gekoppeld is, ook de afspraakbevestiging-status bijwerken
+    if (opdracht.installatie_id) {
+      const { data: inst } = await adminClient.from("installaties")
+        .select("id, status, bevestiging_verzonden_op")
+        .eq("id", opdracht.installatie_id).maybeSingle();
+      if (inst && !inst.bevestiging_verzonden_op) {
+        const upd: Record<string, unknown> = { bevestiging_verzonden_op: new Date().toISOString() };
+        if (inst.status === "gepland") upd.status = "bevestigd";
+        await adminClient.from("installaties").update(upd).eq("id", inst.id);
+        await adminClient.from("installatie_historie").insert({
+          installatie_id: inst.id,
+          partner_id: userRow.partner_id,
+          actor_id: userId,
+          actie: "bevestiging_verzonden",
+          veld: "bevestiging_verzonden_op",
+          nieuwe_waarde: `Via orderbevestiging → ${ontvanger_email}`,
+        });
+      }
     }
 
     if (attachment_path) {
