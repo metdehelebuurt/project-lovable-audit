@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInkoopInstellingen } from "@/hooks/inkoop/useInkoopInstellingen";
 import {
   useGoedkeurInkoopOrder, useVraagGoedkeuringAan, useAnnuleerInkoopOrder,
+  useMarkeerInkoopOrderBesteld,
 } from "@/hooks/inkoop/useInkoopOrders";
 import InkoopVerzendDialog from "./InkoopVerzendDialog";
 
@@ -29,6 +30,7 @@ export default function InkoopOrderActies({ doc, partnerId, onUpdated }: Props) 
   const goedkeuren = useGoedkeurInkoopOrder();
   const vraagAan = useVraagGoedkeuringAan();
   const annuleer = useAnnuleerInkoopOrder();
+  const markeerBesteld = useMarkeerInkoopOrderBesteld();
   const [verzendOpen, setVerzendOpen] = useState(false);
 
   const goedkeuringNodig = useMemo(() => {
@@ -78,6 +80,19 @@ export default function InkoopOrderActies({ doc, partnerId, onUpdated }: Props) 
           <Button onClick={() => setVerzendOpen(true)}>
             <Send className="h-4 w-4 mr-2" />
             {isVerzonden ? "Opnieuw versturen" : "Verstuur naar leverancier"}
+          </Button>
+        )}
+        {kanVerzenden && !isVerzonden && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (confirm("Weet je zeker dat je deze inkooporder wilt markeren als besteld? Er wordt géén e-mail naar de leverancier gestuurd.")) {
+                markeerBesteld.mutate(doc.id, { onSuccess: handleAfter });
+              }
+            }}
+            disabled={markeerBesteld.isPending}
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" /> Markeren als besteld
           </Button>
         )}
         {!kanVerzenden && goedkeuringNodig && !isGoedgekeurd && isConcept && (
