@@ -2,7 +2,76 @@
 // versleutelt het wachtwoord en slaat het op in email_accounts.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { encryptAppPassword } from "../_shared/email-crypto.ts";
-import { smtpVerify } from "../_shared/smtp-send.ts";
+
+/**
+ * Lightweight SMTP AUTH LOGIN handshake. Verifieert credentials zonder een
+ * daadwerkelijke testmail te versturen (voorkomt vervuiling van de inbox en
+ * omzeilt bekende hangs van denomailer op Deno Deploy).
+ */
+async function smtpAuthCheck(host: string, port: number, user: string, pass: string): Promise<void> {
+  const conn = await Deno.connectTls({ hostname: host, port });
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+  const buf = new Uint8Array(4096);
+  const read = async (): Promise<string> => {
+    const n = await conn.read(buf);
+    if (!n) throw new Error("SMTP-verbinding gesloten");
+    return dec.decode(buf.subarray(0, n));
+  };
+  const write = (s: string) => conn.write(enc.encode(s));
+  const expect = async (code: string, step: string) => {
+    const resp = await read();
+    if (!resp.startsWith(code)) {
+      try { await write("QUIT\r\n"); } catch { /* ignore */ }
+      try { conn.close(); } catch { /* ignore */ }
+      throw new Error(`${step}: ${resp.trim()}`);
+    }
+    return resp;
+  };
+  try {
+    await expect("220", "SMTP-groet");
+    await write(`EHLO mijnhuis.nu\r\n`);
+    await expect("250", "EHLO");
+    await write("AUTH LOGIN\r\n");
+    await expect("334", "AUTH LOGIN");
+    await write(btoa(user) + "\r\n");
+    await expect("334", "gebruikersnaam");
+    await write(btoa(pass) + "\r\n");
+    await expect("235", "wachtwoord");
+    try { await write("QUIT\r\n"); } catch { /* ignore */ }
+  } finally {
+    try { conn.close(); } catch { /* ignore */ }
+  }
+}
+
+/**
+ * IMAP LOGIN sanity-check zodat we zeker weten dat het app-wachtwoord ook voor
+ * inkomende sync werkt. Snel en zonder mailbox-selectie.
+ */
+async function imapAuthCheck(host: string, port: number, user: string, pass: string): Promise<void> {
+  const conn = await Deno.connectTls({ hostname: host, port });
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+  const buf = new Uint8Array(4096);
+  const read = async () => {
+    const n = await conn.read(buf);
+    if (!n) throw new Error("IMAP-verbinding gesloten");
+    return dec.decode(buf.subarray(0, n));
+  };
+  try {
+    await read(); // greeting
+    const tag = "a1";
+    const safePass = pass.replace(/([\\"])/g, "\\$1");
+    await conn.write(enc.encode(`${tag} LOGIN "${user}" "${safePass}"\r\n`));
+    const resp = await read();
+    if (!/^a1 OK/mi.test(resp)) {
+      throw new Error(`IMAP LOGIN mislukt: ${resp.trim()}`);
+    }
+    try { await conn.write(enc.encode("a2 LOGOUT\r\n")); } catch { /* ignore */ }
+  } finally {
+    try { conn.close(); } catch { /* ignore */ }
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,18 +110,28 @@ Deno.serve(async (req) => {
       }), { status: 400, headers: corsHeaders });
     }
 
+    console.log(`[email-app-password-link] user=${userId} email=${email} verifying SMTP+IMAP…`);
     try {
-      await smtpVerify({
-        email_adres: email,
-        smtp_host: "smtp.gmail.com", smtp_port: 465,
-        app_password_plain: password,
-      });
+      await smtpAuthCheck("smtp.gmail.com", 465, email, password);
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[email-app-password-link] SMTP verify mislukt: ${msg}`);
       return new Response(JSON.stringify({
         error: "smtp_auth_failed",
-        message: e instanceof Error ? e.message : "SMTP-login mislukt. Controleer e-mail en app-wachtwoord.",
+        message: `SMTP-login mislukt: ${msg}. Controleer of 2-staps-verificatie aan staat en gebruik een App-wachtwoord (16 tekens).`,
       }), { status: 400, headers: corsHeaders });
     }
+    try {
+      await imapAuthCheck("imap.gmail.com", 993, email, password);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[email-app-password-link] IMAP verify mislukt: ${msg}`);
+      return new Response(JSON.stringify({
+        error: "imap_auth_failed",
+        message: `IMAP-login mislukt: ${msg}. Zorg dat IMAP aanstaat in Gmail-instellingen en gebruik hetzelfde app-wachtwoord.`,
+      }), { status: 400, headers: corsHeaders });
+    }
+    console.log(`[email-app-password-link] SMTP+IMAP OK voor ${email}`);
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: userRow } = await admin.from("users").select("partner_id").eq("id", userId).maybeSingle();
