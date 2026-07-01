@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package, LifeBuoy } from "lucide-react";
+import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package, LifeBuoy, MailCheck } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 import OrderbevestigingEmailDialog from "@/components/opdrachten/OrderbevestigingEmailDialog";
@@ -55,6 +55,7 @@ const OpdrachtDetail = () => {
   const [klantBevestigingOpen, setKlantBevestigingOpen] = useState(false);
   const [aangemaakteInstallatie, setAangemaakteInstallatie] = useState<any | null>(null);
   const [retourOpen, setRetourOpen] = useState(false);
+  const [pendingBevestiging, setPendingBevestiging] = useState(false);
   const isInstallateur = profile?.rol === "installateur";
 
   const { data: opdracht, isLoading } = useQuery({
@@ -149,7 +150,7 @@ const OpdrachtDetail = () => {
       geplande_startdatum: installForm.start,
       geplande_einddatum: installForm.eind || null,
       status: "gepland",
-    }).select("id").single();
+    }).select("*").single();
     if (error) { toast.error(error.message); return; }
     await supabase.from("opdrachten" as any).update({
       status: "installatie_gepland",
@@ -159,6 +160,31 @@ const OpdrachtDetail = () => {
     queryClient.invalidateQueries({ queryKey: ["opdracht", id] });
     setInstallDialog(false);
     toast.success("Installatie gepland en monteur toegewezen");
+    if (pendingBevestiging) {
+      setAangemaakteInstallatie(inst);
+      setPendingBevestiging(false);
+      setTimeout(() => setKlantBevestigingOpen(true), 250);
+    }
+  };
+
+  const handleAfspraakBevestiging = async () => {
+    if (!opdracht?.installatie_id) {
+      setPendingBevestiging(true);
+      setInstallDialog(true);
+      toast.info("Plan eerst de installatie in — de bevestiging wordt daarna geopend");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("installaties")
+      .select("*")
+      .eq("id", opdracht.installatie_id)
+      .maybeSingle();
+    if (error || !data) {
+      toast.error("Kon installatie niet laden", { description: error?.message });
+      return;
+    }
+    setAangemaakteInstallatie(data);
+    setKlantBevestigingOpen(true);
   };
 
   const handleCreateFinancieel = async (docType: "verkoopfactuur" | "pakbon") => {
@@ -252,6 +278,9 @@ const OpdrachtDetail = () => {
             {!opdracht.installatie_id && (
               <Button variant="outline" onClick={() => setInstallDialog(true)} className="gap-2"><Wrench className="h-4 w-4" /> Installatie plannen</Button>
             )}
+            <Button variant="outline" onClick={handleAfspraakBevestiging} className="gap-2">
+              <MailCheck className="h-4 w-4" /> Afspraakbevestiging
+            </Button>
             <Button variant="outline" onClick={() => setOrderPdfOpen(true)} className="gap-2">
               <FileText className="h-4 w-4" /> Orderbevestiging
             </Button>
