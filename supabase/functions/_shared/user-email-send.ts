@@ -6,6 +6,8 @@
 import {
   AttachmentInfo, sendViaGmailApi, sendViaMsGraphApi, refreshOAuthToken,
 } from "./email-send.ts";
+import { smtpSend } from "./smtp-send.ts";
+import { decryptAppPassword } from "./email-crypto.ts";
 
 export class UserMailboxError extends Error {
   status: number;
@@ -31,7 +33,7 @@ export interface SendUserEmailParams {
 }
 
 export interface SendUserEmailResult {
-  provider: "gmail" | "msgraph";
+  provider: "gmail" | "msgraph" | "smtp";
   from: string;
   emailBerichtId: string | null;
 }
@@ -46,16 +48,18 @@ export async function sendUserEmail(params: SendUserEmailParams): Promise<SendUs
     type, klantId = null, leadId = null, offerteId = null, inkooporderId = null,
   } = params;
 
-  const { data: account, error } = await adminClient
+  const { data: accounts, error } = await adminClient
     .from("email_accounts")
     .select("*")
     .eq("user_id", userId)
     .eq("actief", true)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
   if (error) {
     throw new UserMailboxError("Kon e-mailaccount niet ophalen", 500);
   }
+  const account = accounts?.[0] ?? null;
   if (!account) {
     throw new UserMailboxError(
       "Je hebt nog geen e-mailaccount gekoppeld. Ga naar Profiel → E-mail om Gmail of Outlook te koppelen, daarna kun je deze e-mail vanuit je eigen postvak versturen.",
@@ -63,21 +67,50 @@ export async function sendUserEmail(params: SendUserEmailParams): Promise<SendUs
     );
   }
 
-  let accessToken = account.access_token;
-  if (!accessToken || (account.token_expiry && new Date(account.token_expiry) <= new Date())) {
-    accessToken = await refreshOAuthToken(adminClient, account);
-  }
+  const hasOAuth = !!account.refresh_token;
+  const hasAppPassword = !!account.app_password_encrypted;
 
-  let provider: "gmail" | "msgraph";
+  let provider: "gmail" | "msgraph" | "smtp";
   try {
-    if (account.provider === "google") {
+    if (hasOAuth && account.provider === "google") {
+      let accessToken = account.access_token;
+      if (!accessToken || (account.token_expiry && new Date(account.token_expiry) <= new Date())) {
+        accessToken = await refreshOAuthToken(adminClient, account);
+      }
       await sendViaGmailApi({
         accessToken, from: account.email_adres, to, subject, html, attachment,
       });
       provider = "gmail";
-    } else if (account.provider === "microsoft") {
+    } else if (hasOAuth && account.provider === "microsoft") {
+      let accessToken = account.access_token;
+      if (!accessToken || (account.token_expiry && new Date(account.token_expiry) <= new Date())) {
+        accessToken = await refreshOAuthToken(adminClient, account);
+      }
       await sendViaMsGraphApi({ accessToken, to, subject, html, attachment });
       provider = "msgraph";
+    } else if (hasAppPassword) {
+      const plain = await decryptAppPassword(account.app_password_encrypted);
+      await smtpSend(
+        {
+          email_adres: account.email_adres,
+          smtp_host: account.smtp_host,
+          smtp_port: account.smtp_port,
+          app_password_plain: plain,
+        },
+        {
+          from: account.email_adres,
+          to, subject, html,
+          attachments: attachment
+            ? [{
+                filename: attachment.filename,
+                content: attachment.bytes,
+                contentType: attachment.contentType,
+                encoding: "binary",
+              }]
+            : undefined,
+        },
+      );
+      provider = "smtp";
     } else {
       throw new UserMailboxError(`Onbekende provider: ${account.provider}`, 400);
     }
