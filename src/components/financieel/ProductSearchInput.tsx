@@ -12,6 +12,7 @@ export interface ProductHit {
   merk: string | null;
   model: string | null;
   prijs_excl_btw: number | null;
+  kostprijs: number | null;
   btw_percentage: number | null;
   offerte_tekst: string | null;
 }
@@ -21,9 +22,11 @@ interface Props {
   onChangeText: (text: string) => void;
   onPickProduct: (p: ProductHit) => void;
   placeholder?: string;
+  /** Toon en gebruik kostprijs (inkoop) in plaats van verkoopprijs. */
+  voorInkoop?: boolean;
 }
 
-export function ProductSearchInput({ value, onChangeText, onPickProduct, placeholder }: Props) {
+export function ProductSearchInput({ value, onChangeText, onPickProduct, placeholder, voorInkoop }: Props) {
   const { profile } = useAuth();
   const partnerId = profile?.partner_id;
   const [open, setOpen] = useState(false);
@@ -38,7 +41,7 @@ export function ProductSearchInput({ value, onChangeText, onPickProduct, placeho
     const timer = setTimeout(async () => {
       let query = supabase
         .from("producten")
-        .select("id, naam, merk, model, prijs_excl_btw, btw_percentage, offerte_tekst")
+        .select("id, naam, merk, model, prijs_excl_btw, kostprijs, btw_percentage, offerte_tekst")
         .limit(15);
       if (partnerId) {
         if (term.length > 0) {
@@ -108,11 +111,17 @@ export function ProductSearchInput({ value, onChangeText, onPickProduct, placeho
                       {[p.merk, p.model].filter(Boolean).join(" • ") || "—"}
                     </div>
                   </div>
-                  {p.prijs_excl_btw != null && (
-                    <div className="text-xs font-medium shrink-0">
-                      {formatCurrency(Number(p.prijs_excl_btw))}
-                    </div>
-                  )}
+                  {voorInkoop
+                    ? p.kostprijs != null && (
+                        <div className="text-xs font-medium shrink-0" title="Inkoopprijs">
+                          {formatCurrency(Number(p.kostprijs))}
+                        </div>
+                      )
+                    : p.prijs_excl_btw != null && (
+                        <div className="text-xs font-medium shrink-0">
+                          {formatCurrency(Number(p.prijs_excl_btw))}
+                        </div>
+                      )}
                 </div>
               </button>
             ))
