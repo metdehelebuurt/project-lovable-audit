@@ -118,6 +118,14 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
           fromName: partner.afzender_naam || partner.naam,
           to, cc, bcc, subject, html,
           text: undefined,
+          attachments: attachment
+            ? [{
+                filename: attachment.filename,
+                content: attachment.content,
+                contentType: attachment.contentType,
+                encoding: "base64",
+              }]
+            : undefined,
         },
       );
       result = { provider: "smtp", from: emailAccount.email_adres };
