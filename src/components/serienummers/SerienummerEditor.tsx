@@ -242,8 +242,14 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             />
           </div>
           <div className="sm:col-span-2">
-            <Label className="text-xs">Garantie (mnd)</Label>
-            <Input type="number" min={0} value={garantieMaanden} onChange={(e) => setGarantieMaanden(e.target.value)} />
+            <Label className="text-xs">Garantie (jaren)</Label>
+            <Input
+              type="number"
+              min={0}
+              step="0.5"
+              value={garantieJaren}
+              onChange={(e) => setGarantieJaren(e.target.value)}
+            />
           </div>
           <div className="sm:col-span-1 flex items-end">
             <Button onClick={handleAdd} disabled={!productId || !serienr.trim() || upsert.isPending} className="w-full" aria-label="Toevoegen">
@@ -251,6 +257,29 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             </Button>
           </div>
         </div>
+
+        {geplandePlekken.length > 0 && (
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Verwacht volgens order</div>
+            <div className="space-y-1">
+              {geplandePlekken.map((g, i) => {
+                const gedaan = geregistreerdPerProduct.get(g.product.id) ?? 0;
+                const compleet = gedaan >= g.aantal;
+                return (
+                  <div key={`${g.product.id}-${i}`} className="flex items-center justify-between gap-2 text-sm">
+                    <div className="min-w-0 truncate">
+                      <span className="font-medium">{g.product.naam}</span>
+                      {g.product.merk ? <span className="text-muted-foreground"> — {g.product.merk}</span> : null}
+                    </div>
+                    <div className={`text-xs font-mono shrink-0 ${compleet ? "text-success" : "text-warning"}`}>
+                      {gedaan}/{g.aantal}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nog geen serienummers geregistreerd.</p>
