@@ -31,7 +31,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const del = useDeleteSerienummer();
   const [productId, setProductId] = useState<string>("");
   const [serienr, setSerienr] = useState("");
-  const [garantieMaanden, setGarantieMaanden] = useState<string>("60");
+  const [garantieJaren, setGarantieJaren] = useState<string>("5");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -42,31 +42,62 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     queryFn: async () => {
       const { data } = await supabase
         .from("producten")
-        .select("id, naam, merk, model, categorie")
+        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code")
         .eq("partner_id", partnerId)
         .order("naam");
       return data ?? [];
     },
   });
 
-  // Voorgestelde producten op basis van orderregels
-  const gesuggereerd = useMemo(() => {
-    if (!regels.length || !producten.length) return [];
-    const ids = new Set<string>();
-    regels.forEach((r) => {
-      const m = matchProductOpRegel(r.omschrijving, producten);
-      if (m) ids.add(m.id);
-    });
-    return Array.from(ids).map((id) => producten.find((p: any) => p.id === id)).filter(Boolean);
+  // Alle producten uit de orderregels (incl. assemblage / meerdere regels).
+  // We houden per regel het aantal bij zodat we voortgang kunnen tonen.
+  const geplandePlekken = useMemo(() => {
+    if (!regels.length || !producten.length) return [] as Array<{ product: any; aantal: number; omschrijving: string }>;
+    return regels
+      .map((r) => {
+        const m = matchProductOpRegel(r.omschrijving, producten);
+        if (!m) return null;
+        return { product: m, aantal: Number(r.aantal ?? 1) || 1, omschrijving: r.omschrijving };
+      })
+      .filter(Boolean) as Array<{ product: any; aantal: number; omschrijving: string }>;
   }, [regels, producten]);
+
+  // Uniek gesuggereerde producten voor de dropdown (★ bovenaan).
+  const gesuggereerd = useMemo(() => {
+    const seen = new Set<string>();
+    const uniek: any[] = [];
+    geplandePlekken.forEach((g) => {
+      if (!seen.has(g.product.id)) {
+        seen.add(g.product.id);
+        uniek.push(g.product);
+      }
+    });
+    return uniek;
+  }, [geplandePlekken]);
 
   useEffect(() => {
     if (!productId && gesuggereerd[0]) setProductId((gesuggereerd[0] as any).id);
   }, [gesuggereerd, productId]);
 
+  // Aantal geregistreerde serienummers per product_id
+  const geregistreerdPerProduct = useMemo(() => {
+    const map = new Map<string, number>();
+    items.forEach((s: any) => {
+      if (!s.product_id) return;
+      map.set(s.product_id, (map.get(s.product_id) ?? 0) + 1);
+    });
+    return map;
+  }, [items]);
+
+  const jarenNaarMaanden = (jaren: string) => {
+    const j = parseFloat(jaren.replace(",", "."));
+    if (!Number.isFinite(j) || j <= 0) return 0;
+    return Math.round(j * 12);
+  };
+
   const handleAdd = async () => {
     if (!productId || !serienr.trim()) return;
-    const months = parseInt(garantieMaanden) || 0;
+    const months = jarenNaarMaanden(garantieJaren);
     const garantieEind = months > 0
       ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
       : null;
@@ -98,7 +129,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
       toast.error("Geen serienummers gevonden");
       return;
     }
-    const months = parseInt(garantieMaanden) || 0;
+    const months = jarenNaarMaanden(garantieJaren);
     const garantieEind = months > 0
       ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
       : null;
