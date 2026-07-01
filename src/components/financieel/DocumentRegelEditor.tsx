@@ -92,6 +92,7 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
                       }}
                       onPickProduct={(p) => applyProduct(i, p)}
                       placeholder="Zoek product of typ vrij..."
+                      voorInkoop={voorInkoop}
                     />
                   )}
                 </TableCell>
