@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ArrowLeft, Send, CalendarPlus, Wrench, Eye, XCircle, FileText, Download, Receipt, Package, LifeBuoy, MailCheck } from "lucide-react";
+import { Pencil, Save, X } from "lucide-react";
 import { categoryFields, getSections } from "@/components/schouwen/SchouwCategoryFields";
 import OrderbevestigingPDF from "@/components/OrderbevestigingPDF";
 import OrderbevestigingEmailDialog from "@/components/opdrachten/OrderbevestigingEmailDialog";
@@ -27,6 +28,7 @@ import { RotateCcw } from "lucide-react";
 import { OfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
 import EntiteitHistorieTab from "@/components/historie/EntiteitHistorieTab";
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
+import { DocumentRegelEditor } from "@/components/financieel/DocumentRegelEditor";
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw", bevestigd: "Bevestigd", schouw_gepland: "Schouw gepland",
@@ -56,6 +58,8 @@ const OpdrachtDetail = () => {
   const [aangemaakteInstallatie, setAangemaakteInstallatie] = useState<any | null>(null);
   const [retourOpen, setRetourOpen] = useState(false);
   const [pendingBevestiging, setPendingBevestiging] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editRegels, setEditRegels] = useState<OfferteRegel[]>([]);
   const isInstallateur = profile?.rol === "installateur";
 
   const { data: opdracht, isLoading } = useQuery({
@@ -119,6 +123,33 @@ const OpdrachtDetail = () => {
   const handleConfirm = () => {
     setOrderPdfOpen(true);
     setTimeout(() => setOrderEmailOpen(true), 300);
+  };
+
+  const startEdit = () => {
+    setEditRegels(((opdracht?.regels || []) as OfferteRegel[]).map((r) => ({ ...r })));
+    setEditMode(true);
+  };
+
+  const saveEdit = async () => {
+    const subtotaal = editRegels.reduce((s, r) => s + regelSubtotaal(r), 0);
+    const btw = editRegels.reduce(
+      (s, r) => s + regelSubtotaal(r) * ((r.btw_percentage || 21) / 100),
+      0,
+    );
+    const { error } = await supabase
+      .from("opdrachten" as any)
+      .update({
+        regels: editRegels as any,
+        totaal_bedrag: subtotaal + btw,
+      })
+      .eq("id", id!);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Orderregels bijgewerkt");
+    setEditMode(false);
+    queryClient.invalidateQueries({ queryKey: ["opdracht", id] });
   };
 
   const handleCancel = () => {
@@ -365,8 +396,31 @@ const OpdrachtDetail = () => {
 
       {/* Offerteregels */}
       <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader><CardTitle className="text-lg">Orderregels</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Orderregels</CardTitle>
+            {isActive && !isInstallateur && !editMode && (
+              <Button size="sm" variant="outline" onClick={startEdit} className="gap-2">
+                <Pencil className="h-4 w-4" /> Bewerken
+              </Button>
+            )}
+            {editMode && (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setEditMode(false)} className="gap-2">
+                  <X className="h-4 w-4" /> Annuleren
+                </Button>
+                <Button size="sm" onClick={saveEdit} className="gap-2">
+                  <Save className="h-4 w-4" /> Opslaan
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardHeader>
         <CardContent>
+          {editMode ? (
+            <DocumentRegelEditor regels={editRegels} onChange={setEditRegels} />
+          ) : (
+          <>
           <Table>
             <TableHeader>
               <TableRow>
@@ -424,6 +478,8 @@ const OpdrachtDetail = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
         </CardContent>
       </Card>
 
