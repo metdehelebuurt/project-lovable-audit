@@ -101,9 +101,13 @@ export function useInstallatieGereedheid(installatie: Installatie | null | undef
       // Klant bevestigd
       const klantOk = !!installatie.bevestiging_verzonden_op && !!installatie.monteur_geaccepteerd_op;
       pushSysteem({
-        key: "klant_bevestigd", label: "Orderbevestiging Klant ",
+        key: "klant_bevestigd", label: "Afspraakbevestiging klant",
         status: klantOk ? "ok" : installatie.bevestiging_verzonden_op ? "warn" : "fail",
-        details: klantOk ? "Klant + monteur akkoord" : installatie.bevestiging_verzonden_op ? "Klant nog te bevestigen" : "Nog niet verzonden",
+        details: klantOk
+          ? "Klant + monteur akkoord"
+          : installatie.bevestiging_verzonden_op
+            ? `Verzonden op ${new Date(installatie.bevestiging_verzonden_op).toLocaleDateString("nl-NL")}`
+            : "Nog niet verzonden",
       });
 
       // Monteur
