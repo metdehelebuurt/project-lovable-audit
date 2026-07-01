@@ -68,6 +68,8 @@ export function useCreateOntvangst(opts: {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inkoop-ontvangsten", opts.inkooporderId] });
+      qc.invalidateQueries({ queryKey: ["inkooporder", opts.inkooporderId] });
+      qc.invalidateQueries({ queryKey: ["inkooporders"] });
       qc.invalidateQueries({ queryKey: ["voorraad"] });
       toast.success("Ontvangst geregistreerd, voorraad bijgewerkt");
     },

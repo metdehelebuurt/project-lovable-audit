@@ -1,15 +1,27 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateOntvangst, type OntvangstRegel } from "@/hooks/inkoop/useInkoopOntvangsten";
 import { matchProductOpRegel } from "@/lib/voorraad";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+interface ProductOptie {
+  id: string;
+  naam: string;
+  eenheid: string | null;
+  merk: string | null;
+  model: string | null;
+  artikelnummer: string | null;
+  ean_code: string | null;
+  product_code: string | null;
+}
 
 interface Props {
   open: boolean;
@@ -28,9 +40,9 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
     queryFn: async () => {
       const { data } = await supabase
         .from("producten")
-        .select("id, naam, eenheid")
+        .select("id, naam, eenheid, merk, model, artikelnummer, ean_code, product_code")
         .or(`partner_id.eq.${partnerId},partner_id.is.null`);
-      return data ?? [];
+      return (data ?? []) as ProductOptie[];
     },
     enabled: open,
   });
@@ -41,7 +53,7 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
   const initialeRegels: OntvangstRegel[] = useMemo(() => {
     if (!open) return [];
     return inkooporderRegels.map((r) => {
-      const match = matchProductOpRegel(r.omschrijving, producten as any);
+      const match = matchProductOpRegel(r.omschrijving, producten);
       return {
         product_id: r.product_id ?? match?.id ?? null,
         omschrijving: r.omschrijving,
@@ -54,13 +66,24 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
 
   const [regels, setRegels] = useState<OntvangstRegel[]>([]);
 
-  // Reset bij openen
-  const ensureRegels = () => {
-    if (regels.length === 0 && initialeRegels.length > 0) {
-      setRegels(initialeRegels);
+  useEffect(() => {
+    if (!open) {
+      setRegels([]);
+      return;
     }
-  };
-  ensureRegels();
+    if (initialeRegels.length === 0) return;
+    setRegels((prev) => {
+      if (prev.length === 0) return initialeRegels;
+      let isGewijzigd = false;
+      const volgendeRegels = prev.map((regel, index) => {
+        const productId = regel.product_id ?? initialeRegels[index]?.product_id ?? null;
+        if (productId === regel.product_id) return regel;
+        isGewijzigd = true;
+        return { ...regel, product_id: productId };
+      });
+      return isGewijzigd ? volgendeRegels : prev;
+    });
+  }, [initialeRegels, open]);
 
   const updateRegel = (i: number, patch: Partial<OntvangstRegel>) => {
     setRegels((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -80,7 +103,7 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setRegels([]); setOpmerking(""); } }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Ontvangst registreren</DialogTitle>
         </DialogHeader>
@@ -99,6 +122,7 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
                 <TableHeader>
                   <TableRow>
                     <TableHead>Omschrijving</TableHead>
+                      <TableHead className="min-w-56">Product</TableHead>
                     <TableHead className="text-right">Besteld</TableHead>
                     <TableHead className="text-right w-32">Ontvangen</TableHead>
                     <TableHead>Opmerking</TableHead>
@@ -112,6 +136,24 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
                         {!r.product_id && (
                           <div className="text-xs text-warning">Geen product gekoppeld — voorraad wordt niet bijgewerkt</div>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={r.product_id ?? "geen-product"}
+                          onValueChange={(value) => updateRegel(i, { product_id: value === "geen-product" ? null : value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Kies product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="geen-product">Geen product</SelectItem>
+                            {producten.map((product) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.naam}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">{r.besteld_aantal}</TableCell>
                       <TableCell>
