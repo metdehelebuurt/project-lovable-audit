@@ -16,7 +16,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   inkooporderId: string;
   partnerId: string;
-  inkooporderRegels: { omschrijving: string; aantal: number }[];
+  inkooporderRegels: { product_id?: string | null; omschrijving: string; aantal: number }[];
 }
 
 export default function OntvangstDialog({ open, onOpenChange, inkooporderId, partnerId, inkooporderRegels }: Props) {
@@ -43,7 +43,7 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
     return inkooporderRegels.map((r) => {
       const match = matchProductOpRegel(r.omschrijving, producten as any);
       return {
-        product_id: match?.id ?? null,
+        product_id: r.product_id ?? match?.id ?? null,
         omschrijving: r.omschrijving,
         besteld_aantal: r.aantal,
         ontvangen_aantal: r.aantal,

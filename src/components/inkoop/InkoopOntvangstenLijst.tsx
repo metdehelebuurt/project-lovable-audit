@@ -10,7 +10,7 @@ import OntvangstDialog from "./OntvangstDialog";
 interface Props {
   inkooporderId: string;
   partnerId: string;
-  inkooporderRegels: { omschrijving: string; aantal: number }[];
+  inkooporderRegels: { product_id?: string | null; omschrijving: string; aantal: number }[];
   kanBoeken?: boolean;
 }
 

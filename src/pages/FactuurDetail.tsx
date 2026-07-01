@@ -531,7 +531,7 @@ export default function FactuurDetail() {
         <InkoopOntvangstenLijst
           inkooporderId={doc.id}
           partnerId={doc.partner_id}
-          inkooporderRegels={regels.map((r: any) => ({ omschrijving: r.omschrijving, aantal: Number(r.aantal ?? 0) }))}
+          inkooporderRegels={regels.map((r: any) => ({ product_id: r.product_id ?? null, omschrijving: r.omschrijving, aantal: Number(r.aantal ?? 0) }))}
           kanBoeken={!["volledig_ontvangen","betaald","gecrediteerd"].includes(doc.status)}
         />
       )}
