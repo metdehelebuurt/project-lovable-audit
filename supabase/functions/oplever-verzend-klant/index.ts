@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendPartnerEmail, PartnerEmailError } from "../_shared/partner-email-send.ts";
+import { loadPartnerBrand, wrapInPartnerTemplate } from "../_shared/partner-branded-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
