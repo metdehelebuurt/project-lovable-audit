@@ -6,6 +6,8 @@ import {
   refreshOAuthToken as sharedRefreshOAuthToken,
   fetchAttachment,
 } from "../_shared/email-send.ts";
+import { decryptAppPassword } from "../_shared/email-crypto.ts";
+import { smtpSend } from "../_shared/smtp-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -138,13 +140,25 @@ Deno.serve(async (req) => {
       .eq("id", userRow.partner_id)
       .single();
 
-    // Check if partner has OAuth email account
-    const { data: emailAccount } = await adminClient
-      .from("email_accounts")
-      .select("*")
-      .eq("partner_id", userRow.partner_id)
-      .eq("actief", true)
-      .maybeSingle();
+    // Zoek beste e-mailaccount: eerst het persoonlijke account van de gebruiker,
+    // anders een actief account binnen de organisatie. Gebruik limit(1) i.p.v.
+    // maybeSingle zodat een partner met meerdere accounts geen error geeft.
+    let emailAccount: any = null;
+    {
+      const { data: own } = await adminClient
+        .from("email_accounts").select("*")
+        .eq("user_id", userId).eq("actief", true)
+        .order("created_at", { ascending: false }).limit(1);
+      if (own && own.length) emailAccount = own[0];
+    }
+    if (!emailAccount) {
+      const { data: partnerAcc } = await adminClient
+        .from("email_accounts").select("*")
+        .eq("partner_id", userRow.partner_id).eq("actief", true)
+        .order("is_default_voor_partner", { ascending: false })
+        .order("created_at", { ascending: true }).limit(1);
+      if (partnerAcc && partnerAcc.length) emailAccount = partnerAcc[0];
+    }
 
     if (!partner) {
       return new Response(JSON.stringify({ error: "Partner niet gevonden" }), { status: 404, headers: corsHeaders });
@@ -236,10 +250,15 @@ Deno.serve(async (req) => {
       offerte.share_token = newToken;
     }
 
-    // Determine send method: OAuth or SMTP
-    const useOAuth = emailAccount && (partner.email_provider === "oauth_google" || partner.email_provider === "oauth_microsoft");
-    
-    if (!useOAuth && (!partner.smtp_host || !partner.afzender_email || !partner.smtp_user || !partner.smtp_pass_encrypted)) {
+    // Bepaal verzendmethode op basis van het gevonden account:
+    // 1) OAuth API (Gmail/Microsoft) als access_token + refresh_token beschikbaar
+    // 2) SMTP via Gmail App Password als app_password_encrypted aanwezig
+    // 3) Partner-SMTP als laatste redmiddel
+    const hasOauth = !!(emailAccount && emailAccount.access_token && emailAccount.refresh_token);
+    const hasAppPw = !!(emailAccount && emailAccount.app_password_encrypted);
+    const hasPartnerSmtp = !!(partner.smtp_host && partner.afzender_email && partner.smtp_user && partner.smtp_pass_encrypted);
+
+    if (!hasOauth && !hasAppPw && !hasPartnerSmtp) {
       return new Response(JSON.stringify({ error: "E-mailconfiguratie is niet ingesteld. Ga naar Instellingen → E-mail configuratie." }), { status: 400, headers: corsHeaders });
     }
 
@@ -279,7 +298,7 @@ Deno.serve(async (req) => {
       ? await fetchAttachment(adminClient, attachment_path, attachment_filename || `Offerte-${offerte.offertenummer}.pdf`)
       : null;
 
-    if (useOAuth) {
+    if (hasOauth) {
       // Send via OAuth API (Gmail or Microsoft Graph)
       let accessToken = emailAccount.access_token;
       if (new Date(emailAccount.token_expiry) <= new Date()) {
@@ -306,6 +325,42 @@ Deno.serve(async (req) => {
         is_gelezen: true,
         offerte_id,
         lead_id: offerte.lead_id || null,
+      });
+    } else if (hasAppPw) {
+      // Send via SMTP met Gmail App Password vanaf het gekoppelde account
+      const plain = await decryptAppPassword(emailAccount.app_password_encrypted as string);
+      await smtpSend(
+        {
+          email_adres: emailAccount.email_adres,
+          smtp_host: emailAccount.smtp_host,
+          smtp_port: emailAccount.smtp_port,
+          app_password_plain: plain,
+        },
+        {
+          from: emailAccount.email_adres,
+          fromName: partner.afzender_naam || partner.naam,
+          to: ontvanger_email,
+          cc: Array.isArray(cc) ? cc : [],
+          bcc: Array.isArray(bcc) ? bcc : [],
+          subject: emailSubject,
+          html,
+        },
+      );
+      imapSaved = true; // Gmail slaat SMTP-verzending automatisch op in Verzonden
+
+      await adminClient.from("email_berichten").insert({
+        email_account_id: emailAccount.id,
+        partner_id: userRow.partner_id,
+        richting: "uitgaand",
+        van: emailAccount.email_adres,
+        aan: ontvanger_email,
+        onderwerp: emailSubject,
+        body_html: html,
+        datum: new Date().toISOString(),
+        is_gelezen: true,
+        offerte_id,
+        lead_id: offerte.lead_id || null,
+        bron_method: "smtp_app_password",
       });
     } else {
       // Send via SMTP
