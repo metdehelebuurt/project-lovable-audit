@@ -51,6 +51,16 @@ export default function StepOndertekening({ rapport, onSent }: Props) {
       toast({ title: "Naam en handtekening verplicht", variant: "destructive" });
       return;
     }
+    const mSn = rapport.meetapparatuur?.serienummer?.trim();
+    const mKal = rapport.meetapparatuur?.laatste_kalibratie;
+    if (!mSn || !mKal) {
+      toast({
+        title: "Meetapparatuur onvolledig",
+        description: "Vul bij Metingen het serienummer en de laatste kalibratiedatum van het meetapparaat in.",
+        variant: "destructive",
+      });
+      return;
+    }
     const emailTrimmed = klantEmail.trim();
     if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
       toast({ title: "Geldig e-mailadres klant verplicht", variant: "destructive" });
