@@ -94,7 +94,9 @@ const OfferteKortingBlock: React.FC<{
   );
 };
 
-export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regels, subtotaal, btwBedrag, totaalBedrag, formatCurrency, offerteKortingType, offerteKortingWaarde }) => (
+export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regels, subtotaal, btwBedrag, totaalBedrag, formatCurrency, offerteKortingType, offerteKortingWaarde }) => {
+  const asmMap = useAssemblageMap(regels);
+  return (
   <div style={{ fontFamily: "'Rubik', sans-serif" }}>
     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
       <thead>
@@ -111,8 +113,10 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
         {regels.map((r, i) => {
           const sub = regelSub(r);
           const kLabel = regelKortingLabel(r);
+          const comps = componentenVoor(asmMap, r);
           return (
-            <tr key={i} style={{ borderBottom: `1px solid ${pcTint2}`, backgroundColor: i % 2 === 0 ? "#fff" : "rgba(0,0,0,0.02)" }}>
+            <Fragment key={i}>
+            <tr style={{ borderBottom: comps.length ? "none" : `1px solid ${pcTint2}`, backgroundColor: i % 2 === 0 ? "#fff" : "rgba(0,0,0,0.02)" }}>
               <td style={{ padding: "10px 12px", fontWeight: 500 }}>{r.aantal}</td>
               <td style={{ padding: "10px 12px" }}>{r.omschrijving}{r.offerte_tekst && <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{r.offerte_tekst}</div>}</td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
@@ -120,6 +124,17 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{r.btw_percentage}%</td>
               <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(sub)}</td>
             </tr>
+            {comps.length > 0 && (
+              <tr style={{ borderBottom: `1px solid ${pcTint2}`, backgroundColor: i % 2 === 0 ? "#fff" : "rgba(0,0,0,0.02)" }}>
+                <td colSpan={6} style={{ padding: "0 12px 8px 24px", fontSize: 10, color: "#666" }}>
+                  <div style={{ fontWeight: 600, marginBottom: 2 }}>Inhoud bundel:</div>
+                  {comps.map((c) => (
+                    <div key={c.component_id}>↳ {c.aantal * r.aantal}× {[c.merk, c.naam].filter(Boolean).join(" ")}{c.heeft_serienummer ? " · SN" : ""}</div>
+                  ))}
+                </td>
+              </tr>
+            )}
+            </Fragment>
           );
         })}
       </tbody>
@@ -133,7 +148,8 @@ export const PriceClassic: React.FC<PrijstabelProps> = ({ pc, sc, pcTint2, regel
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export const PriceModern: React.FC<PrijstabelProps> = ({ pc, sc, pcTint, regels, subtotaal, btwBedrag, totaalBedrag, formatCurrency, offerteKortingType, offerteKortingWaarde }) => (
   <div style={{ fontFamily: "'Rubik', sans-serif" }}>
