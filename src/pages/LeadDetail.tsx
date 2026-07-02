@@ -651,17 +651,17 @@ const LeadDetail = () => {
             </Card>
           )}
 
-          {/* Solar potentie check - shown on overzicht tab when address is known */}
-          {activeTab === "overzicht" && lead.adres && (
-            <SolarPotentieCheck adres={lead.adres} postcode={lead.postcode} plaats={lead.plaats} />
-          )}
-
           {activeTab === "overzicht" && (
             <ContactpersonenKaart
               entiteitType="lead"
               entiteitId={lead.id}
               partnerId={lead.partner_id}
             />
+          )}
+
+          {/* Solar potentie check - shown on overzicht tab when address is known */}
+          {activeTab === "overzicht" && lead.adres && (
+            <SolarPotentieCheck adres={lead.adres} postcode={lead.postcode} plaats={lead.plaats} />
           )}
 
           {/* KLANTDATA */}
