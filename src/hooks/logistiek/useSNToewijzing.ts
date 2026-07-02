@@ -41,7 +41,7 @@ export const useSNToewijzing = (
     queryFn: async (): Promise<SNToewijzingData> => {
       const { data: producten } = await supabase
         .from("producten")
-        .select("id, naam, merk, model, artikelnummer, ean_code, product_code, is_assemblage, heeft_serienummer")
+        .select("id, naam, merk, model, artikelnummer, ean_code, product_code, is_assemblage, heeft_serienummer, omvormer_modulair, heeft_backup_box")
         .eq("partner_id", partnerId);
       const prodList = (producten || []) as any[];
 
@@ -51,16 +51,17 @@ export const useSNToewijzing = (
       if (assemblageIds.length) {
         const { data: comps } = await supabase
           .from("product_componenten" as any)
-          .select("assemblage_id, component_id, aantal, component:producten!product_componenten_component_id_fkey(id, naam, merk, heeft_serienummer)")
+          .select("assemblage_id, component_id, aantal, component:producten!product_componenten_component_id_fkey(id, naam, merk, heeft_serienummer, omvormer_modulair, heeft_backup_box)")
           .in("assemblage_id", assemblageIds);
         (comps || []).forEach((c: any) => {
           const arr = compMap[c.assemblage_id] ?? [];
+          const heeftSn = !!(c.component?.heeft_serienummer || c.component?.omvormer_modulair || c.component?.heeft_backup_box);
           arr.push({
             component_id: c.component_id,
             aantal: Number(c.aantal || 0),
             naam: c.component?.naam ?? "Onbekend",
             merk: c.component?.merk ?? null,
-            heeft_sn: !!c.component?.heeft_serienummer,
+            heeft_sn: heeftSn,
           });
           compMap[c.assemblage_id] = arr;
         });
@@ -78,7 +79,9 @@ export const useSNToewijzing = (
         if (!p) return;
         if (p.is_assemblage) {
           const comps = compMap[p.id] || [];
-          comps.filter((c) => c.heeft_sn).forEach((c) => {
+          const compsMetSn = comps.filter((c) => c.heeft_sn);
+          if (compsMetSn.length === 0) return;
+          compsMetSn.forEach((c) => {
             targets.push({
               regelIndex: i,
               regelOmschrijving: r.omschrijving,
@@ -91,7 +94,7 @@ export const useSNToewijzing = (
               benodigd: c.aantal * r.aantal,
             });
           });
-        } else if (p.heeft_serienummer) {
+        } else if (p.heeft_serienummer || p.omvormer_modulair || p.heeft_backup_box) {
           targets.push({
             regelIndex: i,
             regelOmschrijving: r.omschrijving,
