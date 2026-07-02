@@ -12,6 +12,7 @@ import { Package, Plus, Copy, Pencil, Trash2, Search, Layers } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useVoorraadOverzicht } from "@/hooks/voorraad/useVoorraad";
 import {
   useAssemblages,
   useAssemblageComponenten,
@@ -28,6 +29,12 @@ export default function Assemblages() {
   const qc = useQueryClient();
   const partnerId = profile?.partner_id;
   const { data: assemblages = [], isLoading } = useAssemblages(partnerId);
+  const { data: voorraad = [] } = useVoorraadOverzicht(partnerId);
+  const voorraadMap = useMemo(() => {
+    const m = new Map<string, (typeof voorraad)[number]>();
+    voorraad.forEach((v) => m.set(v.id, v));
+    return m;
+  }, [voorraad]);
   const [zoek, setZoek] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -119,6 +126,7 @@ export default function Assemblages() {
                   <TableHead>Verkoopprijs</TableHead>
                   <TableHead>Kostprijs (som)</TableHead>
                   <TableHead>Marge</TableHead>
+                  <TableHead>Op voorraad</TableHead>
                   <TableHead className="w-32"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -129,6 +137,7 @@ export default function Assemblages() {
                     : a.prijs_excl_btw ?? 0;
                   const marge = verkoop > 0 ? ((verkoop - (a.som_kostprijs ?? 0)) / verkoop) * 100 : 0;
                   const kleur = marge >= 20 ? "bg-success-light text-success" : marge >= 10 ? "bg-warning-light text-warning-foreground" : "bg-error-light text-error";
+                  const v = voorraadMap.get(a.id);
                   return (
                     <TableRow key={a.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setActiveId(a.id)}>
                       <TableCell className="font-medium">
@@ -140,6 +149,19 @@ export default function Assemblages() {
                       <TableCell className="text-muted-foreground">{formatCurrency(a.som_kostprijs ?? 0)}</TableCell>
                       <TableCell>
                         <Badge className={kleur}>{marge.toFixed(1)}%</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {v ? (
+                          v.vrij > 0 ? (
+                            <Badge className="bg-success-light text-success">{v.vrij} bundels</Badge>
+                          ) : (
+                            <div className="text-xs text-error" title={v.bottleneck ? `Knelpunt: ${v.bottleneck.naam}` : ""}>
+                              0 · {v.bottleneck ? `knelpunt ${v.bottleneck.naam}` : "geen dekking"}
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
