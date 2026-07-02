@@ -12,6 +12,7 @@ import { Package, Plus, Copy, Pencil, Trash2, Search, Layers } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useVoorraadOverzicht } from "@/hooks/voorraad/useVoorraad";
 import {
   useAssemblages,
   useAssemblageComponenten,
@@ -28,6 +29,12 @@ export default function Assemblages() {
   const qc = useQueryClient();
   const partnerId = profile?.partner_id;
   const { data: assemblages = [], isLoading } = useAssemblages(partnerId);
+  const { data: voorraad = [] } = useVoorraadOverzicht(partnerId);
+  const voorraadMap = useMemo(() => {
+    const m = new Map<string, (typeof voorraad)[number]>();
+    voorraad.forEach((v) => m.set(v.id, v));
+    return m;
+  }, [voorraad]);
   const [zoek, setZoek] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
