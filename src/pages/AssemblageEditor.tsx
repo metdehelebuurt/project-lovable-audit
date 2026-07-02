@@ -36,14 +36,14 @@ type ProductRow = {
   is_assemblage: boolean;
 };
 
-const CATEGORIEEN = [
-  "zonnepanelen",
-  "omvormer",
-  "thuisbatterij",
-  "laadpaal",
-  "warmtepomp",
-  "installatiemateriaal",
-  "accessoires",
+const CATEGORIEEN: { value: string; label: string }[] = [
+  { value: "zonnepanelen", label: "Zonnepanelen" },
+  { value: "omvormer", label: "Omvormer" },
+  { value: "thuisbatterij", label: "Thuisbatterij" },
+  { value: "laadpaal", label: "Laadpaal" },
+  { value: "warmtepomp", label: "Warmtepomp" },
+  { value: "installatiemateriaal", label: "Installatiemateriaal" },
+  { value: "accessoires", label: "Accessoires" },
 ];
 
 export default function AssemblageEditor() {
@@ -206,7 +206,7 @@ export default function AssemblageEditor() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CATEGORIEEN.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -465,7 +465,7 @@ function InlineProductPicker({
           <SelectContent>
             <SelectItem value="alle">Alle categorieën</SelectItem>
             {CATEGORIEEN.map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
+              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
