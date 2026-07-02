@@ -10,13 +10,17 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  AlarmClock, BellRing, CalendarClock, CheckCircle2, Mail, Phone, Search, Send, Sparkles, UserPlus,
+  AlarmClock, BellRing, CalendarClock, CheckCircle2, Mail, Pencil, Phone, Search, Send, Sparkles, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAlleDemoAfspraken, type DemoAfspraakRow } from "@/hooks/affiliate/useAlleDemoAfspraken";
 import { telLink } from "@/lib/affiliate/contact";
+import { BewerkDemoDialog } from "./demo/BewerkDemoDialog";
+import { RemindersDemoDialog } from "./demo/RemindersDemoDialog";
+import { QuickRescheduleMenu } from "./demo/QuickRescheduleMenu";
+import { toLocalInput, nextWorkday } from "./demo/demoTijdHelpers";
 
 type Periode = "vandaag" | "week" | "open" | "historie";
 
@@ -30,24 +34,8 @@ function isBinnen(datum: Date, van: Date, tot: Date) {
   return datum >= van && datum <= tot;
 }
 
-/** Volgende werkdag (op vrijdag/za/zo → maandag, anders morgen). */
-function nextWorkday(from: Date = new Date()): Date {
-  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-  do {
-    d.setDate(d.getDate() + 1);
-  } while (d.getDay() === 0 || d.getDay() === 6);
-  return d;
-}
-
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-/** ISO-string voor <input type="datetime-local"> zonder tijdzone-shift. */
-function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function DemoOverzicht() {
@@ -58,6 +46,8 @@ export function DemoOverzicht() {
   const [zoek, setZoek] = useState("");
   const [verzetAfspraak, setVerzetAfspraak] = useState<DemoAfspraakRow | null>(null);
   const [verzetTijd, setVerzetTijd] = useState<string>("");
+  const [bewerkAfspraak, setBewerkAfspraak] = useState<DemoAfspraakRow | null>(null);
+  const [remindersAfspraak, setRemindersAfspraak] = useState<DemoAfspraakRow | null>(null);
 
   const scope = periode === "historie" ? "alle" : "open";
   const { data: rows = [], isLoading } = useAlleDemoAfspraken(scope);
@@ -189,6 +179,10 @@ export function DemoOverzicht() {
     setVerzetTijd(toLocalInput(r.geplande_op));
   };
 
+  const snelVerzet = (r: DemoAfspraakRow, nieuweTijd: Date) => {
+    verzet.mutate({ id: r.id, nieuweTijd: toLocalInput(nieuweTijd) });
+  };
+
   const totaal = gefilterd.length;
 
   return (
@@ -253,6 +247,9 @@ export function DemoOverzicht() {
             items={groepen.morgen} navigate={navigate}
             onAfvink={(id) => afvink.mutate(id)}
             onVerzet={openVerzet}
+            onSnelVerzet={snelVerzet}
+            onBewerk={setBewerkAfspraak}
+            onReminders={setRemindersAfspraak}
             onReminder={(id) => stuurReminder.mutate(id)}
             reminderPending={stuurReminder.isPending ? stuurReminder.variables : undefined}
             morgenWerkdag={morgenWerkdag}
@@ -261,18 +258,21 @@ export function DemoOverzicht() {
             label="Achterstallig" kleur="bg-rose-100 text-rose-800 border-rose-300"
             items={groepen.achterstallig} navigate={navigate}
             onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            onSnelVerzet={snelVerzet} onBewerk={setBewerkAfspraak} onReminders={setRemindersAfspraak}
             morgenWerkdag={morgenWerkdag}
           />
           <Sectie
             label="Vandaag" kleur="bg-amber-100 text-amber-800 border-amber-300"
             items={groepen.vandaag} navigate={navigate}
             onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            onSnelVerzet={snelVerzet} onBewerk={setBewerkAfspraak} onReminders={setRemindersAfspraak}
             morgenWerkdag={morgenWerkdag}
           />
           <Sectie
             label="Komende 7 dagen" kleur="bg-blue-100 text-blue-800 border-blue-300"
             items={groepen.week} navigate={navigate}
             onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            onSnelVerzet={snelVerzet} onBewerk={setBewerkAfspraak} onReminders={setRemindersAfspraak}
             onReminder={(id) => stuurReminder.mutate(id)}
             reminderPending={stuurReminder.isPending ? stuurReminder.variables : undefined}
             morgenWerkdag={morgenWerkdag}
@@ -281,11 +281,13 @@ export function DemoOverzicht() {
             label="Later" kleur="bg-slate-100 text-slate-700 border-slate-300"
             items={groepen.later} navigate={navigate}
             onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            onSnelVerzet={snelVerzet} onBewerk={setBewerkAfspraak} onReminders={setRemindersAfspraak}
             morgenWerkdag={morgenWerkdag}
           />
           <Sectie
             label="Afgerond" kleur="bg-emerald-100 text-emerald-800 border-emerald-300"
             items={groepen.afgehandeld} navigate={navigate}
+            onBewerk={setBewerkAfspraak}
             morgenWerkdag={morgenWerkdag}
           />
         </CardContent>
@@ -327,6 +329,19 @@ export function DemoOverzicht() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BewerkDemoDialog
+        afspraak={bewerkAfspraak}
+        onClose={() => setBewerkAfspraak(null)}
+        eigenaarOpties={affiliateOpties}
+      />
+
+      <RemindersDemoDialog
+        afspraak={remindersAfspraak}
+        onClose={() => setRemindersAfspraak(null)}
+        onDirectVerzenden={(id) => stuurReminder.mutate(id)}
+        directVerzendenPending={stuurReminder.isPending && stuurReminder.variables === remindersAfspraak?.id}
+      />
     </div>
   );
 }
@@ -347,13 +362,16 @@ interface SectieProps {
   navigate: ReturnType<typeof useNavigate>;
   onAfvink?: (id: string) => void;
   onVerzet?: (r: DemoAfspraakRow) => void;
+  onSnelVerzet?: (r: DemoAfspraakRow, nieuweTijd: Date) => void;
+  onBewerk?: (r: DemoAfspraakRow) => void;
+  onReminders?: (r: DemoAfspraakRow) => void;
   onReminder?: (id: string) => void;
   reminderPending?: string;
   highlight?: boolean;
   morgenWerkdag: Date;
 }
 
-function Sectie({ label, kleur, items, navigate, onAfvink, onVerzet, onReminder, reminderPending, highlight, morgenWerkdag }: SectieProps) {
+function Sectie({ label, kleur, items, navigate, onAfvink, onVerzet, onSnelVerzet, onBewerk, onReminders, onReminder, reminderPending, highlight, morgenWerkdag }: SectieProps) {
   if (items.length === 0) return null;
   return (
     <div className={`space-y-2 ${highlight ? "rounded-lg border border-violet-300 bg-violet-50/50 p-3" : ""}`}>
@@ -444,13 +462,29 @@ function Sectie({ label, kleur, items, navigate, onAfvink, onVerzet, onReminder,
                   {reminderPending === r.id ? "Bezig…" : "Reminder"}
                 </Button>
               )}
-              {onVerzet && !r.afgehandeld_op && (
+              {onReminders && !r.afgehandeld_op && (
                 <Button
                   size="sm" variant="outline"
-                  onClick={(e) => { e.stopPropagation(); onVerzet(r); }}
-                  title="Demo verzetten"
+                  onClick={(e) => { e.stopPropagation(); onReminders(r); }}
+                  title="Reminders beheren"
                 >
-                  <CalendarClock className="h-3 w-3 mr-1" /> Verzet
+                  <BellRing className="h-3 w-3" />
+                </Button>
+              )}
+              {onSnelVerzet && onVerzet && !r.afgehandeld_op && (
+                <QuickRescheduleMenu
+                  huidigGeplandOp={r.geplande_op}
+                  onKies={(dt) => onSnelVerzet(r, dt)}
+                  onCustom={() => onVerzet(r)}
+                />
+              )}
+              {onBewerk && (
+                <Button
+                  size="sm" variant="ghost"
+                  onClick={(e) => { e.stopPropagation(); onBewerk(r); }}
+                  title="Bewerken"
+                >
+                  <Pencil className="h-3 w-3" />
                 </Button>
               )}
               {onAfvink && !r.afgehandeld_op && (
