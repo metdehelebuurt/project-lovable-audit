@@ -7,6 +7,8 @@ import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
 import { TrialStatusBadge } from "./TrialStatusBadge";
 import { TrialStartenButton } from "./TrialStartenButton";
+import { LeadSignalBadge } from "./LeadSignalBadge";
+import { useAffiliateLeadSignals } from "@/hooks/affiliate/useLeadSignals";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -21,6 +23,8 @@ export function PipelineKaart({ lead, onOpen, onAdvance, draggable = false }: Pr
   const tel = telLink(lead.telefoon);
   const wa = whatsappLink(lead.telefoon);
   const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
+  const { data: signals } = useAffiliateLeadSignals();
+  const signal = signals?.[lead.id];
   const drag = useDraggable({ id: lead.id, disabled: !draggable });
   const style = drag.transform
     ? { transform: CSS.Translate.toString(drag.transform), opacity: drag.isDragging ? 0.4 : 1 }
@@ -44,6 +48,7 @@ export function PipelineKaart({ lead, onOpen, onAdvance, draggable = false }: Pr
             <p className="font-semibold text-sm truncate">{lead.bedrijfsnaam}</p>
           </button>
           {lead.contactpersoon && <p className="text-xs text-muted-foreground truncate">{lead.contactpersoon}</p>}
+          <LeadSignalBadge signal={signal} />
         </div>
       </div>
       <Badge
