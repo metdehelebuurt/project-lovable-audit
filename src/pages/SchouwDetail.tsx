@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ const wizardStepLabels: Record<WizardStep, string> = {
 const SchouwDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
   const { data: schouw, isLoading } = useQuery({
     queryKey: ["schouw", id],
@@ -62,6 +64,7 @@ const SchouwDetail = () => {
   const fields = categoryFields[schouw.categorie] || [];
   const checklistItems = categoryChecklists[schouw.categorie] || [];
   const clusters = gegevens.paneel_clusters || [];
+  const canManageSelfServiceLink = profile?.rol !== "installateur";
 
   const renderFieldsForStep = (wizardStep: WizardStep) => {
     const stepFields = fields.filter(f => f.wizardStep === wizardStep);
@@ -132,15 +135,17 @@ const SchouwDetail = () => {
 
       {/* Basis info */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="md:col-span-2">
-          <SelfServiceLinkCard
-            schouwId={schouw.id}
-            token={(schouw as any).self_service_token}
-            isSelfService={(schouw as any).is_self_service ?? true}
-            voltooidOp={(schouw as any).self_service_completed_at ?? null}
-            aantalSelfServiceFotos={selfServiceFotos.length}
-          />
-        </div>
+        {canManageSelfServiceLink && (
+          <div className="md:col-span-2">
+            <SelfServiceLinkCard
+              schouwId={schouw.id}
+              token={(schouw as any).self_service_token}
+              isSelfService={(schouw as any).is_self_service ?? true}
+              voltooidOp={(schouw as any).self_service_completed_at ?? null}
+              aantalSelfServiceFotos={selfServiceFotos.length}
+            />
+          </div>
+        )}
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Basisgegevens</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
