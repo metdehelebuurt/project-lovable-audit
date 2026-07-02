@@ -425,7 +425,7 @@ export default function OpleverDetail() {
         onOpenChange={setVervallenOpen}
         rapport={merged}
         onDone={() => {
-          queryClient.invalidateQueries({ queryKey: ["oplever-rapport", id] });
+          queryClient.invalidateQueries({ queryKey: ["opleverrapport", id] });
         }}
       />
     </div>
