@@ -74,6 +74,31 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
     if (canPlanForAffiliate && !geselecteerdeAffiliateId) return;
     if (!canPlanForAffiliate && !collegaId) return;
 
+    // Zorg dat de afspraak-omschrijving ALTIJD begint met een klantregel,
+    // zodat in agenda, mails en Google Calendar meteen zichtbaar is met wie
+    // de afspraak is. Alleen toevoegen als de affiliate zelf nog geen
+    // regel met de bedrijfsnaam in de notitie heeft gezet.
+    const { data: leadInfo } = await supabase
+      .from("affiliate_leads")
+      .select("contactpersoon, bedrijfsnaam")
+      .eq("id", leadId)
+      .maybeSingle();
+    const bedrijf = (leadInfo?.bedrijfsnaam ?? leadNaam ?? "").trim();
+    const contact = (leadInfo?.contactpersoon ?? "").trim();
+    const typeLabel = isDemo ? "Demo" : "Terugbelafspraak";
+    const klantRegel = [
+      `${typeLabel} met`,
+      bedrijf || null,
+      contact ? `(${contact})` : null,
+    ].filter(Boolean).join(" ");
+    const notitieBevatBedrijf =
+      bedrijf && notitie.toLowerCase().includes(bedrijf.toLowerCase());
+    const verrijkteNotitie = notitieBevatBedrijf || !bedrijf
+      ? notitie
+      : (notitie.trim()
+          ? `${klantRegel}\n\n${notitie.trim()}`
+          : klantRegel);
+
     // Bouw context voor MailReviewDialog (na opslaan).
     const buildContext = async (): Promise<PlanningContextInput> => {
       const { data: lead } = await supabase
@@ -101,7 +126,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
           type: afspraakType,
           gepland_op: new Date(moment).toISOString(),
           duur_minuten: isDemo ? 45 : 30,
-          notitie: notitie || null,
+          notitie: verrijkteNotitie || null,
         },
       };
     };
@@ -113,7 +138,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
         type: afspraakType,
         geplande_op: new Date(moment).toISOString(),
         duur_minuten: isDemo ? 45 : 30,
-        notitie: notitie || null,
+        notitie: verrijkteNotitie || null,
       });
       const ctx = await buildContext();
       setReviewContext(ctx);
@@ -126,7 +151,7 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
     await create.mutateAsync({
       lead_id: leadId,
       geplande_op: new Date(moment).toISOString(),
-      notitie: notitie || null,
+      notitie: verrijkteNotitie || null,
       type: afspraakType,
       collega_user_id: collegaId,
       skip_auto_notify: true,
@@ -208,6 +233,9 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
           <div className="space-y-1">
             <Label>Notitie (optioneel)</Label>
             <Textarea rows={3} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder={placeholder} />
+            <p className="text-[11px] text-muted-foreground">
+              We voegen automatisch een regel toe met bedrijf en contactpersoon, zodat je in de agenda meteen ziet met wie de afspraak is.
+            </p>
           </div>
           <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
             Na het plannen kun je nog kiezen of je de klant {(!isSalesProxy) ? "en collega" : ""} mailt — je ziet de mail eerst en kunt 'm bewerken.
