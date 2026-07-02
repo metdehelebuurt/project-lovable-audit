@@ -37,14 +37,13 @@ type ProductRow = {
 };
 
 const CATEGORIEEN = [
-  "zonnepaneel",
+  "zonnepanelen",
   "omvormer",
-  "batterij",
+  "thuisbatterij",
   "laadpaal",
   "warmtepomp",
   "installatiemateriaal",
-  "montagesysteem",
-  "overig",
+  "accessoires",
 ];
 
 export default function AssemblageEditor() {
