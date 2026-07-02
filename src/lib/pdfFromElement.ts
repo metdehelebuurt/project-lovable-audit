@@ -126,7 +126,7 @@ export async function renderElementToPdfBlob(el: HTMLElement): Promise<Blob> {
     );
   }
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
-  pdf.setProperties({ creator: "mijnhuis.nu", producer: "mijnhuis.nu" });
+  pdf.setProperties({ creator: "mijnhuis.nu" });
   addCanvasToPdfPaged(pdf, canvas);
   return pdf.output("blob");
 }
