@@ -20,6 +20,7 @@ import SNToewijzingDialog from "./SNToewijzingDialog";
 interface OfferteRegel {
   omschrijving: string;
   aantal: number;
+  product_id?: string | null;
 }
 
 interface Props {
@@ -87,7 +88,8 @@ const OpdrachtVoorraadTab = ({ opdrachtId, partnerId, opdrachtStatus, regels }: 
 
   const rows: RegelView[] = useMemo(() => {
     return regels.map((r, i) => {
-      const prod = matchProductOpRegel(r.omschrijving, producten);
+      const direct = r.product_id ? producten.find((p) => p.id === r.product_id) : undefined;
+      const prod = direct ?? matchProductOpRegel(r.omschrijving, producten);
       let totaal = 0;
       let gereserveerdAndere = 0;
       let alVoorDezeOrder = 0;
