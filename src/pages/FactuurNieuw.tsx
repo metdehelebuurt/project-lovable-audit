@@ -55,6 +55,10 @@ export default function FactuurNieuw() {
   const [bronDocId, setBronDocId] = useState<string | null>(null);
   const [bronOpdrachtId, setBronOpdrachtId] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
+  // Inkoop uit verkooporder: bundels uitklappen naar componenten (default aan).
+  const [expandBundles, setExpandBundles] = useState(true);
+  const [bundlePrefillInfo, setBundlePrefillInfo] = useState<{ expandedBundles: number; totalComponentLines: number } | null>(null);
+  const [rePrefilling, setRePrefilling] = useState(false);
 
   // Eenmalige relatie state
   const [useEenmalig, setUseEenmalig] = useState(false);
@@ -275,16 +279,24 @@ export default function FactuurNieuw() {
     else if (isInkoop(docType) && searchParams.get("opdracht") && profile?.partner_id) {
       const opdrachtParam = searchParams.get("opdracht")!;
       setBronOpdrachtId(opdrachtParam);
-      void prefillRegelsUitOpdracht(opdrachtParam, profile.partner_id)
+      void prefillRegelsUitOpdracht(opdrachtParam, profile.partner_id, { expandAssemblies: true })
         .then((prefill) => {
           if (prefill.regels.length > 0) {
             setRegels(prefill.regels);
+            setBundlePrefillInfo({
+              expandedBundles: prefill.expandedBundles,
+              totalComponentLines: prefill.totalComponentLines,
+            });
             const aantalMetProduct = prefill.regels.filter((r) => r.product_id).length;
+            const bundleTxt =
+              prefill.expandedBundles > 0
+                ? ` (${prefill.expandedBundles} bundel${prefill.expandedBundles === 1 ? "" : "s"} uitgeklapt naar ${prefill.totalComponentLines} componenten)`
+                : "";
             toast({
               title: "Regels overgenomen van verkooporder",
               description: `${prefill.regels.length} regel(s) toegevoegd${
                 aantalMetProduct > 0 ? `, ${aantalMetProduct} met inkoopprijs` : ""
-              }. Controleer prijzen en aantallen.`,
+              }${bundleTxt}. Controleer prijzen en aantallen.`,
             });
           }
         })
@@ -294,6 +306,38 @@ export default function FactuurNieuw() {
         .finally(() => setPrefilled(true));
     }
   }, [searchParams, prefilled, profile?.partner_id, isEdit]);
+
+  // Handmatig opnieuw prefillen wanneer gebruiker de bundel-toggle wisselt.
+  const handleToggleExpandBundles = async (next: boolean) => {
+    if (!bronOpdrachtId || !profile?.partner_id) {
+      setExpandBundles(next);
+      return;
+    }
+    setExpandBundles(next);
+    setRePrefilling(true);
+    try {
+      const prefill = await prefillRegelsUitOpdracht(bronOpdrachtId, profile.partner_id, {
+        expandAssemblies: next,
+      });
+      if (prefill.regels.length > 0) {
+        setRegels(prefill.regels);
+        setBundlePrefillInfo({
+          expandedBundles: prefill.expandedBundles,
+          totalComponentLines: prefill.totalComponentLines,
+        });
+        toast({
+          title: next ? "Bundels uitgeklapt" : "Bundels als één regel",
+          description: next
+            ? `${prefill.expandedBundles} bundel(s) uitgeklapt naar ${prefill.totalComponentLines} componentregels.`
+            : "Bundels staan nu als één inkoopregel per stuk op de bestelling.",
+        });
+      }
+    } catch (e: any) {
+      toast({ title: "Herladen mislukt", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setRePrefilling(false);
+    }
+  };
 
   const handleSave = async (status: "concept" | "verzonden") => {
     if (!profile?.partner_id || !user?.id) return;
