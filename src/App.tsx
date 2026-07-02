@@ -104,6 +104,7 @@ import Retouren from "@/pages/Retouren";
 import RetourDetail from "@/pages/RetourDetail";
 import Inkoop from "@/pages/Inkoop";
 import InkoopNieuw from "@/pages/InkoopNieuw";
+import OntvangstRegistreren from "@/pages/OntvangstRegistreren";
 import HelpdeskDashboard from "@/pages/helpdesk/Dashboard";
 import TicketsOverzicht from "@/pages/helpdesk/TicketsOverzicht";
 import TicketNieuw from "@/pages/helpdesk/TicketNieuw";
