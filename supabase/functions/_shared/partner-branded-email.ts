@@ -93,11 +93,11 @@ export function wrapInPartnerTemplate(opts: WrapOptions): string {
   const websiteLabel = website.replace(/^https?:\/\//i, "").replace(/\/$/, "");
 
   const header = brand?.logo_url
-    ? `<img src="${escapeHtml(brand.logo_url)}" alt="${escapeHtml(naam || "logo")}" style="max-height:44px;max-width:220px;display:block;" />`
-    : `<span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.01em;">${escapeHtml(naam || "")}</span>`;
+    ? `<img src="${escapeHtml(brand.logo_url)}" alt="${escapeHtml(naam || "logo")}" style="max-height:48px;max-width:220px;display:block;" />`
+    : `<span style="font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-0.01em;">${escapeHtml(naam || "")}</span>`;
 
   const headerSubtitle = slogan
-    ? `<p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.9);">${escapeHtml(slogan)}</p>`
+    ? `<p style="margin:6px 0 0;font-size:12px;color:#64748b;">${escapeHtml(slogan)}</p>`
     : "";
 
   const signatureName = (opts.senderName ?? naam ?? "").trim();
@@ -142,7 +142,7 @@ export function wrapInPartnerTemplate(opts: WrapOptions): string {
         <td align="center">
           <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,0.06);border:1px solid #e2e8f0;">
             <tr>
-              <td style="background:linear-gradient(135deg, ${primair} 0%, ${secundair} 100%);padding:22px 28px;">
+              <td style="background-color:#ffffff;padding:24px 28px 20px;border-bottom:3px solid ${primair};">
                 ${header}
                 ${headerSubtitle}
               </td>
