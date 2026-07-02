@@ -25,6 +25,7 @@ import { useLeadTijdlijn } from "./LeadDetail/Tijdlijn/useLeadTijdlijn";
 import { LeadKlantStrip } from "./LeadDetail/LeadKlantStrip";
 import { GekleurdeTabsList, TabCallout } from "./LeadDetail/GekleurdeTabsList";
 import { NotitieLijst } from "./LeadDetail/NotitieLijst";
+import { KlantStatusKaart } from "./LeadDetail/KlantStatusKaart";
 
 const BRON_LABEL: Record<string, string> = {
   platform_pool: "Platform pool",
@@ -139,6 +140,8 @@ export function LeadDetailBody({ lead }: Props) {
         trialEinddatum={partnerInfo?.trial_einddatum ?? null}
         onActie={onActie}
       />
+
+      <KlantStatusKaart leadId={lead.id} />
 
       <LeadKlantStrip
         lead={lead}

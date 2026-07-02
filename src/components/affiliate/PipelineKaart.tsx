@@ -9,6 +9,7 @@ import { TrialStatusBadge } from "./TrialStatusBadge";
 import { TrialStartenButton } from "./TrialStartenButton";
 import { LeadSignalBadge } from "./LeadSignalBadge";
 import { useAffiliateLeadSignals } from "@/hooks/affiliate/useLeadSignals";
+import { useLeadKlantstatus } from "@/hooks/affiliate/useLeadKlantstatus";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -25,6 +26,8 @@ export function PipelineKaart({ lead, onOpen, onAdvance, draggable = false }: Pr
   const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
   const { data: signals } = useAffiliateLeadSignals();
   const signal = signals?.[lead.id];
+  const { data: klant } = useLeadKlantstatus(lead.id);
+  const heeftActiefAbo = klant?.status === "trial" || klant?.status === "betalend";
   const drag = useDraggable({ id: lead.id, disabled: !draggable });
   const style = drag.transform
     ? { transform: CSS.Translate.toString(drag.transform), opacity: drag.isDragging ? 0.4 : 1 }
@@ -60,6 +63,21 @@ export function PipelineKaart({ lead, onOpen, onAdvance, draggable = false }: Pr
       {gewonnenPartnerId && (
         <TrialStatusBadge compact />
       )}
+      {!gewonnenPartnerId && klant && klant.status !== "geen_match" && klant.status !== "geen_toegang" && (
+        <Badge
+          variant="outline"
+          className={
+            klant.status === "betalend"
+              ? "text-[10px] bg-emerald-50 text-emerald-800 border-emerald-200"
+              : klant.status === "trial"
+                ? "text-[10px] bg-violet-50 text-violet-800 border-violet-200"
+                : "text-[10px] bg-amber-50 text-amber-800 border-amber-200"
+          }
+          title={klant.partner_naam ?? undefined}
+        >
+          {klant.status === "betalend" ? "Reeds klant" : klant.status === "trial" ? "Trial actief" : "Bekende partner"}
+        </Badge>
+      )}
       {lead.geschatte_waarde ? (
         <div className="text-xs text-muted-foreground tabular-nums">
           {Number(lead.geschatte_waarde).toLocaleString("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
@@ -90,7 +108,7 @@ export function PipelineKaart({ lead, onOpen, onAdvance, draggable = false }: Pr
           Details
         </Button>
       </div>
-      {!gewonnenPartnerId && (
+      {!gewonnenPartnerId && !heeftActiefAbo && (
         <TrialStartenButton lead={lead} size="sm" variant="outline" className="w-full h-7 text-xs" />
       )}
     </Card>

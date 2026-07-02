@@ -9242,6 +9242,16 @@ export type Database = {
         Args: { _lead_id: string; _user_id: string }
         Returns: boolean
       }
+      affiliate_lead_klantstatus: { Args: { _lead_id: string }; Returns: Json }
+      affiliate_lead_klantstatus_bulk: {
+        Args: { _lead_ids: string[] }
+        Returns: {
+          lead_id: string
+          partner_id: string
+          partner_naam: string
+          status: string
+        }[]
+      }
       affiliate_lead_markeer_bekeken: {
         Args: { _lead_id: string }
         Returns: undefined
@@ -9568,6 +9578,7 @@ export type Database = {
         }
         Returns: number
       }
+      normaliseer_bedrijfsnaam: { Args: { _naam: string }; Returns: string }
       normalize_bedrijfsnaam: { Args: { _input: string }; Returns: string }
       normalize_phone: { Args: { _telefoon: string }; Returns: string }
       normalize_postcode: { Args: { _postcode: string }; Returns: string }
