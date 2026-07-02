@@ -206,7 +206,7 @@ export default function AssemblageEditor() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CATEGORIEEN.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -465,7 +465,7 @@ function InlineProductPicker({
           <SelectContent>
             <SelectItem value="alle">Alle categorieën</SelectItem>
             {CATEGORIEEN.map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
+              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
