@@ -1,18 +1,43 @@
-## Bug
+## Doel
 
-`useAffiliateLeadSignals` wordt op meerdere plekken tegelijk gebruikt (o.a. `PipelineKaart`, pipeline-header). Elke instantie roept `supabase.channel("lead-signals:<userId>")` met dezelfde topic-naam aan. Supabase realtime v2 hergebruikt dan een bestaand channel-object — waarop `.subscribe()` al is uitgevoerd — en `.on("postgres_changes", …)` gooit dan:
+Sales manager één overzicht geven van **alle geplande demo-afspraken** van álle affiliates, inclusief de demo's die op dit moment al gepland staan. Geen dubbele bron; we lezen dezelfde tabel die de affiliates zelf ook vullen.
 
-`cannot add postgres_changes callbacks for realtime:lead-signals:<userId> after subscribe()`
+## Bron
 
-## Fix
+`affiliate_terugbel_afspraken` met `type = 'demo'`. RLS staat sales managers al toe alles te lezen (policy `sales_admin_full_access` op basis van `is_sales_admin`), dus er is geen schemawijziging nodig — bestaande demo's verschijnen automatisch.
 
-Één keer subscriben per user, ongeacht hoeveel componenten de hook gebruiken. Concreet in `src/hooks/affiliate/useLeadSignals.ts`:
+## UI
 
-- Unieke topic per aanroep: channelnaam `lead-signals:<userId>:<useId()>` zodat er geen collisie ontstaat tussen instanties. Dit is de kleinste, veiligste ingreep en werkt ook in React StrictMode (mount → unmount → mount).
-- `useEffect` blijft de `on(...).subscribe()`-volgorde bewaren en ruimt netjes op met `supabase.removeChannel`.
+### Nieuwe tab "Demo's" in `AffiliateBeheer` (`/affiliate-beheer`)
 
-Geen andere gedragswijzigingen; realtime-invalidatie blijft identiek.
+Toegevoegd naast de bestaande tabs (Affiliates / Referrals / Kortingscodes / Koude leads / Uitbetalingen / Instellingen).
 
-## Wijzigingen
+Layout:
 
-- `src/hooks/affiliate/useLeadSignals.ts`: `useId()` importeren, kanaalnaam maken met dat id.
+- **Filterbalk**: periode (Vandaag / Deze week / Alle open / Historie), affiliate-dropdown (alle affiliates).
+- **KPI-rij**: aantal demo's vandaag, deze week, achterstallig, afgehandeld deze maand.
+- **Groepen** (vergelijkbaar met affiliate-agenda, maar globaal):
+  - Achterstallig — rood
+  - Vandaag — amber
+  - Komende 7 dagen — blauw
+  - Later — grijs
+  - Afgehandeld (optioneel, alleen bij filter "historie") — groen
+- Per rij: bedrijfsnaam + contactpersoon (join op `affiliate_leads`), datum/tijd, affiliate-eigenaar, notitie, badges (Demo, "Aan collega toegewezen" wanneer `collega_user_id` gevuld en ≠ affiliate_id), en snelle acties: openen lead, e-mailen, afvinken.
+
+### Dashboard-tegel
+
+Nieuwe app-tegel in `src/lib/dashboard/apps.ts` voor sales_manager + superadmin: **"Geplande demo's"** met url `/affiliate-beheer?tab=demos`, categorie `planning`, kleur violet. Op de sales manager z'n dashboard staat de tegel dus direct zichtbaar; klik = tab pre-geselecteerd via querystring.
+
+## Technische wijzigingen
+
+- Nieuwe hook `src/hooks/affiliate/useAlleDemoAfspraken.ts`: haalt via één query alle rijen op met `type='demo'`, joined met `affiliate_leads(bedrijfsnaam, contactpersoon, telefoon, email)` en `users:affiliate_id(voornaam, achternaam, email)`. Filters (periode, affiliate) worden client-side toegepast op de resultaten — snel genoeg voor de te verwachten volumes.
+- Nieuwe component `src/components/affiliate/DemoOverzicht.tsx` met filterbalk, KPI's en groepen.
+- `AffiliateBeheer.tsx`: extra `TabsTrigger`/`TabsContent` "Demo's"; `defaultValue` blijft `affiliates`, maar via `?tab=demos` in de URL wordt de demo-tab actief.
+- `src/lib/dashboard/apps.ts`: nieuwe app-entry voor "Geplande demo's".
+- Afvinken hergebruikt bestaande `useAfvinkenTerugbel`.
+
+## Uit scope
+
+- Kalenderweergave (list-first).
+- Bulk-herplannen.
+- Notificaties bij nieuwe demo (kan later via bestaande notificatie-triggers).
