@@ -119,6 +119,18 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     if (!productId && gesuggereerd[0]) setProductId((gesuggereerd[0] as any).id);
   }, [gesuggereerd, productId]);
 
+  // Als het gekozen product géén losse componenten heeft, reset component_type.
+  const gekozenProduct: any = useMemo(
+    () => producten.find((p: any) => p.id === productId),
+    [producten, productId],
+  );
+  const heeftLosseComponenten = Boolean(
+    gekozenProduct && (gekozenProduct.omvormer_modulair || gekozenProduct.heeft_backup_box),
+  );
+  useEffect(() => {
+    if (!heeftLosseComponenten && componentType) setComponentType("");
+  }, [heeftLosseComponenten, componentType]);
+
   // Aantal geregistreerde serienummers per product_id
   const geregistreerdPerProduct = useMemo(() => {
     const map = new Map<string, number>();
@@ -299,6 +311,22 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             </Button>
           </div>
         </div>
+        {heeftLosseComponenten && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <Label className="text-xs">Type component voor dit serienummer</Label>
+            <Select value={componentType || "batterij"} onValueChange={(v) => setComponentType(v as any)}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="batterij">Batterij</SelectItem>
+                {gekozenProduct?.omvormer_modulair && <SelectItem value="omvormer">Omvormer</SelectItem>}
+                {gekozenProduct?.heeft_backup_box && <SelectItem value="backup_box">Backup box</SelectItem>}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Dit product heeft losse componenten. Kies per SN welk onderdeel het betreft.
+            </p>
+          </div>
+        )}
 
         {geplandePlekken.length > 0 && (
           <div className="rounded-lg border bg-muted/30 p-3">
