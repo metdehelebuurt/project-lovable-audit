@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,7 +190,7 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
                 </TableHeader>
                 <TableBody>
                   {regels.map((r, i) => (
-                    <>
+                    <Fragment key={i}>
                     <TableRow key={i}>
                       <TableCell>
                         <div>{r.omschrijving}</div>
@@ -276,7 +276,7 @@ export default function OntvangstDialog({ open, onOpenChange, inkooporderId, par
                         </TableRow>
                       );
                     })()}
-                    </>
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
