@@ -1,4 +1,5 @@
 import { formatCurrency, type OfferteRegel, regelSubtotaal } from "@/types/offerte";
+import { useProductMetaMap } from "@/hooks/producten/useProductMetaMap";
 
 interface Props {
   doc: {
@@ -119,6 +120,10 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
     : null;
 
   const primaryColor = partner?.primaire_kleur || "#1a56db";
+  const productIds = Array.from(new Set(regels.map((r) => r.product_id).filter((id): id is string => !!id)));
+  const { data: metaMap = {} } = useProductMetaMap(productIds);
+  const priceCols = isPakbon(doc.type) ? 0 : 3;
+  const totalCols = 2 + priceCols;
   const brutoTotaal = regels.reduce((s, r) => s + r.aantal * r.prijs_per_stuk, 0);
   const nettoTotaal = regels.reduce((s, r) => s + regelSubtotaal(r), 0);
   const kortingTotaal = brutoTotaal - nettoTotaal;
