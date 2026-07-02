@@ -2003,6 +2003,7 @@ export type Database = {
           tags: Json | null
           type: Database["public"]["Enums"]["document_type"]
           updated_at: string
+          volgorde: number
         }
         Insert: {
           beschrijving?: string | null
@@ -2020,6 +2021,7 @@ export type Database = {
           tags?: Json | null
           type?: Database["public"]["Enums"]["document_type"]
           updated_at?: string
+          volgorde?: number
         }
         Update: {
           beschrijving?: string | null
@@ -2037,6 +2039,7 @@ export type Database = {
           tags?: Json | null
           type?: Database["public"]["Enums"]["document_type"]
           updated_at?: string
+          volgorde?: number
         }
         Relationships: [
           {
