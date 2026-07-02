@@ -255,13 +255,27 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
                   </td>
                 </tr>
               )}
-              {doc.vervaldatum && showPricing(doc.type) && (
+              {isInkoopOrder(doc.type) && doc.gewenste_leverdatum && (
                 <tr>
-                  <td style={{ padding: "3px 0", color: "#6b7280" }}>
-                    {isInkoopOrder(doc.type) ? "Gewenste levering" : "Vervaldatum"}
+                  <td style={{ padding: "3px 0", color: "#6b7280" }}>Gewenste levering</td>
+                  <td style={{ padding: "3px 0", textAlign: "right", fontWeight: 500 }}>
+                    {new Date(doc.gewenste_leverdatum).toLocaleDateString("nl-NL", { day: "2-digit", month: "long", year: "numeric" })}
                   </td>
+                </tr>
+              )}
+              {!isInkoopOrder(doc.type) && doc.vervaldatum && showPricing(doc.type) && (
+                <tr>
+                  <td style={{ padding: "3px 0", color: "#6b7280" }}>Vervaldatum</td>
                   <td style={{ padding: "3px 0", textAlign: "right", fontWeight: 500 }}>
                     {new Date(doc.vervaldatum).toLocaleDateString("nl-NL", { day: "2-digit", month: "long", year: "numeric" })}
+                  </td>
+                </tr>
+              )}
+              {isInkoopOrder(doc.type) && doc.leverancier_referentie && (
+                <tr>
+                  <td style={{ padding: "3px 0", color: "#6b7280" }}>Onze referentie</td>
+                  <td style={{ padding: "3px 0", textAlign: "right", fontWeight: 500, fontFamily: "monospace" }}>
+                    {doc.leverancier_referentie}
                   </td>
                 </tr>
               )}
@@ -275,6 +289,32 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
           </table>
         </div>
       </div>
+
+      {/* === AFLEVERADRES (inkooporder) === */}
+      {isInkoopOrder(doc.type) && doc.leveringsadres && (
+        <div style={{ marginBottom: "8mm", padding: "10px 16px", backgroundColor: "#f0fdf4", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "8pt" }}>
+          <div style={{ fontSize: "7pt", color: "#15803d", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px", fontWeight: 600 }}>
+            Afleveradres
+          </div>
+          {doc.leveringsadres.contactpersoon && (
+            <div style={{ fontWeight: 600 }}>T.a.v. {doc.leveringsadres.contactpersoon}</div>
+          )}
+          {doc.leveringsadres.straat && <div>{doc.leveringsadres.straat}</div>}
+          {(doc.leveringsadres.postcode || doc.leveringsadres.plaats) && (
+            <div>{[doc.leveringsadres.postcode, doc.leveringsadres.plaats].filter(Boolean).join(" ")}</div>
+          )}
+          {doc.leveringsadres.land && doc.leveringsadres.land !== "NL" && (
+            <div>{doc.leveringsadres.land}</div>
+          )}
+          {(doc.leveringsadres.telefoon || doc.leveringsadres.email) && (
+            <div style={{ color: "#6b7280", marginTop: "3px" }}>
+              {doc.leveringsadres.telefoon && <span>Tel: {doc.leveringsadres.telefoon}</span>}
+              {doc.leveringsadres.telefoon && doc.leveringsadres.email && <span> · </span>}
+              {doc.leveringsadres.email && <span>{doc.leveringsadres.email}</span>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* === INSTALLATIE INFO (pakbon) === */}
       {isPakbon(doc.type) && installatie && (
