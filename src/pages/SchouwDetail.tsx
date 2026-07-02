@@ -48,12 +48,12 @@ const SchouwDetail = () => {
   const { data: schouw, isLoading } = useQuery({
     queryKey: ["schouw", id, profile?.rol],
     queryFn: async () => {
-      const selectFields = profile?.rol === "installateur"
+      const selectFields: string = profile?.rol === "installateur"
         ? "id, schouw_nummer, lead_id, adviseur_id, installateur_id, partner_id, categorie, status, geplande_datum, klant_email, consument_naam, notities, gegevens, fotos, checklist, aandachtspunten, handtekening_data, handtekening_akkoord_op, created_at, updated_at"
         : "*";
       const { data, error } = await supabase.from("schouwen").select(selectFields).eq("id", id!).single();
       if (error) throw error;
-      return data;
+      return data as Database["public"]["Tables"]["schouwen"]["Row"];
     },
     enabled: !!id && !!profile?.rol,
   });

@@ -94,7 +94,7 @@ export default function QuickSelfServiceSchouwDialog({
         adviseur_id: adviseurId,
         schouw_nummer: generateSchouwNummer(),
         is_self_service: true,
-        status: "ingepland",
+        status: "gepland",
       } as any);
       if (error) throw error;
       toast.success("Self-service schouw aangemaakt");
