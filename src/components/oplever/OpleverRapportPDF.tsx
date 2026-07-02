@@ -305,9 +305,9 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
 OpleverRapportPDF.displayName = "OpleverRapportPDF";
 export default OpleverRapportPDF;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, avoidBreak }: { title: string; children: React.ReactNode; avoidBreak?: boolean }) {
   return (
-    <section style={{ marginBottom: "8mm", pageBreakInside: "avoid" }}>
+    <section style={{ marginBottom: "8mm", pageBreakInside: "avoid", breakInside: "avoid", ...(avoidBreak ? { pageBreakBefore: "auto" as const } : null) }}>
       <h2 style={{ fontSize: "13pt", color: "#111827", borderBottom: "1px solid #e5e7eb", paddingBottom: "2mm", marginBottom: "3mm" }}>{title}</h2>
       {children}
     </section>
@@ -323,12 +323,22 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SignBlock({ title, sig }: { title: string; sig: { image_url: string; name: string; signed_at: string } | null }) {
+function SignBlock({ title, sig, dataUrl }: { title: string; sig: { image_url: string; name: string; signed_at: string } | null; dataUrl?: string | null }) {
+  const src = dataUrl ?? null;
   return (
     <div>
       <div style={{ fontSize: "10pt", color: "#6b7280", marginBottom: "2mm" }}>{title}</div>
       <div style={{ height: "30mm", border: "1px dashed #cbd5e1", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {sig?.image_url ? <img src={sig.image_url} alt="handtekening" style={{ maxHeight: "28mm" }} /> : <span style={{ color: "#94a3b8" }}>Niet ondertekend</span>}
+        {src ? (
+          <img src={src} alt="handtekening" crossOrigin="anonymous" style={{ maxHeight: "28mm", maxWidth: "100%", objectFit: "contain" }} />
+        ) : sig ? (
+          <div style={{ textAlign: "center", padding: "0 4mm" }}>
+            <div style={{ fontFamily: "'Segoe Script', 'Brush Script MT', cursive", fontSize: "18pt", color: "#111827", lineHeight: 1 }}>{sig.name}</div>
+            <div style={{ fontSize: "8pt", color: "#16a34a", marginTop: "2mm", fontWeight: 600 }}>✓ Digitaal ondertekend</div>
+          </div>
+        ) : (
+          <span style={{ color: "#94a3b8" }}>Niet ondertekend</span>
+        )}
       </div>
       {sig ? (
         <div style={{ fontSize: "9pt", color: "#475569", marginTop: "2mm" }}>
