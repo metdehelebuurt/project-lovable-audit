@@ -72,6 +72,8 @@ const ITEMS = {
     synoniemen: ["facturen", "boekhouding"] } as NavigatieItem,
   producten: { id: "producten", label: "Producten", icon: Package, url: "/producten",
     synoniemen: ["catalogus", "assortiment"] } as NavigatieItem,
+  assemblages: { id: "assemblages", label: "Samengestelde producten", icon: Layers, url: "/producten/assemblages",
+    moduleKey: "assemblages", synoniemen: ["bundels", "assemblage", "stuklijst", "pakket"] } as NavigatieItem,
   documenten: { id: "documenten", label: "Documenten", icon: FolderOpen, url: "/documenten",
     synoniemen: ["bestanden"] } as NavigatieItem,
   tools: { id: "tools", label: "Tools", icon: PenTool, url: "/tools",
