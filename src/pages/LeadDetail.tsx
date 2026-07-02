@@ -33,6 +33,7 @@ import GecombineerdeTijdlijn, { type ExtraEvent } from "@/components/historie/Ge
 import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentCard";
 import ContactmomentItem from "@/components/contactmomenten/ContactmomentItem";
 import NotitieZichtbaarheidToggle, { NotitieZichtbaarheidBadge } from "@/components/shared/NotitieZichtbaarheidToggle";
+import ContactpersonenKaart from "@/components/contactpersonen/ContactpersonenKaart";
 import WerkstroomStepper from "@/components/werkstroom/WerkstroomStepper";
 import { DuplicaatWaarschuwing } from "@/components/leads/duplicaten/DuplicaatWaarschuwing";
 import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
