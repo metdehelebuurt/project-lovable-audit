@@ -854,5 +854,20 @@ export default function FactuurNieuw() {
         )}
       </div>
     </div>
+    {splitDialogOpen && profile?.partner_id && user?.id && (
+      <InkoopSplitDialog
+        open={splitDialogOpen}
+        onOpenChange={setSplitDialogOpen}
+        groepen={splitGroepen}
+        partnerId={profile.partner_id}
+        opdrachtId={bronOpdrachtId}
+        createdBy={user.id}
+        onMerge={() => {
+          // Zet de eerste bekende leverancier alvast in — gebruiker kan handmatig wisselen.
+          const eerste = splitGroepen.find((g) => g.leverancier_id !== null);
+          if (eerste?.leverancier_id) setLeverancierId(eerste.leverancier_id);
+        }}
+      />
+    )}
   );
 }
