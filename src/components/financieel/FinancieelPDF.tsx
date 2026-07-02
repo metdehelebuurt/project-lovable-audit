@@ -317,27 +317,58 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
           </tr>
         </thead>
         <tbody>
-          {regels.map((r, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
-              <td style={{ padding: "6px 4px" }}>
-                {r.omschrijving}
-                {/* BTW verlegd label (Art. 37d Wet OB) */}
-                {!isPakbon(doc.type) && (r.btw_percentage === 0) && (
-                  <span style={{ fontSize: "7pt", color: "#dc2626", marginLeft: "6px", fontStyle: "italic" }}>
-                    BTW verlegd
-                  </span>
+          {regels.map((r, i) => {
+            const meta = r.product_id ? metaMap[r.product_id] : undefined;
+            const componenten = meta?.is_assemblage ? meta.componenten : [];
+            return (
+              <>
+                <tr key={`r-${i}`} style={{ borderBottom: componenten.length ? "none" : "1px solid #f3f4f6" }}>
+                  <td style={{ padding: "6px 4px" }}>
+                    {r.omschrijving}
+                    {componenten.length > 0 && (
+                      <span style={{ fontSize: "7pt", color: "#6b7280", marginLeft: "6px" }}>(samengesteld)</span>
+                    )}
+                    {!isPakbon(doc.type) && (r.btw_percentage === 0) && (
+                      <span style={{ fontSize: "7pt", color: "#dc2626", marginLeft: "6px", fontStyle: "italic" }}>
+                        BTW verlegd
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ padding: "6px 4px", textAlign: "right" }}>{r.aantal}</td>
+                  {!isPakbon(doc.type) && (
+                    <>
+                      <td style={{ padding: "6px 4px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right" }}>{r.btw_percentage}%</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", fontWeight: 500 }}>{formatCurrency(regelSubtotaal(r))}</td>
+                    </>
+                  )}
+                </tr>
+                {componenten.map((c) => (
+                  <tr key={`r-${i}-c-${c.component_id}`} style={{ borderBottom: "1px solid #f9fafb" }}>
+                    <td style={{ padding: "3px 4px 3px 16px", fontSize: "7.5pt", color: "#6b7280" }}>
+                      ↳ {[c.merk, c.naam].filter(Boolean).join(" ")}
+                      {c.heeft_serienummer && (
+                        <span style={{ fontSize: "6.5pt", marginLeft: "6px", padding: "1px 4px", borderRadius: "3px", background: "#eef2ff", color: primaryColor }}>SN</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "3px 4px", textAlign: "right", fontSize: "7.5pt", color: "#6b7280" }}>
+                      {c.aantal * r.aantal}
+                    </td>
+                    {!isPakbon(doc.type) && (
+                      <>
+                        <td colSpan={3} />
+                      </>
+                    )}
+                  </tr>
+                ))}
+                {componenten.length > 0 && (
+                  <tr key={`r-${i}-spacer`} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td colSpan={totalCols} style={{ height: 0, padding: 0 }} />
+                  </tr>
                 )}
-              </td>
-              <td style={{ padding: "6px 4px", textAlign: "right" }}>{r.aantal}</td>
-              {!isPakbon(doc.type) && (
-                <>
-                  <td style={{ padding: "6px 4px", textAlign: "right" }}>{formatCurrency(r.prijs_per_stuk)}</td>
-                  <td style={{ padding: "6px 4px", textAlign: "right" }}>{r.btw_percentage}%</td>
-                  <td style={{ padding: "6px 4px", textAlign: "right", fontWeight: 500 }}>{formatCurrency(regelSubtotaal(r))}</td>
-                </>
-              )}
-            </tr>
-          ))}
+              </>
+            );
+          })}
         </tbody>
       </table>
 
