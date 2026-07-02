@@ -83,6 +83,8 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
   const primary = partner.primaire_kleur || "#5B58E1";
   const secondary = partner.secundaire_kleur || "#1a1a2e";
   const regels = opdracht.regels || [];
+  const productIds = Array.from(new Set(regels.map((r) => r.product_id).filter((id): id is string => !!id)));
+  const { data: metaMap = {} } = useProductMetaMap(productIds);
   const datum = opdracht.bevestiging_verzonden_op || opdracht.created_at;
   // logo_url kan al een volledige URL zijn (nieuwere uploads) of een storage path (legacy).
   const rawLogo = partner.logo_url;
@@ -213,8 +215,11 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
           <tbody>
             {regels.map((r, i) => {
               const sub = regelSub(r);
+              const meta = r.product_id ? metaMap[r.product_id] : undefined;
+              const comps = meta?.is_assemblage ? meta.componenten : [];
               return (
-                <tr key={i} className={i % 2 === 1 ? "bg-gray-50/50" : ""}>
+                <Fragment key={i}>
+                <tr className={i % 2 === 1 ? "bg-gray-50/50" : ""}>
                   <td className="py-3 px-4">
                     <div className="font-medium">
                       {r.omschrijving}
@@ -225,12 +230,20 @@ const OrderbevestigingPDF = forwardRef<HTMLDivElement, Props>(({ opdracht, partn
                     {r.offerte_tekst && (
                       <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{r.offerte_tekst}</p>
                     )}
+                    {comps.length > 0 && (
+                      <ul className="mt-1 text-xs text-gray-500">
+                        {comps.map((c) => (
+                          <li key={c.component_id}>↳ {c.aantal * r.aantal}× {[c.merk, c.naam].filter(Boolean).join(" ")}{c.heeft_serienummer ? " · SN" : ""}</li>
+                        ))}
+                      </ul>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-right tabular-nums">{r.aantal}</td>
                   <td className="py-3 px-4 text-right tabular-nums">{fmt(r.prijs_per_stuk)}</td>
                   <td className="py-3 px-4 text-right tabular-nums">{r.btw_percentage}%</td>
                   <td className="py-3 px-4 text-right tabular-nums font-medium">{fmt(sub)}</td>
                 </tr>
+                </Fragment>
               );
             })}
           </tbody>
