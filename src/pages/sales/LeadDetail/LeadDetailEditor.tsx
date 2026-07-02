@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Send, Trash2, User2, History, MessageSquarePlus, Building2, MapPin, Target, Sparkles, FileText, Save, Mail } from "lucide-react";
+import { Send, Trash2, User2, History, MessageSquarePlus, Building2, MapPin, Target, Sparkles, StickyNote, Save, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useUpdateSalesLead, useDeleteSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
@@ -23,6 +23,7 @@ import BronBadge from "@/components/sales/BronBadge";
 import SnippetMenu from "@/components/sales/SnippetMenu";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
 import EmailTab from "@/components/email/EmailTab";
+import { NotitieLijst } from "@/components/affiliate/LeadDetail/NotitieLijst";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -64,7 +65,6 @@ export default function LeadDetailEditor({ lead, onAfterDelete }: Props) {
         adres: vorm.adres,
         postcode: vorm.postcode,
         plaats: vorm.plaats,
-        notities: vorm.notities,
         fase_slug: vorm.fase_slug,
         temperatuur: vorm.temperatuur,
         volgende_actie_op: vorm.volgende_actie_op,
@@ -250,17 +250,11 @@ export default function LeadDetailEditor({ lead, onAfterDelete }: Props) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" /> Notitie
+              <StickyNote className="h-4 w-4 text-muted-foreground" /> Notities
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea
-              rows={6}
-              placeholder="Korte interne notitie over deze lead…"
-              value={vorm.notities ?? ""}
-              onChange={(e) => setVorm({ ...vorm, notities: e.target.value })}
-              maxLength={2000}
-            />
+            <NotitieLijst leadId={lead.id} />
           </CardContent>
         </Card>
 
