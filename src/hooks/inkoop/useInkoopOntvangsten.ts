@@ -8,6 +8,9 @@ export interface OntvangstRegel {
   besteld_aantal: number;
   ontvangen_aantal: number;
   opmerking?: string | null;
+  // Optionele serienummers per ontvangen stuk. Wordt ook los in sn_per_regel bewaard,
+  // maar mag hier meelopen voor snelle lezing.
+  serienummers?: string[];
 }
 
 export interface InkoopOntvangst {
@@ -22,6 +25,15 @@ export interface InkoopOntvangst {
   discrepantie: boolean;
   voorraad_geboekt: boolean;
   created_at: string;
+  pakbon_nummer?: string | null;
+  vervoerder?: string | null;
+  tracking_nummer?: string | null;
+  chauffeur_naam?: string | null;
+  aflever_locatie?: string | null;
+  staat_zending?: string | null;
+  ontvangst_document_url?: string | null;
+  sn_per_regel?: Array<{ regel_index: number; product_id: string | null; serienummers: string[] }>;
+  document_ids?: string[];
 }
 
 export function useInkoopOntvangsten(inkooporderId: string | undefined) {
@@ -53,9 +65,18 @@ export function useCreateOntvangst(opts: {
       regels: OntvangstRegel[];
       fotos?: string[];
       opmerking?: string | null;
+      pakbon_nummer?: string | null;
+      vervoerder?: string | null;
+      tracking_nummer?: string | null;
+      chauffeur_naam?: string | null;
+      aflever_locatie?: string | null;
+      staat_zending?: string | null;
+      ontvangst_document_url?: string | null;
+      sn_per_regel?: Array<{ regel_index: number; product_id: string | null; serienummers: string[] }>;
+      document_ids?: string[];
     }) => {
       if (!opts.partnerId) throw new Error("Geen organisatie");
-      const { error } = await supabase.from("inkoop_ontvangsten").insert({
+      const { data, error } = await supabase.from("inkoop_ontvangsten").insert({
         partner_id: opts.partnerId,
         inkooporder_id: opts.inkooporderId,
         ontvangstdatum: input.ontvangstdatum,
@@ -63,8 +84,18 @@ export function useCreateOntvangst(opts: {
         regels: input.regels as any,
         fotos: (input.fotos ?? []) as any,
         opmerking: input.opmerking ?? null,
-      });
+        pakbon_nummer: input.pakbon_nummer ?? null,
+        vervoerder: input.vervoerder ?? null,
+        tracking_nummer: input.tracking_nummer ?? null,
+        chauffeur_naam: input.chauffeur_naam ?? null,
+        aflever_locatie: input.aflever_locatie ?? null,
+        staat_zending: input.staat_zending ?? null,
+        ontvangst_document_url: input.ontvangst_document_url ?? null,
+        sn_per_regel: (input.sn_per_regel ?? []) as any,
+        document_ids: (input.document_ids ?? []) as any,
+      } as any).select("id").maybeSingle();
       if (error) throw error;
+      return data?.id as string | undefined;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inkoop-ontvangsten", opts.inkooporderId] });
