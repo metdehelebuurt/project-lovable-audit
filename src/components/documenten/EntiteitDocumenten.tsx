@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { FileText, Upload, Download, Trash2, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { FileText, Upload, Download, Trash2, ExternalLink, Image as ImageIcon, Pencil, Check, X } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Document = Database["public"]["Tables"]["documenten"]["Row"];
@@ -46,6 +46,9 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
   const [docType, setDocType] = useState<DocumentType>("overig");
   const [beschrijving, setBeschrijving] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const canUpload =
     profile?.rol === "superadmin" ||
@@ -60,6 +63,8 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
     profile?.rol === "partner_admin" ||
     profile?.rol === "partner_staff" ||
     profile?.rol === "backoffice";
+
+  const canRename = canDeleteAll;
 
   const queryKey = ["entiteit-documenten", entityType, entityId];
 
@@ -131,6 +136,31 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
     onError: (err: Error) => toast.error("Verwijderen mislukt", { description: err.message }),
   });
 
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, naam }: { id: string; naam: string }) => {
+      const trimmed = naam.trim();
+      if (!trimmed) throw new Error("Naam mag niet leeg zijn");
+      if (trimmed.length > 255) throw new Error("Naam is te lang");
+      const { error } = await supabase.from("documenten").update({ naam: trimmed }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("Naam bijgewerkt");
+      setRenameId(null);
+      setRenameValue("");
+    },
+    onError: (err: Error) => toast.error("Wijzigen mislukt", { description: err.message }),
+  });
+
+  const startRename = (d: Document) => {
+    setRenameId(d.id);
+    setRenameValue(d.naam);
+  };
+  const cancelRename = () => { setRenameId(null); setRenameValue(""); };
+
+  const isPdf = (mime: string | null) => mime === "application/pdf";
+
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
@@ -163,14 +193,64 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
           <div className="space-y-2">
             {documenten.map((d) => {
               const mayDelete = canDeleteAll || d.geupload_door_id === profile?.id;
+              const image = isImage(d.mime_type);
+              const editing = renameId === d.id;
               return (
                 <div key={d.id} className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors">
-                  <a href={d.bestand_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      {isImage(d.mime_type) ? <ImageIcon className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4 text-primary" />}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDoc(d)}
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left group"
+                    aria-label={`Preview van ${d.naam}`}
+                  >
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-border group-hover:ring-primary/40 transition">
+                      {image ? (
+                        <img
+                          src={d.bestand_url}
+                          alt={d.naam}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <FileText className="h-5 w-5 text-primary" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{d.naam}</p>
+                      {editing ? (
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Input
+                            autoFocus
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); renameMutation.mutate({ id: d.id, naam: renameValue }); }
+                              if (e.key === "Escape") { e.preventDefault(); cancelRename(); }
+                            }}
+                            className="h-8 text-sm"
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-success"
+                            onClick={(e) => { e.preventDefault(); renameMutation.mutate({ id: d.id, naam: renameValue }); }}
+                            disabled={renameMutation.isPending}
+                            aria-label="Opslaan"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={(e) => { e.preventDefault(); cancelRename(); }}
+                            aria-label="Annuleren"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition">{d.naam}</p>
+                      )}
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline" className="h-4 px-1.5 text-[10px]">{docTypeLabels[d.type]}</Badge>
                         <span>{formatSize(d.bestand_grootte)}</span>
@@ -178,8 +258,13 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
                         <span>{new Date(d.created_at).toLocaleDateString("nl-NL")}</span>
                       </div>
                     </div>
-                  </a>
+                  </button>
                   <div className="flex items-center gap-1 shrink-0">
+                    {canRename && !editing && (
+                      <Button variant="ghost" size="icon" onClick={() => startRename(d)} aria-label="Naam wijzigen">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" asChild>
                       <a href={d.bestand_url} target="_blank" rel="noopener noreferrer" aria-label="Openen">
                         <ExternalLink className="h-4 w-4" />
@@ -218,6 +303,56 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="truncate pr-8">{previewDoc?.naam}</DialogTitle>
+          </DialogHeader>
+          {previewDoc && (
+            <div className="space-y-3">
+              <div className="rounded-xl bg-muted/40 overflow-hidden flex items-center justify-center max-h-[70vh]">
+                {isImage(previewDoc.mime_type) ? (
+                  <img
+                    src={previewDoc.bestand_url}
+                    alt={previewDoc.naam}
+                    className="max-h-[70vh] w-auto object-contain"
+                  />
+                ) : isPdf(previewDoc.mime_type) ? (
+                  <iframe
+                    src={previewDoc.bestand_url}
+                    title={previewDoc.naam}
+                    className="w-full h-[70vh]"
+                  />
+                ) : (
+                  <div className="p-10 text-center">
+                    <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Geen inline preview beschikbaar voor dit bestandstype.</p>
+                  </div>
+                )}
+              </div>
+              {previewDoc.beschrijving && (
+                <p className="text-sm text-muted-foreground">{previewDoc.beschrijving}</p>
+              )}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{docTypeLabels[previewDoc.type]} • {formatSize(previewDoc.bestand_grootte)} • {new Date(previewDoc.created_at).toLocaleDateString("nl-NL")}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" asChild className="rounded-pill">
+                    <a href={previewDoc.bestand_url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" /> Openen
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild className="rounded-pill">
+                    <a href={previewDoc.bestand_url} download={previewDoc.naam}>
+                      <Download className="h-3.5 w-3.5 mr-1" /> Downloaden
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="max-w-md">
