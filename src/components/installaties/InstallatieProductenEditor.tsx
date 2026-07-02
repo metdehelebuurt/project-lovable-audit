@@ -75,7 +75,7 @@ export default function InstallatieProductenEditor({ partnerId, value, onChange 
               ...value,
               {
                 product_id: p.id,
-                omschrijving: [p.merk, p.model ?? p.naam].filter(Boolean).join(" "),
+                omschrijving: buildProductOmschrijving(p),
                 aantal: 1,
               },
             ])
