@@ -108,7 +108,6 @@ export async function fetchRapportenOverzicht(partnerId: string): Promise<Opleve
     };
   });
 }
-}
 
 export async function findExistingRapportenVoorOpdracht(
   partnerId: string,
