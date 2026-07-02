@@ -1,4 +1,5 @@
-import React from "react";
+import React, { Fragment } from "react";
+import { useProductMetaMap, type ProductComponentInfo } from "@/hooks/producten/useProductMetaMap";
 
 interface PrijstabelProps {
   pc: string;
@@ -6,6 +7,7 @@ interface PrijstabelProps {
   pcTint: string;
   pcTint2: string;
   regels: Array<{
+    product_id?: string;
     aantal: number;
     omschrijving: string;
     offerte_tekst?: string;
