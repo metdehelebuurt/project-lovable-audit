@@ -303,6 +303,8 @@ export default function FactuurNieuw() {
                 aantalMetProduct > 0 ? `, ${aantalMetProduct} met inkoopprijs` : ""
               }${bundleTxt}. Controleer prijzen en aantallen.`,
             });
+            // Analyseer leveranciers en open desnoods de split-dialog.
+            void analyseSplit(prefill.regels);
           }
         })
         .catch((e) => {
