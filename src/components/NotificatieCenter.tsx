@@ -10,12 +10,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
+import { toast } from "sonner";
 
-type NotifFilter = "alle" | "tickets" | "installaties" | "leads" | "financieel";
+type NotifFilter = "alle" | "tickets" | "installaties" | "leads" | "financieel" | "affiliate";
 
 function entityTypeMatchesFilter(entityType: string | null, filter: NotifFilter): boolean {
   if (filter === "alle") return true;
@@ -25,6 +26,7 @@ function entityTypeMatchesFilter(entityType: string | null, filter: NotifFilter)
     case "installaties": return entityType === "installaties";
     case "leads": return entityType === "leads";
     case "financieel": return entityType === "financiele_documenten";
+    case "affiliate": return entityType === "affiliate_leads";
   }
 }
 
@@ -40,6 +42,7 @@ function routeForEntity(entityType: string | null, entityId: string | null): str
     case "opdrachten": return `/opdrachten/${entityId}`;
     case "financiele_documenten": return `/financieel/${entityId}`;
     case "email_berichten": return `/berichten`;
+    case "affiliate_leads": return `/affiliates/leads/${entityId}`;
     default: return null;
   }
 }
@@ -48,8 +51,11 @@ export function NotificatieCenter() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAffiliate =
+    location.pathname.startsWith("/affiliates") || location.pathname.startsWith("/affiliate/");
   const [open, setOpen] = useState(false);
-  const [filter, setFilter] = useState<NotifFilter>("alle");
+  const [filter, setFilter] = useState<NotifFilter>(isAffiliate ? "affiliate" : "alle");
   const { show: showBrowserNotif } = useBrowserNotifications();
 
   const { data: notificaties = [] } = useQuery({
@@ -109,6 +115,14 @@ export function NotificatieCenter() {
         queryClient.invalidateQueries({ queryKey: ["notificaties"] });
         const n = payload.new as { titel?: string; bericht?: string; entity_type?: string | null; entity_id?: string | null };
         if (n?.titel) {
+          // In-app toast — klikbaar, navigeert naar de juiste plek.
+          const route = routeForEntity(n.entity_type ?? null, n.entity_id ?? null);
+          toast(n.titel, {
+            description: n.bericht ?? "",
+            action: route
+              ? { label: "Openen", onClick: () => navigate(route) }
+              : undefined,
+          });
           showBrowserNotif(n.titel, {
             body: n.bericht ?? "",
             tag: `notif-${n.entity_type ?? ""}-${n.entity_id ?? ""}`,
@@ -151,12 +165,15 @@ export function NotificatieCenter() {
         </div>
         <div className="px-2 pt-2">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as NotifFilter)}>
-            <TabsList className="grid grid-cols-5 h-8">
+            <TabsList className={isAffiliate ? "grid grid-cols-6 h-8" : "grid grid-cols-5 h-8"}>
               <TabsTrigger value="alle" className="text-[11px]">Alle</TabsTrigger>
               <TabsTrigger value="tickets" className="text-[11px]">Tickets</TabsTrigger>
               <TabsTrigger value="installaties" className="text-[11px]">Inst.</TabsTrigger>
               <TabsTrigger value="leads" className="text-[11px]">Leads</TabsTrigger>
               <TabsTrigger value="financieel" className="text-[11px]">Fin.</TabsTrigger>
+              {isAffiliate && (
+                <TabsTrigger value="affiliate" className="text-[11px]">Aff.</TabsTrigger>
+              )}
             </TabsList>
           </Tabs>
         </div>
