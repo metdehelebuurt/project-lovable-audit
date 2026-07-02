@@ -914,10 +914,12 @@ export default function FactuurNieuw() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label>Notities</Label>
-              <Textarea value={notities} onChange={(e) => setNotities(e.target.value)} placeholder="Interne notities..." rows={3} />
-            </div>
+            {!isInkooporder && (
+              <div className="space-y-2">
+                <Label>Notities</Label>
+                <Textarea value={notities} onChange={(e) => setNotities(e.target.value)} placeholder="Interne notities..." rows={3} />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -936,6 +938,12 @@ export default function FactuurNieuw() {
             />
           </CardContent>
         </Card>
+
+        {isInkooporder && (
+          <div className="lg:col-span-3">
+            <InkoopLeveringVelden waarden={levering} onChange={patchLevering} />
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-3">
