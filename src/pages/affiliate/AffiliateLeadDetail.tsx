@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { LeadDetailBody } from "@/components/affiliate/LeadDetailBody";
 import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
 import { AffiliateDuplicaatWaarschuwing } from "@/components/affiliate/duplicaten/AffiliateDuplicaatWaarschuwing";
+import { markeerLeadBekeken } from "@/hooks/affiliate/useLeadSignals";
 
 const AffiliateLeadDetail = () => {
   useRealtimeAffiliateLeads();
@@ -23,6 +25,13 @@ const AffiliateLeadDetail = () => {
       return data;
     },
   });
+
+  useEffect(() => {
+    if (lead?.id) {
+      // Best-effort: markeer signalen als bekeken zodra de detailpagina open is.
+      void markeerLeadBekeken(lead.id);
+    }
+  }, [lead?.id]);
 
   return (
     <div className="p-4 sm:p-6 min-w-0 w-full overflow-x-hidden">

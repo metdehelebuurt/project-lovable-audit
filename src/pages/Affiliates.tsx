@@ -18,6 +18,7 @@ import { Link2, Tag, Users, Euro, Copy, Plus, Trash2, TrendingUp, FileText, Eye,
 import type { Json } from "@/integrations/supabase/types";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { OnboardingChecklist } from "@/components/affiliate/OnboardingChecklist";
+import { ActieVandaagKaart } from "@/components/affiliate/ActieVandaagKaart";
 
 interface OfferteRegel {
   omschrijving: string;
@@ -196,6 +197,8 @@ const Affiliates = () => {
         <p className="text-muted-foreground">Beheer je links, offertes en volg je commissies</p>
       </div>
       <OnboardingChecklist />
+
+      <ActieVandaagKaart />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
