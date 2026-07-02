@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { formatCurrency, type OfferteRegel, regelSubtotaal } from "@/types/offerte";
 import { useProductMetaMap } from "@/hooks/producten/useProductMetaMap";
 
@@ -321,8 +322,8 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
             const meta = r.product_id ? metaMap[r.product_id] : undefined;
             const componenten = meta?.is_assemblage ? meta.componenten : [];
             return (
-              <>
-                <tr key={`r-${i}`} style={{ borderBottom: componenten.length ? "none" : "1px solid #f3f4f6" }}>
+              <Fragment key={`r-${i}`}>
+                <tr style={{ borderBottom: componenten.length ? "none" : "1px solid #f3f4f6" }}>
                   <td style={{ padding: "6px 4px" }}>
                     {r.omschrijving}
                     {componenten.length > 0 && (
@@ -362,11 +363,11 @@ export function FinancieelPDF({ doc, klant, leverancier, partner, installatie }:
                   </tr>
                 ))}
                 {componenten.length > 0 && (
-                  <tr key={`r-${i}-spacer`} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td colSpan={totalCols} style={{ height: 0, padding: 0 }} />
                   </tr>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </tbody>
