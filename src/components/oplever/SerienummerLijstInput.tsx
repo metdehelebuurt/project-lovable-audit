@@ -52,6 +52,9 @@ const SerienummerLijstInput = ({ value, onChange, legacySingle, placeholder, ari
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder ?? "Scan of typ serienummer"}
           aria-label={ariaLabel ?? "Serienummer toevoegen"}
+          onBlur={() => {
+            if (draft.trim()) voegToe();
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
