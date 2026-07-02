@@ -19,6 +19,8 @@ import HandmatigeVoorschotVelden, { type HandmatigSubtype } from "@/components/f
 import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
 import { prefillRegelsUitOpdracht } from "@/lib/inkoopFromOpdracht";
+import { splitPerLeverancier, type LeverancierGroep } from "@/lib/inkoopSplitPerLeverancier";
+import { InkoopSplitDialog } from "@/components/inkoop/InkoopSplitDialog";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -59,6 +61,9 @@ export default function FactuurNieuw() {
   const [expandBundles, setExpandBundles] = useState(true);
   const [bundlePrefillInfo, setBundlePrefillInfo] = useState<{ expandedBundles: number; totalComponentLines: number } | null>(null);
   const [rePrefilling, setRePrefilling] = useState(false);
+  // Splitsen per leverancier
+  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+  const [splitGroepen, setSplitGroepen] = useState<LeverancierGroep[]>([]);
 
   // Eenmalige relatie state
   const [useEenmalig, setUseEenmalig] = useState(false);
@@ -298,6 +303,8 @@ export default function FactuurNieuw() {
                 aantalMetProduct > 0 ? `, ${aantalMetProduct} met inkoopprijs` : ""
               }${bundleTxt}. Controleer prijzen en aantallen.`,
             });
+            // Analyseer leveranciers en open desnoods de split-dialog.
+            void analyseSplit(prefill.regels);
           }
         })
         .catch((e) => {
@@ -331,11 +338,32 @@ export default function FactuurNieuw() {
             ? `${prefill.expandedBundles} bundel(s) uitgeklapt naar ${prefill.totalComponentLines} componentregels.`
             : "Bundels staan nu als één inkoopregel per stuk op de bestelling.",
         });
+        void analyseSplit(prefill.regels);
       }
     } catch (e: any) {
       toast({ title: "Herladen mislukt", description: e?.message ?? String(e), variant: "destructive" });
     } finally {
       setRePrefilling(false);
+    }
+  };
+
+  // Analyseer inkoopregels per leverancier. Bij meerdere groepen tonen we een dialoog.
+  // Bij één groep vullen we automatisch de leverancier op de bestaande inkooporder.
+  const analyseSplit = async (inkoopRegels: OfferteRegel[]) => {
+    if (!profile?.partner_id) return;
+    try {
+      const groepen = await splitPerLeverancier(inkoopRegels, profile.partner_id);
+      if (groepen.length <= 1) {
+        const enige = groepen[0];
+        if (enige?.leverancier_id) setLeverancierId(enige.leverancier_id);
+        setSplitGroepen(groepen);
+        return;
+      }
+      setSplitGroepen(groepen);
+      setSplitDialogOpen(true);
+    } catch (e) {
+      // Analyse mag nooit de flow blokkeren.
+      console.error("splitPerLeverancier faalde", e);
     }
   };
 
@@ -503,6 +531,7 @@ export default function FactuurNieuw() {
   const showKlantSection = !isInkoop(docType) && docType !== "pakbon";
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(isEdit ? `/financieel/${editId}` : "/financieel")}>
@@ -826,5 +855,21 @@ export default function FactuurNieuw() {
         )}
       </div>
     </div>
+    {splitDialogOpen && profile?.partner_id && user?.id && (
+      <InkoopSplitDialog
+        open={splitDialogOpen}
+        onOpenChange={setSplitDialogOpen}
+        groepen={splitGroepen}
+        partnerId={profile.partner_id}
+        opdrachtId={bronOpdrachtId}
+        createdBy={user.id}
+        onMerge={() => {
+          // Zet de eerste bekende leverancier alvast in — gebruiker kan handmatig wisselen.
+          const eerste = splitGroepen.find((g) => g.leverancier_id !== null);
+          if (eerste?.leverancier_id) setLeverancierId(eerste.leverancier_id);
+        }}
+      />
+    )}
+    </>
   );
 }

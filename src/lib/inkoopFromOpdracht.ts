@@ -131,10 +131,12 @@ export async function prefillRegelsUitOpdracht(
       }
     } else {
       const kost = product ? Number(product.kostprijs ?? 0) : 0;
+      // Gebruik altijd de volledige productnaam (voorkomt afgekapte omschrijvingen zoals "Sigenergy").
+      const omschrijvingUit = product?.naam?.trim() ? product.naam : omschr;
       regels.push({
         ...emptyOfferteRegel,
         product_id: r.product_id ?? undefined,
-        omschrijving: omschr,
+        omschrijving: omschrijvingUit,
         offerte_tekst: r.offerte_tekst ?? "",
         aantal,
         prijs_per_stuk: kost > 0 ? kost : 0,

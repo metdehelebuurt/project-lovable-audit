@@ -28,7 +28,7 @@ export interface SNToewijzingData {
   toegewezen: Record<string, SNRow[]>;  // product_id -> reeds aan deze opdracht toegewezen SNs
 }
 
-interface Regel { omschrijving: string; aantal: number }
+interface Regel { omschrijving: string; aantal: number; product_id?: string | null }
 
 export const useSNToewijzing = (
   opdrachtId: string,
@@ -68,9 +68,13 @@ export const useSNToewijzing = (
 
       const targets: SNTarget[] = [];
       regels.forEach((r, i) => {
-        const prod = matchProductOpRegel(r.omschrijving, prodList);
-        if (!prod) return;
-        const p = prodList.find((x) => x.id === prod.id);
+        // 1) Directe product_id-koppeling (verkoopregel bewaart product_id).
+        let p = r.product_id ? prodList.find((x) => x.id === r.product_id) : undefined;
+        // 2) Fallback: matchen op omschrijving/artikelnummer/EAN.
+        if (!p) {
+          const prod = matchProductOpRegel(r.omschrijving, prodList);
+          if (prod) p = prodList.find((x) => x.id === prod.id);
+        }
         if (!p) return;
         if (p.is_assemblage) {
           const comps = compMap[p.id] || [];

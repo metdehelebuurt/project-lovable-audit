@@ -11,7 +11,7 @@ import { useSNToewijzing, useOpslaanSNToewijzing, type SNAssignment, type SNTarg
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SNToewijzingLog from "./SNToewijzingLog";
 
-interface Regel { omschrijving: string; aantal: number }
+interface Regel { omschrijving: string; aantal: number; product_id?: string | null }
 
 interface Props {
   open: boolean;
