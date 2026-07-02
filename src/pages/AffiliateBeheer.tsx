@@ -16,9 +16,18 @@ import { Switch } from "@/components/ui/switch";
 import KoudeLeadsImportDialog from "@/components/affiliate/KoudeLeadsImportDialog";
 import KoudeLeadsImportHistorie from "@/components/affiliate/KoudeLeadsImportHistorie";
 import { useAffiliateTargets, useUpsertTarget } from "@/hooks/affiliate/useAffiliateTargets";
+import { DemoOverzicht } from "@/components/affiliate/DemoOverzicht";
+import { useSearchParams } from "react-router-dom";
 
 const AffiliateBeheer = () => {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "affiliates";
+  const setActiveTab = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
   const [showCreateAffiliate, setShowCreateAffiliate] = useState(false);
   const [showCreateCode, setShowCreateCode] = useState(false);
   const [affiliateForm, setAffiliateForm] = useState({ voornaam: "", achternaam: "", email: "", telefoon: "" });
@@ -230,9 +239,10 @@ const AffiliateBeheer = () => {
         <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Settings className="h-8 w-8 text-muted-foreground" /><div><p className="text-2xl font-bold">{allCodes.length}</p><p className="text-sm text-muted-foreground">Kortingscodes</p></div></div></CardContent></Card>
       </div>
 
-      <Tabs defaultValue="affiliates">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="affiliates">Affiliates</TabsTrigger>
+          <TabsTrigger value="demos">Demo's</TabsTrigger>
           <TabsTrigger value="referrals">Referrals</TabsTrigger>
           <TabsTrigger value="codes">Kortingscodes</TabsTrigger>
           <TabsTrigger value="koude-leads">Koude leads</TabsTrigger>
@@ -293,6 +303,11 @@ const AffiliateBeheer = () => {
               </TableBody>
             </Table>
           </Card>
+        </TabsContent>
+
+        {/* Demo's Tab */}
+        <TabsContent value="demos" className="space-y-4">
+          <DemoOverzicht />
         </TabsContent>
 
         {/* Referrals Tab */}

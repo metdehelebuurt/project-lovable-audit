@@ -3,7 +3,7 @@ import {
   UserCheck2, ClipboardCheck, MessageSquare, FolderOpen, PenTool, Handshake,
   ShieldCheck, Receipt, Truck, LifeBuoy, BookOpen, CreditCard, Building2,
   UserCheck, Settings, Inbox, MessageSquareHeart, Lightbulb, RotateCcw, Link2,
-  Home, type LucideIcon,
+  Home, CalendarClock, type LucideIcon,
 } from "lucide-react";
 import type { AppKleur, AppRole } from "./appColors";
 
@@ -119,6 +119,9 @@ export const APPS: AppDefinition[] = [
     rollen: ["superadmin", "partner_admin"], categorie: "beheer" },
   { id: "affiliate-beheer", label: "Affiliate Beheer", icon: Handshake, url: "/affiliate-beheer", kleur: "fuchsia",
     rollen: ["superadmin", "sales_manager"], categorie: "beheer" },
+  { id: "geplande-demos", label: "Geplande demo's", icon: CalendarClock, url: "/affiliate-beheer?tab=demos", kleur: "violet",
+    rollen: ["superadmin", "sales_manager"], categorie: "planning",
+    synoniemen: ["demo overzicht", "demoafspraken", "sales demos"] },
   { id: "abonnementen", label: "Abonnementen", icon: CreditCard, url: "/admin/abonnementen", kleur: "amber",
     rollen: ["superadmin"], categorie: "beheer" },
   { id: "affiliate-links", label: "Affiliate Links", icon: Link2, url: "/affiliates", kleur: "fuchsia",

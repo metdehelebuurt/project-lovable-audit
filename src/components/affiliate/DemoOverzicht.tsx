@@ -1,0 +1,293 @@
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarClock, CheckCircle2, Mail, Phone, Search, Sparkles, UserPlus } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAlleDemoAfspraken, type DemoAfspraakRow } from "@/hooks/affiliate/useAlleDemoAfspraken";
+import { telLink } from "@/lib/affiliate/contact";
+
+type Periode = "vandaag" | "week" | "open" | "historie";
+
+function affNaam(a: DemoAfspraakRow["eigenaar"]): string {
+  if (!a) return "—";
+  const naam = [a.voornaam, a.achternaam].filter(Boolean).join(" ").trim();
+  return naam || a.email || "—";
+}
+
+function isBinnen(datum: Date, van: Date, tot: Date) {
+  return datum >= van && datum <= tot;
+}
+
+export function DemoOverzicht() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [periode, setPeriode] = useState<Periode>("open");
+  const [affiliateId, setAffiliateId] = useState<string>("alle");
+  const [zoek, setZoek] = useState("");
+
+  const scope = periode === "historie" ? "alle" : "open";
+  const { data: rows = [], isLoading } = useAlleDemoAfspraken(scope);
+
+  const affiliateOpties = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of rows) {
+      if (r.eigenaar?.id) map.set(r.eigenaar.id, affNaam(r.eigenaar));
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rows]);
+
+  const nu = new Date();
+  const eindVandaag = new Date(); eindVandaag.setHours(23, 59, 59, 999);
+  const eindWeek = new Date(Date.now() + 7 * 86400_000); eindWeek.setHours(23, 59, 59, 999);
+  const startMaand = new Date(nu.getFullYear(), nu.getMonth(), 1);
+
+  const gefilterd = useMemo(() => {
+    const q = zoek.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (affiliateId !== "alle" && r.affiliate_id !== affiliateId) return false;
+      const datum = new Date(r.geplande_op);
+      if (periode === "vandaag" && !isBinnen(datum, new Date(0), eindVandaag)) return false;
+      if (periode === "week" && !isBinnen(datum, new Date(0), eindWeek)) return false;
+      if (periode === "historie" && !r.afgehandeld_op) return false;
+      if (q) {
+        const hay = [
+          r.affiliate_leads?.bedrijfsnaam,
+          r.affiliate_leads?.contactpersoon,
+          r.affiliate_leads?.email,
+          r.notitie,
+          affNaam(r.eigenaar),
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rows, affiliateId, zoek, periode, eindVandaag, eindWeek]);
+
+  const kpi = useMemo(() => {
+    let vandaag = 0, week = 0, achterstallig = 0, afgehandeld = 0;
+    for (const r of rows) {
+      const d = new Date(r.geplande_op);
+      if (!r.afgehandeld_op) {
+        if (d < nu) achterstallig++;
+        if (d <= eindVandaag && d >= nu) vandaag++;
+        if (d <= eindWeek && d >= nu) week++;
+      } else if (new Date(r.afgehandeld_op) >= startMaand) {
+        afgehandeld++;
+      }
+    }
+    return { vandaag, week, achterstallig, afgehandeld };
+  }, [rows, nu, eindVandaag, eindWeek, startMaand]);
+
+  const groepen = useMemo(() => {
+    const out = {
+      achterstallig: [] as DemoAfspraakRow[],
+      vandaag: [] as DemoAfspraakRow[],
+      week: [] as DemoAfspraakRow[],
+      later: [] as DemoAfspraakRow[],
+      afgehandeld: [] as DemoAfspraakRow[],
+    };
+    for (const r of gefilterd) {
+      if (r.afgehandeld_op) { out.afgehandeld.push(r); continue; }
+      const d = new Date(r.geplande_op);
+      if (d < nu) out.achterstallig.push(r);
+      else if (d <= eindVandaag) out.vandaag.push(r);
+      else if (d <= eindWeek) out.week.push(r);
+      else out.later.push(r);
+    }
+    return out;
+  }, [gefilterd, nu, eindVandaag, eindWeek]);
+
+  const afvink = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("affiliate_terugbel_afspraken")
+        .update({ afgehandeld_op: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["alle-demo-afspraken"] });
+      toast.success("Demo afgevinkt");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const totaal = gefilterd.length;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiKaart label="Achterstallig" waarde={kpi.achterstallig} kleur="bg-rose-50 text-rose-700 border-rose-200" />
+        <KpiKaart label="Vandaag" waarde={kpi.vandaag} kleur="bg-amber-50 text-amber-800 border-amber-200" />
+        <KpiKaart label="Komende 7 dagen" waarde={kpi.week} kleur="bg-blue-50 text-blue-800 border-blue-200" />
+        <KpiKaart label="Afgerond deze maand" waarde={kpi.afgehandeld} kleur="bg-emerald-50 text-emerald-800 border-emerald-200" />
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <CalendarClock className="h-4 w-4" /> Alle geplande demo's
+            <Badge variant="outline" className="ml-2">{totaal}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-2">
+            <Select value={periode} onValueChange={(v) => setPeriode(v as Periode)}>
+              <SelectTrigger className="w-full md:w-48"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Alle open</SelectItem>
+                <SelectItem value="vandaag">Vandaag</SelectItem>
+                <SelectItem value="week">Komende week</SelectItem>
+                <SelectItem value="historie">Historie (afgerond)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={affiliateId} onValueChange={setAffiliateId}>
+              <SelectTrigger className="w-full md:w-64"><SelectValue placeholder="Affiliate" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="alle">Alle affiliates</SelectItem>
+                {affiliateOpties.map(([id, naam]) => (
+                  <SelectItem key={id} value={id}>{naam}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                placeholder="Zoek op bedrijf, contactpersoon, notitie…"
+                className="pl-7"
+              />
+            </div>
+          </div>
+
+          {isLoading && <p className="text-sm text-muted-foreground">Laden…</p>}
+          {!isLoading && totaal === 0 && (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              Geen demo's gevonden voor deze filter.
+            </p>
+          )}
+
+          <Sectie
+            label="Achterstallig" kleur="bg-rose-100 text-rose-800 border-rose-300"
+            items={groepen.achterstallig} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+          />
+          <Sectie
+            label="Vandaag" kleur="bg-amber-100 text-amber-800 border-amber-300"
+            items={groepen.vandaag} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+          />
+          <Sectie
+            label="Komende 7 dagen" kleur="bg-blue-100 text-blue-800 border-blue-300"
+            items={groepen.week} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+          />
+          <Sectie
+            label="Later" kleur="bg-slate-100 text-slate-700 border-slate-300"
+            items={groepen.later} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+          />
+          <Sectie
+            label="Afgerond" kleur="bg-emerald-100 text-emerald-800 border-emerald-300"
+            items={groepen.afgehandeld} navigate={navigate}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function KpiKaart({ label, waarde, kleur }: { label: string; waarde: number; kleur: string }) {
+  return (
+    <div className={`rounded-lg border p-3 ${kleur}`}>
+      <p className="text-xs font-medium opacity-80">{label}</p>
+      <p className="text-2xl font-semibold tabular-nums">{waarde}</p>
+    </div>
+  );
+}
+
+interface SectieProps {
+  label: string;
+  kleur: string;
+  items: DemoAfspraakRow[];
+  navigate: ReturnType<typeof useNavigate>;
+  onAfvink?: (id: string) => void;
+}
+
+function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <h4 className="text-sm font-semibold">{label}</h4>
+        <Badge variant="outline" className={kleur}>{items.length}</Badge>
+      </div>
+      <div className="space-y-2">
+        {items.map((r) => {
+          const bedrijf = r.affiliate_leads?.bedrijfsnaam ?? "Lead";
+          const contact = r.affiliate_leads?.contactpersoon;
+          const tel = telLink(r.affiliate_leads?.telefoon);
+          const email = r.affiliate_leads?.email;
+          const gedelegeerd = r.collega_user_id && r.collega_user_id !== r.affiliate_id;
+          return (
+            <div
+              key={r.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(`/affiliate/leads/${r.lead_id}`)}
+              onKeyDown={(e) => { if (e.key === "Enter") navigate(`/affiliate/leads/${r.lead_id}`); }}
+              className="flex flex-wrap items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-muted/40 transition-colors"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium truncate">{bedrijf}</p>
+                  <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 text-[10px] gap-1">
+                    <Sparkles className="h-3 w-3" /> Demo
+                  </Badge>
+                  {gedelegeerd && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1">
+                      <UserPlus className="h-3 w-3" /> Overgedragen
+                    </Badge>
+                  )}
+                  {r.noshow && (
+                    <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px]">
+                      No-show
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(r.geplande_op).toLocaleString("nl-NL")}
+                  {contact ? ` · ${contact}` : ""}
+                  {r.notitie ? ` · ${r.notitie}` : ""}
+                </p>
+                <p className="text-[11px] text-muted-foreground">Affiliate: {affNaam(r.eigenaar)}</p>
+              </div>
+              {tel && (
+                <Button asChild size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
+                  <a href={tel}><Phone className="h-3 w-3 mr-1" /> Bel</a>
+                </Button>
+              )}
+              {email && (
+                <Button asChild size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
+                  <a href={`mailto:${email}`}><Mail className="h-3 w-3" /></a>
+                </Button>
+              )}
+              {onAfvink && !r.afgehandeld_op && (
+                <Button
+                  size="sm" variant="ghost"
+                  onClick={(e) => { e.stopPropagation(); onAfvink(r.id); }}
+                  title="Afvinken"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
