@@ -45,8 +45,10 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
 
   const bat = draft.batterij_spec ?? {};
   const omv = draft.omvormer_spec ?? {};
+  const bbox = draft.backup_box_spec ?? {};
   const ops = draft.opstelling ?? {};
   const extra = draft.extra_velden ?? {};
+  const heeftBackupBox = Boolean(extra.heeft_backup_box);
 
   return (
     <div className="space-y-6">
@@ -195,6 +197,44 @@ export default function StepInstallatie({ rapportId, partnerId, draft, onChange 
             <Checkbox checked={Boolean(omv.ce_markering)} onCheckedChange={(v) => onChange({ omvormer_spec: { ...omv, ce_markering: Boolean(v) } })} /> CE-markering
           </label>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">Backup box</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={heeftBackupBox}
+              onCheckedChange={(v) =>
+                onChange({ extra_velden: { ...extra, heeft_backup_box: Boolean(v) } })
+              }
+            />
+            Systeem heeft backup box
+          </label>
+        </div>
+        {heeftBackupBox && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><Label>Merk</Label><Input value={bbox.merk ?? ""} onChange={(e) => onChange({ backup_box_spec: { ...bbox, merk: e.target.value } })} /></div>
+            <div><Label>Type</Label><Input value={bbox.type ?? ""} onChange={(e) => onChange({ backup_box_spec: { ...bbox, type: e.target.value } })} /></div>
+            <div className="sm:col-span-2">
+              <Label>Serienummers backup box</Label>
+              <SerienummerLijstInput
+                value={bbox.serienummers ?? []}
+                legacySingle={bbox.serienummer}
+                onChange={(next) =>
+                  onChange({
+                    backup_box_spec: {
+                      ...bbox,
+                      serienummers: next,
+                      serienummer: next.length > 0 ? undefined : bbox.serienummer,
+                    },
+                  })
+                }
+                ariaLabel="Backup box serienummer toevoegen"
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="space-y-3">
