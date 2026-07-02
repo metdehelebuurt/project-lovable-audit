@@ -270,6 +270,8 @@ const Producten = () => {
       is_assemblage: (p as any).is_assemblage ?? false,
       prijs_strategie: ((p as any).prijs_strategie as "vast" | "som_componenten") || "vast",
       marge_opslag_percentage: Number((p as any).marge_opslag_percentage ?? 0),
+      omvormer_modulair: (p as any).omvormer_modulair ?? false,
+      heeft_backup_box: (p as any).heeft_backup_box ?? false,
     });
   };
 
