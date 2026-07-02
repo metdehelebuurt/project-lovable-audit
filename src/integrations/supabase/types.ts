@@ -7556,6 +7556,116 @@ export type Database = {
         }
         Relationships: []
       }
+      product_componenten: {
+        Row: {
+          aantal: number
+          assemblage_id: string
+          component_id: string
+          created_at: string
+          id: string
+          partner_id: string
+          updated_at: string
+          verplicht: boolean
+          volgorde: number
+        }
+        Insert: {
+          aantal?: number
+          assemblage_id: string
+          component_id: string
+          created_at?: string
+          id?: string
+          partner_id: string
+          updated_at?: string
+          verplicht?: boolean
+          volgorde?: number
+        }
+        Update: {
+          aantal?: number
+          assemblage_id?: string
+          component_id?: string
+          created_at?: string
+          id?: string
+          partner_id?: string
+          updated_at?: string
+          verplicht?: boolean
+          volgorde?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_componenten_assemblage_id_fkey"
+            columns: ["assemblage_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_componenten_assemblage_id_fkey"
+            columns: ["assemblage_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_componenten_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_componenten_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_kostprijs_historie: {
+        Row: {
+          created_at: string
+          gewijzigd_door: string | null
+          id: string
+          nieuwe_kostprijs: number
+          oude_kostprijs: number | null
+          partner_id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          gewijzigd_door?: string | null
+          id?: string
+          nieuwe_kostprijs: number
+          oude_kostprijs?: number | null
+          partner_id: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          gewijzigd_door?: string | null
+          id?: string
+          nieuwe_kostprijs?: number
+          oude_kostprijs?: number | null
+          partner_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_kostprijs_historie_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_kostprijs_historie_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_serienummers: {
         Row: {
           created_at: string
@@ -7637,13 +7747,16 @@ export type Database = {
           garantie_jaren: number | null
           gebruiker_handleiding_naam: string | null
           gebruiker_handleiding_url: string | null
+          heeft_serienummer: boolean
           id: string
           installatie_handleiding_naam: string | null
           installatie_handleiding_url: string | null
           installatie_instructies: string | null
+          is_assemblage: boolean
           kostprijs: number | null
           leverancier: string | null
           levertijd: string | null
+          marge_opslag_percentage: number
           max_korting_euro: number | null
           max_korting_percentage: number | null
           merk: string | null
@@ -7655,6 +7768,7 @@ export type Database = {
           onderhoud: string | null
           partner_id: string | null
           prijs_excl_btw: number
+          prijs_strategie: string
           product_code: string | null
           specs: Json | null
           status: Database["public"]["Enums"]["product_status"]
@@ -7683,13 +7797,16 @@ export type Database = {
           garantie_jaren?: number | null
           gebruiker_handleiding_naam?: string | null
           gebruiker_handleiding_url?: string | null
+          heeft_serienummer?: boolean
           id?: string
           installatie_handleiding_naam?: string | null
           installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
+          is_assemblage?: boolean
           kostprijs?: number | null
           leverancier?: string | null
           levertijd?: string | null
+          marge_opslag_percentage?: number
           max_korting_euro?: number | null
           max_korting_percentage?: number | null
           merk?: string | null
@@ -7701,6 +7818,7 @@ export type Database = {
           onderhoud?: string | null
           partner_id?: string | null
           prijs_excl_btw?: number
+          prijs_strategie?: string
           product_code?: string | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"]
@@ -7729,13 +7847,16 @@ export type Database = {
           garantie_jaren?: number | null
           gebruiker_handleiding_naam?: string | null
           gebruiker_handleiding_url?: string | null
+          heeft_serienummer?: boolean
           id?: string
           installatie_handleiding_naam?: string | null
           installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
+          is_assemblage?: boolean
           kostprijs?: number | null
           leverancier?: string | null
           levertijd?: string | null
+          marge_opslag_percentage?: number
           max_korting_euro?: number | null
           max_korting_percentage?: number | null
           merk?: string | null
@@ -7747,6 +7868,7 @@ export type Database = {
           onderhoud?: string | null
           partner_id?: string | null
           prijs_excl_btw?: number
+          prijs_strategie?: string
           product_code?: string | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"]
