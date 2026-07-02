@@ -255,6 +255,18 @@ export default function ProductInlineForm({
                       <Input type="number" step="0.1" value={form.marge_opslag_percentage} onChange={e => setForm(p => ({ ...p, marge_opslag_percentage: parseFloat(e.target.value) || 0 }))} className="rounded-xl" />
                     </div>
                   )}
+                  <div className="col-span-2 text-xs text-muted-foreground bg-primary/5 rounded-lg p-2 border border-primary/20">
+                    {editingProduct ? (
+                      <>
+                        Componenten (stuklijst) beheer je in de speciale bundel-editor.{" "}
+                        <Link to={`/producten/assemblages/${editingProduct.id}`} className="text-primary underline">
+                          Open bundel-editor →
+                        </Link>
+                      </>
+                    ) : (
+                      <>Sla eerst op, dan kun je componenten toevoegen via <Link to="/producten/assemblages" className="text-primary underline">Samengestelde producten</Link>.</>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
