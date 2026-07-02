@@ -233,6 +233,9 @@ export function TerugbelDialog({ open, onOpenChange, leadId, leadNaam, klantEmai
           <div className="space-y-1">
             <Label>Notitie (optioneel)</Label>
             <Textarea rows={3} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder={placeholder} />
+            <p className="text-[11px] text-muted-foreground">
+              We voegen automatisch een regel toe met bedrijf en contactpersoon, zodat je in de agenda meteen ziet met wie de afspraak is.
+            </p>
           </div>
           <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
             Na het plannen kun je nog kiezen of je de klant {(!isSalesProxy) ? "en collega" : ""} mailt — je ziet de mail eerst en kunt 'm bewerken.
