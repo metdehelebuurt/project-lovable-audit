@@ -23,6 +23,14 @@ export interface OmvormerSpec {
   rfg_klasse?: "A" | "B" | "C" | "D";
 }
 
+export interface BackupBoxSpec {
+  merk?: string;
+  type?: string;
+  serienummer?: string;
+  serienummers?: string[];
+  typeplaatje_url?: string;
+}
+
 export interface Opstelling {
   locatie?: string;
   droog?: boolean;
@@ -113,6 +121,7 @@ export interface Opleverrapport {
   opleverdatum: string | null;
   batterij_spec: BatterijSpec;
   omvormer_spec: OmvormerSpec;
+  backup_box_spec?: BackupBoxSpec;
   opstelling: Opstelling;
   visuele_inspectie: ChecklistItem[];
   metingen: Meting[];
@@ -149,6 +158,8 @@ export interface ExtraVelden {
   gateway_serienummers?: string[];
   aardweerstand_ohm?: number;
   heeft_backup?: boolean;
+  heeft_backup_box?: boolean;
+  omvormer_modulair?: boolean;
   scope_normen?: ScopeNormen;
   bekabeling_meterkast?: ChecklistItem[];
   aarding_beveiliging?: ChecklistItem[];
