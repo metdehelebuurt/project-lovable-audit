@@ -8,7 +8,8 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Database } from "@/integrations/supabase/types";
 
-type Document = Database["public"]["Tables"]["documenten"]["Row"] & { tags?: string[] | null };
+type BaseDocument = Database["public"]["Tables"]["documenten"]["Row"];
+type Document = Omit<BaseDocument, "tags"> & { tags?: string[] | null };
 type DocumentType = Database["public"]["Enums"]["document_type"];
 
 const docTypeLabels: Record<DocumentType, string> = {
