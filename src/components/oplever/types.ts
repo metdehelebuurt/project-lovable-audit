@@ -1,4 +1,4 @@
-export type OpleverStatus = "concept" | "wacht_op_klant" | "ondertekend" | "afgekeurd";
+export type OpleverStatus = "concept" | "wacht_op_klant" | "ondertekend" | "afgekeurd" | "vervallen";
 export type Verdict = "goedgekeurd" | "goedgekeurd_met_opmerkingen" | "afgekeurd";
 
 export interface BatterijSpec {
@@ -140,6 +140,13 @@ export interface Opleverrapport {
   created_at: string;
   updated_at: string;
   extra_velden?: ExtraVelden;
+  vervallen?: boolean;
+  vervallen_reden_categorie?: string | null;
+  vervallen_reden?: string | null;
+  vervallen_op?: string | null;
+  vervallen_door?: string | null;
+  vervangen_door_id?: string | null;
+  vervangt_id?: string | null;
 }
 
 export interface ScopeNormen {
