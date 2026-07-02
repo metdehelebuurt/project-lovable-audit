@@ -1422,7 +1422,11 @@ export type Database = {
           noshow: boolean
           noshow_gemeld_op: string | null
           notitie: string | null
+          reminder_1u_actief: boolean
+          reminder_1u_gepland_op: string | null
           reminder_1u_op: string | null
+          reminder_24u_actief: boolean
+          reminder_24u_gepland_op: string | null
           reminder_24u_op: string | null
           type: string
           updated_at: string
@@ -1438,7 +1442,11 @@ export type Database = {
           noshow?: boolean
           noshow_gemeld_op?: string | null
           notitie?: string | null
+          reminder_1u_actief?: boolean
+          reminder_1u_gepland_op?: string | null
           reminder_1u_op?: string | null
+          reminder_24u_actief?: boolean
+          reminder_24u_gepland_op?: string | null
           reminder_24u_op?: string | null
           type?: string
           updated_at?: string
@@ -1454,7 +1462,11 @@ export type Database = {
           noshow?: boolean
           noshow_gemeld_op?: string | null
           notitie?: string | null
+          reminder_1u_actief?: boolean
+          reminder_1u_gepland_op?: string | null
           reminder_1u_op?: string | null
+          reminder_24u_actief?: boolean
+          reminder_24u_gepland_op?: string | null
           reminder_24u_op?: string | null
           type?: string
           updated_at?: string
