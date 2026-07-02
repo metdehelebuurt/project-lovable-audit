@@ -85,7 +85,7 @@ function detectDisplayTrigger(display: string, caret: number, mentions: Mention[
       if (mentions.some((m) => m.start === i)) return null;
       const query = display.slice(i + 1, caret);
       if (/[\s\n\[\]()@]/.test(query)) return null;
-      return { triggerStart: i, query };
+      return { start: i, query };
     }
     if (/[\s\n]/.test(ch)) return null;
   }
