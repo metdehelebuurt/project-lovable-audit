@@ -3,8 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { ChevronDown, ChevronRight, Package, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useProductMetaMap } from "@/hooks/producten/useProductMetaMap";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
 import { ProductSearchInput } from "./ProductSearchInput";
 
