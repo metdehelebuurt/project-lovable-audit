@@ -519,7 +519,17 @@ const Producten = () => {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{product.naam}</p>
+                          <p className="font-medium flex items-center gap-1.5">
+                            <span>{product.naam}</span>
+                            {(product as any).is_assemblage && (
+                              <span
+                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary"
+                                title="Samengesteld product"
+                              >
+                                BUNDEL
+                              </span>
+                            )}
+                          </p>
                           {product.product_code && <p className="text-xs text-muted-foreground">{product.product_code}</p>}
                         </div>
                       </TableCell>
