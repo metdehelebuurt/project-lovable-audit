@@ -1,0 +1,1 @@
+ALTER TABLE public.opleverrapporten ADD COLUMN IF NOT EXISTS backup_box_spec jsonb NOT NULL DEFAULT '{}'::jsonb;

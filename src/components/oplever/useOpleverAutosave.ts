@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { patchRapport, fetchRapport } from "./api/opleverApi";
+import { toast } from "@/hooks/use-toast";
 import type { Opleverrapport } from "./types";
 
 const DEBOUNCE_MS = 1500;
@@ -32,6 +33,12 @@ export function useOpleverAutosave(id: string | undefined, draft: Partial<Opleve
         lastSerialized.current = serialized;
       } catch (e) {
         console.warn("Autosave mislukt", e);
+        const msg = e instanceof Error ? e.message : "Onbekende fout";
+        toast({
+          title: "Wijzigingen niet opgeslagen",
+          description: msg,
+          variant: "destructive",
+        });
       }
     }, DEBOUNCE_MS);
     return () => {
