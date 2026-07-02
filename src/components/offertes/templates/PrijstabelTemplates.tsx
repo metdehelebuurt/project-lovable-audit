@@ -48,6 +48,18 @@ const btwLabel = (regels: PrijstabelProps["regels"]) => {
   return `BTW (${pcts.join("% / ")}%)`;
 };
 
+function useAssemblageMap(regels: PrijstabelProps["regels"]) {
+  const ids = Array.from(new Set(regels.map((r) => r.product_id).filter((id): id is string => !!id)));
+  const { data } = useProductMetaMap(ids);
+  return data ?? {};
+}
+
+function componentenVoor(map: Record<string, { is_assemblage: boolean; componenten: ProductComponentInfo[] }>, r: PrijstabelProps["regels"][0]): ProductComponentInfo[] {
+  if (!r.product_id) return [];
+  const m = map[r.product_id];
+  return m?.is_assemblage ? m.componenten : [];
+}
+
 const OfferteKortingBlock: React.FC<{
   pc: string;
   brutoSub: number;
