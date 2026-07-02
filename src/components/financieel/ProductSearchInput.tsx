@@ -15,6 +15,7 @@ export interface ProductHit {
   kostprijs: number | null;
   btw_percentage: number | null;
   offerte_tekst: string | null;
+  is_assemblage?: boolean;
 }
 
 interface Props {
@@ -41,7 +42,7 @@ export function ProductSearchInput({ value, onChangeText, onPickProduct, placeho
     const timer = setTimeout(async () => {
       let query = supabase
         .from("producten")
-        .select("id, naam, merk, model, prijs_excl_btw, kostprijs, btw_percentage, offerte_tekst")
+        .select("id, naam, merk, model, prijs_excl_btw, kostprijs, btw_percentage, offerte_tekst, is_assemblage")
         .limit(15);
       if (partnerId) {
         if (term.length > 0) {
@@ -104,9 +105,16 @@ export function ProductSearchInput({ value, onChangeText, onPickProduct, placeho
                 className="block w-full text-left px-3 py-2 hover:bg-muted text-sm border-b last:border-b-0"
               >
                 <div className="flex items-start gap-2">
-                  <Package className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                  <Package className={`h-4 w-4 mt-0.5 shrink-0 ${p.is_assemblage ? "text-primary" : "text-muted-foreground"}`} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{p.naam}</div>
+                    <div className="font-medium truncate flex items-center gap-1.5">
+                      <span className="truncate">{p.naam}</span>
+                      {p.is_assemblage && (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
+                          BUNDEL
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground truncate">
                       {[p.merk, p.model].filter(Boolean).join(" • ") || "—"}
                     </div>
