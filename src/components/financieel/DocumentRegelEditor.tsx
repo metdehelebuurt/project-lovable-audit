@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChevronDown, ChevronRight, Package, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useProductMetaMap } from "@/hooks/producten/useProductMetaMap";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
 import { ProductSearchInput } from "./ProductSearchInput";
@@ -89,8 +89,8 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
           </TableHeader>
           <TableBody>
             {regels.map((r, i) => (
-              <>
-              <TableRow key={`row-${i}`}>
+              <Fragment key={`regel-${i}`}>
+              <TableRow>
                 <TableCell>
                   {(() => {
                     const meta = r.product_id ? metaMap[r.product_id] : undefined;
@@ -247,7 +247,7 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
                   </TableRow>
                 );
               })()}
-              </>
+              </Fragment>
             ))}
           </TableBody>
         </Table>
