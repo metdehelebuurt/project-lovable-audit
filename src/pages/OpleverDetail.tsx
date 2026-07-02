@@ -164,8 +164,10 @@ export default function OpleverDetail() {
 
   if (isLoading || !merged) return <div className="p-8 text-muted-foreground">Laden…</div>;
 
-  const kanVervallen =
-    profile?.rol === "superadmin" || profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const rollen = [profile?.rol, ...(profile?.extra_rollen ?? [])].filter(Boolean) as string[];
+  const kanVervallen = rollen.some((r) =>
+    ["superadmin", "partner_admin", "partner_staff", "backoffice"].includes(r),
+  );
   const isVervallen = merged.status === "vervallen" || merged.vervallen === true;
 
   const update = (p: Partial<Opleverrapport>) => setDraft((d) => ({ ...d, ...p }));
