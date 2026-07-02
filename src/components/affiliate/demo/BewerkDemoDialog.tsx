@@ -13,6 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import type { DemoAfspraakRow } from "@/hooks/affiliate/useAlleDemoAfspraken";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toLocalInput } from "./demoTijdHelpers";
 
 type Status = "open" | "afgerond" | "noshow";
@@ -50,7 +51,7 @@ export function BewerkDemoDialog({ afspraak, onClose, eigenaarOpties }: Props) {
       if (!afspraak) throw new Error("Geen afspraak geselecteerd");
       const nu = new Date().toISOString();
       const iso = new Date(tijd).toISOString();
-      const update: Record<string, unknown> = {
+      const update: TablesUpdate<"affiliate_terugbel_afspraken"> = {
         geplande_op: iso,
         affiliate_id: eigenaar,
         notitie: notitie.trim() || null,
