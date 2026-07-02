@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchRapporten } from "@/components/oplever/api/opleverApi";
+import { fetchRapportenOverzicht, type OpleverrapportOverzicht } from "@/components/oplever/api/opleverApi";
 import OpleverStatusBadge from "@/components/oplever/StatusBadge";
-import type { Opleverrapport } from "@/components/oplever/types";
 import { Plus, FileText, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,14 +15,14 @@ import { fetchOpleverPdfVersies } from "@/components/oplever/api/opleverPdfVersi
 export default function Opleveringen() {
   const { profile } = useAuth();
   const nav = useNavigate();
-  const [rows, setRows] = useState<Opleverrapport[]>([]);
+  const [rows, setRows] = useState<OpleverrapportOverzicht[]>([]);
   const [zoek, setZoek] = useState("");
   const [busy, setBusy] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.partner_id) return;
-    fetchRapporten(profile.partner_id)
+    fetchRapportenOverzicht(profile.partner_id)
       .then(setRows)
       .catch((e) => toast({ title: "Laden mislukt", description: e.message, variant: "destructive" }))
       .finally(() => setBusy(false));
@@ -32,10 +31,15 @@ export default function Opleveringen() {
   const filtered = useMemo(() => {
     const q = zoek.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((r) => r.rapportnummer.toLowerCase().includes(q) || r.scope_omschrijving?.toLowerCase().includes(q));
+    return rows.filter((r) =>
+      r.rapportnummer.toLowerCase().includes(q) ||
+      r.scope_omschrijving?.toLowerCase().includes(q) ||
+      r.klant_naam?.toLowerCase().includes(q) ||
+      r.opdracht_nummer?.toLowerCase().includes(q)
+    );
   }, [rows, zoek]);
 
-  const handleDownload = async (r: Opleverrapport) => {
+  const handleDownload = async (r: OpleverrapportOverzicht) => {
     try {
       setDownloadingId(r.id);
       let pdfPath = r.pdf_url;
@@ -86,6 +90,8 @@ export default function Opleveringen() {
             <TableHeader>
               <TableRow>
                 <TableHead>Rapportnummer</TableHead>
+                <TableHead>Verkooporder</TableHead>
+                <TableHead>Klant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Opleverdatum</TableHead>
                 <TableHead>Omvang</TableHead>
@@ -94,12 +100,14 @@ export default function Opleveringen() {
             </TableHeader>
             <TableBody>
               {busy ? (
-                <TableRow><TableCell colSpan={5}>Laden…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7}>Laden…</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Geen rapporten gevonden</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Geen rapporten gevonden</TableCell></TableRow>
               ) : filtered.map((r) => (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} className="hover:bg-muted/40">
                   <TableCell className="font-mono text-sm">{r.rapportnummer}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{r.opdracht_nummer ?? "—"}</TableCell>
+                  <TableCell className="max-w-[220px] truncate">{r.klant_naam ?? "—"}</TableCell>
                   <TableCell><OpleverStatusBadge status={r.status} /></TableCell>
                   <TableCell>{r.opleverdatum ?? "—"}</TableCell>
                   <TableCell className="max-w-xs truncate">{r.scope_omschrijving ?? "—"}</TableCell>
