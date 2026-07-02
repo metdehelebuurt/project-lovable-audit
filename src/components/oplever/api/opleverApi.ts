@@ -90,15 +90,18 @@ export interface OpleverrapportOverzicht extends Opleverrapport {
 export async function fetchRapportenOverzicht(partnerId: string): Promise<OpleverrapportOverzicht[]> {
   const { data, error } = await supabase
     .from("opleverrapporten" as never)
-    .select("*, klant:klanten(naam), opdracht:opdrachten(opdrachtnummer)")
+    .select("*, klant:klanten(naam), opdracht:opdrachten(klant_naam, offerte:offertes(offertenummer))")
     .eq("partner_id", partnerId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  type Row = Opleverrapport & { klant?: { naam?: string | null } | null; opdracht?: { opdrachtnummer?: string | null } | null };
+  type Row = Opleverrapport & {
+    klant?: { naam?: string | null } | null;
+    opdracht?: { klant_naam?: string | null; offerte?: { offertenummer?: string | null } | null } | null;
+  };
   return ((data ?? []) as unknown as Row[]).map((r) => ({
     ...r,
-    klant_naam: r.klant?.naam ?? null,
-    opdracht_nummer: r.opdracht?.opdrachtnummer ?? null,
+    klant_naam: r.klant?.naam ?? r.opdracht?.klant_naam ?? null,
+    opdracht_nummer: r.opdracht?.offerte?.offertenummer ?? null,
   }));
 }
 
