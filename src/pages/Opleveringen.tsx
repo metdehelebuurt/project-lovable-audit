@@ -94,15 +94,14 @@ export default function Opleveringen() {
                 <TableHead>Klant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Opleverdatum</TableHead>
-                <TableHead>Omvang</TableHead>
                 <TableHead className="text-right">Actie</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {busy ? (
-                <TableRow><TableCell colSpan={7}>Laden…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}>Laden…</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Geen rapporten gevonden</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Geen rapporten gevonden</TableCell></TableRow>
               ) : filtered.map((r) => (
                 <TableRow key={r.id} className="hover:bg-muted/40">
                   <TableCell className="font-mono text-sm">{r.rapportnummer}</TableCell>
@@ -110,7 +109,6 @@ export default function Opleveringen() {
                   <TableCell className="max-w-[220px] truncate">{r.klant_naam ?? "—"}</TableCell>
                   <TableCell><OpleverStatusBadge status={r.status} /></TableCell>
                   <TableCell>{r.opleverdatum ?? "—"}</TableCell>
-                  <TableCell className="max-w-xs truncate">{r.scope_omschrijving ?? "—"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
