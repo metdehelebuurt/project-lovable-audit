@@ -9840,6 +9840,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recompute_assemblage_prijzen: {
+        Args: { p_assemblage_id: string }
+        Returns: undefined
+      }
       seed_affiliate_pipeline_config: {
         Args: { _partner_id: string }
         Returns: undefined
