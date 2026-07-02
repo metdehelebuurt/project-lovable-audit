@@ -82,6 +82,45 @@ export async function fetchRapporten(partnerId: string): Promise<Opleverrapport[
   return (data ?? []) as unknown as Opleverrapport[];
 }
 
+export interface OpleverrapportOverzicht extends Opleverrapport {
+  klant_naam: string | null;
+  opdracht_nummer: string | null;
+}
+
+export async function fetchRapportenOverzicht(partnerId: string): Promise<OpleverrapportOverzicht[]> {
+  const { data, error } = await supabase
+    .from("opleverrapporten" as never)
+    .select("*, klant:klanten(naam), opdracht:opdrachten(opdrachtnummer)")
+    .eq("partner_id", partnerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  type Row = Opleverrapport & { klant?: { naam?: string | null } | null; opdracht?: { opdrachtnummer?: string | null } | null };
+  return ((data ?? []) as unknown as Row[]).map((r) => ({
+    ...r,
+    klant_naam: r.klant?.naam ?? null,
+    opdracht_nummer: r.opdracht?.opdrachtnummer ?? null,
+  }));
+}
+
+export async function findExistingRapportenVoorOpdracht(
+  partnerId: string,
+  opdrachtId: string | null,
+  installatieId: string | null,
+): Promise<Opleverrapport[]> {
+  if (!opdrachtId && !installatieId) return [];
+  const filters: string[] = [];
+  if (opdrachtId) filters.push(`opdracht_id.eq.${opdrachtId}`);
+  if (installatieId) filters.push(`installatie_id.eq.${installatieId}`);
+  const { data, error } = await supabase
+    .from("opleverrapporten" as never)
+    .select("*")
+    .eq("partner_id", partnerId)
+    .or(filters.join(","))
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as Opleverrapport[];
+}
+
 export async function fetchRapportenVoorKlant(klantId: string, opdrachtIds: string[] = []): Promise<Opleverrapport[]> {
   const filters: string[] = [`klant_id.eq.${klantId}`];
   if (opdrachtIds.length > 0) {
