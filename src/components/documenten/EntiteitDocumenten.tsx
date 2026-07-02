@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,11 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { FileText, Upload, Download, Trash2, ExternalLink, Pencil, Check, X } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { Database } from "@/integrations/supabase/types";
+import SortableDocumentRow from "./SortableDocumentRow";
+import DocumentPreviewDialog from "./DocumentPreviewDialog";
 
 type Document = Database["public"]["Tables"]["documenten"]["Row"];
 type DocumentEntityType = Database["public"]["Enums"]["document_entity_type"];
@@ -23,12 +30,6 @@ const docTypeLabels: Record<DocumentType, string> = {
   contract: "Contract", foto: "Foto", certificaat: "Certificaat", rapport: "Rapport", overig: "Overig",
 };
 
-interface Props {
-  entityType: DocumentEntityType;
-  entityId: string;
-  title?: string;
-}
-
 const formatSize = (bytes: number | null) => {
   if (!bytes) return "—";
   if (bytes < 1024) return `${bytes} B`;
@@ -36,7 +37,11 @@ const formatSize = (bytes: number | null) => {
   return `${(bytes / 1048576).toFixed(1)} MB`;
 };
 
-const isImage = (mime: string | null) => !!mime && mime.startsWith("image/");
+interface Props {
+  entityType: DocumentEntityType;
+  entityId: string;
+  title?: string;
+}
 
 export default function EntiteitDocumenten({ entityType, entityId, title = "Documenten & foto's" }: Props) {
   const { profile } = useAuth();
@@ -49,22 +54,18 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [deleteDoc, setDeleteDoc] = useState<Document | null>(null);
+  const [localOrder, setLocalOrder] = useState<Document[] | null>(null);
 
   const canUpload =
-    profile?.rol === "superadmin" ||
-    profile?.rol === "partner_admin" ||
-    profile?.rol === "partner_staff" ||
-    profile?.rol === "backoffice" ||
-    profile?.rol === "adviseur" ||
-    profile?.rol === "installateur";
-
+    profile?.rol === "superadmin" || profile?.rol === "partner_admin" ||
+    profile?.rol === "partner_staff" || profile?.rol === "backoffice" ||
+    profile?.rol === "adviseur" || profile?.rol === "installateur";
   const canDeleteAll =
-    profile?.rol === "superadmin" ||
-    profile?.rol === "partner_admin" ||
-    profile?.rol === "partner_staff" ||
-    profile?.rol === "backoffice";
-
+    profile?.rol === "superadmin" || profile?.rol === "partner_admin" ||
+    profile?.rol === "partner_staff" || profile?.rol === "backoffice";
   const canRename = canDeleteAll;
+  const canReorder = canDeleteAll;
 
   const queryKey = ["entiteit-documenten", entityType, entityId];
 
@@ -77,16 +78,17 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
         .select("*")
         .eq("entity_type", entityType)
         .eq("entity_id", entityId)
+        .order("volgorde", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Document[];
     },
   });
 
+  const geordend = useMemo(() => localOrder ?? documenten, [localOrder, documenten]);
+
   const resetForm = () => {
-    setFile(null);
-    setDocType("overig");
-    setBeschrijving("");
+    setFile(null); setDocType("overig"); setBeschrijving("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -101,6 +103,7 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
       const { error: uploadError } = await supabase.storage.from("product-images").upload(path, file);
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+      const nextVolgorde = (documenten.reduce((max, d: any) => Math.max(max, d.volgorde ?? 0), 0)) + 1;
       const { error } = await supabase.from("documenten").insert({
         partner_id: profile!.partner_id!,
         entity_type: entityType,
@@ -112,7 +115,8 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
         mime_type: file.type,
         geupload_door_id: profile!.id,
         beschrijving: beschrijving || null,
-      });
+        volgorde: nextVolgorde,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -125,13 +129,32 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("documenten").delete().eq("id", id);
+    mutationFn: async (doc: Document) => {
+      const { error } = await supabase.from("documenten").delete().eq("id", doc.id);
       if (error) throw error;
+      // Audit-log
+      const { error: logErr } = await supabase.from("audit_log").insert({
+        partner_id: doc.partner_id,
+        actor_id: profile?.id ?? null,
+        actie: "delete",
+        entity_type: "documenten",
+        entity_id: doc.id,
+        oude_waarde: {
+          naam: doc.naam,
+          type: doc.type,
+          bestand_url: doc.bestand_url,
+          bestand_grootte: doc.bestand_grootte,
+          mime_type: doc.mime_type,
+          entity_type: doc.entity_type,
+          entity_id: doc.entity_id,
+        } as any,
+      } as any);
+      if (logErr) console.warn("Audit log opslaan mislukt", logErr);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       toast.success("Document verwijderd");
+      setDeleteDoc(null);
     },
     onError: (err: Error) => toast.error("Verwijderen mislukt", { description: err.message }),
   });
@@ -147,28 +170,58 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       toast.success("Naam bijgewerkt");
-      setRenameId(null);
-      setRenameValue("");
+      setRenameId(null); setRenameValue("");
     },
     onError: (err: Error) => toast.error("Wijzigen mislukt", { description: err.message }),
   });
 
-  const startRename = (d: Document) => {
-    setRenameId(d.id);
-    setRenameValue(d.naam);
-  };
-  const cancelRename = () => { setRenameId(null); setRenameValue(""); };
+  const reorderMutation = useMutation({
+    mutationFn: async (ordered: Document[]) => {
+      // Update volgorde per document. Bewuste batching: één statement per rij.
+      for (let i = 0; i < ordered.length; i++) {
+        const { error } = await supabase
+          .from("documenten")
+          .update({ volgorde: i + 1 } as any)
+          .eq("id", ordered[i].id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("Volgorde opgeslagen");
+      setLocalOrder(null);
+    },
+    onError: (err: Error) => {
+      toast.error("Sorteren mislukt", { description: err.message });
+      setLocalOrder(null); // fallback naar server-order
+    },
+  });
 
-  const isPdf = (mime: string | null) => mime === "application/pdf";
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = geordend.findIndex((d) => d.id === active.id);
+    const newIndex = geordend.findIndex((d) => d.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(geordend, oldIndex, newIndex);
+    setLocalOrder(next);
+    reorderMutation.mutate(next);
+  };
+
+  const startRename = (d: Document) => { setRenameId(d.id); setRenameValue(d.naam); };
+  const cancelRename = () => { setRenameId(null); setRenameValue(""); };
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" /> {title}
-          {documenten.length > 0 && (
-            <Badge variant="secondary" className="ml-1">{documenten.length}</Badge>
-          )}
+          {documenten.length > 0 && <Badge variant="secondary" className="ml-1">{documenten.length}</Badge>}
         </CardTitle>
         {canUpload && (
           <Button size="sm" onClick={() => setDialogOpen(true)} className="rounded-pill gap-2">
@@ -190,169 +243,56 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
             )}
           </div>
         ) : (
-          <div className="space-y-2">
-            {documenten.map((d) => {
-              const mayDelete = canDeleteAll || d.geupload_door_id === profile?.id;
-              const image = isImage(d.mime_type);
-              const editing = renameId === d.id;
-              return (
-                <div key={d.id} className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDoc(d)}
-                    className="flex items-center gap-3 min-w-0 flex-1 text-left group"
-                    aria-label={`Preview van ${d.naam}`}
-                  >
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-border group-hover:ring-primary/40 transition">
-                      {image ? (
-                        <img
-                          src={d.bestand_url}
-                          alt={d.naam}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <FileText className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      {editing ? (
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Input
-                            autoFocus
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") { e.preventDefault(); renameMutation.mutate({ id: d.id, naam: renameValue }); }
-                              if (e.key === "Escape") { e.preventDefault(); cancelRename(); }
-                            }}
-                            className="h-8 text-sm"
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-success"
-                            onClick={(e) => { e.preventDefault(); renameMutation.mutate({ id: d.id, naam: renameValue }); }}
-                            disabled={renameMutation.isPending}
-                            aria-label="Opslaan"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={(e) => { e.preventDefault(); cancelRename(); }}
-                            aria-label="Annuleren"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm font-medium truncate group-hover:text-primary transition">{d.naam}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline" className="h-4 px-1.5 text-[10px]">{docTypeLabels[d.type]}</Badge>
-                        <span>{formatSize(d.bestand_grootte)}</span>
-                        <span>•</span>
-                        <span>{new Date(d.created_at).toLocaleDateString("nl-NL")}</span>
-                      </div>
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {canRename && !editing && (
-                      <Button variant="ghost" size="icon" onClick={() => startRename(d)} aria-label="Naam wijzigen">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={d.bestand_url} target="_blank" rel="noopener noreferrer" aria-label="Openen">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={d.bestand_url} download={d.naam} aria-label="Downloaden">
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
-                    {mayDelete && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive" aria-label="Verwijderen">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Document verwijderen</AlertDialogTitle>
-                            <AlertDialogDescription>Weet je zeker dat je "{d.naam}" wilt verwijderen?</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteMutation.mutate(d.id)} className="bg-destructive text-destructive-foreground">
-                              Verwijderen
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={geordend.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {geordend.map((d) => (
+                  <SortableDocumentRow
+                    key={d.id}
+                    doc={d}
+                    editing={renameId === d.id}
+                    renameValue={renameValue}
+                    renamePending={renameMutation.isPending}
+                    canRename={canRename}
+                    canReorder={canReorder}
+                    mayDelete={canDeleteAll || d.geupload_door_id === profile?.id}
+                    onPreview={setPreviewDoc}
+                    onStartRename={startRename}
+                    onCancelRename={cancelRename}
+                    onRenameChange={setRenameValue}
+                    onRenameSubmit={(doc) => renameMutation.mutate({ id: doc.id, naam: renameValue })}
+                    onDeleteRequest={setDeleteDoc}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </CardContent>
 
-      <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="truncate pr-8">{previewDoc?.naam}</DialogTitle>
-          </DialogHeader>
-          {previewDoc && (
-            <div className="space-y-3">
-              <div className="rounded-xl bg-muted/40 overflow-hidden flex items-center justify-center max-h-[70vh]">
-                {isImage(previewDoc.mime_type) ? (
-                  <img
-                    src={previewDoc.bestand_url}
-                    alt={previewDoc.naam}
-                    className="max-h-[70vh] w-auto object-contain"
-                  />
-                ) : isPdf(previewDoc.mime_type) ? (
-                  <iframe
-                    src={previewDoc.bestand_url}
-                    title={previewDoc.naam}
-                    className="w-full h-[70vh]"
-                  />
-                ) : (
-                  <div className="p-10 text-center">
-                    <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Geen inline preview beschikbaar voor dit bestandstype.</p>
-                  </div>
-                )}
-              </div>
-              {previewDoc.beschrijving && (
-                <p className="text-sm text-muted-foreground">{previewDoc.beschrijving}</p>
-              )}
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{docTypeLabels[previewDoc.type]} • {formatSize(previewDoc.bestand_grootte)} • {new Date(previewDoc.created_at).toLocaleDateString("nl-NL")}</span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" asChild className="rounded-pill">
-                    <a href={previewDoc.bestand_url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3.5 w-3.5 mr-1" /> Openen
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild className="rounded-pill">
-                    <a href={previewDoc.bestand_url} download={previewDoc.naam}>
-                      <Download className="h-3.5 w-3.5 mr-1" /> Downloaden
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <DocumentPreviewDialog doc={previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)} />
+
+      <AlertDialog open={!!deleteDoc} onOpenChange={(o) => !o && setDeleteDoc(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Document verwijderen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je "{deleteDoc?.naam}" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+              De verwijdering wordt geregistreerd in het audit-log met jouw naam en tijdstip.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteDoc && deleteMutation.mutate(deleteDoc)}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground"
+            >
+              {deleteMutation.isPending ? "Bezig..." : "Verwijderen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="max-w-md">
@@ -369,9 +309,7 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
                 className="rounded-xl"
               />
               {file && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {file.name} • {formatSize(file.size)}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{file.name} • {formatSize(file.size)}</p>
               )}
             </div>
             <div>
