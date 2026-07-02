@@ -588,20 +588,45 @@ export default function FactuurNieuw() {
           </CardHeader>
           <CardContent className="space-y-4">
             {isInkoop(docType) ? (
-              <div className="space-y-2">
-                <Label>Leverancier</Label>
-                <Select value={leverancierId} onValueChange={setLeverancierId}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Leverancier</Label>
+                  <Select value={leverancierId} onValueChange={setLeverancierId}>
                   <SelectTrigger><SelectValue placeholder="Selecteer leverancier" /></SelectTrigger>
                   <SelectContent>
                     {leveranciers.map((l) => (
                       <SelectItem key={l.id} value={l.id}>{l.naam}</SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
-                {leveranciers.length === 0 && (
-                  <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/leveranciers")}>
-                    + Leverancier toevoegen
-                  </Button>
+                  </Select>
+                  {leveranciers.length === 0 && (
+                    <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/leveranciers")}>
+                      + Leverancier toevoegen
+                    </Button>
+                  )}
+                </div>
+
+                {bronOpdrachtId && (
+                  <div className="rounded-lg border border-dashed p-3 space-y-2 bg-muted/20">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium">Samengestelde producten uitklappen</Label>
+                        <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                          Zet aan om bundels te bestellen als losse componenten (voorraad en SN per component). Zet uit om de bundel als één regel te bestellen bij een leverancier die de bundel kant-en-klaar levert.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={expandBundles}
+                        onCheckedChange={handleToggleExpandBundles}
+                        disabled={rePrefilling}
+                      />
+                    </div>
+                    {bundlePrefillInfo && bundlePrefillInfo.expandedBundles > 0 && expandBundles && (
+                      <p className="text-[11px] text-primary">
+                        {bundlePrefillInfo.expandedBundles} bundel(s) uitgeklapt naar {bundlePrefillInfo.totalComponentLines} componentregels.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             ) : docType === "pakbon" ? (
