@@ -4,7 +4,30 @@ import html2canvas from "html2canvas";
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
+/** Wacht tot alle fonts en <img> binnen `el` klaar zijn (voorkomt gebroken plaatjes in canvas). */
+async function waitForAssets(el: HTMLElement): Promise<void> {
+  try {
+    if (typeof (document as any).fonts?.ready?.then === "function") {
+      await (document as any).fonts.ready;
+    }
+  } catch { /* noop */ }
+  const imgs = Array.from(el.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map((img) => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        const done = () => resolve();
+        img.addEventListener("load", done, { once: true });
+        img.addEventListener("error", done, { once: true });
+        // Failsafe timeout — nooit langer wachten dan 4s per plaatje
+        setTimeout(done, 4000);
+      });
+    }),
+  );
+}
+
 async function captureCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
+  await waitForAssets(el);
   const width = Math.max(el.scrollWidth, el.offsetWidth, 1);
   const height = Math.max(el.scrollHeight, el.offsetHeight, 1);
 
@@ -13,6 +36,7 @@ async function captureCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
     useCORS: true,
     backgroundColor: "#ffffff",
     logging: false,
+    imageTimeout: 8000,
     width,
     height,
     windowWidth: Math.max(width, window.innerWidth),
@@ -55,21 +79,42 @@ function isCanvasEffectivelyBlank(canvas: HTMLCanvasElement): boolean {
   }
 }
 
-function addCanvasToPdf(pdf: jsPDF, canvas: HTMLCanvasElement) {
-  const imgData = canvas.toDataURL("image/jpeg", 0.92);
-  const imgWidth = A4_WIDTH_MM;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+/**
+ * Snijdt de bron-canvas in A4-pagina's en voegt elke pagina afzonderlijk toe als
+ * losse JPEG. Dit voorkomt dat dezelfde grote afbeelding meerdere keren in de
+ * PDF terechtkomt (was de oorzaak van onnodig zware bestanden bij lange rapporten).
+ */
+function addCanvasToPdfPaged(pdf: jsPDF, source: HTMLCanvasElement) {
+  const pxPerMm = source.width / A4_WIDTH_MM;
+  const pageHeightPx = Math.floor(A4_HEIGHT_MM * pxPerMm);
+  const totalHeightPx = source.height;
+  const pageCount = Math.max(1, Math.ceil(totalHeightPx / pageHeightPx));
 
-  let heightLeft = imgHeight;
-  let position = 0;
-  pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-  heightLeft -= A4_HEIGHT_MM;
+  for (let i = 0; i < pageCount; i++) {
+    const sy = i * pageHeightPx;
+    const sliceHeight = Math.min(pageHeightPx, totalHeightPx - sy);
+    const pageCanvas = document.createElement("canvas");
+    pageCanvas.width = source.width;
+    pageCanvas.height = sliceHeight;
+    const ctx = pageCanvas.getContext("2d");
+    if (!ctx) continue;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    ctx.drawImage(source, 0, sy, source.width, sliceHeight, 0, 0, source.width, sliceHeight);
 
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-    heightLeft -= A4_HEIGHT_MM;
+    const imgData = pageCanvas.toDataURL("image/jpeg", 0.82);
+    const renderHeightMm = (sliceHeight / source.width) * A4_WIDTH_MM;
+    if (i > 0) pdf.addPage();
+    pdf.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, renderHeightMm, undefined, "FAST");
+  }
+
+  // Paginanummers onderaan elke pagina
+  const total = pdf.getNumberOfPages();
+  pdf.setFontSize(8);
+  pdf.setTextColor(120);
+  for (let p = 1; p <= total; p++) {
+    pdf.setPage(p);
+    pdf.text(`Pagina ${p} van ${total}`, A4_WIDTH_MM - 15, A4_HEIGHT_MM - 6, { align: "right" });
   }
 }
 
@@ -80,8 +125,9 @@ export async function renderElementToPdfBlob(el: HTMLElement): Promise<Blob> {
       "PDF-render is leeg (geen tekst zichtbaar in canvas). Mogelijk is de bron-container niet zichtbaar gerenderd.",
     );
   }
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  addCanvasToPdf(pdf, canvas);
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+  pdf.setProperties({ creator: "mijnhuis.nu", producer: "mijnhuis.nu" });
+  addCanvasToPdfPaged(pdf, canvas);
   return pdf.output("blob");
 }
 
