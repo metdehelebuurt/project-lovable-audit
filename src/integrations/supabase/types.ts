@@ -7099,6 +7099,13 @@ export type Database = {
           status: string
           template_versie: string
           updated_at: string
+          vervallen: boolean
+          vervallen_door: string | null
+          vervallen_op: string | null
+          vervallen_reden: string | null
+          vervallen_reden_categorie: string | null
+          vervangen_door_id: string | null
+          vervangt_id: string | null
           visuele_inspectie: Json
         }
         Insert: {
@@ -7138,6 +7145,13 @@ export type Database = {
           status?: string
           template_versie?: string
           updated_at?: string
+          vervallen?: boolean
+          vervallen_door?: string | null
+          vervallen_op?: string | null
+          vervallen_reden?: string | null
+          vervallen_reden_categorie?: string | null
+          vervangen_door_id?: string | null
+          vervangt_id?: string | null
           visuele_inspectie?: Json
         }
         Update: {
@@ -7177,6 +7191,13 @@ export type Database = {
           status?: string
           template_versie?: string
           updated_at?: string
+          vervallen?: boolean
+          vervallen_door?: string | null
+          vervallen_op?: string | null
+          vervallen_reden?: string | null
+          vervallen_reden_categorie?: string | null
+          vervangen_door_id?: string | null
+          vervangt_id?: string | null
           visuele_inspectie?: Json
         }
         Relationships: [
@@ -7234,6 +7255,27 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_vervallen_door_fkey"
+            columns: ["vervallen_door"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_vervangen_door_id_fkey"
+            columns: ["vervangen_door_id"]
+            isOneToOne: false
+            referencedRelation: "opleverrapporten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_vervangt_id_fkey"
+            columns: ["vervangt_id"]
+            isOneToOne: false
+            referencedRelation: "opleverrapporten"
             referencedColumns: ["id"]
           },
         ]
