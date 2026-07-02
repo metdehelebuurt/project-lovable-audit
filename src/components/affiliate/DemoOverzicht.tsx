@@ -462,13 +462,29 @@ function Sectie({ label, kleur, items, navigate, onAfvink, onVerzet, onSnelVerze
                   {reminderPending === r.id ? "Bezig…" : "Reminder"}
                 </Button>
               )}
-              {onVerzet && !r.afgehandeld_op && (
+              {onReminders && !r.afgehandeld_op && (
                 <Button
                   size="sm" variant="outline"
-                  onClick={(e) => { e.stopPropagation(); onVerzet(r); }}
-                  title="Demo verzetten"
+                  onClick={(e) => { e.stopPropagation(); onReminders(r); }}
+                  title="Reminders beheren"
                 >
-                  <CalendarClock className="h-3 w-3 mr-1" /> Verzet
+                  <BellRing className="h-3 w-3" />
+                </Button>
+              )}
+              {onSnelVerzet && onVerzet && !r.afgehandeld_op && (
+                <QuickRescheduleMenu
+                  huidigGeplandOp={r.geplande_op}
+                  onKies={(dt) => onSnelVerzet(r, dt)}
+                  onCustom={() => onVerzet(r)}
+                />
+              )}
+              {onBewerk && (
+                <Button
+                  size="sm" variant="ghost"
+                  onClick={(e) => { e.stopPropagation(); onBewerk(r); }}
+                  title="Bewerken"
+                >
+                  <Pencil className="h-3 w-3" />
                 </Button>
               )}
               {onAfvink && !r.afgehandeld_op && (
