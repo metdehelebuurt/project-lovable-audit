@@ -10,6 +10,7 @@ export interface DemoAfspraakRow {
   notitie: string | null;
   afgehandeld_op: string | null;
   noshow: boolean | null;
+  reminder_24u_op: string | null;
   affiliate_leads: {
     bedrijfsnaam: string | null;
     contactpersoon: string | null;
@@ -35,7 +36,7 @@ export function useAlleDemoAfspraken(scope: "open" | "alle" = "open") {
       let q = supabase
         .from("affiliate_terugbel_afspraken")
         .select(
-          `id, lead_id, affiliate_id, collega_user_id, geplande_op, notitie, afgehandeld_op, noshow,
+          `id, lead_id, affiliate_id, collega_user_id, geplande_op, notitie, afgehandeld_op, noshow, reminder_24u_op,
            affiliate_leads:lead_id (bedrijfsnaam, contactpersoon, telefoon, email),
            eigenaar:affiliate_id (id, voornaam, achternaam, email)`,
         )

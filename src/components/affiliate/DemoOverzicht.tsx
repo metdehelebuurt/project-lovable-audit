@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarClock, CheckCircle2, Mail, Phone, Search, Sparkles, UserPlus } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  AlarmClock, BellRing, CalendarClock, CheckCircle2, Mail, Phone, Search, Send, Sparkles, UserPlus,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,12 +30,34 @@ function isBinnen(datum: Date, van: Date, tot: Date) {
   return datum >= van && datum <= tot;
 }
 
+/** Volgende werkdag (op vrijdag/za/zo → maandag, anders morgen). */
+function nextWorkday(from: Date = new Date()): Date {
+  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  do {
+    d.setDate(d.getDate() + 1);
+  } while (d.getDay() === 0 || d.getDay() === 6);
+  return d;
+}
+
+function sameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+/** ISO-string voor <input type="datetime-local"> zonder tijdzone-shift. */
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function DemoOverzicht() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [periode, setPeriode] = useState<Periode>("open");
   const [affiliateId, setAffiliateId] = useState<string>("alle");
   const [zoek, setZoek] = useState("");
+  const [verzetAfspraak, setVerzetAfspraak] = useState<DemoAfspraakRow | null>(null);
+  const [verzetTijd, setVerzetTijd] = useState<string>("");
 
   const scope = periode === "historie" ? "alle" : "open";
   const { data: rows = [], isLoading } = useAlleDemoAfspraken(scope);
@@ -46,6 +74,7 @@ export function DemoOverzicht() {
   const eindVandaag = new Date(); eindVandaag.setHours(23, 59, 59, 999);
   const eindWeek = new Date(Date.now() + 7 * 86400_000); eindWeek.setHours(23, 59, 59, 999);
   const startMaand = new Date(nu.getFullYear(), nu.getMonth(), 1);
+  const morgenWerkdag = useMemo(() => nextWorkday(nu), [nu]);
 
   const gefilterd = useMemo(() => {
     const q = zoek.trim().toLowerCase();
@@ -70,22 +99,24 @@ export function DemoOverzicht() {
   }, [rows, affiliateId, zoek, periode, eindVandaag, eindWeek]);
 
   const kpi = useMemo(() => {
-    let vandaag = 0, week = 0, achterstallig = 0, afgehandeld = 0;
+    let vandaag = 0, week = 0, achterstallig = 0, afgehandeld = 0, morgen = 0;
     for (const r of rows) {
       const d = new Date(r.geplande_op);
       if (!r.afgehandeld_op) {
         if (d < nu) achterstallig++;
         if (d <= eindVandaag && d >= nu) vandaag++;
         if (d <= eindWeek && d >= nu) week++;
+        if (sameDay(d, morgenWerkdag)) morgen++;
       } else if (new Date(r.afgehandeld_op) >= startMaand) {
         afgehandeld++;
       }
     }
-    return { vandaag, week, achterstallig, afgehandeld };
-  }, [rows, nu, eindVandaag, eindWeek, startMaand]);
+    return { vandaag, week, achterstallig, afgehandeld, morgen };
+  }, [rows, nu, eindVandaag, eindWeek, startMaand, morgenWerkdag]);
 
   const groepen = useMemo(() => {
     const out = {
+      morgen: [] as DemoAfspraakRow[],
       achterstallig: [] as DemoAfspraakRow[],
       vandaag: [] as DemoAfspraakRow[],
       week: [] as DemoAfspraakRow[],
@@ -95,13 +126,14 @@ export function DemoOverzicht() {
     for (const r of gefilterd) {
       if (r.afgehandeld_op) { out.afgehandeld.push(r); continue; }
       const d = new Date(r.geplande_op);
+      if (sameDay(d, morgenWerkdag)) { out.morgen.push(r); continue; }
       if (d < nu) out.achterstallig.push(r);
       else if (d <= eindVandaag) out.vandaag.push(r);
       else if (d <= eindWeek) out.week.push(r);
       else out.later.push(r);
     }
     return out;
-  }, [gefilterd, nu, eindVandaag, eindWeek]);
+  }, [gefilterd, nu, eindVandaag, eindWeek, morgenWerkdag]);
 
   const afvink = useMutation({
     mutationFn: async (id: string) => {
@@ -118,13 +150,53 @@ export function DemoOverzicht() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const verzet = useMutation({
+    mutationFn: async ({ id, nieuweTijd }: { id: string; nieuweTijd: string }) => {
+      const iso = new Date(nieuweTijd).toISOString();
+      const { error } = await supabase
+        .from("affiliate_terugbel_afspraken")
+        .update({ geplande_op: iso, reminder_24u_op: null, reminder_1u_op: null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["alle-demo-afspraken"] });
+      toast.success("Demo verzet");
+      setVerzetAfspraak(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const stuurReminder = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke("affiliate-afspraak-reminder", {
+        body: { afspraakId: id },
+      });
+      if (error) throw error;
+      if (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) {
+        throw new Error((data as { error: string }).error);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["alle-demo-afspraken"] });
+      toast.success("Herinnerings-mail naar klant verstuurd");
+    },
+    onError: (e: Error) => toast.error(e.message || "Verzenden mislukt"),
+  });
+
+  const openVerzet = (r: DemoAfspraakRow) => {
+    setVerzetAfspraak(r);
+    setVerzetTijd(toLocalInput(r.geplande_op));
+  };
+
   const totaal = gefilterd.length;
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <KpiKaart label="Achterstallig" waarde={kpi.achterstallig} kleur="bg-rose-50 text-rose-700 border-rose-200" />
         <KpiKaart label="Vandaag" waarde={kpi.vandaag} kleur="bg-amber-50 text-amber-800 border-amber-200" />
+        <KpiKaart label="Morgen (nabellen)" waarde={kpi.morgen} kleur="bg-violet-50 text-violet-800 border-violet-200" />
         <KpiKaart label="Komende 7 dagen" waarde={kpi.week} kleur="bg-blue-50 text-blue-800 border-blue-200" />
         <KpiKaart label="Afgerond deze maand" waarde={kpi.afgehandeld} kleur="bg-emerald-50 text-emerald-800 border-emerald-200" />
       </div>
@@ -175,27 +247,86 @@ export function DemoOverzicht() {
           )}
 
           <Sectie
+            label={`Morgen — nabellen om no-show te voorkomen (${morgenWerkdag.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" })})`}
+            kleur="bg-violet-100 text-violet-800 border-violet-300"
+            highlight
+            items={groepen.morgen} navigate={navigate}
+            onAfvink={(id) => afvink.mutate(id)}
+            onVerzet={openVerzet}
+            onReminder={(id) => stuurReminder.mutate(id)}
+            reminderPending={stuurReminder.isPending ? stuurReminder.variables : undefined}
+            morgenWerkdag={morgenWerkdag}
+          />
+          <Sectie
             label="Achterstallig" kleur="bg-rose-100 text-rose-800 border-rose-300"
-            items={groepen.achterstallig} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+            items={groepen.achterstallig} navigate={navigate}
+            onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            morgenWerkdag={morgenWerkdag}
           />
           <Sectie
             label="Vandaag" kleur="bg-amber-100 text-amber-800 border-amber-300"
-            items={groepen.vandaag} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+            items={groepen.vandaag} navigate={navigate}
+            onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            morgenWerkdag={morgenWerkdag}
           />
           <Sectie
             label="Komende 7 dagen" kleur="bg-blue-100 text-blue-800 border-blue-300"
-            items={groepen.week} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+            items={groepen.week} navigate={navigate}
+            onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            onReminder={(id) => stuurReminder.mutate(id)}
+            reminderPending={stuurReminder.isPending ? stuurReminder.variables : undefined}
+            morgenWerkdag={morgenWerkdag}
           />
           <Sectie
             label="Later" kleur="bg-slate-100 text-slate-700 border-slate-300"
-            items={groepen.later} navigate={navigate} onAfvink={(id) => afvink.mutate(id)}
+            items={groepen.later} navigate={navigate}
+            onAfvink={(id) => afvink.mutate(id)} onVerzet={openVerzet}
+            morgenWerkdag={morgenWerkdag}
           />
           <Sectie
             label="Afgerond" kleur="bg-emerald-100 text-emerald-800 border-emerald-300"
             items={groepen.afgehandeld} navigate={navigate}
+            morgenWerkdag={morgenWerkdag}
           />
         </CardContent>
       </Card>
+
+      <Dialog open={!!verzetAfspraak} onOpenChange={(o) => !o && setVerzetAfspraak(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Demo verzetten</DialogTitle>
+            <DialogDescription>
+              Kies een nieuw moment. De klant ontvangt geen automatische update — stuur zelf een reminder/mail.
+            </DialogDescription>
+          </DialogHeader>
+          {verzetAfspraak && (
+            <div className="space-y-3">
+              <p className="text-sm">
+                <span className="font-medium">{verzetAfspraak.affiliate_leads?.bedrijfsnaam ?? "Lead"}</span>
+                {verzetAfspraak.affiliate_leads?.contactpersoon ? ` · ${verzetAfspraak.affiliate_leads.contactpersoon}` : ""}
+              </p>
+              <div className="space-y-1">
+                <Label htmlFor="verzet-tijd">Nieuwe datum & tijd</Label>
+                <Input
+                  id="verzet-tijd"
+                  type="datetime-local"
+                  value={verzetTijd}
+                  onChange={(e) => setVerzetTijd(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setVerzetAfspraak(null)}>Annuleren</Button>
+            <Button
+              onClick={() => verzetAfspraak && verzetTijd && verzet.mutate({ id: verzetAfspraak.id, nieuweTijd: verzetTijd })}
+              disabled={!verzetTijd || verzet.isPending}
+            >
+              {verzet.isPending ? "Bezig…" : "Verzetten"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -215,14 +346,21 @@ interface SectieProps {
   items: DemoAfspraakRow[];
   navigate: ReturnType<typeof useNavigate>;
   onAfvink?: (id: string) => void;
+  onVerzet?: (r: DemoAfspraakRow) => void;
+  onReminder?: (id: string) => void;
+  reminderPending?: string;
+  highlight?: boolean;
+  morgenWerkdag: Date;
 }
 
-function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
+function Sectie({ label, kleur, items, navigate, onAfvink, onVerzet, onReminder, reminderPending, highlight, morgenWerkdag }: SectieProps) {
   if (items.length === 0) return null;
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${highlight ? "rounded-lg border border-violet-300 bg-violet-50/50 p-3" : ""}`}>
       <div className="flex items-center gap-2">
-        <h4 className="text-sm font-semibold">{label}</h4>
+        <h4 className={`text-sm font-semibold ${highlight ? "text-violet-900 flex items-center gap-1.5" : ""}`}>
+          {highlight && <BellRing className="h-4 w-4" />} {label}
+        </h4>
         <Badge variant="outline" className={kleur}>{items.length}</Badge>
       </div>
       <div className="space-y-2">
@@ -232,6 +370,8 @@ function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
           const tel = telLink(r.affiliate_leads?.telefoon);
           const email = r.affiliate_leads?.email;
           const gedelegeerd = r.collega_user_id && r.collega_user_id !== r.affiliate_id;
+          const isMorgen = sameDay(new Date(r.geplande_op), morgenWerkdag);
+          const reminderTijd = r.reminder_24u_op ? new Date(r.reminder_24u_op) : null;
           return (
             <div
               key={r.id}
@@ -239,7 +379,9 @@ function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
               tabIndex={0}
               onClick={() => navigate(`/affiliate/leads/${r.lead_id}`)}
               onKeyDown={(e) => { if (e.key === "Enter") navigate(`/affiliate/leads/${r.lead_id}`); }}
-              className="flex flex-wrap items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-muted/40 transition-colors"
+              className={`flex flex-wrap items-center gap-3 border rounded-md p-3 cursor-pointer transition-colors ${
+                highlight ? "bg-white hover:bg-violet-50/70 border-violet-200" : "hover:bg-muted/40"
+              }`}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -247,6 +389,11 @@ function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
                   <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 text-[10px] gap-1">
                     <Sparkles className="h-3 w-3" /> Demo
                   </Badge>
+                  {isMorgen && !highlight && (
+                    <Badge variant="outline" className="bg-violet-100 text-violet-800 border-violet-300 text-[10px] gap-1">
+                      <AlarmClock className="h-3 w-3" /> Morgen
+                    </Badge>
+                  )}
                   {gedelegeerd && (
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1">
                       <UserPlus className="h-3 w-3" /> Overgedragen
@@ -257,6 +404,11 @@ function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
                       No-show
                     </Badge>
                   )}
+                  {reminderTijd && (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] gap-1">
+                      <BellRing className="h-3 w-3" /> Reminder verstuurd
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {new Date(r.geplande_op).toLocaleString("nl-NL")}
@@ -264,6 +416,11 @@ function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
                   {r.notitie ? ` · ${r.notitie}` : ""}
                 </p>
                 <p className="text-[11px] text-muted-foreground">Affiliate: {affNaam(r.eigenaar)}</p>
+                {reminderTijd && (
+                  <p className="text-[11px] text-emerald-700">
+                    Reminder verstuurd om {reminderTijd.toLocaleString("nl-NL")}
+                  </p>
+                )}
               </div>
               {tel && (
                 <Button asChild size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
@@ -273,6 +430,27 @@ function Sectie({ label, kleur, items, navigate, onAfvink }: SectieProps) {
               {email && (
                 <Button asChild size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
                   <a href={`mailto:${email}`}><Mail className="h-3 w-3" /></a>
+                </Button>
+              )}
+              {onReminder && email && !r.afgehandeld_op && (
+                <Button
+                  size="sm"
+                  variant={highlight ? "default" : "outline"}
+                  onClick={(e) => { e.stopPropagation(); onReminder(r.id); }}
+                  disabled={reminderPending === r.id}
+                  title="Reminder-mail sturen naar klant"
+                >
+                  <Send className="h-3 w-3 mr-1" />
+                  {reminderPending === r.id ? "Bezig…" : "Reminder"}
+                </Button>
+              )}
+              {onVerzet && !r.afgehandeld_op && (
+                <Button
+                  size="sm" variant="outline"
+                  onClick={(e) => { e.stopPropagation(); onVerzet(r); }}
+                  title="Demo verzetten"
+                >
+                  <CalendarClock className="h-3 w-3 mr-1" /> Verzet
                 </Button>
               )}
               {onAfvink && !r.afgehandeld_op && (
