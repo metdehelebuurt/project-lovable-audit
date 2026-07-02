@@ -1007,6 +1007,48 @@ export type Database = {
           },
         ]
       }
+      affiliate_notificatie_voorkeuren: {
+        Row: {
+          browser: boolean
+          categorie: string
+          created_at: string
+          email: boolean
+          id: string
+          in_app: boolean
+          stiltijd_tot: string | null
+          stiltijd_van: string | null
+          temperaturen: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          browser?: boolean
+          categorie: string
+          created_at?: string
+          email?: boolean
+          id?: string
+          in_app?: boolean
+          stiltijd_tot?: string | null
+          stiltijd_van?: string | null
+          temperaturen?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          browser?: boolean
+          categorie?: string
+          created_at?: string
+          email?: boolean
+          id?: string
+          in_app?: boolean
+          stiltijd_tot?: string | null
+          stiltijd_van?: string | null
+          temperaturen?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       affiliate_onboarding_taken: {
         Row: {
           affiliate_id: string
