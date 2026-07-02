@@ -23,6 +23,7 @@ import GebruikerDetail from "@/pages/GebruikerDetail";
 import Adviseurs from "@/pages/Adviseurs";
 import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
+import Assemblages from "@/pages/Assemblages";
 import Voorraad from "@/pages/Voorraad";
 import Schouwen from "@/pages/Schouwen";
 import SchouwSnelstart from "@/pages/SchouwSnelstart";
