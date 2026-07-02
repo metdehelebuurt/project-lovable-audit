@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -22,6 +22,7 @@ const KEY = ["affiliate-lead-signals"] as const;
 export function useAffiliateLeadSignals() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const instanceId = useId();
 
   const query = useQuery({
     queryKey: [...KEY, user?.id],
@@ -39,7 +40,7 @@ export function useAffiliateLeadSignals() {
   useEffect(() => {
     if (!user?.id) return;
     const ch = supabase
-      .channel(`lead-signals:${user.id}`)
+      .channel(`lead-signals:${user.id}:${instanceId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notificaties", filter: `user_id=eq.${user.id}` },
@@ -47,7 +48,7 @@ export function useAffiliateLeadSignals() {
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user?.id, qc]);
+  }, [user?.id, qc, instanceId]);
 
   return query;
 }
