@@ -4,6 +4,7 @@ import { Mail, Phone, Building2, Send, AlertTriangle, MessageSquarePlus, MoreHor
 import { Button } from "@/components/ui/button";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
 import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
+import BronBadge from "@/components/sales/BronBadge";
 import ContactmomentDialog from "@/components/sales/ContactmomentDialog";
 import LeadScorePill from "@/components/sales/LeadScorePill";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
@@ -72,6 +73,12 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
         </span>
         <LeadScorePill lead={lead} showLabel={false} />
       </div>
+
+      {(lead.bron_id || lead.bron) && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          <BronBadge bronId={lead.bron_id} fallbackLabel={lead.bron ?? null} />
+        </div>
+      )}
 
       {/* Onderbalk: status + deadline */}
       <div className="flex items-center justify-between mt-2 pt-2 border-t text-[11px]">
