@@ -598,6 +598,8 @@ const Producten = () => {
                                   is_assemblage: (product as any).is_assemblage ?? false,
                                   prijs_strategie: ((product as any).prijs_strategie as "vast" | "som_componenten") || "vast",
                                   marge_opslag_percentage: Number((product as any).marge_opslag_percentage ?? 0),
+                                  omvormer_modulair: (product as any).omvormer_modulair ?? false,
+                                  heeft_backup_box: (product as any).heeft_backup_box ?? false,
                                 });
                                 toast.info("Catalogusproduct gedupliceerd — sla op om uw eigen versie te maken");
                               }}>
