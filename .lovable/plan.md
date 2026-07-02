@@ -1,43 +1,39 @@
 ## Doel
 
-Sales manager één overzicht geven van **alle geplande demo-afspraken** van álle affiliates, inclusief de demo's die op dit moment al gepland staan. Geen dubbele bron; we lezen dezelfde tabel die de affiliates zelf ook vullen.
+De sales manager 1 werkdag van tevoren attenderen op elke demo/trial die de dag erna gepland staat, zodat hij kan nabellen (no-show voorkomen), verzetten of een herinneringsmail sturen.
 
-## Bron
+## Waar
 
-`affiliate_terugbel_afspraken` met `type = 'demo'`. RLS staat sales managers al toe alles te lezen (policy `sales_admin_full_access` op basis van `is_sales_admin`), dus er is geen schemawijziging nodig — bestaande demo's verschijnen automatisch.
+Alles landt in het bestaande demo-overzicht (`AffiliateBeheer` → tab "Demo's"). Geen nieuwe pagina, wel een prominente sectie plus actieknoppen per rij.
 
-## UI
+## Wijzigingen in de UI (`DemoOverzicht.tsx`)
 
-### Nieuwe tab "Demo's" in `AffiliateBeheer` (`/affiliate-beheer`)
+1. **KPI-tegel "Morgen"** toegevoegd in de bovenste rij (naast Achterstallig / Vandaag / Komende 7 dagen / Afgerond deze maand). Werkdag-slim: op vrijdag = maandag; anders = kalender-morgen.
+2. **Sectie "Morgen — nabellen voor no-show"**, violet gemarkeerd, komt boven "Achterstallig". Toont alle open demo's die op de volgende werkdag vallen. Compacte call-to-action links: **Bel**, **Verzet**, **Reminder mailen**.
+3. **Verzet-dialog** — kleine dialog met datum-tijd-picker. Update `geplande_op` op `affiliate_terugbel_afspraken` (RLS via `sales_admin_full_access` staat dit toe). Bij succes: query invalideren en toast.
+4. **Reminder mailen** — knop roept een nieuwe edge function `affiliate-afspraak-reminder` aan met `afspraakId`. Toast bij succes/falen. Verstuur alleen naar de klant; de affiliate ziet het in de tijdlijn via bestaande logging.
+5. **Automatische signalering** — voor elke rij die op de volgende werkdag valt, een kleine violette "Morgen"-badge in alle secties (ook als de filter breder staat).
 
-Toegevoegd naast de bestaande tabs (Affiliates / Referrals / Kortingscodes / Koude leads / Uitbetalingen / Instellingen).
+Optioneel: In de dashboard-tegel "Geplande demo's" tonen we een klein aantal-badge (aantal demo's morgen) via dezelfde hook; als dat te veel kost skippen we het en houden we het bij de KPI in het overzicht.
 
-Layout:
+## Nieuwe edge function `affiliate-afspraak-reminder`
 
-- **Filterbalk**: periode (Vandaag / Deze week / Alle open / Historie), affiliate-dropdown (alle affiliates).
-- **KPI-rij**: aantal demo's vandaag, deze week, achterstallig, afgehandeld deze maand.
-- **Groepen** (vergelijkbaar met affiliate-agenda, maar globaal):
-  - Achterstallig — rood
-  - Vandaag — amber
-  - Komende 7 dagen — blauw
-  - Later — grijs
-  - Afgehandeld (optioneel, alleen bij filter "historie") — groen
-- Per rij: bedrijfsnaam + contactpersoon (join op `affiliate_leads`), datum/tijd, affiliate-eigenaar, notitie, badges (Demo, "Aan collega toegewezen" wanneer `collega_user_id` gevuld en ≠ affiliate_id), en snelle acties: openen lead, e-mailen, afvinken.
+- Input: `{ afspraakId: string }`.
+- Auth: JWT verplicht; toegestaan als de aanroeper `superadmin` of `sales_manager` is, of eigenaar/collega van de afspraak (bestaande `is_sales_admin` check hergebruiken via SQL, of `has_role`).
+- Haalt afspraak + lead + affiliate op, valideert `type='demo'`, valideert dat de datum in de toekomst ligt en dat er nog niet binnen 12 uur eerder een reminder is verstuurd (nieuw kolommetje `reminder_verstuurd_op` staat al klaar via `reminder_24u_op` / `reminder_1u_op` — we gebruiken `reminder_24u_op` als marker).
+- Stuurt via bestaand pad (dezelfde SendGrid/notify-implementatie in `affiliate-afspraak-notify`) een klant-reminder met tijd, contactgegevens en optionele meeting-link (uit `notitie`).
+- Schrijft `reminder_24u_op = now()` terug.
+- Response: `{ ok: true, klantEmail }`.
 
-### Dashboard-tegel
+CORS + input-validatie met Zod (min: `afspraakId` als UUID).
 
-Nieuwe app-tegel in `src/lib/dashboard/apps.ts` voor sales_manager + superadmin: **"Geplande demo's"** met url `/affiliate-beheer?tab=demos`, categorie `planning`, kleur violet. Op de sales manager z'n dashboard staat de tegel dus direct zichtbaar; klik = tab pre-geselecteerd via querystring.
+## Frontend hooks
 
-## Technische wijzigingen
-
-- Nieuwe hook `src/hooks/affiliate/useAlleDemoAfspraken.ts`: haalt via één query alle rijen op met `type='demo'`, joined met `affiliate_leads(bedrijfsnaam, contactpersoon, telefoon, email)` en `users:affiliate_id(voornaam, achternaam, email)`. Filters (periode, affiliate) worden client-side toegepast op de resultaten — snel genoeg voor de te verwachten volumes.
-- Nieuwe component `src/components/affiliate/DemoOverzicht.tsx` met filterbalk, KPI's en groepen.
-- `AffiliateBeheer.tsx`: extra `TabsTrigger`/`TabsContent` "Demo's"; `defaultValue` blijft `affiliates`, maar via `?tab=demos` in de URL wordt de demo-tab actief.
-- `src/lib/dashboard/apps.ts`: nieuwe app-entry voor "Geplande demo's".
-- Afvinken hergebruikt bestaande `useAfvinkenTerugbel`.
+- `useAlleDemoAfspraken` uitbreiden zodat het ook `reminder_24u_op` teruggeeft — zo kunnen we tonen "Reminder al verstuurd om 09:12".
+- Nieuwe `useVerzetAfspraak` (update `geplande_op`) en `useStuurReminder` (invoke edge function).
 
 ## Uit scope
 
-- Kalenderweergave (list-first).
-- Bulk-herplannen.
-- Notificaties bij nieuwe demo (kan later via bestaande notificatie-triggers).
+- Push- of in-app notificaties. Zichtbaarheid via het dashboard-tegel + KPI volstaat voor v1.
+- Aparte trial-agenda (trials zijn al `type='demo'` in `affiliate_terugbel_afspraken`).
+- Automatisch versturen via cron; dat kan later bovenop hetzelfde edge function endpoint.
