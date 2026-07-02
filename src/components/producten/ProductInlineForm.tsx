@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import ProductImageUpload from "@/components/producten/ProductImageUpload";
 import SpecsEditor from "@/components/producten/SpecsEditor";
 import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
+import KostprijsHistoriePopover from "@/components/producten/KostprijsHistoriePopover";
 import type { Database } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
@@ -195,7 +196,10 @@ export default function ProductInlineForm({
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Verkoopprijs excl. BTW *</Label><Input type="number" step="0.01" value={form.prijs_excl_btw} onChange={e => setForm(p => ({ ...p, prijs_excl_btw: parseFloat(e.target.value) || 0 }))} required className="rounded-xl" /></div>
               <div>
-                <Label>Inkoopprijs (kostprijs)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Inkoopprijs (kostprijs)</Label>
+                  {editingProduct?.id && <KostprijsHistoriePopover productId={editingProduct.id} />}
+                </div>
                 <Input type="number" step="0.01" value={form.kostprijs ?? ""} onChange={e => setForm(p => ({ ...p, kostprijs: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" />
                 {form.kostprijs != null && form.prijs_excl_btw > 0 && (() => {
                   const marge = ((form.prijs_excl_btw - form.kostprijs) / form.prijs_excl_btw) * 100;

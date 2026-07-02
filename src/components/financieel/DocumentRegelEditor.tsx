@@ -3,6 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { OfferteRegel, emptyOfferteRegel, regelSubtotaal, formatCurrency } from "@/types/offerte";
 import { ProductSearchInput } from "./ProductSearchInput";
 
@@ -16,6 +18,33 @@ interface Props {
 }
 
 export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, voorInkoop }: Props) {
+  // Cache kostprijs per product_id om marge te tonen per regel
+  const [kostprijsMap, setKostprijsMap] = useState<Record<string, number | null>>({});
+  const productIds = useMemo(
+    () => Array.from(new Set(regels.map((r) => r.product_id).filter((id): id is string => !!id))),
+    [regels],
+  );
+  useEffect(() => {
+    const missing = productIds.filter((id) => !(id in kostprijsMap));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("producten").select("id, kostprijs").in("id", missing);
+      if (cancelled || !data) return;
+      setKostprijsMap((prev) => {
+        const next = { ...prev };
+        for (const id of missing) next[id] = null;
+        for (const row of data as { id: string; kostprijs: number | null }[]) {
+          next[row.id] = row.kostprijs != null ? Number(row.kostprijs) : null;
+        }
+        return next;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [productIds, kostprijsMap]);
+
   const update = (idx: number, field: keyof OfferteRegel, value: any) => {
     const copy = [...regels];
     copy[idx] = { ...copy[idx], [field]: value };
@@ -95,6 +124,23 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
                       voorInkoop={voorInkoop}
                     />
                   )}
+                  {!hidePricing && !voorInkoop && r.product_id && kostprijsMap[r.product_id] != null && r.prijs_per_stuk > 0 && (() => {
+                    const k = kostprijsMap[r.product_id!] as number;
+                    const marge = ((r.prijs_per_stuk - k) / r.prijs_per_stuk) * 100;
+                    const kleur = marge >= 20
+                      ? "bg-success/10 text-success"
+                      : marge >= 10
+                      ? "bg-warning/10 text-warning-foreground"
+                      : "bg-destructive/10 text-destructive";
+                    return (
+                      <span
+                        className={`inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${kleur}`}
+                        title={`Kostprijs ${formatCurrency(k)} → Marge ${marge.toFixed(1)}%`}
+                      >
+                        Marge {marge.toFixed(1)}%
+                      </span>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell>
                   {readOnly ? r.aantal : (
