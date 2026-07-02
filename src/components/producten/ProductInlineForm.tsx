@@ -49,6 +49,8 @@ export interface ProductFormData {
   is_assemblage: boolean;
   prijs_strategie: "vast" | "som_componenten";
   marge_opslag_percentage: number;
+  omvormer_modulair: boolean;
+  heeft_backup_box: boolean;
 }
 
 interface Props {
