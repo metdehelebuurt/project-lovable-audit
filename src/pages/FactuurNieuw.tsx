@@ -19,6 +19,8 @@ import HandmatigeVoorschotVelden, { type HandmatigSubtype } from "@/components/f
 import BetalingsvoorwaardenSelect from "@/components/shared/BetalingsvoorwaardenSelect";
 import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type OfferteConversieResult } from "@/lib/factuurFromOfferte";
 import { prefillRegelsUitOpdracht } from "@/lib/inkoopFromOpdracht";
+import { splitPerLeverancier, type LeverancierGroep } from "@/lib/inkoopSplitPerLeverancier";
+import { InkoopSplitDialog } from "@/components/inkoop/InkoopSplitDialog";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -59,6 +61,9 @@ export default function FactuurNieuw() {
   const [expandBundles, setExpandBundles] = useState(true);
   const [bundlePrefillInfo, setBundlePrefillInfo] = useState<{ expandedBundles: number; totalComponentLines: number } | null>(null);
   const [rePrefilling, setRePrefilling] = useState(false);
+  // Splitsen per leverancier
+  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+  const [splitGroepen, setSplitGroepen] = useState<LeverancierGroep[]>([]);
 
   // Eenmalige relatie state
   const [useEenmalig, setUseEenmalig] = useState(false);
