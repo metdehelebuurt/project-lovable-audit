@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ShoppingCart, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { ShoppingCart, AlertTriangle, CheckCircle2, Loader2, Barcode } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -15,6 +15,7 @@ import {
   reserveerVoorOpdracht,
   vrijgevenVoorOpdracht,
 } from "@/lib/voorraad";
+import SNToewijzingDialog from "./SNToewijzingDialog";
 
 interface OfferteRegel {
   omschrijving: string;
@@ -42,6 +43,7 @@ const OpdrachtVoorraadTab = ({ opdrachtId, partnerId, opdrachtStatus, regels }: 
   const { profile } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [snDialogOpen, setSnDialogOpen] = useState(false);
 
   const { data: producten = [] } = useQuery({
     queryKey: ["producten-voor-voorraad", partnerId],
@@ -250,9 +252,24 @@ const OpdrachtVoorraadTab = ({ opdrachtId, partnerId, opdrachtStatus, regels }: 
                 Reserveringen vrijgeven
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setSnDialogOpen(true)}
+              className="gap-2"
+            >
+              <Barcode className="h-4 w-4" />
+              Serienummers toewijzen
+            </Button>
           </div>
         )}
       </CardContent>
+      <SNToewijzingDialog
+        open={snDialogOpen}
+        onOpenChange={setSnDialogOpen}
+        opdrachtId={opdrachtId}
+        partnerId={partnerId}
+        regels={regels}
+      />
     </Card>
   );
 };
