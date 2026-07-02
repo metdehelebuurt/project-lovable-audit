@@ -19,7 +19,7 @@ import { useOpleverAutosave } from "@/components/oplever/useOpleverAutosave";
 import { downloadOpleverPdf } from "@/lib/renderOpleverPdf";
 import { patchRapport } from "@/components/oplever/api/opleverApi";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Download, FileText, ExternalLink, Lock } from "lucide-react";
+import { ArrowLeft, Download, FileText, ExternalLink, Lock, Ban, ArrowRight, History } from "lucide-react";
 import type { Opleverrapport } from "@/components/oplever/types";
 import { User, Cpu, BookCheck, Eye, Cable, ShieldCheck, Gauge, BatteryCharging, ClipboardCheck, PenLine } from "lucide-react";
 import StepNormenScope from "@/components/oplever/StepNormenScope";
@@ -33,6 +33,8 @@ import { BookOpen } from "lucide-react";
 import OpleverPdfVersies from "@/components/oplever/OpleverPdfVersies";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveSignatureToDataUrl, resolvePartnerLogoToDataUrl } from "@/lib/opleverPdfAssets";
+import VervallenDialog from "@/components/oplever/VervallenDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function OpleverDetail() {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +47,8 @@ export default function OpleverDetail() {
   const pdfRef = useRef<HTMLDivElement>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [uitgeslotenDocs, setUitgeslotenDocs] = useState<Set<string>>(new Set());
+  const [vervallenOpen, setVervallenOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   useOpleverAutosave(id, draft);
 
@@ -64,6 +68,34 @@ export default function OpleverDetail() {
       return data;
     },
     enabled: !!merged?.partner_id,
+  });
+
+  // Naam / nummer van gekoppelde rapporten voor traceability banners
+  const { data: vervangenDoor } = useQuery({
+    queryKey: ["oplever-vervangen-door", merged?.vervangen_door_id],
+    queryFn: async () => {
+      if (!merged?.vervangen_door_id) return null;
+      const { data } = await supabase
+        .from("opleverrapporten")
+        .select("id, rapportnummer, status")
+        .eq("id", merged.vervangen_door_id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!merged?.vervangen_door_id,
+  });
+  const { data: vervangt } = useQuery({
+    queryKey: ["oplever-vervangt", merged?.vervangt_id],
+    queryFn: async () => {
+      if (!merged?.vervangt_id) return null;
+      const { data } = await supabase
+        .from("opleverrapporten")
+        .select("id, rapportnummer, status")
+        .eq("id", merged.vervangt_id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!merged?.vervangt_id,
   });
 
   const { data: klantData } = useQuery({
@@ -131,6 +163,10 @@ export default function OpleverDetail() {
   });
 
   if (isLoading || !merged) return <div className="p-8 text-muted-foreground">Laden…</div>;
+
+  const kanVervallen =
+    profile?.rol === "superadmin" || profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const isVervallen = merged.status === "vervallen" || merged.vervallen === true;
 
   const update = (p: Partial<Opleverrapport>) => setDraft((d) => ({ ...d, ...p }));
 
@@ -229,8 +265,45 @@ export default function OpleverDetail() {
           <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfBusy}>
             <Download className="h-4 w-4 mr-1" /> {pdfBusy ? "Bezig…" : "PDF downloaden"}
           </Button>
+          {kanVervallen && !isVervallen ? (
+            <Button variant="outline" size="sm" onClick={() => setVervallenOpen(true)} className="text-destructive hover:text-destructive">
+              <Ban className="h-4 w-4 mr-1" /> Laten vervallen
+            </Button>
+          ) : null}
         </div>
       </div>
+
+      {isVervallen ? (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
+          <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1 space-y-1">
+            <p className="font-medium text-destructive">Dit rapport is vervallen</p>
+            {merged.vervallen_reden ? (
+              <p className="text-muted-foreground text-xs">
+                Reden: <span className="text-foreground">{merged.vervallen_reden}</span>
+                {merged.vervallen_op ? <> — {new Date(merged.vervallen_op).toLocaleString("nl-NL")}</> : null}
+              </p>
+            ) : null}
+            {vervangenDoor ? (
+              <Button variant="link" size="sm" className="h-auto p-0 text-destructive" onClick={() => nav(`/opleveringen/${vervangenDoor.id}`)}>
+                Vervangen door {vervangenDoor.rapportnummer} <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {vervangt ? (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
+          <History className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-primary">Dit rapport vervangt een eerder rapport</p>
+            <Button variant="link" size="sm" className="h-auto p-0" onClick={() => nav(`/opleveringen/${vervangt.id}`)}>
+              Origineel bekijken: {vervangt.rapportnummer} <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {merged.status === "ondertekend" ? (
         <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success-light/40 p-3 text-sm">
@@ -246,7 +319,7 @@ export default function OpleverDetail() {
         steps={steps}
         currentIndex={Math.min(stepIndex, steps.length - 1)}
         onChange={setStepIndex}
-        disabled={merged.status === "ondertekend"}
+        disabled={merged.status === "ondertekend" || isVervallen}
       />
 
       <OpleverPdfVersies rapportId={merged.id} />
@@ -346,6 +419,15 @@ export default function OpleverDetail() {
           partnerLogoDataUrl={partnerLogoDataUrl ?? null}
         />
       </div>
+
+      <VervallenDialog
+        open={vervallenOpen}
+        onOpenChange={setVervallenOpen}
+        rapport={merged}
+        onDone={() => {
+          queryClient.invalidateQueries({ queryKey: ["oplever-rapport", id] });
+        }}
+      />
     </div>
   );
 }
