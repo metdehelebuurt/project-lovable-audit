@@ -88,7 +88,7 @@ export async function prefillRegelsUitOpdracht(
         "assemblage_id, component_id, aantal, volgorde, component:producten!product_componenten_component_id_fkey(id, naam, kostprijs)",
       )
       .in("assemblage_id", bundelIds);
-    for (const c of (comps ?? []) as ComponentRow[]) {
+    for (const c of ((comps ?? []) as unknown as ComponentRow[])) {
       const list = componentenMap.get(c.assemblage_id) ?? [];
       list.push(c);
       componentenMap.set(c.assemblage_id, list);
