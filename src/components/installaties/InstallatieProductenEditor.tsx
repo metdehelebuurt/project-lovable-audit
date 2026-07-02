@@ -19,6 +19,21 @@ interface ProductHit {
   model: string | null;
 }
 
+/**
+ * Bouw een omschrijving zonder duplicatie: gebruik `naam` als die al de merknaam
+ * bevat, anders `merk + model` of `merk + naam` als fallback.
+ */
+function buildProductOmschrijving(p: ProductHit): string {
+  const naam = (p.naam ?? "").trim();
+  const merk = (p.merk ?? "").trim();
+  const model = (p.model ?? "").trim();
+  if (naam) {
+    if (merk && naam.toLowerCase().startsWith(merk.toLowerCase())) return naam;
+    return [merk, naam].filter(Boolean).join(" ");
+  }
+  return [merk, model].filter(Boolean).join(" ") || naam;
+}
+
 interface Props {
   partnerId: string;
   value: InstallatieProductRegel[];
