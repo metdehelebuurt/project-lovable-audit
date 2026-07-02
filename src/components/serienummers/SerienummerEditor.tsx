@@ -32,6 +32,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const [productId, setProductId] = useState<string>("");
   const [serienr, setSerienr] = useState("");
   const [garantieJaren, setGarantieJaren] = useState<string>("5");
+  const [componentType, setComponentType] = useState<"" | "batterij" | "omvormer" | "backup_box">("");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -42,7 +43,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     queryFn: async () => {
       const { data } = await supabase
         .from("producten")
-        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code")
+        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code, omvormer_modulair, heeft_backup_box")
         .eq("partner_id", partnerId)
         .order("naam");
       return data ?? [];
@@ -118,6 +119,18 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     if (!productId && gesuggereerd[0]) setProductId((gesuggereerd[0] as any).id);
   }, [gesuggereerd, productId]);
 
+  // Als het gekozen product géén losse componenten heeft, reset component_type.
+  const gekozenProduct: any = useMemo(
+    () => producten.find((p: any) => p.id === productId),
+    [producten, productId],
+  );
+  const heeftLosseComponenten = Boolean(
+    gekozenProduct && (gekozenProduct.omvormer_modulair || gekozenProduct.heeft_backup_box),
+  );
+  useEffect(() => {
+    if (!heeftLosseComponenten && componentType) setComponentType("");
+  }, [heeftLosseComponenten, componentType]);
+
   // Aantal geregistreerde serienummers per product_id
   const geregistreerdPerProduct = useMemo(() => {
     const map = new Map<string, number>();
@@ -151,7 +164,8 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
       garantie_maanden: months || null,
       garantie_einddatum: garantieEind,
       status: "geinstalleerd",
-    });
+      component_type: componentType || null,
+    } as any);
     setSerienr("");
   };
 
@@ -188,7 +202,8 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
           garantie_maanden: months || null,
           garantie_einddatum: garantieEind,
           status: "geinstalleerd",
-        });
+          component_type: componentType || null,
+        } as any);
         ok += 1;
       } catch {
         fout += 1;
@@ -296,6 +311,22 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             </Button>
           </div>
         </div>
+        {heeftLosseComponenten && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <Label className="text-xs">Type component voor dit serienummer</Label>
+            <Select value={componentType || "batterij"} onValueChange={(v) => setComponentType(v as any)}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="batterij">Batterij</SelectItem>
+                {gekozenProduct?.omvormer_modulair && <SelectItem value="omvormer">Omvormer</SelectItem>}
+                {gekozenProduct?.heeft_backup_box && <SelectItem value="backup_box">Backup box</SelectItem>}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Dit product heeft losse componenten. Kies per SN welk onderdeel het betreft.
+            </p>
+          </div>
+        )}
 
         {geplandePlekken.length > 0 && (
           <div className="rounded-lg border bg-muted/30 p-3">
@@ -330,6 +361,11 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
                   <div className="font-medium truncate">{s.product_naam ?? "Product"}</div>
                   <div className="text-xs text-muted-foreground">
                     SN: <span className="font-mono">{s.serienummer}</span>
+                    {(s as any).component_type && (
+                      <span className="ml-2 inline-block rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                        {(s as any).component_type === "backup_box" ? "backup box" : (s as any).component_type}
+                      </span>
+                    )}
                     {s.garantie_einddatum && ` · Garantie t/m ${new Date(s.garantie_einddatum).toLocaleDateString("nl-NL")}`}
                   </div>
                 </div>

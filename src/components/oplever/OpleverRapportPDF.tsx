@@ -120,6 +120,12 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
           label="Omvormer"
           value={`${rapport.omvormer_spec?.merk ?? ""} ${rapport.omvormer_spec?.type ?? ""} (${rapport.omvormer_spec?.vermogen_kw ?? "?"} kW, ${rapport.omvormer_spec?.fasen ?? "?"}-fase) — sn: ${formatSns(rapport.omvormer_spec?.serienummers, rapport.omvormer_spec?.serienummer)}`}
         />
+        {rapport.extra_velden?.heeft_backup_box || rapport.backup_box_spec?.merk || rapport.backup_box_spec?.serienummer || (rapport.backup_box_spec?.serienummers?.length ?? 0) > 0 ? (
+          <Row
+            label="Backup box"
+            value={`${rapport.backup_box_spec?.merk ?? ""} ${rapport.backup_box_spec?.type ?? ""} — sn: ${formatSns(rapport.backup_box_spec?.serienummers, rapport.backup_box_spec?.serienummer)}`}
+          />
+        ) : null}
         <Row label="Gateway / ATS sn" value={formatSns(rapport.extra_velden?.gateway_serienummers, rapport.extra_velden?.gateway_serienummer)} />
         <Row label="CE-markering" value={rapport.omvormer_spec?.ce_markering ? "Ja" : "Nee"} />
         <Row label="RfG-klasse" value={rapport.omvormer_spec?.rfg_klasse ?? "—"} />
