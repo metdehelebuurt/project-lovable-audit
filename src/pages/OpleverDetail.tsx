@@ -32,6 +32,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BookOpen } from "lucide-react";
 import OpleverPdfVersies from "@/components/oplever/OpleverPdfVersies";
 import { useAuth } from "@/contexts/AuthContext";
+import { resolveSignatureToDataUrl, resolvePartnerLogoToDataUrl } from "@/lib/opleverPdfAssets";
 
 export default function OpleverDetail() {
   const { id } = useParams<{ id: string }>();
@@ -105,6 +106,29 @@ export default function OpleverDetail() {
   const gebruikerDocs: Handleiding[] = handleidingen.filter((h) => h.type === "gebruiker");
   const meegestuurdeDocs = gebruikerDocs.filter((d) => !uitgeslotenDocs.has(`${d.product_id}-${d.type}`));
   const meegeleverdePdfDocs = meegestuurdeDocs.map((d) => ({ naam: d.product_naam, bestandsnaam: d.bestandsnaam, url: d.url }));
+
+  const installateurSigPath = merged?.installateur_handtekening?.image_url ?? null;
+  const klantSigPath = merged?.klant_handtekening?.image_url ?? null;
+  const partnerLogoRaw = partnerData?.logo_url ?? null;
+
+  const { data: installateurSigDataUrl } = useQuery({
+    queryKey: ["oplever-sig-inst", merged?.id, installateurSigPath],
+    queryFn: () => resolveSignatureToDataUrl(installateurSigPath),
+    enabled: !!installateurSigPath,
+    staleTime: 4 * 60 * 1000,
+  });
+  const { data: klantSigDataUrl } = useQuery({
+    queryKey: ["oplever-sig-klant", merged?.id, klantSigPath],
+    queryFn: () => resolveSignatureToDataUrl(klantSigPath),
+    enabled: !!klantSigPath,
+    staleTime: 4 * 60 * 1000,
+  });
+  const { data: partnerLogoDataUrl } = useQuery({
+    queryKey: ["oplever-logo", partnerLogoRaw],
+    queryFn: () => resolvePartnerLogoToDataUrl(partnerLogoRaw),
+    enabled: !!partnerLogoRaw,
+    staleTime: 60 * 60 * 1000,
+  });
 
   if (isLoading || !merged) return <div className="p-8 text-muted-foreground">Laden…</div>;
 
@@ -285,6 +309,9 @@ export default function OpleverDetail() {
                 klantContact={klantContact}
                 ordernummer={ordernummer}
                 meegeleverdeDocumenten={meegeleverdePdfDocs}
+                installateurSigDataUrl={installateurSigDataUrl ?? null}
+                klantSigDataUrl={klantSigDataUrl ?? null}
+                partnerLogoDataUrl={partnerLogoDataUrl ?? null}
               />
             </div>
           </div>
@@ -314,6 +341,9 @@ export default function OpleverDetail() {
           klantContact={klantContact}
           ordernummer={ordernummer}
           meegeleverdeDocumenten={meegeleverdePdfDocs}
+          installateurSigDataUrl={installateurSigDataUrl ?? null}
+          klantSigDataUrl={klantSigDataUrl ?? null}
+          partnerLogoDataUrl={partnerLogoDataUrl ?? null}
         />
       </div>
     </div>
