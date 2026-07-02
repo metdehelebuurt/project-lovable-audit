@@ -87,6 +87,10 @@ export async function sendViaGmailApi(opts: {
   const bccLine = opts.bcc && opts.bcc.length > 0 ? `Bcc: ${opts.bcc.join(", ")}\r\n` : "";
   let raw: string;
 
+  // HTML altijd als base64 encoderen om quoted-printable artefacten (=20, =\r\n)
+  // te voorkomen bij lange regels in inline-styled templates.
+  const htmlB64 = btoa(unescape(encodeURIComponent(opts.html))).replace(/(.{76})/g, "$1\r\n");
+
   if (opts.attachment) {
     const boundary = `mh_${Date.now().toString(36)}`;
     const pdfB64 = bytesToBase64(opts.attachment.bytes).replace(/(.{76})/g, "$1\r\n");
@@ -101,9 +105,9 @@ export async function sendViaGmailApi(opts: {
       ``,
       `--${boundary}`,
       `Content-Type: text/html; charset=UTF-8`,
-      `Content-Transfer-Encoding: 7bit`,
+      `Content-Transfer-Encoding: base64`,
       ``,
-      opts.html,
+      htmlB64,
       ``,
       `--${boundary}`,
       `Content-Type: ${opts.attachment.contentType}; name="${opts.attachment.filename}"`,
@@ -120,7 +124,11 @@ export async function sendViaGmailApi(opts: {
       ...(ccLine ? [ccLine.trimEnd()] : []),
       ...(bccLine ? [bccLine.trimEnd()] : []),
       `Subject: ${subjectEnc}`,
-      `MIME-Version: 1.0`, `Content-Type: text/html; charset=UTF-8`, ``, opts.html,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      htmlB64,
     ].join("\r\n");
   }
 
