@@ -15,20 +15,25 @@ interface Props {
  * - intern=false → ook zichtbaar voor klant in portaal
  */
 const NotitieZichtbaarheidToggle = ({ intern, onChange, id = "notitie-intern", disabled }: Props) => {
+  // Switch AAN = intern (standaard). UIT betekent expliciet extern zichtbaar voor de klant.
   return (
     <div className="flex items-center gap-2 text-xs">
       {intern ? (
-        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+        <Lock className="h-3.5 w-3.5 text-primary" />
       ) : (
-        <Globe className="h-3.5 w-3.5 text-primary" />
+        <Globe className="h-3.5 w-3.5 text-warning-foreground" />
       )}
-      <Label htmlFor={id} className="cursor-pointer text-muted-foreground">
-        {intern ? "Intern (alleen team)" : "Zichtbaar voor klant"}
+      <Label htmlFor={id} className="cursor-pointer">
+        {intern ? (
+          <span className="text-foreground">Intern <span className="text-muted-foreground">(alleen team)</span></span>
+        ) : (
+          <span className="text-warning-foreground font-medium">Zichtbaar voor klant</span>
+        )}
       </Label>
       <Switch
         id={id}
-        checked={!intern}
-        onCheckedChange={(v) => onChange(!v)}
+        checked={intern}
+        onCheckedChange={(v) => onChange(v)}
         disabled={disabled}
       />
     </div>
