@@ -124,6 +124,23 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
                       voorInkoop={voorInkoop}
                     />
                   )}
+                  {!hidePricing && !voorInkoop && r.product_id && kostprijsMap[r.product_id] != null && r.prijs_per_stuk > 0 && (() => {
+                    const k = kostprijsMap[r.product_id!] as number;
+                    const marge = ((r.prijs_per_stuk - k) / r.prijs_per_stuk) * 100;
+                    const kleur = marge >= 20
+                      ? "bg-success/10 text-success"
+                      : marge >= 10
+                      ? "bg-warning/10 text-warning-foreground"
+                      : "bg-destructive/10 text-destructive";
+                    return (
+                      <span
+                        className={`inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${kleur}`}
+                        title={`Kostprijs ${formatCurrency(k)} → Marge ${marge.toFixed(1)}%`}
+                      >
+                        Marge {marge.toFixed(1)}%
+                      </span>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell>
                   {readOnly ? r.aantal : (
