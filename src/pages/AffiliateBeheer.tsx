@@ -305,6 +305,11 @@ const AffiliateBeheer = () => {
           </Card>
         </TabsContent>
 
+        {/* Demo's Tab */}
+        <TabsContent value="demos" className="space-y-4">
+          <DemoOverzicht />
+        </TabsContent>
+
         {/* Referrals Tab */}
         <TabsContent value="referrals">
           <Card>
