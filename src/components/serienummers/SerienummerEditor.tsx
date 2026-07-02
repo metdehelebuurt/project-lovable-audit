@@ -152,7 +152,8 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
       garantie_maanden: months || null,
       garantie_einddatum: garantieEind,
       status: "geinstalleerd",
-    });
+      component_type: componentType || null,
+    } as any);
     setSerienr("");
   };
 
@@ -189,7 +190,8 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
           garantie_maanden: months || null,
           garantie_einddatum: garantieEind,
           status: "geinstalleerd",
-        });
+          component_type: componentType || null,
+        } as any);
         ok += 1;
       } catch {
         fout += 1;
