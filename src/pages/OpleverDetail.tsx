@@ -267,7 +267,7 @@ export default function OpleverDetail() {
           <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfBusy}>
             <Download className="h-4 w-4 mr-1" /> {pdfBusy ? "Bezig…" : "PDF downloaden"}
           </Button>
-          {kanVervallen && !isVervallen ? (
+          {kanVervallen && !isVervallen && merged.status === "ondertekend" ? (
             <Button variant="outline" size="sm" onClick={() => setVervallenOpen(true)} className="text-destructive hover:text-destructive">
               <Ban className="h-4 w-4 mr-1" /> Laten vervallen
             </Button>
