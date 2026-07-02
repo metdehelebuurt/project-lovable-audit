@@ -36,14 +36,14 @@ type ProductRow = {
   is_assemblage: boolean;
 };
 
-const CATEGORIEEN = [
-  "zonnepanelen",
-  "omvormer",
-  "thuisbatterij",
-  "laadpaal",
-  "warmtepomp",
-  "installatiemateriaal",
-  "accessoires",
+const CATEGORIEEN: { value: string; label: string }[] = [
+  { value: "zonnepanelen", label: "Zonnepanelen" },
+  { value: "omvormer", label: "Omvormer" },
+  { value: "thuisbatterij", label: "Thuisbatterij" },
+  { value: "laadpaal", label: "Laadpaal" },
+  { value: "warmtepomp", label: "Warmtepomp" },
+  { value: "installatiemateriaal", label: "Installatiemateriaal" },
+  { value: "accessoires", label: "Accessoires" },
 ];
 
 export default function AssemblageEditor() {
