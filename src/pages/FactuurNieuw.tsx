@@ -531,6 +531,7 @@ export default function FactuurNieuw() {
   const showKlantSection = !isInkoop(docType) && docType !== "pakbon";
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(isEdit ? `/financieel/${editId}` : "/financieel")}>
@@ -869,5 +870,6 @@ export default function FactuurNieuw() {
         }}
       />
     )}
+    </>
   );
 }
