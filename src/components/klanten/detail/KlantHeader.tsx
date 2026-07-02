@@ -3,11 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Pencil, CalendarIcon,
-  RotateCcw, LifeBuoy, FileText, MoreHorizontal, Camera,
+  RotateCcw, LifeBuoy, FileText, MoreHorizontal, Camera, Trash2,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 import { formatDate } from "@/components/detail/DetailComponents";
 
 interface Props {
@@ -19,6 +24,9 @@ interface Props {
   onTicket: () => void;
   onOfferte: () => void;
   onSnelleSchouw: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
+  isDeleting?: boolean;
 }
 
 /**
@@ -27,8 +35,10 @@ interface Props {
  */
 export default function KlantHeader({
   klant, isEditing, onStartEdit, onAfspraak, onRetour, onTicket, onOfferte, onSnelleSchouw,
+  onDelete, canDelete = false, isDeleting = false,
 }: Props) {
   const navigate = useNavigate();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <div className="flex items-start gap-2 sm:gap-3">
@@ -83,6 +93,16 @@ export default function KlantHeader({
         <Button size="sm" className="rounded-xl gap-1.5" onClick={onOfferte}>
           <FileText className="h-4 w-4" /> Offerte
         </Button>
+        {canDelete && onDelete && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl gap-1.5 text-destructive hover:text-destructive"
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" /> Verwijderen
+          </Button>
+        )}
       </div>
 
       {/* Mobiel: primaire actie + overflow */}
@@ -115,9 +135,39 @@ export default function KlantHeader({
             <DropdownMenuItem onSelect={onSnelleSchouw}>
               <Camera className="h-4 w-4 mr-2" /> Snelle schouw
             </DropdownMenuItem>
+            {canDelete && onDelete && (
+              <DropdownMenuItem
+                onSelect={() => setConfirmOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Verwijderen
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Klant verwijderen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je <strong>{klant.voornaam} {klant.achternaam}</strong> definitief wilt verwijderen?
+              Deze actie wordt gelogd in het audit-log en kan niet ongedaan gemaakt worden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuleren</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); onDelete?.(); }}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Bezig..." : "Definitief verwijderen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

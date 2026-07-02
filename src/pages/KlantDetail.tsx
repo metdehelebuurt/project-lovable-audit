@@ -167,6 +167,37 @@ const KlantDetail = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const isSuperadmin = profile?.rol === "superadmin";
+  const isAdmin = profile?.rol === "partner_admin" || profile?.rol === "partner_staff";
+  const canDeleteKlant = isSuperadmin || isAdmin;
+
+  const deleteKlantMutation = useMutation({
+    mutationFn: async () => {
+      if (!id || !klant) throw new Error("Geen klant geladen");
+      // Snapshot voor audit-log
+      const snapshot = { ...klant };
+      // Ontkoppel gerelateerde entiteiten (behoud historie)
+      await supabase.from("afspraken" as any).update({ klant_id: null } as any).eq("klant_id", id);
+      await supabase.from("opleverrapporten" as any).update({ klant_id: null } as any).eq("klant_id", id);
+      const { error } = await supabase.from("klanten" as any).delete().eq("id", id);
+      if (error) throw error;
+      await supabase.from("audit_log").insert({
+        actie: "klant_verwijderd",
+        entity_type: "klant",
+        entity_id: id,
+        actor_id: profile?.id ?? null,
+        partner_id: profile?.partner_id ?? null,
+        oude_waarde: snapshot as any,
+      } as any);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["klanten"] });
+      toast.success("Klant verwijderd");
+      navigate("/klanten");
+    },
+    onError: (err: Error) => toast.error("Verwijderen mislukt", { description: err.message }),
+  });
+
   const saveNotities = async (notities: string) => {
     const { error } = await supabase.from("klanten" as any).update({ notities } as any).eq("id", id!);
     if (error) toast.error(error.message);
@@ -259,6 +290,9 @@ const KlantDetail = () => {
         }}
         onOfferte={handleNewOfferte}
         onSnelleSchouw={() => setSnelleSchouwOpen(true)}
+        canDelete={canDeleteKlant}
+        isDeleting={deleteKlantMutation.isPending}
+        onDelete={() => deleteKlantMutation.mutate()}
       />
 
       <KlantStatsRow
