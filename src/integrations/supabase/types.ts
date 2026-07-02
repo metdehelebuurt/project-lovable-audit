@@ -7083,6 +7083,8 @@ export type Database = {
           klant_id: string | null
           klant_token: string | null
           klant_token_expires_at: string | null
+          klant_view_token: string | null
+          klant_view_token_expires_at: string | null
           meetapparatuur: Json
           metingen: Json
           omvormer_spec: Json
@@ -7120,6 +7122,8 @@ export type Database = {
           klant_id?: string | null
           klant_token?: string | null
           klant_token_expires_at?: string | null
+          klant_view_token?: string | null
+          klant_view_token_expires_at?: string | null
           meetapparatuur?: Json
           metingen?: Json
           omvormer_spec?: Json
@@ -7157,6 +7161,8 @@ export type Database = {
           klant_id?: string | null
           klant_token?: string | null
           klant_token_expires_at?: string | null
+          klant_view_token?: string | null
+          klant_view_token_expires_at?: string | null
           meetapparatuur?: Json
           metingen?: Json
           omvormer_spec?: Json
