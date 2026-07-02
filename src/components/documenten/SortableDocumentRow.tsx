@@ -8,8 +8,7 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Database } from "@/integrations/supabase/types";
 
-type BaseDocument = Database["public"]["Tables"]["documenten"]["Row"];
-type Document = Omit<BaseDocument, "tags"> & { tags?: string[] | null };
+type Document = Database["public"]["Tables"]["documenten"]["Row"];
 type DocumentType = Database["public"]["Enums"]["document_type"];
 
 const docTypeLabels: Record<DocumentType, string> = {
@@ -56,7 +55,8 @@ const SortableDocumentRow = ({
     opacity: isDragging ? 0.5 : 1,
   };
   const image = isImage(d.mime_type);
-  const tags = d.tags ?? [];
+  const rawTags = (d as any).tags;
+  const tags: string[] = Array.isArray(rawTags) ? rawTags.filter((x: unknown): x is string => typeof x === "string") : [];
   const [newTag, setNewTag] = useState("");
   const addTag = () => {
     const v = newTag.trim();
