@@ -210,3 +210,65 @@ export async function logAudit(
     details,
   } as never);
 }
+
+export interface VervallenInput {
+  reden_categorie: string;
+  reden: string;
+  maak_nieuw: boolean;
+  actor_id: string | null;
+}
+
+/**
+ * Laat een opleverrapport vervallen. Optioneel maakt het een nieuw rapport aan
+ * en koppelt beide records (vervangen_door_id / vervangt_id) voor traceability.
+ * Returnt het id van het nieuwe rapport wanneer maak_nieuw = true.
+ */
+export async function vervallenRapport(
+  rapport: Opleverrapport,
+  input: VervallenInput,
+): Promise<{ nieuwRapportId: string | null }> {
+  const nu = new Date().toISOString();
+
+  await patchRapport(rapport.id, {
+    status: "vervallen",
+    vervallen: true,
+    vervallen_reden_categorie: input.reden_categorie,
+    vervallen_reden: input.reden,
+    vervallen_op: nu,
+    vervallen_door: input.actor_id ?? undefined,
+  } as Partial<Opleverrapport>);
+
+  await logAudit(rapport.id, rapport.partner_id, input.actor_id, "vervallen", {
+    reden_categorie: input.reden_categorie,
+    reden: input.reden,
+    maak_nieuw: input.maak_nieuw,
+  });
+
+  if (!input.maak_nieuw) return { nieuwRapportId: null };
+
+  // Nieuw opleverrapport starten met basisgegevens van het oude
+  const nieuwId = await createRapport({
+    partner_id: rapport.partner_id,
+    installateur_id: rapport.installateur_id ?? input.actor_id ?? rapport.created_by,
+    installatie_id: rapport.installatie_id,
+    klant_id: rapport.klant_id,
+    opdracht_id: rapport.opdracht_id,
+    scope_omschrijving: rapport.scope_omschrijving,
+    batterij_spec: rapport.batterij_spec,
+    omvormer_spec: rapport.omvormer_spec,
+    backup_box_spec: rapport.backup_box_spec,
+    extra_velden: rapport.extra_velden,
+  });
+
+  // Koppel oud → nieuw en nieuw → oud
+  await patchRapport(rapport.id, { vervangen_door_id: nieuwId } as Partial<Opleverrapport>);
+  await patchRapport(nieuwId, { vervangt_id: rapport.id } as Partial<Opleverrapport>);
+
+  await logAudit(nieuwId, rapport.partner_id, input.actor_id, "vervangt_rapport", {
+    vervangt_id: rapport.id,
+    reden_categorie: input.reden_categorie,
+    reden: input.reden,
+  });
+
+  return { nieuwRapportId: nieuwId };
+}
