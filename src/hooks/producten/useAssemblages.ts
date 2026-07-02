@@ -101,12 +101,20 @@ export const useAddComponent = (partnerId?: string | null) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { assemblage_id: string; component_id: string; aantal: number }) => {
+      // Bepaal volgende volgorde (int4-safe) op basis van bestaande componenten
+      const { data: existing } = await supabase
+        .from("product_componenten" as any)
+        .select("volgorde")
+        .eq("assemblage_id", input.assemblage_id)
+        .order("volgorde", { ascending: false })
+        .limit(1);
+      const nextVolgorde = ((existing?.[0] as any)?.volgorde ?? 0) + 10;
       const { error } = await supabase.from("product_componenten" as any).insert({
         partner_id: partnerId,
         assemblage_id: input.assemblage_id,
         component_id: input.component_id,
         aantal: input.aantal,
-        volgorde: Date.now(),
+        volgorde: nextVolgorde,
       });
       if (error) throw error;
     },
