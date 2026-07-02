@@ -33,12 +33,17 @@ interface Props {
   partnerContact?: string;
   ordernummer?: string;
   meegeleverdeDocumenten?: { naam: string; bestandsnaam: string; url: string }[];
+  /** DataURL-versies van assets zodat html2canvas geen CORS/relatieve-URL-issues krijgt. */
+  installateurSigDataUrl?: string | null;
+  klantSigDataUrl?: string | null;
+  partnerLogoDataUrl?: string | null;
 }
 
-const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer, meegeleverdeDocumenten }, ref) => {
+const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer, meegeleverdeDocumenten, installateurSigDataUrl, klantSigDataUrl, partnerLogoDataUrl }, ref) => {
   const verdict = (rapport.bevindingen?.verdict ?? "goedgekeurd") as Verdict;
   const stempelColor = VERDICT_COLOR[verdict];
   const stempelLabel = VERDICT_LABEL[verdict];
+  const logoSrc = partnerLogoDataUrl ?? partnerLogoUrl ?? null;
 
   return (
     <div
@@ -57,13 +62,15 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
       <header style={{ borderBottom: "2px solid #6d28d9", paddingBottom: "10mm", marginBottom: "10mm" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "4mm" }}>
-            {partnerLogoUrl ? (
+            {logoSrc ? (
               <img
-                src={partnerLogoUrl}
+                src={logoSrc}
                 alt={partnerNaam ?? "Partner logo"}
                 crossOrigin="anonymous"
                 style={{ maxHeight: "25mm", maxWidth: "70mm", objectFit: "contain" }}
               />
+            ) : partnerNaam ? (
+              <div style={{ fontSize: "16pt", fontWeight: 700, color: "#111827" }}>{partnerNaam}</div>
             ) : null}
             <div>
             <div style={{ fontSize: "10pt", color: "#6b7280" }}>NEN 1010 / NEN 3140 Opleverrapport</div>
@@ -257,10 +264,10 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
         <p style={{ marginTop: "6mm", whiteSpace: "pre-wrap" }}>{rapport.conformiteitstekst}</p>
       </Section>
 
-      <Section title="Ondertekening">
+      <Section title="Ondertekening" avoidBreak>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10mm" }}>
-          <SignBlock title="Installateur" sig={rapport.installateur_handtekening} />
-          <SignBlock title="Klant" sig={rapport.klant_handtekening} />
+          <SignBlock title="Installateur" sig={rapport.installateur_handtekening} dataUrl={installateurSigDataUrl ?? null} />
+          <SignBlock title="Klant" sig={rapport.klant_handtekening} dataUrl={klantSigDataUrl ?? null} />
         </div>
       </Section>
 
