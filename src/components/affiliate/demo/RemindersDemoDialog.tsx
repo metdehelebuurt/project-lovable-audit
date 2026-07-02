@@ -67,10 +67,10 @@ export function RemindersDemoDialog({ afspraak, onClose, onDirectVerzenden, dire
   const resetVerzonden = useMutation({
     mutationFn: async (welke: "24" | "1") => {
       if (!afspraak) throw new Error("Geen afspraak geselecteerd");
-      const veld = welke === "24" ? "reminder_24u_op" : "reminder_1u_op";
+      const update = welke === "24" ? { reminder_24u_op: null } : { reminder_1u_op: null };
       const { error } = await supabase
         .from("affiliate_terugbel_afspraken")
-        .update({ [veld]: null })
+        .update(update)
         .eq("id", afspraak.id);
       if (error) throw error;
     },
