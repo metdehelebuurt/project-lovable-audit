@@ -167,7 +167,7 @@ export default function AssemblageEditor() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isNew && !isNew && dirty && <Badge variant="outline">Niet-opgeslagen wijzigingen</Badge>}
+          {!isNew && dirty && <Badge variant="outline">Niet-opgeslagen wijzigingen</Badge>}
           <Button
             className="rounded-pill"
             onClick={() => saveMutation.mutate()}
