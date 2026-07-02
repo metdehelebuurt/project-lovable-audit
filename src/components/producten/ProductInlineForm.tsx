@@ -232,6 +232,35 @@ export default function ProductInlineForm({
                 </div>
                 <Switch checked={form.heeft_serienummer} onCheckedChange={(v) => setForm(p => ({ ...p, heeft_serienummer: v }))} />
               </div>
+              {form.categorie === "thuisbatterij" && (
+                <>
+                  <div className="flex items-center justify-between gap-4 pt-2 border-t">
+                    <div>
+                      <Label className="text-sm">Omvormer is modulair</Label>
+                      <p className="text-xs text-muted-foreground">Losse omvormer met eigen serienummer naast de batterij.</p>
+                    </div>
+                    <Switch
+                      checked={form.omvormer_modulair}
+                      onCheckedChange={(v) => setForm(p => ({ ...p, omvormer_modulair: v, heeft_serienummer: v || p.heeft_serienummer }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label className="text-sm">Heeft backup box</Label>
+                      <p className="text-xs text-muted-foreground">Extra backup-module met eigen serienummer.</p>
+                    </div>
+                    <Switch
+                      checked={form.heeft_backup_box}
+                      onCheckedChange={(v) => setForm(p => ({ ...p, heeft_backup_box: v, heeft_serienummer: v || p.heeft_serienummer }))}
+                    />
+                  </div>
+                  {(form.omvormer_modulair || form.heeft_backup_box) && (
+                    <p className="text-xs text-primary bg-primary/5 rounded-lg p-2 border border-primary/20">
+                      Bij inkoop-ontvangst en opleverrapport kunnen per stuk de serienummers van batterij{form.omvormer_modulair ? ", omvormer" : ""}{form.heeft_backup_box ? " en backup box" : ""} apart geregistreerd worden.
+                    </p>
+                  )}
+                </>
+              )}
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <Label className="text-sm">Samengesteld product (assemblage)</Label>
