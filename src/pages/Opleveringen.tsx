@@ -85,7 +85,7 @@ export default function Opleveringen() {
           <CardTitle>Rapporten</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Input placeholder="Zoek op nummer of omvang…" value={zoek} onChange={(e) => setZoek(e.target.value)} />
+          <Input placeholder="Zoek op nummer, klant of verkooporder…" value={zoek} onChange={(e) => setZoek(e.target.value)} />
           <Table>
             <TableHeader>
               <TableRow>
