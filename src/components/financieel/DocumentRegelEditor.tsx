@@ -43,7 +43,8 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
     offerte_tekst: string | null;
   }) => {
     const copy = [...regels];
-    const label = [p.merk, p.model].filter(Boolean).join(" ") || p.naam;
+    // Gebruik altijd de volledige productnaam als omschrijving (ook voor bundels/assemblages).
+    const label = p.naam?.trim() || [p.merk, p.model].filter(Boolean).join(" ");
     const gekozenPrijs = voorInkoop
       ? (p.kostprijs != null ? Number(p.kostprijs) : copy[idx].prijs_per_stuk)
       : (p.prijs_excl_btw != null ? Number(p.prijs_excl_btw) : copy[idx].prijs_per_stuk);
