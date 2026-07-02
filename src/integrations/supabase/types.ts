@@ -4249,45 +4249,72 @@ export type Database = {
       }
       inkoop_ontvangsten: {
         Row: {
+          aflever_locatie: string | null
+          chauffeur_naam: string | null
           created_at: string
           discrepantie: boolean
+          document_ids: Json
           fotos: Json | null
           id: string
           inkooporder_id: string
           ontvangen_door: string | null
+          ontvangst_document_url: string | null
           ontvangstdatum: string
           opmerking: string | null
+          pakbon_nummer: string | null
           partner_id: string
           regels: Json
+          sn_per_regel: Json
+          staat_zending: string | null
+          tracking_nummer: string | null
           updated_at: string
+          vervoerder: string | null
           voorraad_geboekt: boolean
         }
         Insert: {
+          aflever_locatie?: string | null
+          chauffeur_naam?: string | null
           created_at?: string
           discrepantie?: boolean
+          document_ids?: Json
           fotos?: Json | null
           id?: string
           inkooporder_id: string
           ontvangen_door?: string | null
+          ontvangst_document_url?: string | null
           ontvangstdatum?: string
           opmerking?: string | null
+          pakbon_nummer?: string | null
           partner_id: string
           regels?: Json
+          sn_per_regel?: Json
+          staat_zending?: string | null
+          tracking_nummer?: string | null
           updated_at?: string
+          vervoerder?: string | null
           voorraad_geboekt?: boolean
         }
         Update: {
+          aflever_locatie?: string | null
+          chauffeur_naam?: string | null
           created_at?: string
           discrepantie?: boolean
+          document_ids?: Json
           fotos?: Json | null
           id?: string
           inkooporder_id?: string
           ontvangen_door?: string | null
+          ontvangst_document_url?: string | null
           ontvangstdatum?: string
           opmerking?: string | null
+          pakbon_nummer?: string | null
           partner_id?: string
           regels?: Json
+          sn_per_regel?: Json
+          staat_zending?: string | null
+          tracking_nummer?: string | null
           updated_at?: string
+          vervoerder?: string | null
           voorraad_geboekt?: boolean
         }
         Relationships: [
