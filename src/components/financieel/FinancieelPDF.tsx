@@ -23,6 +23,18 @@ interface Props {
     termijn_totaal?: number | null;
     termijn_percentage?: number | null;
     offerte_nummer?: string;
+    gewenste_leverdatum?: string | null;
+    leverancier_referentie?: string | null;
+    interne_notities?: string | null;
+    leveringsadres?: {
+      contactpersoon?: string | null;
+      telefoon?: string | null;
+      email?: string | null;
+      straat?: string | null;
+      postcode?: string | null;
+      plaats?: string | null;
+      land?: string | null;
+    } | null;
   };
   klant?: {
     voornaam?: string;
