@@ -229,6 +229,9 @@ const App = () => (
               <Route path="/producten/merken" element={
                 <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><MerkenBeheer /></ProtectedRoute>
               } />
+              <Route path="/producten/assemblages" element={
+                <ProtectedRoute moduleKey="assemblages" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Assemblages /></ProtectedRoute>
+              } />
               <Route path="/voorraad" element={
                 <ProtectedRoute moduleKey="voorraad" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Voorraad /></ProtectedRoute>
               } />
