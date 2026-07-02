@@ -32,6 +32,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const [productId, setProductId] = useState<string>("");
   const [serienr, setSerienr] = useState("");
   const [garantieJaren, setGarantieJaren] = useState<string>("5");
+  const [componentType, setComponentType] = useState<"" | "batterij" | "omvormer" | "backup_box">("");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -42,7 +43,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     queryFn: async () => {
       const { data } = await supabase
         .from("producten")
-        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code")
+        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code, omvormer_modulair, heeft_backup_box")
         .eq("partner_id", partnerId)
         .order("naam");
       return data ?? [];
