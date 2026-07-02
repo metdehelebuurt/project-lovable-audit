@@ -7063,6 +7063,7 @@ export type Database = {
       }
       opleverrapporten: {
         Row: {
+          backup_box_spec: Json
           batterij_spec: Json
           bevindingen: Json
           conformiteitstekst: string | null
@@ -7099,6 +7100,7 @@ export type Database = {
           visuele_inspectie: Json
         }
         Insert: {
+          backup_box_spec?: Json
           batterij_spec?: Json
           bevindingen?: Json
           conformiteitstekst?: string | null
@@ -7135,6 +7137,7 @@ export type Database = {
           visuele_inspectie?: Json
         }
         Update: {
+          backup_box_spec?: Json
           batterij_spec?: Json
           bevindingen?: Json
           conformiteitstekst?: string | null
