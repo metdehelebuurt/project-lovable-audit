@@ -1,72 +1,88 @@
-# Fix assemblage-flow: SN-koppeling, volledige naam en gesplitste inkooporders
+# Fix: assemblage-serienummers blijven “in order” na ontvangst
 
-Drie samenhangende problemen zichtbaar bij de eerste bundel-test:
+## Oorzaak
 
-1. **SN-dialog vindt geen producten** — bundel-componenten worden niet gekoppeld omdat de matcher alleen op omschrijving zoekt, en die staat op de opdrachtregel als kort "Sigenergy".
-2. **Assemblage-naam wordt afgekapt tot "Sigenergy"** — in de inkooporder verschijnt niet de volle productnaam maar de (verkorte) omschrijving van de bronregel.
-3. **Alle componenten belanden op één inkooporder** — ook als componenten bij verschillende leveranciers horen. Er moet gesplitst worden, met een bevestigingsmelding vooraf.
+De ontvangstboeking schrijft serienummers nu vooral als losse voorraadregels weg, maar de installatie/opleverflow kijkt primair naar serienummers die aan de juiste `installatie_id` of `opdracht_id` hangen. Bij de geteste order is bovendien zichtbaar dat:
 
-Onderzocht: `producten.heeft_serienummer` van de 3 relevante componenten staat correct op `true`; de bundel `f4660188-…` heeft alle 4 componenten. De opdrachtregel-omschrijving is `"Sigenergy"` (korte tekst) terwijl `producten.naam = "Sigenergy thuisbatterij met backup 9kWh 3-fase 10 KW"`. Leverancier-koppeling zit in `leverancier_artikelen` (`product_id → leverancier_id`, met `voorkeur` en `inkoopprijs`).
+- de verkooporder wél `installatie_id = 8593040d-...` heeft;
+- de installatie zelf géén `opdracht_id` en `klant_id` heeft;
+- serienummers die bij ontvangst worden ingevoerd niet consequent aan `opdracht_id`, `installatie_id` en klantcontext worden gekoppeld;
+- de installatie-serienummereditor alleen op `installatie_id` leest, waardoor op opdracht gereserveerde SN’s niet meetellen;
+- handmatig invoeren kan botsen met de unieke sleutel `(partner_id, product_id, serienummer)` als het SN al bij ontvangst is aangemaakt;
+- de installatieplanning vanuit `OpdrachtDetail` maakt een installatie aan zonder ordergegevens, adres en producten mee te kopiëren.
 
-## Wijzigingen
+Daarom blijft de UI “0/1 verwacht volgens order” tonen, terwijl de SN’s logistiek al zijn ontvangen.
 
-### 1) SN-toewijzing zoekt op product_id (fix "Geen producten gevonden")
+## Wijzigingen die moeten worden doorgevoerd
 
-`src/hooks/logistiek/useSNToewijzing.ts` + `src/components/opdracht/SNToewijzingDialog.tsx` + `src/components/opdracht/OpdrachtVoorraadTab.tsx`:
+### 1) Ontvangstboeking direct koppelen aan order/installatie
 
-- Regel-interface uitbreiden: `{ omschrijving, aantal, product_id? }`.
-- In `useSNToewijzing`: eerst `product_id` gebruiken (direct in `prodList` opzoeken); alleen als die ontbreekt terugvallen op `matchProductOpRegel(omschrijving)`.
-- Component-lookup blijft ongewijzigd — zodra de bundel gevonden is worden alle SN-plichtige componenten als target opgevoerd.
+`src/pages/OntvangstRegistreren.tsx`
 
-Resultaat: 3 componenten (Sigenstor EC 10.0 TP, Sigenstor BAT 10.0, Sigen Gateway HomePro TP) verschijnen automatisch als aparte SN-slots per verkooporder-regel.
+- Inkooporder ophalen met `opdracht_id`, `installatie_id`, `klant_id` en waar nodig via gekoppelde opdracht de installatie ophalen.
+- Bij elk ingevoerd component-SN opslaan/upserten met:
+  - `opdracht_id: doc.opdracht_id`
+  - `installatie_id: doc.installatie_id ?? opdracht.installatie_id`
+  - `klant_id: doc.klant_id ?? installatie.klant_id`
+  - `status: installatie_id ? 'geinstalleerd' : opdracht_id ? 'gereserveerd' : 'voorraad'`
+- Niet alleen parent-assemblage opslaan, maar SN’s van de geëxpandeerde componentregels als echte `product_serienummers` voor de componentproducten.
 
-### 2) Volledige productnaam op inkooporder-regels
+### 2) Bestaande voorraad-SN’s niet dupliceren maar upgraden/koppelen
 
-`src/lib/inkoopFromOpdracht.ts`:
+`src/hooks/logistiek/useSerienummers.ts`
 
-- Bij bundel-uitklappen: `omschrijving = component.naam` — al correct.
-- Bij niet-uitklappen (bundel als één regel): `omschrijving = product.naam ?? bronregel.omschrijving`. Zo overrulet de volledige productnaam een verkorte offertetekst.
-- Ook voor niet-bundel productregels: `omschrijving = product.naam ?? bronregel.omschrijving`.
+- `useUpsertSerienummer` eerst laten zoeken op `(partner_id, product_id, serienummer)`.
+- Bestaat het SN al, dan updaten met installatie/opdracht/klant/status in plaats van insert proberen.
+- Als het SN al aan een andere installatie hangt: duidelijke foutmelding tonen.
+- Status `gereserveerd` toevoegen aan het type.
 
-### 3) Splitsen per leverancier met bevestigingsdialog
+### 3) Installatie-editor ook opdracht-SN’s laten meetellen
 
-Nieuw: `src/lib/inkoopSplitPerLeverancier.ts`
+`src/hooks/logistiek/useSerienummers.ts`
 
-- Input: array `OfferteRegel[]` (met `product_id`) + `partner_id`.
-- Query `leverancier_artikelen` voor alle relevante product-ids; groepeer per `leverancier_id` (voorkeur eerst, anders eerste hit). Fallback `null` (= "Onbekend").
-- Return: `Array<{ leverancier_id: string|null, leverancier_naam: string, regels: OfferteRegel[] }>`.
+- `useSerienummersVoorInstallatie(installatieId, opdrachtId)` laten zoeken op `installatie_id = ... OR opdracht_id = ...`.
 
-Nieuw component: `src/components/inkoop/InkoopSplitDialog.tsx`
-- Toont per leveranciergroep: aantal regels + totale kostprijs + korte lijst.
-- Regels zonder leverancier krijgen een gele waarschuwing "Wijs eerst een leverancier toe".
-- Actie "Aanmaken": voor elke groep één inkooporder concept (`financiele_documenten.type = 'inkooporder'`, `regels = groep.regels`, `leverancier_id = groep.leverancier_id`, `opdracht_id` behouden) en toon toast met N documenten. Navigeer daarna naar de lijst of naar de eerste inkooporder.
-- Actie "Toch samenvoegen (1 order)": maakt gewoon 1 inkooporder — huidig gedrag als escape hatch.
-- Actie "Annuleren": sluit dialoog.
+`src/components/serienummers/SerienummerEditor.tsx`
 
-Aanpassing `src/pages/FactuurNieuw.tsx`:
-- Wanneer `docType === 'inkooporder'` met `?opdracht=…`: na `prefillRegelsUitOpdracht(expand=true)`, direct de split-analyse draaien. Bij ≥2 leveranciergroepen → dialoog vooraf openen (voordat de gebruiker de nieuwe-inkooporder-pagina ziet). Bij 1 groep → huidig gedrag (regels invullen op de bestaande pagina) + `leverancier_id` alvast prefillen.
-- Bij manuele wisseling van bundel-toggle: opnieuw analyseren en de dialoog aanbieden als er weer meerdere leveranciers ontstaan.
+- De hook met `opdrachtId` aanroepen.
+- Nieuwe knop/quick action toevoegen: **“Ontvangen SN’s koppelen aan installatie”**.
+- Deze zet alle op opdracht gereserveerde SN’s om naar `status = geinstalleerd` en vult `installatie_id`.
+- Daardoor wordt “Verwacht volgens order” direct bijgewerkt naar bijvoorbeeld `1/1`.
 
-### 4) Kleine follow-ups
+### 4) Installatieplanning vanuit opdracht compleet maken
 
-- In `OpdrachtVoorraadTab.tsx`: `regels` doorgeven mét `product_id` (nu wordt alleen `{ omschrijving, aantal }` doorgestuurd naar de SN-dialog).
-- Toast na aanmaken split: "3 inkooporders aangemaakt: Koninklijke Oosterberg (4 regels), Onbekend (1 regel), …".
+`src/pages/OpdrachtDetail.tsx`
 
-## Techniek (samenvatting)
+- `handlePlanInstallatie` moet bij het aanmaken van de installatie ook invullen:
+  - `opdracht_id`
+  - `klant_naam`, `klant_email`, `klant_telefoon`
+  - `klant_adres`, `klant_postcode`, `klant_plaats`, `werkadres`
+  - `producten` uit `opdracht.regels` inclusief `product_id`
+  - `werkomschrijving`
+- Zo is de installatie altijd correct terug te herleiden naar de verkooporder.
 
-```text
-prefillRegelsUitOpdracht → OfferteRegel[]  (met product_id + volle naam)
-        │
-        ▼
-splitPerLeverancier(regels, partnerId) → groepen[]
-        │
-   ├─ 1 groep  → FactuurNieuw vult regels + leverancier
-   └─ ≥2 groepen → InkoopSplitDialog
-                     ├─ Aanmaken   → N inkooporder-concepten
-                     ├─ Samenvoegen→ 1 order (huidig gedrag)
-                     └─ Annuleren
-```
+### 5) Bestaande foute records herstellen met migratie
 
-SN-dialog gebruikt `product_id` uit `opdracht.regels` en vindt zo altijd de bundel; alle SN-plichtige componenten (heeft_serienummer=true) verschijnen als aparte slots — inclusief modulaire varianten (omvormer, backup-box) uit de eerder toegevoegde `component_type`.
+Nieuwe migratie:
 
-Geen schemawijzigingen nodig; alles op basis van bestaande tabellen (`producten`, `product_componenten`, `leverancier_artikelen`, `financiele_documenten`).
+- Vul `installaties.opdracht_id` terug op basis van `opdrachten.installatie_id`.
+- Vul klant-/adresvelden op de installatie terug vanuit de gekoppelde opdracht waar leeg.
+- Vul `installaties.producten` terug vanuit `opdrachten.regels` waar leeg of incompleet.
+- Vul `product_serienummers.installatie_id` terug waar `opdracht_id` gekoppeld is aan een opdracht met installatie.
+- Zet status naar `gereserveerd` of `geinstalleerd` afhankelijk van of er een installatie gekoppeld is.
+
+### 6) Opleverrapport robuuster maken voor assemblages
+
+`src/components/oplever/api/opleverPrefill.ts`
+
+- Bij prefill niet alleen producten uit `installatie.producten` gebruiken, maar ook componentproducten uit assemblages ophalen.
+- SN’s matchen op `installatie_id OR opdracht_id`.
+- Zo verschijnen batterij, omvormer en backup-box SN’s ook als ze via ontvangst/order zijn gekoppeld.
+
+## Verwacht resultaat
+
+- Ontvangen component-SN’s van een assemblage verschijnen direct in de installatie.
+- “Verwacht volgens order” telt ontvangen/gekoppelde SN’s mee.
+- Opleverdocumenten worden automatisch gevuld met de juiste SN’s.
+- Handmatig scannen van een al ontvangen SN werkt als koppeling, niet als duplicaat.
+- Nieuwe installaties krijgen altijd de juiste order-, klant-, adres- en productkoppeling.
