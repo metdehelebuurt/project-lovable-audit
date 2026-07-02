@@ -3,10 +3,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, ExternalLink, Trash2, Pencil, Check, X, GripVertical } from "lucide-react";
+import { FileText, Download, ExternalLink, Trash2, Pencil, Check, X, GripVertical, Tag as TagIcon, Plus } from "lucide-react";
+import { useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Database } from "@/integrations/supabase/types";
 
-type Document = Database["public"]["Tables"]["documenten"]["Row"];
+type Document = Database["public"]["Tables"]["documenten"]["Row"] & { tags?: string[] | null };
 type DocumentType = Database["public"]["Enums"]["document_type"];
 
 const docTypeLabels: Record<DocumentType, string> = {
@@ -36,11 +38,15 @@ interface Props {
   onRenameChange: (v: string) => void;
   onRenameSubmit: (d: Document) => void;
   onDeleteRequest: (d: Document) => void;
+  canTag: boolean;
+  onTagsChange: (d: Document, tags: string[]) => void;
+  tagsPending: boolean;
 }
 
 const SortableDocumentRow = ({
   doc: d, editing, renameValue, renamePending, canRename, canReorder, mayDelete,
   onPreview, onStartRename, onCancelRename, onRenameChange, onRenameSubmit, onDeleteRequest,
+  canTag, onTagsChange, tagsPending,
 }: Props) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: d.id });
   const style: React.CSSProperties = {
@@ -49,17 +55,27 @@ const SortableDocumentRow = ({
     opacity: isDragging ? 0.5 : 1,
   };
   const image = isImage(d.mime_type);
+  const tags = d.tags ?? [];
+  const [newTag, setNewTag] = useState("");
+  const addTag = () => {
+    const v = newTag.trim();
+    if (!v) return;
+    if (tags.includes(v)) { setNewTag(""); return; }
+    onTagsChange(d, [...tags, v]);
+    setNewTag("");
+  };
+  const removeTag = (t: string) => onTagsChange(d, tags.filter((x) => x !== t));
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors bg-background"
+      className="flex items-start gap-2 p-3 rounded-xl border hover:bg-muted/30 transition-colors bg-background"
     >
       {canReorder && (
         <button
           type="button"
-          className="p-1 mr-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+          className="p-1 mt-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
           aria-label="Slepen om te sorteren"
           {...attributes}
           {...listeners}
@@ -70,56 +86,110 @@ const SortableDocumentRow = ({
       <button
         type="button"
         onClick={() => onPreview(d)}
-        className="flex items-center gap-3 min-w-0 flex-1 text-left group"
+        className="h-20 w-20 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-border hover:ring-primary/60 transition"
         aria-label={`Preview van ${d.naam}`}
       >
-        <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-border group-hover:ring-primary/40 transition">
-          {image ? (
-            <img src={d.bestand_url} alt={d.naam} loading="lazy" className="h-full w-full object-cover" />
-          ) : (
-            <FileText className="h-5 w-5 text-primary" />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          {editing ? (
-            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-              <Input
-                autoFocus
-                value={renameValue}
-                onChange={(e) => onRenameChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); onRenameSubmit(d); }
-                  if (e.key === "Escape") { e.preventDefault(); onCancelRename(); }
-                }}
-                className="h-8 text-sm"
-              />
-              <Button
-                size="icon" variant="ghost" className="h-8 w-8 text-success"
-                onClick={(e) => { e.preventDefault(); onRenameSubmit(d); }}
-                disabled={renamePending}
-                aria-label="Opslaan"
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon" variant="ghost" className="h-8 w-8"
-                onClick={(e) => { e.preventDefault(); onCancelRename(); }}
-                aria-label="Annuleren"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <p className="text-sm font-medium truncate group-hover:text-primary transition">{d.naam}</p>
-          )}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline" className="h-4 px-1.5 text-[10px]">{docTypeLabels[d.type]}</Badge>
-            <span>{formatSize(d.bestand_grootte)}</span>
-            <span>•</span>
-            <span>{new Date(d.created_at).toLocaleDateString("nl-NL")}</span>
-          </div>
-        </div>
+        {image ? (
+          <img src={d.bestand_url} alt={d.naam} loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <FileText className="h-7 w-7 text-primary" />
+        )}
       </button>
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <div className="flex items-center gap-1">
+            <Input
+              autoFocus
+              value={renameValue}
+              onChange={(e) => onRenameChange(e.target.value)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") { e.preventDefault(); onRenameSubmit(d); }
+                if (e.key === "Escape") { e.preventDefault(); onCancelRename(); }
+              }}
+              className="h-8 text-sm"
+            />
+            <Button
+              size="icon" variant="ghost" className="h-8 w-8 text-success"
+              onClick={() => onRenameSubmit(d)}
+              disabled={renamePending}
+              aria-label="Opslaan"
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon" variant="ghost" className="h-8 w-8"
+              onClick={onCancelRename}
+              aria-label="Annuleren"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onPreview(d)}
+            className="text-sm font-medium truncate max-w-full text-left hover:text-primary transition block"
+          >
+            {d.naam}
+          </button>
+        )}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
+          <Badge variant="outline" className="h-4 px-1.5 text-[10px]">{docTypeLabels[d.type]}</Badge>
+          <span>{formatSize(d.bestand_grootte)}</span>
+          <span>•</span>
+          <span>{new Date(d.created_at).toLocaleDateString("nl-NL")}</span>
+        </div>
+        {(tags.length > 0 || canTag) && (
+          <div className="flex items-center gap-1 mt-2 flex-wrap">
+            {tags.map((t) => (
+              <Badge key={t} variant="secondary" className="h-5 px-2 text-[10px] gap-1">
+                <TagIcon className="h-2.5 w-2.5" />
+                {t}
+                {canTag && (
+                  <button
+                    type="button"
+                    onClick={() => removeTag(t)}
+                    className="ml-0.5 hover:text-destructive"
+                    aria-label={`Tag ${t} verwijderen`}
+                    disabled={tagsPending}
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </Badge>
+            ))}
+            {canTag && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] gap-1 text-muted-foreground">
+                    <Plus className="h-3 w-3" /> Tag
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2" align="start">
+                  <div className="flex items-center gap-1">
+                    <Input
+                      autoFocus
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") { e.preventDefault(); addTag(); }
+                      }}
+                      placeholder="Bijv. Woonkamer, Voorzijde"
+                      className="h-8 text-sm"
+                    />
+                    <Button size="sm" onClick={addTag} disabled={!newTag.trim() || tagsPending}>
+                      Toevoegen
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Bijv. locatie, dak, meterkast.</p>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        )}
+      </div>
       <div className="flex items-center gap-1 shrink-0">
         {canRename && !editing && (
           <Button variant="ghost" size="icon" onClick={() => onStartRename(d)} aria-label="Naam wijzigen">
