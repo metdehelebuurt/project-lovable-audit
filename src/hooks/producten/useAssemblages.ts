@@ -42,11 +42,11 @@ export const useAssemblages = (partnerId?: string | null) => {
     queryKey: ["assemblages", partnerId],
     enabled: !!partnerId,
     queryFn: async (): Promise<AssemblageProduct[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("producten")
         .select("id, naam, merk, categorie, prijs_excl_btw, kostprijs, prijs_strategie, marge_opslag_percentage, status, afbeelding_url")
         .eq("partner_id", partnerId!)
-        .eq("is_assemblage" as any, true)
+        .eq("is_assemblage", true)
         .order("naam");
       if (error) throw error;
       const rows = (data || []) as any[];
