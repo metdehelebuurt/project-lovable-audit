@@ -553,7 +553,18 @@ const Producten = () => {
                           <div className="flex justify-end gap-1">
                             {/* Only allow editing own products or superadmin */}
                             {(isSuperadmin || product.partner_id === profile?.partner_id) ? (
-                              <Button variant="ghost" size="icon" onClick={() => openEdit(product)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={(product as any).is_assemblage ? "Bewerk bundel" : "Bewerken"}
+                                onClick={() => {
+                                  if ((product as any).is_assemblage) {
+                                    navigate(`/producten/assemblages/${product.id}`);
+                                  } else {
+                                    openEdit(product);
+                                  }
+                                }}
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             ) : (
