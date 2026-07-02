@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
 import ProductImageUpload from "@/components/producten/ProductImageUpload";
 import SpecsEditor from "@/components/producten/SpecsEditor";
@@ -43,6 +44,10 @@ export interface ProductFormData {
   specs: Record<string, string>;
   datasheet_url: string | null;
   datasheet_type: string | null;
+  heeft_serienummer: boolean;
+  is_assemblage: boolean;
+  prijs_strategie: "vast" | "som_componenten";
+  marge_opslag_percentage: number;
 }
 
 interface Props {
@@ -189,7 +194,15 @@ export default function ProductInlineForm({
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Prijzen & Voorraad</h3>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Verkoopprijs excl. BTW *</Label><Input type="number" step="0.01" value={form.prijs_excl_btw} onChange={e => setForm(p => ({ ...p, prijs_excl_btw: parseFloat(e.target.value) || 0 }))} required className="rounded-xl" /></div>
-              <div><Label>Kostprijs</Label><Input type="number" step="0.01" value={form.kostprijs ?? ""} onChange={e => setForm(p => ({ ...p, kostprijs: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
+              <div>
+                <Label>Inkoopprijs (kostprijs)</Label>
+                <Input type="number" step="0.01" value={form.kostprijs ?? ""} onChange={e => setForm(p => ({ ...p, kostprijs: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" />
+                {form.kostprijs != null && form.prijs_excl_btw > 0 && (() => {
+                  const marge = ((form.prijs_excl_btw - form.kostprijs) / form.prijs_excl_btw) * 100;
+                  const kleur = marge >= 20 ? "text-success" : marge >= 10 ? "text-warning-foreground" : "text-error";
+                  return <p className={`text-xs mt-1 font-medium ${kleur}`}>Marge: {marge.toFixed(1)}%</p>;
+                })()}
+              </div>
               <div><Label>BTW %</Label><Input type="number" value={form.btw_percentage} onChange={e => setForm(p => ({ ...p, btw_percentage: parseInt(e.target.value) || 21 }))} className="rounded-xl" /></div>
               <div>
                 <Label>Eenheid</Label>
@@ -204,6 +217,42 @@ export default function ProductInlineForm({
               <div><Label>Min. voorraad (waarschuwing)</Label><Input type="number" min="0" value={form.min_voorraad ?? ""} onChange={e => setForm(p => ({ ...p, min_voorraad: e.target.value ? parseInt(e.target.value) : null }))} className="rounded-xl" /></div>
               <div><Label>Max korting €</Label><Input type="number" step="0.01" value={form.max_korting_euro ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_euro: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
               <div><Label>Max korting %</Label><Input type="number" step="0.1" value={form.max_korting_percentage ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_percentage: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
+            </div>
+            <div className="rounded-xl border p-4 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <Label className="text-sm">Heeft serienummer</Label>
+                  <p className="text-xs text-muted-foreground">Bij oplevering wordt per stuk een SN gevraagd.</p>
+                </div>
+                <Switch checked={form.heeft_serienummer} onCheckedChange={(v) => setForm(p => ({ ...p, heeft_serienummer: v }))} />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <Label className="text-sm">Samengesteld product (assemblage)</Label>
+                  <p className="text-xs text-muted-foreground">Combineer meerdere producten tot één bundel. Beheer de stuklijst via de module Samengestelde producten.</p>
+                </div>
+                <Switch checked={form.is_assemblage} onCheckedChange={(v) => setForm(p => ({ ...p, is_assemblage: v }))} />
+              </div>
+              {form.is_assemblage && (
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div>
+                    <Label>Prijsstrategie</Label>
+                    <Select value={form.prijs_strategie} onValueChange={(v) => setForm(p => ({ ...p, prijs_strategie: v as "vast" | "som_componenten" }))}>
+                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vast">Vaste bundelprijs</SelectItem>
+                        <SelectItem value="som_componenten">Som van componenten + opslag</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.prijs_strategie === "som_componenten" && (
+                    <div>
+                      <Label>Opslag / marge (%)</Label>
+                      <Input type="number" step="0.1" value={form.marge_opslag_percentage} onChange={e => setForm(p => ({ ...p, marge_opslag_percentage: parseFloat(e.target.value) || 0 }))} className="rounded-xl" />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

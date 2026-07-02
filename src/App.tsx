@@ -23,6 +23,7 @@ import GebruikerDetail from "@/pages/GebruikerDetail";
 import Adviseurs from "@/pages/Adviseurs";
 import Leads from "@/pages/Leads";
 import Producten from "@/pages/Producten";
+import Assemblages from "@/pages/Assemblages";
 import Voorraad from "@/pages/Voorraad";
 import Schouwen from "@/pages/Schouwen";
 import SchouwSnelstart from "@/pages/SchouwSnelstart";
@@ -227,6 +228,9 @@ const App = () => (
               } />
               <Route path="/producten/merken" element={
                 <ProtectedRoute moduleKey="producten" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff"]}><MerkenBeheer /></ProtectedRoute>
+              } />
+              <Route path="/producten/assemblages" element={
+                <ProtectedRoute moduleKey="assemblages" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Assemblages /></ProtectedRoute>
               } />
               <Route path="/voorraad" element={
                 <ProtectedRoute moduleKey="voorraad" allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"]}><Voorraad /></ProtectedRoute>
