@@ -28,6 +28,7 @@ import LogContactmomentCard from "@/components/contactmomenten/LogContactmomentC
 import EntiteitDocumenten from "@/components/documenten/EntiteitDocumenten";
 import KlantNotitieEditor from "@/components/klanten/detail/KlantNotitieEditor";
 import QuickSelfServiceSchouwDialog from "@/components/schouwen/QuickSelfServiceSchouwDialog";
+import ContactpersonenKaart from "@/components/contactpersonen/ContactpersonenKaart";
 
 const KlantDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -326,6 +327,12 @@ const KlantDetail = () => {
               />
 
               <WoningProductenTab klantId={klant.id} leadId={klant.lead_id} />
+
+              <ContactpersonenKaart
+                entiteitType="klant"
+                entiteitId={klant.id}
+                partnerId={klant.partner_id}
+              />
 
               <Card className="rounded-2xl border-0 shadow-sm">
                 <CardHeader className="pb-3">
