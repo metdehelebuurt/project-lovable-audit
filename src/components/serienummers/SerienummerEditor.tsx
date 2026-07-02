@@ -43,7 +43,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     queryFn: async () => {
       const { data } = await supabase
         .from("producten")
-        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code, omvormer_modulair, heeft_backup_box")
+        .select("id, naam, merk, model, categorie, artikelnummer, ean_code, product_code, omvormer_modulair, heeft_backup_box, heeft_serienummer, is_assemblage")
         .eq("partner_id", partnerId)
         .order("naam");
       return data ?? [];
@@ -69,6 +69,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
         return {
           omschrijving: String(o.omschrijving ?? ""),
           aantal: Number(o.aantal ?? 1) || 1,
+          product_id: (o.product_id as string | undefined) ?? undefined,
         };
       });
     },
@@ -79,28 +80,70 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const alleRegels = useMemo(() => {
     const gecombineerd = [...regels, ...opdrachtRegels];
     const seen = new Set<string>();
-    const uniek: Array<{ omschrijving: string; aantal: number }> = [];
+    const uniek: Array<{ omschrijving: string; aantal: number; product_id?: string }> = [];
     gecombineerd.forEach((r) => {
-      const key = r.omschrijving.trim().toLowerCase();
+      const key = ((r as any).product_id ?? r.omschrijving.trim().toLowerCase()) as string;
       if (!key || seen.has(key)) return;
       seen.add(key);
-      uniek.push(r);
+      uniek.push(r as any);
     });
     return uniek;
   }, [regels, opdrachtRegels]);
+
+  // Assemblages die op de order staan → haal componenten op om ook SN's per
+  // component te kunnen registreren.
+  const assemblageIdsOpOrder = useMemo(() => {
+    const ids = new Set<string>();
+    alleRegels.forEach((r) => {
+      const pid = (r as any).product_id as string | undefined;
+      const p = pid ? producten.find((x: any) => x.id === pid) : matchProductOpRegel(r.omschrijving, producten);
+      if (p && (p as any).is_assemblage) ids.add((p as any).id);
+    });
+    return Array.from(ids);
+  }, [alleRegels, producten]);
+
+  const { data: bundelComponenten = [] } = useQuery({
+    queryKey: ["sn-bundel-componenten", assemblageIdsOpOrder],
+    enabled: assemblageIdsOpOrder.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("product_componenten" as any)
+        .select("assemblage_id, component_id, aantal, component:producten!product_componenten_component_id_fkey(id, naam, merk, heeft_serienummer, omvormer_modulair, heeft_backup_box)")
+        .in("assemblage_id", assemblageIdsOpOrder);
+      return (data ?? []) as any[];
+    },
+  });
 
   // Alle producten uit de orderregels (incl. assemblage / meerdere regels).
   // We houden per regel het aantal bij zodat we voortgang kunnen tonen.
   const geplandePlekken = useMemo(() => {
     if (!alleRegels.length || !producten.length) return [] as Array<{ product: any; aantal: number; omschrijving: string }>;
-    return alleRegels
-      .map((r) => {
-        const m = matchProductOpRegel(r.omschrijving, producten);
-        if (!m) return null;
-        return { product: m, aantal: Number(r.aantal ?? 1) || 1, omschrijving: r.omschrijving };
-      })
-      .filter(Boolean) as Array<{ product: any; aantal: number; omschrijving: string }>;
-  }, [alleRegels, producten]);
+    const uit: Array<{ product: any; aantal: number; omschrijving: string }> = [];
+    alleRegels.forEach((r) => {
+      const pid = (r as any).product_id as string | undefined;
+      const p = pid ? producten.find((x: any) => x.id === pid) : matchProductOpRegel(r.omschrijving, producten);
+      if (!p) return;
+      const aantal = Number(r.aantal ?? 1) || 1;
+      if ((p as any).is_assemblage) {
+        // Voeg alleen componenten toe die daadwerkelijk een SN krijgen.
+        const comps = bundelComponenten.filter((c) => c.assemblage_id === (p as any).id);
+        comps.forEach((c) => {
+          const cp = c.component;
+          if (!cp) return;
+          const heeftSN = cp.heeft_serienummer || cp.omvormer_modulair || cp.heeft_backup_box;
+          if (!heeftSN) return;
+          uit.push({
+            product: cp,
+            aantal: aantal * Number(c.aantal || 1),
+            omschrijving: `${(p as any).naam} → ${cp.naam}`,
+          });
+        });
+      } else if ((p as any).heeft_serienummer || (p as any).omvormer_modulair || (p as any).heeft_backup_box) {
+        uit.push({ product: p, aantal, omschrijving: r.omschrijving });
+      }
+    });
+    return uit;
+  }, [alleRegels, producten, bundelComponenten]);
 
   // Uniek gesuggereerde producten voor de dropdown (★ bovenaan).
   const gesuggereerd = useMemo(() => {
