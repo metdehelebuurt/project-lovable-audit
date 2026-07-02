@@ -45,13 +45,11 @@ export function useLeadKlantstatus(leadId: string | undefined) {
     enabled: !!leadId,
     staleTime: 60_000,
     queryFn: async (): Promise<Klantstatus> => {
-      const { data, error } = await supabase.rpc(
-        // @ts-expect-error rpc types worden na regen bijgewerkt
-        "affiliate_lead_klantstatus",
-        { _lead_id: leadId },
-      );
+      const { data, error } = await supabase.rpc("affiliate_lead_klantstatus", {
+        _lead_id: leadId!,
+      });
       if (error) throw error;
-      return (data ?? { status: "geen_match" }) as Klantstatus;
+      return (data ?? { status: "geen_match" }) as unknown as Klantstatus;
     },
   });
 }
