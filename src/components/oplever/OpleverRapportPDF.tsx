@@ -33,12 +33,17 @@ interface Props {
   partnerContact?: string;
   ordernummer?: string;
   meegeleverdeDocumenten?: { naam: string; bestandsnaam: string; url: string }[];
+  /** DataURL-versies van assets zodat html2canvas geen CORS/relatieve-URL-issues krijgt. */
+  installateurSigDataUrl?: string | null;
+  klantSigDataUrl?: string | null;
+  partnerLogoDataUrl?: string | null;
 }
 
-const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer, meegeleverdeDocumenten }, ref) => {
+const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer, meegeleverdeDocumenten, installateurSigDataUrl, klantSigDataUrl, partnerLogoDataUrl }, ref) => {
   const verdict = (rapport.bevindingen?.verdict ?? "goedgekeurd") as Verdict;
   const stempelColor = VERDICT_COLOR[verdict];
   const stempelLabel = VERDICT_LABEL[verdict];
+  const logoSrc = partnerLogoDataUrl ?? partnerLogoUrl ?? null;
 
   return (
     <div
@@ -57,13 +62,15 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
       <header style={{ borderBottom: "2px solid #6d28d9", paddingBottom: "10mm", marginBottom: "10mm" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "4mm" }}>
-            {partnerLogoUrl ? (
+            {logoSrc ? (
               <img
-                src={partnerLogoUrl}
+                src={logoSrc}
                 alt={partnerNaam ?? "Partner logo"}
                 crossOrigin="anonymous"
                 style={{ maxHeight: "25mm", maxWidth: "70mm", objectFit: "contain" }}
               />
+            ) : partnerNaam ? (
+              <div style={{ fontSize: "16pt", fontWeight: 700, color: "#111827" }}>{partnerNaam}</div>
             ) : null}
             <div>
             <div style={{ fontSize: "10pt", color: "#6b7280" }}>NEN 1010 / NEN 3140 Opleverrapport</div>
@@ -257,10 +264,10 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
         <p style={{ marginTop: "6mm", whiteSpace: "pre-wrap" }}>{rapport.conformiteitstekst}</p>
       </Section>
 
-      <Section title="Ondertekening">
+      <Section title="Ondertekening" avoidBreak>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10mm" }}>
-          <SignBlock title="Installateur" sig={rapport.installateur_handtekening} />
-          <SignBlock title="Klant" sig={rapport.klant_handtekening} />
+          <SignBlock title="Installateur" sig={rapport.installateur_handtekening} dataUrl={installateurSigDataUrl ?? null} />
+          <SignBlock title="Klant" sig={rapport.klant_handtekening} dataUrl={klantSigDataUrl ?? null} />
         </div>
       </Section>
 
@@ -298,9 +305,9 @@ const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerN
 OpleverRapportPDF.displayName = "OpleverRapportPDF";
 export default OpleverRapportPDF;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, avoidBreak }: { title: string; children: React.ReactNode; avoidBreak?: boolean }) {
   return (
-    <section style={{ marginBottom: "8mm", pageBreakInside: "avoid" }}>
+    <section style={{ marginBottom: "8mm", pageBreakInside: "avoid", breakInside: "avoid", ...(avoidBreak ? { pageBreakBefore: "auto" as const } : null) }}>
       <h2 style={{ fontSize: "13pt", color: "#111827", borderBottom: "1px solid #e5e7eb", paddingBottom: "2mm", marginBottom: "3mm" }}>{title}</h2>
       {children}
     </section>
@@ -316,12 +323,22 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SignBlock({ title, sig }: { title: string; sig: { image_url: string; name: string; signed_at: string } | null }) {
+function SignBlock({ title, sig, dataUrl }: { title: string; sig: { image_url: string; name: string; signed_at: string } | null; dataUrl?: string | null }) {
+  const src = dataUrl ?? null;
   return (
     <div>
       <div style={{ fontSize: "10pt", color: "#6b7280", marginBottom: "2mm" }}>{title}</div>
       <div style={{ height: "30mm", border: "1px dashed #cbd5e1", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {sig?.image_url ? <img src={sig.image_url} alt="handtekening" style={{ maxHeight: "28mm" }} /> : <span style={{ color: "#94a3b8" }}>Niet ondertekend</span>}
+        {src ? (
+          <img src={src} alt="handtekening" crossOrigin="anonymous" style={{ maxHeight: "28mm", maxWidth: "100%", objectFit: "contain" }} />
+        ) : sig ? (
+          <div style={{ textAlign: "center", padding: "0 4mm" }}>
+            <div style={{ fontFamily: "'Segoe Script', 'Brush Script MT', cursive", fontSize: "18pt", color: "#111827", lineHeight: 1 }}>{sig.name}</div>
+            <div style={{ fontSize: "8pt", color: "#16a34a", marginTop: "2mm", fontWeight: 600 }}>✓ Digitaal ondertekend</div>
+          </div>
+        ) : (
+          <span style={{ color: "#94a3b8" }}>Niet ondertekend</span>
+        )}
       </div>
       {sig ? (
         <div style={{ fontSize: "9pt", color: "#475569", marginTop: "2mm" }}>

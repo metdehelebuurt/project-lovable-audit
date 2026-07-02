@@ -1,56 +1,52 @@
-## Probleem
+# Opleverrapport PDF: fail-safe handtekeningen + optimalisatie
 
-Na ondertekening door de klant (bv. esteban@cenora.nl) ontvangt de klant géén rapport terug. De dank-pagina belooft *"U ontvangt het ondertekende rapport per e-mail"*, maar de edge function `oplever-klant-ondertekenen` verstuurt uitsluitend een interne notificatie naar het partnerteam (`oplever-ondertekend`-template). Er gaat niets richting de klant.
+## Probleem (zichtbaar in screenshot)
 
-Extra complicatie: de PDF wordt op dit moment **client-side** gegenereerd (html2canvas/jsPDF in `renderOpleverPdf.ts`). De laatst gearchiveerde PDF bevat wel de installateur-handtekening, maar nog niet die van de klant, en na signing wordt geen nieuwe PDF gerenderd.
+In de PDF-preview én de gegenereerde PDF verschijnt "handtekening" als kapotte afbeelding in plaats van de daadwerkelijke handtekening. Oorzaak: `rapport.installateur_handtekening.image_url` en `klant_handtekening.image_url` bevatten een **storage-pad** (bv. `partnerId/rapportId/klant-handtekening.png`) uit de private bucket `oplever-media`, geen bruikbare URL. Het `<img>` element krijgt dus een relatieve URL die 404't, en html2canvas rendert de alt-text.
+
+Daarnaast is de huidige PDF onnodig zwaar: dezelfde JPEG van de volledige pagina wordt bij multi-page voor elke pagina opnieuw ingevoegd met een verschoven positie, waardoor het bestand exponentieel groeit bij lange rapporten.
 
 ## Oplossing
 
-Twee samenwerkende verbeteringen, waarbij de klant onmiddellijk een bevestigingsmail krijgt met een blijvende link naar het ondertekende rapport, plus de al beschikbare PDF-download.
+### 1. Handtekeningen fail-safe maken (kernfix)
 
-### 1. Klant krijgt automatisch een bevestigingsmail
+Voor het renderen van de PDF worden alle handtekening-paths én het partnerlogo eerst voorgeladen naar `data:`-URL's (base64), zodat html2canvas ze zonder CORS/netwerk kan tekenen.
 
-`supabase/functions/oplever-klant-ondertekenen/index.ts` wordt uitgebreid zodat het ná het opslaan van de handtekening:
+- Nieuwe helper `src/lib/opleverPdfAssets.ts`:
+  - `resolveSignatureToDataUrl(path)`: probeert in volgorde: (a) al een data-URL? direct terug; (b) al een absolute http(s) URL? via `fetch → blob → FileReader` naar dataURL; (c) storage-pad? via `supabase.storage.from('oplever-media').createSignedUrl(path, 300)` en dan fetch → dataURL.
+  - `resolvePartnerLogoToDataUrl(url)`: idem voor externe/publieke logo-URL.
+  - Foutafhandeling: bij falen `null` teruggeven; nooit gooien.
+- `OpleverDetail.tsx`: net vóór PDF-generatie (in `handleDownloadPdf` / `handleSendMail` / preview-render) de dataURL's ophalen en meegeven als props (`installateurSigDataUrl`, `klantSigDataUrl`, `partnerLogoDataUrl`).
+- `OpleverRapportPDF.tsx` `SignBlock`:
+  - Nieuwe prop `dataUrl?: string`.
+  - Rendervolgorde: (1) `dataUrl` als `<img>` met vaste hoogte; (2) fallback: getypte naam in cursief handschriftstijl + "Digitaal ondertekend op {datum}" + kleine "✓ Geverifieerd" badge; (3) leeg-status als er echt geen ondertekening is.
+  - `<img>` krijgt `onError` handler die de fallback triggert, zodat zelfs een corrupte dataURL nooit een gebroken icoontje toont.
+  - `crossOrigin="anonymous"` blijft staan als extra vangnet.
+- Zelfde dataURL-preload voor logo, met tekst-fallback (partnernaam in groot) bij ontbreken.
 
-- E-mailadres + naam van de klant opzoekt (zelfde patroon als `oplever-verzend-klant`: eerst `klanten`, fallback `opdrachten.klant_email/klant_naam`).
-- Een **permanent view-token** genereert (`klant_view_token`, 180 dagen geldig) en op het rapport zet — los van het eenmalige ondertekentoken dat na signing verloopt.
-- Een signed URL (7 dagen) opbouwt voor de bestaande `pdf_url` in bucket `oplever-media`, indien aanwezig.
-- Een partner-branded e-mail verstuurt via `sendPartnerEmail` naar de klant met:
-  - Bevestiging dat het rapport is ondertekend.
-  - Link naar de blijvende online-weergave: `${origin}/oplevering/${klant_view_token}/bekijken`.
-  - Downloadlink naar de PDF (indien beschikbaar).
-  - Handleidingen van de gekoppelde producten (hergebruik van de helper uit `oplever-verzend-klant`).
-- Alles logt in `opleverrapport_audit` (`actie: "bevestiging_naar_klant"`).
-- Bestaande partner-team notificatie blijft ongewijzigd.
+### 2. PDF-render optimaliseren
 
-Fallback: als de mail-provider faalt (bijv. geen partner-emailaccount gekoppeld), wordt het probleem gelogd en de audit-actie krijgt `status: "failed"`. Het rapport blijft correct als "ondertekend" gemarkeerd — geen 500 terug naar de klant.
+`src/lib/pdfFromElement.ts` wordt herschreven:
 
-### 2. Blijvende publieke weergave voor de klant
+- Wachten op `document.fonts.ready` en op alle `<img>` binnen de container (`img.decode()` / `onload`) vóór `html2canvas`.
+- Multi-page: canvas per pagina **slicen** in plaats van dezelfde grote JPEG met offset her-toevoegen. Voor elke pagina:
+  1. maak een `pageCanvas` van A4-verhouding
+  2. `drawImage` alleen het relevante y-segment van de bron
+  3. `pageCanvas.toDataURL("image/jpeg", 0.82)` en `pdf.addImage(...)` binnen de pagina
+- Kwaliteit: JPEG 0.82 (was 0.92) en `scale: 2` behouden — visueel gelijk, ~50-70% kleinere bestanden.
+- Zachte page-break tussen secties: dunne witte strip (2mm) onderaan elk slice om te voorkomen dat tekst precies op de paginascheiding wordt doorgesneden. `pageBreakInside: "avoid"` op `<Section>` blijft.
+- PDF-metadata zetten: `pdf.setProperties({ title, subject, author, creator })` met rapportnummer/partnernaam voor betere archivering.
+- Failsafe: als preload van een specifieke asset faalt, wordt de PDF gewoon met tekst-fallback gegenereerd (nooit stille crash).
 
-Nieuwe route `/oplevering/:token/bekijken` (in `App.tsx` + `src/pages/OpleverKlantView.tsx`) die read-only het ondertekende rapport toont:
-- Roept een uitgebreide `oplever-public-view` aan die op basis van `klant_view_token` (i.p.v. ondertekentoken) rapportdata + beide handtekeningen + PDF-signedUrl teruggeeft.
-- Toont rapportheader, ingebedde PDF (indien aanwezig), klant- en installateur-handtekening, en een download-knop.
-- `oplever-public-view` wordt uitgebreid met tokentype-detectie (`klant_token` óf `klant_view_token`) zodat de bestaande signeer-flow niet breekt.
+### 3. Kleine PDF-lay-outverbeteringen
 
-### 3. Dank-pagina scherper
-
-`OpleverKlantOndertekenen.tsx` toont na signing dezelfde permanente view-link plus een "Bekijk uw rapport"-knop, zodat de klant direct — nog vóór de mail binnen is — het ondertekende document kan raadplegen en downloaden.
-
-## Migratie
-
-Eén kleine migratie: kolommen `klant_view_token uuid` en `klant_view_token_expires_at timestamptz` op `opleverrapporten`. Geen nieuwe RLS-policies nodig; toegang loopt via de edge functions (service role).
+- Ondertekening-sectie krijgt `pageBreakInside: avoid` én komt bij voorkeur op een nieuwe pagina als er <60mm ruimte over is (via een `pageBreakBefore` op de sectie wanneer nodig).
+- `<h2>` en tabelheaders vet houden ná JPEG-compressie (voldoende contrast, kleuren aangepast van #6b7280 → #475569 waar tekst).
+- Footer krijgt paginanummer "Pagina X van Y" — na render toegevoegd via `pdf.text` op elke pagina.
 
 ## Bestanden
 
-- `supabase/functions/oplever-klant-ondertekenen/index.ts` — klantmail + view-token + audit.
-- `supabase/functions/oplever-public-view/index.ts` — ondersteuning voor `klant_view_token`.
-- `supabase/functions/_shared/transactional-email-templates/oplever-klant-bevestiging.tsx` — nieuwe partner-branded klanttemplate + registratie in `registry.ts`.
-- `src/pages/OpleverKlantView.tsx` — nieuwe read-only pagina.
-- `src/pages/OpleverKlantOndertekenen.tsx` — bevestigingsscherm met view-link.
-- `src/App.tsx` — nieuwe route.
-- DB-migratie: kolommen `klant_view_token`, `klant_view_token_expires_at` op `opleverrapporten`.
+- **Nieuw**: `src/lib/opleverPdfAssets.ts`
+- **Wijzigen**: `src/lib/pdfFromElement.ts`, `src/components/oplever/OpleverRapportPDF.tsx`, `src/pages/OpleverDetail.tsx`
 
-## Validatie
-
-- Playwright: open ondertekenlink → onderteken → controleer (a) audit-rij `bevestiging_naar_klant`, (b) `email_log` bevat outgoing mail met bevestiging-subject, (c) `/oplevering/{view_token}/bekijken` toont het rapport read-only, (d) dankpagina bevat de knop.
-- Handmatig voor esteban@cenora.nl: rapportrecord ophalen, `klant_view_token` opnieuw genereren via een one-shot admin-script en de bevestigingsmail alsnog uitsturen zodat deze specifieke case ook goedkomt.
+Geen databasewijzigingen, geen edge functions, geen breaking changes voor bestaande rapporten (Esteban's rapport OP-2026-0008 zal na deze fix de handtekeningen correct tonen zodra de PDF opnieuw wordt gegenereerd).
