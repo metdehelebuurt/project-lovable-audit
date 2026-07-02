@@ -46,13 +46,16 @@ const SchouwDetail = () => {
   const { profile } = useAuth();
 
   const { data: schouw, isLoading } = useQuery({
-    queryKey: ["schouw", id],
+    queryKey: ["schouw", id, profile?.rol],
     queryFn: async () => {
-      const { data, error } = await supabase.from("schouwen").select("*").eq("id", id!).single();
+      const selectFields = profile?.rol === "installateur"
+        ? "id, schouw_nummer, lead_id, adviseur_id, installateur_id, partner_id, categorie, status, geplande_datum, klant_email, consument_naam, notities, gegevens, fotos, checklist, aandachtspunten, handtekening_data, handtekening_akkoord_op, created_at, updated_at"
+        : "*";
+      const { data, error } = await supabase.from("schouwen").select(selectFields).eq("id", id!).single();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !!profile?.rol,
   });
 
   if (isLoading || !schouw) return <div className="p-6 text-muted-foreground">Laden...</div>;
