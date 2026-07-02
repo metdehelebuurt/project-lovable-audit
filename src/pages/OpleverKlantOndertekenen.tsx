@@ -24,6 +24,8 @@ export default function OpleverKlantOndertekenen() {
   const [sig, setSig] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [klaar, setKlaar] = useState(false);
+  const [viewLink, setViewLink] = useState<string | null>(null);
+  const [bevestigingStatus, setBevestigingStatus] = useState<"sent" | "skipped_no_email" | "failed" | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -48,10 +50,13 @@ export default function OpleverKlantOndertekenen() {
     }
     try {
       setBusy(true);
-      const { error } = await supabase.functions.invoke("oplever-klant-ondertekenen", {
+      const { data: resp, error } = await supabase.functions.invoke("oplever-klant-ondertekenen", {
         body: { token, naam, signature_image: sig },
       });
       if (error) throw error;
+      const r = resp as { view_link?: string; klant_bevestiging?: "sent" | "skipped_no_email" | "failed" } | null;
+      if (r?.view_link) setViewLink(r.view_link);
+      if (r?.klant_bevestiging) setBevestigingStatus(r.klant_bevestiging);
       setKlaar(true);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Mislukt";
@@ -67,7 +72,20 @@ export default function OpleverKlantOndertekenen() {
     return (
       <div className="max-w-2xl mx-auto p-8 text-center space-y-4">
         <h1 className="text-2xl font-semibold">Bedankt voor uw ondertekening</h1>
-        <p className="text-muted-foreground">U ontvangt het ondertekende rapport per e-mail.</p>
+        <p className="text-muted-foreground">
+          {bevestigingStatus === "sent"
+            ? "U ontvangt zojuist een bevestiging per e-mail met een blijvende link naar uw rapport."
+            : bevestigingStatus === "failed"
+            ? "De e-mailbevestiging kon niet worden verzonden. U kunt uw rapport hieronder direct bekijken en downloaden."
+            : "Uw ondertekening is opgeslagen. U kunt uw rapport hieronder direct bekijken en downloaden."}
+        </p>
+        {viewLink ? (
+          <div className="pt-2">
+            <Button asChild>
+              <a href={viewLink}>Bekijk uw ondertekende rapport</a>
+            </Button>
+          </div>
+        ) : null}
       </div>
     );
 
