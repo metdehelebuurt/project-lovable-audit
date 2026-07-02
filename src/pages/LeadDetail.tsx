@@ -656,6 +656,14 @@ const LeadDetail = () => {
             <SolarPotentieCheck adres={lead.adres} postcode={lead.postcode} plaats={lead.plaats} />
           )}
 
+          {activeTab === "overzicht" && (
+            <ContactpersonenKaart
+              entiteitType="lead"
+              entiteitId={lead.id}
+              partnerId={lead.partner_id}
+            />
+          )}
+
           {/* KLANTDATA */}
           {activeTab === "klantdata" && (
             <Card className="rounded-2xl border-0 shadow-sm">
