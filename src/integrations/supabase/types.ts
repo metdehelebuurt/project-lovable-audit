@@ -1858,6 +1858,75 @@ export type Database = {
           },
         ]
       }
+      contactpersonen: {
+        Row: {
+          achternaam: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          functie: string | null
+          id: string
+          is_hoofdcontact: boolean
+          klant_id: string | null
+          lead_id: string | null
+          mobiel: string | null
+          notitie: string | null
+          partner_id: string
+          telefoon: string | null
+          updated_at: string
+          voornaam: string
+        }
+        Insert: {
+          achternaam?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          functie?: string | null
+          id?: string
+          is_hoofdcontact?: boolean
+          klant_id?: string | null
+          lead_id?: string | null
+          mobiel?: string | null
+          notitie?: string | null
+          partner_id: string
+          telefoon?: string | null
+          updated_at?: string
+          voornaam: string
+        }
+        Update: {
+          achternaam?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          functie?: string | null
+          id?: string
+          is_hoofdcontact?: boolean
+          klant_id?: string | null
+          lead_id?: string | null
+          mobiel?: string | null
+          notitie?: string | null
+          partner_id?: string
+          telefoon?: string | null
+          updated_at?: string
+          voornaam?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contactpersonen_klant_id_fkey"
+            columns: ["klant_id"]
+            isOneToOne: false
+            referencedRelation: "klanten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contactpersonen_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daklayouts: {
         Row: {
           aantal_panelen: number
