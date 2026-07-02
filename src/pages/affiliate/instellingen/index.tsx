@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Mail, Settings, ArrowRight } from "lucide-react";
+import { Mail, Settings, ArrowRight, Bell } from "lucide-react";
 
 const items = [
   {
@@ -14,6 +14,12 @@ const items = [
     titel: "Pijplijn-configuratie",
     omschrijving: "Beheer labels, kleuren en volgorde van de salesfases.",
     icon: Settings,
+  },
+  {
+    to: "/affiliates/instellingen/notificaties",
+    titel: "Notificatievoorkeuren",
+    omschrijving: "Kies per leadtype welke kanalen en tijden je gebruikt.",
+    icon: Bell,
   },
 ];
 
