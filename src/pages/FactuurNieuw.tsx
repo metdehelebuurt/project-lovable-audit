@@ -338,11 +338,32 @@ export default function FactuurNieuw() {
             ? `${prefill.expandedBundles} bundel(s) uitgeklapt naar ${prefill.totalComponentLines} componentregels.`
             : "Bundels staan nu als één inkoopregel per stuk op de bestelling.",
         });
+        void analyseSplit(prefill.regels);
       }
     } catch (e: any) {
       toast({ title: "Herladen mislukt", description: e?.message ?? String(e), variant: "destructive" });
     } finally {
       setRePrefilling(false);
+    }
+  };
+
+  // Analyseer inkoopregels per leverancier. Bij meerdere groepen tonen we een dialoog.
+  // Bij één groep vullen we automatisch de leverancier op de bestaande inkooporder.
+  const analyseSplit = async (inkoopRegels: OfferteRegel[]) => {
+    if (!profile?.partner_id) return;
+    try {
+      const groepen = await splitPerLeverancier(inkoopRegels, profile.partner_id);
+      if (groepen.length <= 1) {
+        const enige = groepen[0];
+        if (enige?.leverancier_id) setLeverancierId(enige.leverancier_id);
+        setSplitGroepen(groepen);
+        return;
+      }
+      setSplitGroepen(groepen);
+      setSplitDialogOpen(true);
+    } catch (e) {
+      // Analyse mag nooit de flow blokkeren.
+      console.error("splitPerLeverancier faalde", e);
     }
   };
 
