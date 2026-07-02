@@ -12,6 +12,7 @@ function routeFor(et: string | null, id: string | null) {
     helpdesk_tickets: `/helpdesk/tickets/${id}`,
     installaties: `/installaties/${id}`,
     leads: `/leads/${id}`,
+    affiliate_leads: `/affiliates/leads/${id}`,
     offertes: `/offertes/${id}`,
     schouwen: `/schouwen/${id}`,
     opdrachten: `/opdrachten/${id}`,
