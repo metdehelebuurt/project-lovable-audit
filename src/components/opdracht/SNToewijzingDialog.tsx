@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Wand2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSNToewijzing, useOpslaanSNToewijzing, type SNAssignment, type SNTarget } from "@/hooks/logistiek/useSNToewijzing";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import SNToewijzingLog from "./SNToewijzingLog";
 
 interface Regel { omschrijving: string; aantal: number }
 
@@ -147,6 +149,12 @@ const SNToewijzingDialog = ({ open, onOpenChange, opdrachtId, partnerId, regels 
           </DialogDescription>
         </DialogHeader>
 
+        <Tabs defaultValue="toewijzen" className="w-full">
+          <TabsList>
+            <TabsTrigger value="toewijzen">Toewijzen</TabsTrigger>
+            <TabsTrigger value="historie">Historie</TabsTrigger>
+          </TabsList>
+          <TabsContent value="toewijzen" className="space-y-4">
         {isLoading && (
           <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
             <Loader2 className="h-4 w-4 animate-spin" /> Laden...
@@ -249,6 +257,11 @@ const SNToewijzingDialog = ({ open, onOpenChange, opdrachtId, partnerId, regels 
             })}
           </div>
         )}
+          </TabsContent>
+          <TabsContent value="historie">
+            <SNToewijzingLog opdrachtId={opdrachtId} />
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Annuleren</Button>
