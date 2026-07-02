@@ -510,8 +510,59 @@ export default function FactuurDetail() {
             </div>
             {doc.notities && (
               <div className="border-t pt-3">
-                <p className="text-muted-foreground text-xs mb-1">Notities</p>
+                <p className="text-muted-foreground text-xs mb-1">
+                  {doc.type === "inkooporder" ? "Opmerkingen voor leverancier" : "Notities"}
+                </p>
                 <p>{doc.notities}</p>
+              </div>
+            )}
+            {doc.type === "inkooporder" && (doc.gewenste_leverdatum || doc.leverancier_referentie || doc.leveringsadres || doc.interne_notities) && (
+              <div className="border-t pt-3 space-y-2">
+                {doc.gewenste_leverdatum && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Gewenste leverdatum</span>
+                    <span>{new Date(doc.gewenste_leverdatum).toLocaleDateString("nl-NL")}</span>
+                  </div>
+                )}
+                {doc.bevestigde_leverdatum && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bevestigde leverdatum</span>
+                    <span>{new Date(doc.bevestigde_leverdatum).toLocaleDateString("nl-NL")}</span>
+                  </div>
+                )}
+                {doc.leverancier_referentie && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Referentie</span>
+                    <span className="font-mono text-xs">{doc.leverancier_referentie}</span>
+                  </div>
+                )}
+                {doc.leveringsadres && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Afleveradres</p>
+                    {doc.leveringsadres.contactpersoon && (
+                      <p className="font-medium">{doc.leveringsadres.contactpersoon}</p>
+                    )}
+                    {doc.leveringsadres.telefoon && (
+                      <p className="text-muted-foreground">{doc.leveringsadres.telefoon}</p>
+                    )}
+                    {doc.leveringsadres.email && (
+                      <p className="text-muted-foreground">{doc.leveringsadres.email}</p>
+                    )}
+                    {doc.leveringsadres.straat && <p>{doc.leveringsadres.straat}</p>}
+                    {(doc.leveringsadres.postcode || doc.leveringsadres.plaats) && (
+                      <p>{doc.leveringsadres.postcode} {doc.leveringsadres.plaats}</p>
+                    )}
+                    {doc.leveringsadres.land && doc.leveringsadres.land !== "NL" && (
+                      <p>{doc.leveringsadres.land}</p>
+                    )}
+                  </div>
+                )}
+                {doc.interne_notities && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Interne notities</p>
+                    <p className="text-sm">{doc.interne_notities}</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

@@ -21,6 +21,8 @@ import { buildFactuurFromOfferte, buildTermijnRegels, getTermijnContext, type Of
 import { prefillRegelsUitOpdracht } from "@/lib/inkoopFromOpdracht";
 import { splitPerLeverancier, type LeverancierGroep } from "@/lib/inkoopSplitPerLeverancier";
 import { InkoopSplitDialog } from "@/components/inkoop/InkoopSplitDialog";
+import InkoopLeveringVelden, { emptyInkoopLevering, type InkoopLeveringWaarden } from "@/components/inkoop/InkoopLeveringVelden";
+import { useInkoopInstellingen } from "@/hooks/inkoop/useInkoopInstellingen";
 
 type DocType = "verkoopfactuur" | "creditnota" | "inkoopfactuur" | "inkooporder" | "pakbon";
 
@@ -65,6 +67,14 @@ export default function FactuurNieuw() {
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [splitGroepen, setSplitGroepen] = useState<LeverancierGroep[]>([]);
 
+  // Inkooporder — levering & referentie
+  const [levering, setLevering] = useState<InkoopLeveringWaarden>(() => emptyInkoopLevering());
+  const patchLevering = (patch: Partial<InkoopLeveringWaarden>) =>
+    setLevering((prev) => ({ ...prev, ...patch }));
+  const { data: inkoopInstellingen } = useInkoopInstellingen(
+    docType === "inkooporder" ? profile?.partner_id : undefined,
+  );
+
   // Eenmalige relatie state
   const [useEenmalig, setUseEenmalig] = useState(false);
   const [eenmaligNaam, setEenmaligNaam] = useState("");
@@ -93,6 +103,7 @@ export default function FactuurNieuw() {
   const [bvCustom, setBvCustom] = useState("");
 
   const isVerkoopfactuur = docType === "verkoopfactuur";
+  const isInkooporder = docType === "inkooporder";
 
   // Handmatig subtype (zonder offerte-context)
   const [handmatigSubtype, setHandmatigSubtype] = useState<HandmatigSubtype>("regulier");
@@ -231,6 +242,47 @@ export default function FactuurNieuw() {
       });
   }, [editId, prefilled]);
 
+  // Vul standaard leveringsadres uit inkoop-instellingen (alleen nieuwe inkooporders).
+  useEffect(() => {
+    if (!isInkooporder || isEdit) return;
+    const std = inkoopInstellingen?.leveringsadres;
+    if (!std) return;
+    setLevering((prev) => ({
+      ...prev,
+      adresStraat: prev.adresStraat || std.straat || "",
+      adresPostcode: prev.adresPostcode || std.postcode || "",
+      adresPlaats: prev.adresPlaats || std.plaats || "",
+      adresLand: prev.adresLand || std.land || "NL",
+    }));
+  }, [inkoopInstellingen, isInkooporder, isEdit]);
+
+  // Bij bewerken: laad leveringsvelden uit bestaand document.
+  useEffect(() => {
+    if (!editId || !isInkooporder) return;
+    supabase
+      .from("financiele_documenten")
+      .select("gewenste_leverdatum, leverancier_referentie, leveringsadres, interne_notities, notities")
+      .eq("id", editId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        const adres = (data.leveringsadres as any) || {};
+        setLevering({
+          gewensteLeverdatum: data.gewenste_leverdatum || emptyInkoopLevering().gewensteLeverdatum,
+          leverancierReferentie: data.leverancier_referentie || "",
+          contactpersoon: adres.contactpersoon || "",
+          contactTelefoon: adres.telefoon || "",
+          contactEmail: adres.email || "",
+          adresStraat: adres.straat || "",
+          adresPostcode: adres.postcode || "",
+          adresPlaats: adres.plaats || "",
+          adresLand: adres.land || "NL",
+          opmerkingenLeverancier: data.notities || "",
+          interneNotities: data.interne_notities || "",
+        });
+      });
+  }, [editId, isInkooporder]);
+
   // Pre-fill from source document (creditnota) or offerte
   useEffect(() => {
     if (prefilled || isEdit) return;
@@ -284,6 +336,25 @@ export default function FactuurNieuw() {
     else if (isInkoop(docType) && searchParams.get("opdracht") && profile?.partner_id) {
       const opdrachtParam = searchParams.get("opdracht")!;
       setBronOpdrachtId(opdrachtParam);
+      // Vul afleveradres/contact vanuit de verkooporder (klantgegevens) — alleen voor inkooporder.
+      if (isInkooporder) {
+        void supabase
+          .from("opdrachten")
+          .select("klant_naam, klant_telefoon, klant_adres, klant_postcode, klant_plaats")
+          .eq("id", opdrachtParam)
+          .single()
+          .then(({ data }) => {
+            if (!data) return;
+            setLevering((prev) => ({
+              ...prev,
+              contactpersoon: prev.contactpersoon || data.klant_naam || "",
+              contactTelefoon: prev.contactTelefoon || data.klant_telefoon || "",
+              adresStraat: prev.adresStraat || data.klant_adres || prev.adresStraat,
+              adresPostcode: prev.adresPostcode || data.klant_postcode || prev.adresPostcode,
+              adresPlaats: prev.adresPlaats || data.klant_plaats || prev.adresPlaats,
+            }));
+          });
+      }
       void prefillRegelsUitOpdracht(opdrachtParam, profile.partner_id, { expandAssemblies: true })
         .then((prefill) => {
           if (prefill.regels.length > 0) {
@@ -402,6 +473,33 @@ export default function FactuurNieuw() {
         }
       : null;
 
+    // Bouw levering-payload voor inkooporder.
+    const leveringsadresPayload = isInkooporder
+      ? (levering.adresStraat || levering.adresPostcode || levering.adresPlaats ||
+         levering.contactpersoon || levering.contactTelefoon || levering.contactEmail)
+        ? {
+            contactpersoon: levering.contactpersoon.trim() || null,
+            telefoon: levering.contactTelefoon.trim() || null,
+            email: levering.contactEmail.trim() || null,
+            straat: levering.adresStraat.trim() || null,
+            postcode: levering.adresPostcode.trim() || null,
+            plaats: levering.adresPlaats.trim() || null,
+            land: levering.adresLand.trim() || "NL",
+          }
+        : null
+      : undefined;
+    const inkoopExtras: Record<string, any> = isInkooporder
+      ? {
+          gewenste_leverdatum: levering.gewensteLeverdatum || null,
+          leverancier_referentie: levering.leverancierReferentie.trim() || null,
+          leveringsadres: leveringsadresPayload,
+          interne_notities: levering.interneNotities.trim() || null,
+        }
+      : {};
+    const notitiesToSave = isInkooporder
+      ? (levering.opmerkingenLeverancier.trim() || null)
+      : notities;
+
     if (isEdit) {
       // UPDATE bestaand document
       // Bij bewerken NA verzending: status nooit downgraden naar concept,
@@ -420,9 +518,10 @@ export default function FactuurNieuw() {
         korting_totaal: kortingTotaal,
         betalingstermijn_dagen: betalingstermijn,
         vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
-        notities,
+        notities: notitiesToSave,
         eenmalige_relatie: eenmaligData,
         status: finalStatus,
+        ...inkoopExtras,
       };
       if (isEditingVerzonden && existingVerzondenOp) {
         updates.verzonden_op = existingVerzondenOp;
@@ -496,7 +595,7 @@ export default function FactuurNieuw() {
         betalingstermijn_dagen: betalingstermijn,
         factuurdatum: new Date().toISOString().split("T")[0],
         vervaldatum: new Date(Date.now() + betalingstermijn * 86400000).toISOString().split("T")[0],
-        notities,
+        notities: notitiesToSave,
         created_by: user.id,
         eenmalige_relatie: eenmaligData,
         factuur_subtype: subtype,
@@ -513,6 +612,7 @@ export default function FactuurNieuw() {
             ? termijnPercentage
             : null,
         voorschot_van_facturen: voorschotIds,
+        ...inkoopExtras,
       };
 
       const { data, error } = await supabase.from("financiele_documenten").insert(doc).select().single();
@@ -814,10 +914,12 @@ export default function FactuurNieuw() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label>Notities</Label>
-              <Textarea value={notities} onChange={(e) => setNotities(e.target.value)} placeholder="Interne notities..." rows={3} />
-            </div>
+            {!isInkooporder && (
+              <div className="space-y-2">
+                <Label>Notities</Label>
+                <Textarea value={notities} onChange={(e) => setNotities(e.target.value)} placeholder="Interne notities..." rows={3} />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -836,6 +938,12 @@ export default function FactuurNieuw() {
             />
           </CardContent>
         </Card>
+
+        {isInkooporder && (
+          <div className="lg:col-span-3">
+            <InkoopLeveringVelden waarden={levering} onChange={patchLevering} />
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-3">
