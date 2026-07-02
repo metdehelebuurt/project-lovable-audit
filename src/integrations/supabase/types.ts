@@ -7752,6 +7752,7 @@ export type Database = {
       }
       product_serienummers: {
         Row: {
+          component_type: string | null
           created_at: string
           garantie_einddatum: string | null
           garantie_maanden: number | null
@@ -7770,6 +7771,7 @@ export type Database = {
           zending_id: string | null
         }
         Insert: {
+          component_type?: string | null
           created_at?: string
           garantie_einddatum?: string | null
           garantie_maanden?: number | null
@@ -7788,6 +7790,7 @@ export type Database = {
           zending_id?: string | null
         }
         Update: {
+          component_type?: string | null
           created_at?: string
           garantie_einddatum?: string | null
           garantie_maanden?: number | null
@@ -7831,6 +7834,7 @@ export type Database = {
           garantie_jaren: number | null
           gebruiker_handleiding_naam: string | null
           gebruiker_handleiding_url: string | null
+          heeft_backup_box: boolean
           heeft_serienummer: boolean
           id: string
           installatie_handleiding_naam: string | null
@@ -7849,6 +7853,7 @@ export type Database = {
           naam: string
           offerte_tekst: string | null
           omschrijving: string | null
+          omvormer_modulair: boolean
           onderhoud: string | null
           partner_id: string | null
           prijs_excl_btw: number
@@ -7881,6 +7886,7 @@ export type Database = {
           garantie_jaren?: number | null
           gebruiker_handleiding_naam?: string | null
           gebruiker_handleiding_url?: string | null
+          heeft_backup_box?: boolean
           heeft_serienummer?: boolean
           id?: string
           installatie_handleiding_naam?: string | null
@@ -7899,6 +7905,7 @@ export type Database = {
           naam: string
           offerte_tekst?: string | null
           omschrijving?: string | null
+          omvormer_modulair?: boolean
           onderhoud?: string | null
           partner_id?: string | null
           prijs_excl_btw?: number
@@ -7931,6 +7938,7 @@ export type Database = {
           garantie_jaren?: number | null
           gebruiker_handleiding_naam?: string | null
           gebruiker_handleiding_url?: string | null
+          heeft_backup_box?: boolean
           heeft_serienummer?: boolean
           id?: string
           installatie_handleiding_naam?: string | null
@@ -7949,6 +7957,7 @@ export type Database = {
           naam?: string
           offerte_tekst?: string | null
           omschrijving?: string | null
+          omvormer_modulair?: boolean
           onderhoud?: string | null
           partner_id?: string | null
           prijs_excl_btw?: number
