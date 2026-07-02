@@ -762,6 +762,7 @@ export type Database = {
           instagram_url: string | null
           jaaromzet: number | null
           kvk_nummer: string | null
+          laatst_bekeken_op: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -830,6 +831,7 @@ export type Database = {
           instagram_url?: string | null
           jaaromzet?: number | null
           kvk_nummer?: string | null
+          laatst_bekeken_op?: string | null
           laatst_gescoord_op?: string | null
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
@@ -898,6 +900,7 @@ export type Database = {
           instagram_url?: string | null
           jaaromzet?: number | null
           kvk_nummer?: string | null
+          laatst_bekeken_op?: string | null
           laatst_gescoord_op?: string | null
           lead_score_basis?: number | null
           lead_score_basis_details?: Json | null
@@ -8966,6 +8969,7 @@ export type Database = {
           instagram_url: string | null
           jaaromzet: number | null
           kvk_nummer: string | null
+          laatst_bekeken_op: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -9049,6 +9053,7 @@ export type Database = {
           instagram_url: string | null
           jaaromzet: number | null
           kvk_nummer: string | null
+          laatst_bekeken_op: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -9150,6 +9155,7 @@ export type Database = {
           instagram_url: string | null
           jaaromzet: number | null
           kvk_nummer: string | null
+          laatst_bekeken_op: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -9193,6 +9199,21 @@ export type Database = {
       affiliate_lead_is_editable: {
         Args: { _lead_id: string; _user_id: string }
         Returns: boolean
+      }
+      affiliate_lead_markeer_bekeken: {
+        Args: { _lead_id: string }
+        Returns: undefined
+      }
+      affiliate_lead_signals: {
+        Args: { _user_id: string }
+        Returns: {
+          aankomende_terugbel: number
+          laatste_signaal: string
+          lead_id: string
+          ongelezen_mails: number
+          ongelezen_opmerkingen: number
+          openstaande_taken: number
+        }[]
       }
       bereken_inkoop_match: {
         Args: { _inkoopfactuur_id: string }
@@ -9239,6 +9260,7 @@ export type Database = {
           instagram_url: string | null
           jaaromzet: number | null
           kvk_nummer: string | null
+          laatst_bekeken_op: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
@@ -9548,6 +9570,7 @@ export type Database = {
           instagram_url: string | null
           jaaromzet: number | null
           kvk_nummer: string | null
+          laatst_bekeken_op: string | null
           laatst_gescoord_op: string | null
           lead_score_basis: number | null
           lead_score_basis_details: Json | null
