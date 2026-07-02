@@ -1,6 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom";
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -10,11 +9,14 @@ import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useRealtimeAffiliateLeads } from "@/hooks/affiliate/useRealtimeAffiliateLeads";
 import { AffiliateDuplicaatWaarschuwing } from "@/components/affiliate/duplicaten/AffiliateDuplicaatWaarschuwing";
 import { markeerLeadBekeken } from "@/hooks/affiliate/useLeadSignals";
+import { NieuweActiviteitBanner } from "@/components/affiliate/LeadDetail/NieuweActiviteitBanner";
 
 const AffiliateLeadDetail = () => {
   useRealtimeAffiliateLeads();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
+  const qc = useQueryClient();
 
   const { data: lead, isLoading, error } = useQuery({
     queryKey: ["affiliate-lead", id],
@@ -26,12 +28,12 @@ const AffiliateLeadDetail = () => {
     },
   });
 
-  useEffect(() => {
-    if (lead?.id) {
-      // Best-effort: markeer signalen als bekeken zodra de detailpagina open is.
-      void markeerLeadBekeken(lead.id);
-    }
-  }, [lead?.id]);
+  const markeerAlsGelezen = async () => {
+    if (!lead?.id) return;
+    await markeerLeadBekeken(lead.id);
+    qc.invalidateQueries({ queryKey: ["affiliate-lead-ongelezen", lead.id] });
+    qc.invalidateQueries({ queryKey: ["affiliate-lead-signals"] });
+  };
 
   return (
     <div className="p-4 sm:p-6 min-w-0 w-full overflow-x-hidden">
@@ -44,7 +46,19 @@ const AffiliateLeadDetail = () => {
       {!isLoading && !lead && <p className="text-sm text-muted-foreground">Lead niet gevonden.</p>}
       {lead && (
         <div className="w-full min-w-0">
-          <div className="mb-3">
+          <div className="mb-3 space-y-3">
+            <NieuweActiviteitBanner
+              leadId={lead.id}
+              onGelezen={markeerAlsGelezen}
+              onOpenNotities={() => {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set("tab", "notities");
+                  return next;
+                }, { replace: true });
+                void markeerAlsGelezen();
+              }}
+            />
             <AffiliateDuplicaatWaarschuwing leadId={lead.id} />
           </div>
           <LeadDetailBody lead={lead} />
