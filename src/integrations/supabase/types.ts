@@ -9246,6 +9246,15 @@ export type Database = {
         Args: { _lead_id: string }
         Returns: undefined
       }
+      affiliate_lead_ongelezen: {
+        Args: { _lead_id: string }
+        Returns: {
+          laatst_bekeken_op: string
+          nieuwe_contactmomenten: number
+          nieuwe_mails: number
+          nieuwe_notities: number
+        }[]
+      }
       affiliate_lead_signals: {
         Args: { _user_id: string }
         Returns: {
@@ -9388,6 +9397,18 @@ export type Database = {
       }
       generate_keuringnummer: { Args: { _partner_id: string }; Returns: string }
       generate_rma_nummer: { Args: { _partner_id: string }; Returns: string }
+      get_affiliate_lead_notities: {
+        Args: { _lead_id: string }
+        Returns: {
+          affiliate_id: string
+          auteur_naam: string
+          created_at: string
+          id: string
+          is_eigen: boolean
+          lead_id: string
+          notitie: string
+        }[]
+      }
       get_gereserveerd: { Args: { _product_id: string }; Returns: number }
       get_my_email_account: {
         Args: never
