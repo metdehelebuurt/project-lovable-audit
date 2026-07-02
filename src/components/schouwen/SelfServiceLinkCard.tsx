@@ -25,9 +25,10 @@ export default function SelfServiceLinkCard({ schouwId, token, isSelfService, vo
   const [copied, setCopied] = useState(false);
   const [toggling, setToggling] = useState(false);
   const isInstallateur = profile?.rol === "installateur";
+  const canManageSelfService = !!profile?.rol && !isInstallateur;
 
   const kopieer = async () => {
-    if (isInstallateur) return;
+    if (!canManageSelfService) return;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -39,7 +40,7 @@ export default function SelfServiceLinkCard({ schouwId, token, isSelfService, vo
   };
 
   const wissel = async (next: boolean) => {
-    if (isInstallateur) return;
+    if (!canManageSelfService) return;
     setToggling(true);
     const { error } = await supabase.from("schouwen").update({ is_self_service: next }).eq("id", schouwId);
     setToggling(false);
@@ -47,7 +48,7 @@ export default function SelfServiceLinkCard({ schouwId, token, isSelfService, vo
     else { toast.success(next ? "Self-service ingeschakeld" : "Self-service uitgeschakeld"); onChanged?.(); }
   };
 
-  if (isInstallateur) return null;
+  if (!canManageSelfService) return null;
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">

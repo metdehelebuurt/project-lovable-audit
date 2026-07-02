@@ -64,7 +64,7 @@ const SchouwDetail = () => {
   const fields = categoryFields[schouw.categorie] || [];
   const checklistItems = categoryChecklists[schouw.categorie] || [];
   const clusters = gegevens.paneel_clusters || [];
-  const canManageSelfServiceLink = profile?.rol !== "installateur";
+  const canManageSelfServiceLink = !!profile?.rol && profile.rol !== "installateur";
 
   const renderFieldsForStep = (wizardStep: WizardStep) => {
     const stepFields = fields.filter(f => f.wizardStep === wizardStep);

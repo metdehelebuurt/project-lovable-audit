@@ -137,7 +137,7 @@ export default function QuickSelfServiceSchouwDialog({
   );
   const waTel = (klantTelefoon || "").replace(/[^\d+]/g, "");
 
-  if (profile?.rol && !canShareSelfService) return null;
+  if (!profile?.rol || !canShareSelfService) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
