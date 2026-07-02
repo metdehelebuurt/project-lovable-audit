@@ -77,7 +77,7 @@ export interface WrapOptions {
 export function wrapInPartnerTemplate(opts: WrapOptions): string {
   const brand = opts.brand;
   const primair = normalizeColor(brand?.primaire_kleur, "#6d28d9");
-  const secundair = normalizeColor(brand?.secundaire_kleur, primair);
+  // secundaire kleur niet meer gebruikt sinds header licht is
   const naam = (brand?.afzender_naam || brand?.naam || "").trim();
   const slogan = (brand?.bedrijfsslogan || "").trim();
   const website = (brand?.website || "").trim();
