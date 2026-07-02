@@ -1,7 +1,5 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +10,7 @@ import { type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import { useUpdateAffiliateLead, type AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
 import { useLeadContactpersonen } from "@/hooks/affiliate/useLeadContactpersonen";
+import { useLeadNotities } from "@/hooks/affiliate/useLeadNotities";
 import EmailTab from "@/components/email/EmailTab";
 import EmailCompose from "@/components/email/EmailCompose";
 import { TerugbelDialog } from "./TerugbelDialog";
@@ -25,6 +24,7 @@ import { LeadActiviteitenTijdlijn } from "./LeadDetail/Tijdlijn";
 import { useLeadTijdlijn } from "./LeadDetail/Tijdlijn/useLeadTijdlijn";
 import { LeadKlantStrip } from "./LeadDetail/LeadKlantStrip";
 import { GekleurdeTabsList, TabCallout } from "./LeadDetail/GekleurdeTabsList";
+import { NotitieLijst } from "./LeadDetail/NotitieLijst";
 
 const BRON_LABEL: Record<string, string> = {
   platform_pool: "Platform pool",
@@ -52,7 +52,6 @@ export function LeadDetailBody({ lead }: Props) {
   );
   const [status, setStatus] = useState<AffiliateLeadStatus>(lead.status as AffiliateLeadStatus);
   const [waarde, setWaarde] = useState(String(lead.geschatte_waarde ?? ""));
-  const [notitie, setNotitie] = useState(lead.notities ?? "");
   const [temperatuur, setTemperatuur] = useState<string>(lead.temperatuur ?? "lauw");
   const [volgendeActie, setVolgendeActie] = useState<string>(lead.volgende_actie_datum ?? "");
   const [openTerugbel, setOpenTerugbel] = useState(false);
@@ -71,10 +70,9 @@ export function LeadDetailBody({ lead }: Props) {
   useEffect(() => {
     setStatus(lead.status as AffiliateLeadStatus);
     setWaarde(String(lead.geschatte_waarde ?? ""));
-    setNotitie(lead.notities ?? "");
     setTemperatuur(lead.temperatuur ?? "lauw");
     setVolgendeActie(lead.volgende_actie_datum ?? "");
-  }, [lead.id, lead.status, lead.geschatte_waarde, lead.notities, lead.temperatuur, lead.volgende_actie_datum]);
+  }, [lead.id, lead.status, lead.geschatte_waarde, lead.temperatuur, lead.volgende_actie_datum]);
 
   const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
   const bronRecord = bronnen.find((b) => b.id === lead.bron_id);
@@ -90,11 +88,12 @@ export function LeadDetailBody({ lead }: Props) {
   });
 
   const { data: tijdlijn = [] } = useLeadTijdlijn({ leadId: lead.id, email: lead.email });
+  const { data: notitieEntries = [] } = useLeadNotities(lead.id);
 
   const tabCounts = {
     tijdlijn: tijdlijn.length,
     email: tijdlijn.filter((i) => i.type === "mail_in" || i.type === "mail_uit").length,
-    notities: notitie.trim() ? 1 : 0,
+    notities: notitieEntries.length,
     opvolging: lead.ai_bedrijf_samenvatting ? 1 : 0,
     historie: tijdlijn.filter((i) => i.type === "status" || i.type === "veld").length,
   };
@@ -110,7 +109,6 @@ export function LeadDetailBody({ lead }: Props) {
         patch: {
           status,
           geschatte_waarde: parseFloat(waarde) || 0,
-          notities: notitie,
           temperatuur: temperatuur as AffiliateLead["temperatuur"],
           volgende_actie_datum: volgendeActie || null,
         },
@@ -178,17 +176,7 @@ export function LeadDetailBody({ lead }: Props) {
 
           <TabsContent value="notities" className="mt-4 space-y-3 min-w-0">
             <TabCallout tab="notities" />
-            <div className="rounded-xl border bg-card p-4 space-y-2">
-              <Label>Interne notities</Label>
-              <Textarea
-                rows={14}
-                value={notitie}
-                onChange={(e) => setNotitie(e.target.value)}
-                onBlur={opslaan}
-                placeholder="Korte interne notities — automatisch opgeslagen na verlaten van veld"
-              />
-              <p className="text-xs text-muted-foreground">Wordt automatisch opgeslagen.</p>
-            </div>
+            <NotitieLijst leadId={lead.id} />
           </TabsContent>
 
           <TabsContent value="opvolging" className="mt-4 space-y-3 min-w-0">
