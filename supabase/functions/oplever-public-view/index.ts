@@ -18,12 +18,17 @@ Deno.serve(async (req) => {
 
     const { data: rapport, error } = await admin
       .from("opleverrapporten")
-      .select("id, partner_id, rapportnummer, status, pdf_url, klant_token_expires_at, klant_id")
-      .eq("klant_token", token)
+      .select("id, partner_id, rapportnummer, status, pdf_url, klant_token, klant_token_expires_at, klant_view_token, klant_view_token_expires_at, klant_id, klant_handtekening, gefinaliseerd_op")
+      .or(`klant_token.eq.${token},klant_view_token.eq.${token}`)
       .maybeSingle();
 
     if (error || !rapport) throw new Error("Rapport niet gevonden");
-    if (rapport.klant_token_expires_at && new Date(rapport.klant_token_expires_at) < new Date()) {
+    const isSignFlow = rapport.klant_token === token;
+    const isViewFlow = rapport.klant_view_token === token;
+    if (isSignFlow && rapport.klant_token_expires_at && new Date(rapport.klant_token_expires_at) < new Date()) {
+      throw new Error("Link is verlopen");
+    }
+    if (isViewFlow && rapport.klant_view_token_expires_at && new Date(rapport.klant_view_token_expires_at) < new Date()) {
       throw new Error("Link is verlopen");
     }
 
@@ -31,6 +36,15 @@ Deno.serve(async (req) => {
     if (rapport.pdf_url) {
       const { data: sig } = await admin.storage.from("oplever-media").createSignedUrl(rapport.pdf_url, 3600);
       signedPdf = sig?.signedUrl ?? null;
+    }
+
+    // Signed URL naar klant-handtekening (voor read-only view)
+    let handtekeningUrl: string | null = null;
+    const handtekening = rapport.klant_handtekening as Record<string, unknown> | null;
+    const handtekeningPath = handtekening && typeof handtekening.image_url === "string" ? handtekening.image_url : null;
+    if (handtekeningPath) {
+      const { data: sig } = await admin.storage.from("oplever-media").createSignedUrl(handtekeningPath, 3600);
+      handtekeningUrl = sig?.signedUrl ?? null;
     }
 
     let klantNaam: string | null = null;
@@ -46,6 +60,10 @@ Deno.serve(async (req) => {
       pdf_url: signedPdf,
       klant_naam: klantNaam,
       partner_naam: partner?.bedrijfsnaam ?? null,
+      mode: isViewFlow ? "view" : "sign",
+      handtekening_url: handtekeningUrl,
+      handtekening_naam: (handtekening?.name as string | undefined) ?? null,
+      ondertekend_op: (handtekening?.signed_at as string | undefined) ?? rapport.gefinaliseerd_op ?? null,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

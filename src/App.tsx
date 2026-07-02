@@ -120,6 +120,7 @@ import Opleveringen from "@/pages/Opleveringen";
 import OpleverNieuw from "@/pages/OpleverNieuw";
 import OpleverDetail from "@/pages/OpleverDetail";
 import OpleverKlantOndertekenen from "@/pages/OpleverKlantOndertekenen";
+import OpleverKlantView from "@/pages/OpleverKlantView";
 import ConsumerSchouw from "@/pages/public/ConsumerSchouw";
 import Keuringen from "@/pages/Keuringen";
 import KeuringNieuw from "@/pages/KeuringNieuw";
@@ -155,6 +156,7 @@ const App = () => (
             {/* Public embed routes — no auth, no layout */}
             <Route path="/offerte/:token" element={<OffertePublic />} />
             <Route path="/oplevering/:token" element={<OpleverKlantOndertekenen />} />
+            <Route path="/oplevering/:token/bekijken" element={<OpleverKlantView />} />
             <Route path="/public/schouw/:token" element={<ConsumerSchouw />} />
             <Route path="/roadmap" element={<FeedbackRoadmap />} />
             <Route path="/embed/contact/:widgetId" element={<EmbedContact />} />
