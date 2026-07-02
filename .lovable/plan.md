@@ -1,96 +1,71 @@
+## Doel
 
-# Affiliate dashboard: notificaties + sales-boosters
+Voor affiliates op elke lead direct zichtbaar maken:
+1. **Is dit bedrijf al klant?** (bestaat er al een partner-account, wat is de status van dat abonnement?)
+2. **Waar liggen upsell-kansen?** (welke betaalde add-ons of hoger plan mist deze partner nog?)
 
-Doel: de affiliate ziet in één oogopslag waar actie nodig is, mist geen enkel signaal van een lead/klant, en krijgt slimme nudges die conversie verhogen.
+Zo weet de affiliate meteen of hij op nieuwe trial of op cross/upsell moet inzetten.
 
-## 1. Ongelezen-badges op lead- en klantkaarten
+## Match-strategie (server-side)
 
-Op elke `LeadKaart` (Kanban + lijst) en `KlantKaart` (Mijn klanten) een badge tonen zodra er iets nieuws is dat de affiliate nog niet gezien heeft:
+Match tussen `affiliate_leads` en `partners` gebeurt in één security-definer functie `affiliate_lead_klantstatus(_lead_id)` met deze regels, in volgorde:
 
-- Nieuwe **inbound email** (`email_berichten` waar `richting='in'` en `gelezen_op is null`).
-- Nieuwe **portal-opmerking / bericht** van de consument (`offerte_berichten`, ticket-reacties).
-- Nieuwe **AI-opvolgtaak** of terugbelafspraak die vandaag speelt.
-- **Statuswijziging** door platform/sales admin sinds laatste bezoek.
+1. **Harde match**: `affiliate_leads.gewonnen_partner_id` gevuld → die partner.
+2. **E-maildomein-match**: domein van `affiliate_leads.email` = domein van `partners.email` (kantoordomeinen als gmail/outlook uitsluiten).
+3. **Bedrijfsnaam-match**: genormaliseerde `affiliate_leads.bedrijfsnaam` = genormaliseerde `partners.naam` (lowercase, strip B.V./V.O.F./interpunctie/spaties).
 
-Implementatie: één RPC `affiliate_lead_signals(user_id)` die per lead een count teruggeeft van ongelezen items (per type). De counts worden gejoined in `useAffiliateLeads` en `useMijnKlanten`. Kaart toont een gekleurde dot + tooltip ("2 nieuwe e-mails, 1 opmerking"). Openen van de lead-detail markeert automatisch als gezien via `laatst_bekeken_op` op `affiliate_leads`.
+Genoeg voor v1. KVK slaan we later toe als `affiliate_leads.kvk` wordt toegevoegd.
 
-## 2. Realtime toast + globale bell
+## Wat de RPC teruggeeft
 
-- Nieuwe `<AffiliateNotificatieBell />` in de affiliate-topbar, met dropdown (laatste 20, ongelezen count, "alles gelezen").
-- Realtime channel op `notificaties` (waar `user_id = auth.uid()`) → toast + bell-update + optioneel browser-notification (bestaande `useBrowserNotifications`).
-- Nieuwe triggers/edge-hooks die records in `notificaties` schrijven voor de affiliate-eigenaar bij:
-  - inbound email op een van zijn leads/klanten
-  - nieuwe portal-opmerking op offerte/ticket
-  - lead uit pool toegewezen aan hem
-  - hot-lead-signaal (zie 4)
-  - terugbelafspraak over < 15 min
-  - trial die over 3 / 1 dagen verloopt
-  - offerte verstuurd > 5 dagen geleden zonder reactie
-  - lead > X dagen stil (SLA-overschrijding pipeline-fase)
+```text
+status:             'geen_match' | 'trial' | 'betalend' | 'opgezegd' | 'verlopen'
+match_reden:        'gewonnen_lead' | 'domein' | 'bedrijfsnaam'
+partner_id, partner_naam, partner_plaats
+plan_naam, plan_slug, maand_bedrag, trial_einddatum, opzeg_datum
+huidige_addons:     [{ slug, naam }]
+upsell_addons:      [{ slug, naam, maand_prijs, beschrijving }]  ← add-ons die deze partner nog niet heeft
+upsell_plannen:     [{ slug, naam, maand_prijs }]                ← plannen met hogere volgorde dan huidig plan
+```
 
-## 3. "Vandaag" widget uitgebreid voor affiliate
+Upsell-lijst wordt alleen gevuld bij status `trial` of `betalend` (bij opzegging/verloop is retentie de boodschap, niet upsell).
 
-Op `AffiliateDashboard` een compacte "Wat moet ik nu doen"-kaart die de volgende taken combineert en sorteert op urgentie:
+## UI-wijzigingen
 
-1. Terugbelafspraken vandaag (met 1-klik "bel nu" + "verzet 1u").
-2. Openstaande AI-opvolgtaken.
-3. Leads met verlopen SLA (kleur = agingNiveau).
-4. Ongelezen inbound e-mails.
-5. Trials die deze week verlopen.
+### 1. Nieuwe kaart `KlantStatusKaart` in de lead-detail
 
-Elk item is een rij met snelle acties (bellen, mailen, snooze, markeer klaar).
+Toegevoegd bovenaan `LeadDetailBody` (net onder `LeadDetailHero`, boven `LeadKlantStrip`) — alleen zichtbaar als er een match is of expliciet `geen_match`:
 
-## 4. Slimme conversieboosters
+- **Header met status-badge**:
+  - `Nieuw prospect` (grijs) — geen_match
+  - `Trial actief` (violet) — trial
+  - `Betalend klant` (emerald) — betalend
+  - `Opgezegd` (rose) — opgezegd
+  - `Verlopen` (amber) — verlopen
+- **Body bij match**:
+  - Partnernaam, plan, maandbedrag, trial-einddatum of opzegdatum
+  - Regel "Match op: e-maildomein / bedrijfsnaam / eerder gewonnen"
+  - **Upsell-blok**: chips per ontbrekende add-on met prijs, en (indien van toepassing) knop "Upgrade naar {plan}".
+  - Call-to-action: `Trial starten` verbergen bij `betalend`/`trial` (voorkomt dubbele trials), vervangen door `Klantpagina openen`.
+- **Body bij geen match**: één regel "Nog geen klant — starten met trial" + bestaande `TrialStartenButton`.
 
-- **Hot-lead-detector**: nachtelijke edge-cron die op basis van leadScore, recente website-activiteit en emailopens/klikken (via `email_send_log`) leads promoveert naar temperatuur "heet" en een notificatie stuurt.
-- **Best time to call**: op basis van `affiliate_lead_contactmomenten` per lead een suggestie ("bereikt meestal na 17:00") tonen in de LeadDetail Hero.
-- **Silent-lead reactivator**: leads > 14 dagen zonder activiteit → automatisch een suggestie voor een sjabloonmail ("Nog interesse?") in de opvolgingskaart.
-- **Snelle e-mail-sjablonen** ("Kennismaking", "Offerte follow-up", "Laatste kans") direct als knop op de leadkaart hover-menu; opent `EmailCompose` met snippet + tracking.
-- **Deal-waarschijnlijkheid**: bestaande leadScore uitbreiden met win-rate per fase en per bron; tonen als % op de kaart.
-- **Bulk-nudge**: in Kanban een filter "stil > 7 dagen" met bulk-actie "Stuur reactivatiemail".
+### 2. Badge op pipeline-kaart
 
-## 5. Meldingen bij samenwerking
+`PipelineKaart` krijgt een compacte badge `Reeds klant` (emerald) of `Trial` (violet) via dezelfde RPC, opgehaald in batch met een lichte `useAffiliateKlantstatusBulk` hook — één call voor alle zichtbare leads.
 
-- Wanneer een collega/sales-admin een **notitie of contactmoment** logt op een van jouw leads → notificatie + rood dotje op de kaart.
-- **@mentions** in notities (bestaande `processMentions`) uitbreiden zodat ze een affiliate-notificatie triggeren.
-- **"Lead overgenomen" waarschuwing** als admin een lead herwijst.
+### 3. Verstoppen `TrialStartenButton`
 
-## 6. Notificatie-voorkeuren
+Onder aan de pipeline-kaart en in de hero-actiebalk verbergen we `Trial starten` als er al een actieve trial of betalend abonnement is (voorkomt dubbelboekingen).
 
-Uitbreiding van `notificatie_voorkeuren` met affiliate-specifieke kanalen (email/toast/browser/geen) per categorie: inbound-mail, portal-opmerking, hot-lead, SLA-overschrijding, trial-verloop, terugbel-reminder. Instelpagina onder Affiliate → Instellingen → Notificaties.
+## Technische wijzigingen
 
-## 7. UI-details
+- **Migratie**: één security-definer functie `affiliate_lead_klantstatus(uuid)` + helper `normaliseer_bedrijfsnaam(text)` + batchvariant `affiliate_lead_klantstatus_bulk(uuid[])` voor pipeline-kaartjes. `GRANT EXECUTE ... TO authenticated`. Toegang wordt binnen de functie beperkt: alleen als de aanroeper eigenaar van de lead is of sales admin/superadmin.
+- **Hooks**: `useLeadKlantstatus(leadId)` (detail) en `useAffiliateKlantstatusBulk(leadIds)` (pipeline).
+- **Componenten**: `KlantStatusKaart.tsx` in `src/components/affiliate/LeadDetail/`, kleine aanpassingen aan `LeadDetailBody.tsx`, `PipelineKaart.tsx`, `LeadDetailHero`/`TrialStartenButton` conditie.
+- Geen schemawijzigingen aan bestaande tabellen; puur additief.
 
-- Kaart-badge: kleine cirkel linksboven, kleur per type (blauw=mail, paars=opmerking, rood=SLA, oranje=terugbel).
-- Bell dropdown groepeert per lead ("Acme BV — 2 nieuwe e-mails, 1 opmerking").
-- Toast is klikbaar → navigeert direct naar juiste tab van de leaddetail (`?tab=email` / `?tab=opvolging`).
-- Alle nieuwe UI in Nederlands, purple primary, geen emoji's.
+## Uit scope (voor later)
 
-## Technische samenvatting
-
-**Nieuwe DB-objecten**
-- Kolom `affiliate_leads.laatst_bekeken_op timestamptz`.
-- Kolom `email_berichten.gelezen_op timestamptz` (indien nog niet aanwezig).
-- RPC `affiliate_lead_signals(_user_id uuid)` → `(lead_id, ongelezen_mails, ongelezen_opmerkingen, openstaande_taken, sla_status)`.
-- Triggers op `email_berichten`, `offerte_berichten`, `affiliate_terugbel_afspraken`, `affiliate_leads` (status/eigenaar-wijziging) → `INSERT INTO notificaties`.
-- Edge cron `affiliate-signals-cron` (elke 15 min): hot-lead-detectie, SLA-checks, trial-verloop, stille-lead-reactivator.
-
-**Nieuwe/aangepaste frontend-bestanden**
-- `src/components/affiliate/AffiliateNotificatieBell.tsx`
-- `src/hooks/affiliate/useAffiliateNotificaties.ts` (realtime + list + mark-read)
-- `src/hooks/affiliate/useLeadSignals.ts` (join in useAffiliateLeads)
-- `src/components/affiliate/LeadKaart.tsx` en `KlantKaart.tsx`: signal-badges + hover snelle acties
-- `src/pages/affiliate/AffiliateDashboard.tsx`: "Wat moet ik nu doen"-widget
-- `src/components/affiliate/LeadDetail/Hero.tsx`: best-time-to-call + hot-lead-indicator
-- `src/pages/affiliate/instellingen/Notificaties.tsx`: voorkeuren
-- Uitbreiding `processMentions` → notificatie insert
-
-**Fasering (aanbevolen)**
-1. Basis: signals-RPC + kaart-badges + `laatst_bekeken_op` markering.
-2. Bell + realtime toasts + triggers voor mail/opmerking/terugbel.
-3. "Vandaag"-widget op affiliate dashboard.
-4. Hot-lead + SLA + trial cron.
-5. Snelle e-mailsjablonen, bulk-nudge, best-time-to-call.
-6. Voorkeurenpagina.
-
-Laat me weten welke fasering je wil en of we alles in één keer bouwen of stap 1 eerst.
+- KVK-veld op leads.
+- Automatisch omzetten van "reeds klant"-leads naar retention-flow.
+- Cross-sell tussen partners in dezelfde regio.
