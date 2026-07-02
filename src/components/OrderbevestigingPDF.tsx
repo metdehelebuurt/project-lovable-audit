@@ -1,4 +1,5 @@
-import { forwardRef } from "react";
+import { forwardRef, Fragment } from "react";
+import { useProductMetaMap } from "@/hooks/producten/useProductMetaMap";
 
 interface PartnerBranding {
   naam: string;
@@ -20,6 +21,7 @@ interface PartnerBranding {
 }
 
 interface OfferteRegel {
+  product_id?: string;
   omschrijving: string;
   offerte_tekst?: string;
   aantal: number;
