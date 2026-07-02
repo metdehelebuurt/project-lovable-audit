@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { FileText, Upload, Download, Trash2, ExternalLink, Image as ImageIcon, Pencil, Check, X } from "lucide-react";
+import { FileText, Upload, Download, Trash2, ExternalLink, Pencil, Check, X } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Document = Database["public"]["Tables"]["documenten"]["Row"];
