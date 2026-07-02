@@ -361,6 +361,11 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
                   <div className="font-medium truncate">{s.product_naam ?? "Product"}</div>
                   <div className="text-xs text-muted-foreground">
                     SN: <span className="font-mono">{s.serienummer}</span>
+                    {(s as any).component_type && (
+                      <span className="ml-2 inline-block rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                        {(s as any).component_type === "backup_box" ? "backup box" : (s as any).component_type}
+                      </span>
+                    )}
                     {s.garantie_einddatum && ` · Garantie t/m ${new Date(s.garantie_einddatum).toLocaleDateString("nl-NL")}`}
                   </div>
                 </div>
