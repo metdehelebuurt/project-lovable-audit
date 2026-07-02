@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { FileText, Upload } from "lucide-react";
+import { FileText, Upload, LayoutGrid, List } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -21,6 +22,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import type { Database } from "@/integrations/supabase/types";
 import SortableDocumentRow from "./SortableDocumentRow";
 import DocumentPreviewDialog from "./DocumentPreviewDialog";
+import DocumentGridCard from "./DocumentGridCard";
 
 type Document = Database["public"]["Tables"]["documenten"]["Row"];
 type DocumentEntityType = Database["public"]["Enums"]["document_entity_type"];
@@ -56,6 +58,16 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
   const [renameValue, setRenameValue] = useState("");
   const [deleteDoc, setDeleteDoc] = useState<Document | null>(null);
   const [localOrder, setLocalOrder] = useState<Document[] | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
+    if (typeof window === "undefined") return "list";
+    return (localStorage.getItem("documenten-view") as "list" | "grid") || "list";
+  });
+
+  const handleViewMode = (v: string) => {
+    if (v !== "list" && v !== "grid") return;
+    setViewMode(v);
+    try { localStorage.setItem("documenten-view", v); } catch { /* noop */ }
+  };
 
   const canUpload =
     profile?.rol === "superadmin" || profile?.rol === "partner_admin" ||
@@ -66,6 +78,7 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
     profile?.rol === "partner_staff" || profile?.rol === "backoffice";
   const canRename = canDeleteAll;
   const canReorder = canDeleteAll;
+  const canTag = canUpload;
 
   const queryKey = ["entiteit-documenten", entityType, entityId];
 
@@ -175,6 +188,27 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
     onError: (err: Error) => toast.error("Wijzigen mislukt", { description: err.message }),
   });
 
+  const tagsMutation = useMutation({
+    mutationFn: async ({ id, tags }: { id: string; tags: string[] }) => {
+      const cleaned = Array.from(new Set(tags.map((t) => t.trim()).filter(Boolean))).slice(0, 20);
+      const { error } = await supabase.from("documenten").update({ tags: cleaned } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, tags }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<Document[]>(queryKey);
+      queryClient.setQueryData<Document[]>(queryKey, (old) =>
+        (old ?? []).map((d) => d.id === id ? ({ ...d, tags } as any) : d)
+      );
+      return { prev };
+    },
+    onError: (err: Error, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast.error("Tags opslaan mislukt", { description: err.message });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  });
+
   const reorderMutation = useMutation({
     mutationFn: async (ordered: Document[]) => {
       // Update volgorde per document. Bewuste batching: één statement per rij.
@@ -223,11 +257,29 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
           <FileText className="h-4 w-4 text-primary" /> {title}
           {documenten.length > 0 && <Badge variant="secondary" className="ml-1">{documenten.length}</Badge>}
         </CardTitle>
-        {canUpload && (
-          <Button size="sm" onClick={() => setDialogOpen(true)} className="rounded-pill gap-2">
-            <Upload className="h-3.5 w-3.5" /> Uploaden
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {documenten.length > 0 && (
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={handleViewMode}
+              size="sm"
+              className="border rounded-lg"
+            >
+              <ToggleGroupItem value="list" aria-label="Lijstweergave" className="h-8 w-8 p-0">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="grid" aria-label="Rasterweergave" className="h-8 w-8 p-0">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+          {canUpload && (
+            <Button size="sm" onClick={() => setDialogOpen(true)} className="rounded-pill gap-2">
+              <Upload className="h-3.5 w-3.5" /> Uploaden
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -245,26 +297,55 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={geordend.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {geordend.map((d) => (
-                  <SortableDocumentRow
-                    key={d.id}
-                    doc={d}
-                    editing={renameId === d.id}
-                    renameValue={renameValue}
-                    renamePending={renameMutation.isPending}
-                    canRename={canRename}
-                    canReorder={canReorder}
-                    mayDelete={canDeleteAll || d.geupload_door_id === profile?.id}
-                    onPreview={setPreviewDoc}
-                    onStartRename={startRename}
-                    onCancelRename={cancelRename}
-                    onRenameChange={setRenameValue}
-                    onRenameSubmit={(doc) => renameMutation.mutate({ id: doc.id, naam: renameValue })}
-                    onDeleteRequest={setDeleteDoc}
-                  />
-                ))}
-              </div>
+              {viewMode === "list" ? (
+                <div className="space-y-2">
+                  {geordend.map((d) => (
+                    <SortableDocumentRow
+                      key={d.id}
+                      doc={d}
+                      editing={renameId === d.id}
+                      renameValue={renameValue}
+                      renamePending={renameMutation.isPending}
+                      canRename={canRename}
+                      canReorder={canReorder}
+                      mayDelete={canDeleteAll || d.geupload_door_id === profile?.id}
+                      onPreview={setPreviewDoc}
+                      onStartRename={startRename}
+                      onCancelRename={cancelRename}
+                      onRenameChange={setRenameValue}
+                      onRenameSubmit={(doc) => renameMutation.mutate({ id: doc.id, naam: renameValue })}
+                      onDeleteRequest={setDeleteDoc}
+                      canTag={canTag}
+                      onTagsChange={(doc, tags) => tagsMutation.mutate({ id: doc.id, tags })}
+                      tagsPending={tagsMutation.isPending}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {geordend.map((d) => (
+                    <DocumentGridCard
+                      key={d.id}
+                      doc={d}
+                      editing={renameId === d.id}
+                      renameValue={renameValue}
+                      renamePending={renameMutation.isPending}
+                      canRename={canRename}
+                      canReorder={canReorder}
+                      mayDelete={canDeleteAll || d.geupload_door_id === profile?.id}
+                      onPreview={setPreviewDoc}
+                      onStartRename={startRename}
+                      onCancelRename={cancelRename}
+                      onRenameChange={setRenameValue}
+                      onRenameSubmit={(doc) => renameMutation.mutate({ id: doc.id, naam: renameValue })}
+                      onDeleteRequest={setDeleteDoc}
+                      canTag={canTag}
+                      onTagsChange={(doc, tags) => tagsMutation.mutate({ id: doc.id, tags })}
+                      tagsPending={tagsMutation.isPending}
+                    />
+                  ))}
+                </div>
+              )}
             </SortableContext>
           </DndContext>
         )}
