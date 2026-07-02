@@ -112,6 +112,29 @@ Deno.serve(async (req) => {
     }
 
     // Insert platform-afspraak
+    // Zorg dat de opgeslagen notitie altijd begint met een klantregel, zodat de
+    // affiliate in de platform-agenda en in transactionele mails altijd meteen
+    // ziet met welke klant de afspraak is (was voorheen alleen zichtbaar in de
+    // Google-event summary).
+    let notitieVoorOpslag = body.notitie ?? null;
+    if (body.lead_id) {
+      const { data: leadForNotitie } = await admin
+        .from("affiliate_leads")
+        .select("bedrijfsnaam, contactpersoon")
+        .eq("id", body.lead_id)
+        .maybeSingle();
+      const bedrijf = (leadForNotitie?.bedrijfsnaam ?? "").trim();
+      const contact = (leadForNotitie?.contactpersoon ?? "").trim();
+      if (bedrijf) {
+        const bevatBedrijf = (notitieVoorOpslag ?? "").toLowerCase().includes(bedrijf.toLowerCase());
+        if (!bevatBedrijf) {
+          const kop = `${body.type === "demo" ? "Demo" : "Terugbelafspraak"} met ${bedrijf}${contact ? ` (${contact})` : ""}`;
+          notitieVoorOpslag = notitieVoorOpslag && notitieVoorOpslag.trim()
+            ? `${kop}\n\n${notitieVoorOpslag.trim()}`
+            : kop;
+        }
+      }
+    }
     const { data: afspraak, error: insErr } = await admin
       .from("affiliate_terugbel_afspraken")
       .insert({
@@ -119,7 +142,7 @@ Deno.serve(async (req) => {
         lead_id: body.lead_id ?? null,
         type: body.type,
         geplande_op: body.geplande_op!,
-        notitie: body.notitie ?? null,
+        notitie: notitieVoorOpslag,
         collega_user_id: callerId,
       })
       .select("*")
