@@ -8,6 +8,13 @@ interface CreateRapportInput {
   installateur_id: string;
   installatie_id?: string | null;
   klant_id?: string | null;
+  opdracht_id?: string | null;
+  scope_omschrijving?: string | null;
+  opleverdatum?: string | null;
+  batterij_spec?: Opleverrapport["batterij_spec"];
+  omvormer_spec?: Opleverrapport["omvormer_spec"];
+  backup_box_spec?: Opleverrapport["backup_box_spec"];
+  extra_velden?: Opleverrapport["extra_velden"];
 }
 
 export async function createRapport(input: CreateRapportInput): Promise<string> {
@@ -20,18 +27,35 @@ export async function createRapport(input: CreateRapportInput): Promise<string> 
 
   const visuele = STANDAARD_CHECKLIST.map((c) => ({ key: c.key, label: c.label, status: null }));
 
+  const insertPayload: Record<string, unknown> = {
+    partner_id: input.partner_id,
+    installateur_id: input.installateur_id,
+    installatie_id: input.installatie_id ?? null,
+    klant_id: input.klant_id ?? null,
+    opdracht_id: input.opdracht_id ?? null,
+    created_by: input.installateur_id,
+    rapportnummer: nrData as string,
+    visuele_inspectie: visuele,
+    conformiteitstekst: DEFAULT_CONFORMITEITSTEKST,
+  };
+  if (input.scope_omschrijving) insertPayload.scope_omschrijving = input.scope_omschrijving;
+  if (input.opleverdatum) insertPayload.opleverdatum = input.opleverdatum;
+  if (input.batterij_spec && Object.keys(input.batterij_spec).length > 0) {
+    insertPayload.batterij_spec = input.batterij_spec;
+  }
+  if (input.omvormer_spec && Object.keys(input.omvormer_spec).length > 0) {
+    insertPayload.omvormer_spec = input.omvormer_spec;
+  }
+  if (input.backup_box_spec && Object.keys(input.backup_box_spec).length > 0) {
+    insertPayload.backup_box_spec = input.backup_box_spec;
+  }
+  if (input.extra_velden && Object.keys(input.extra_velden).length > 0) {
+    insertPayload.extra_velden = input.extra_velden;
+  }
+
   const { data, error } = await supabase
     .from("opleverrapporten" as never)
-    .insert({
-      partner_id: input.partner_id,
-      installateur_id: input.installateur_id,
-      installatie_id: input.installatie_id ?? null,
-      klant_id: input.klant_id ?? null,
-      created_by: input.installateur_id,
-      rapportnummer: nrData as string,
-      visuele_inspectie: visuele,
-      conformiteitstekst: DEFAULT_CONFORMITEITSTEKST,
-    } as never)
+    .insert(insertPayload as never)
     .select("id")
     .single();
   if (error) throw error;
