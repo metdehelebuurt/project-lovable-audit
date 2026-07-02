@@ -8210,6 +8210,48 @@ export type Database = {
           },
         ]
       }
+      serienummer_toewijzing_log: {
+        Row: {
+          actie: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          nieuwe_status: string | null
+          opdracht_id: string | null
+          oude_status: string | null
+          partner_id: string
+          product_id: string
+          serienummer: string
+          serienummer_id: string
+        }
+        Insert: {
+          actie: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          nieuwe_status?: string | null
+          opdracht_id?: string | null
+          oude_status?: string | null
+          partner_id: string
+          product_id: string
+          serienummer: string
+          serienummer_id: string
+        }
+        Update: {
+          actie?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          nieuwe_status?: string | null
+          opdracht_id?: string | null
+          oude_status?: string | null
+          partner_id?: string
+          product_id?: string
+          serienummer?: string
+          serienummer_id?: string
+        }
+        Relationships: []
+      }
       superadmin_access_grants: {
         Row: {
           created_at: string
