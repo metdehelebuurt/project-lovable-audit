@@ -42,6 +42,7 @@ const KlantDetail = () => {
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  const canShareSelfServiceSchouw = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur"].includes(profile?.rol ?? "");
 
   /* ─── Queries ─── */
   const { data: klant, isLoading } = useQuery({
@@ -290,7 +291,7 @@ const KlantDetail = () => {
           navigate(`/helpdesk/tickets/nieuw?${params.toString()}`);
         }}
         onOfferte={handleNewOfferte}
-        onSnelleSchouw={() => setSnelleSchouwOpen(true)}
+        onSnelleSchouw={canShareSelfServiceSchouw ? () => setSnelleSchouwOpen(true) : undefined}
         canDelete={canDeleteKlant}
         isDeleting={deleteKlantMutation.isPending}
         onDelete={() => deleteKlantMutation.mutate()}
@@ -434,7 +435,7 @@ const KlantDetail = () => {
             onAfspraak={() => setAfspraakOpen(true)}
             onOfferte={handleNewOfferte}
             onSchouw={() => navigate("/schouwen")}
-            onSnelleSchouw={() => setSnelleSchouwOpen(true)}
+            onSnelleSchouw={canShareSelfServiceSchouw ? () => setSnelleSchouwOpen(true) : undefined}
             email={klant.email}
             telefoon={klant.telefoon}
           />
@@ -463,16 +464,18 @@ const KlantDetail = () => {
         context={{ klant_id: klant.id }}
       />
 
-      <QuickSelfServiceSchouwDialog
-        open={snelleSchouwOpen}
-        onOpenChange={setSnelleSchouwOpen}
-        leadId={klant.lead_id}
-        partnerId={profile?.partner_id}
-        adviseurId={profile?.id}
-        consumentNaam={`${klant.voornaam ?? ""} ${klant.achternaam ?? ""}`.trim()}
-        klantEmail={klant.email}
-        klantTelefoon={klant.telefoon}
-      />
+      {canShareSelfServiceSchouw && (
+        <QuickSelfServiceSchouwDialog
+          open={snelleSchouwOpen}
+          onOpenChange={setSnelleSchouwOpen}
+          leadId={klant.lead_id}
+          partnerId={profile?.partner_id}
+          adviseurId={profile?.id}
+          consumentNaam={`${klant.voornaam ?? ""} ${klant.achternaam ?? ""}`.trim()}
+          klantEmail={klant.email}
+          klantTelefoon={klant.telefoon}
+        />
+      )}
     </div>
   );
 };
