@@ -89,9 +89,31 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
           </TableHeader>
           <TableBody>
             {regels.map((r, i) => (
-              <TableRow key={i}>
+              <>
+              <TableRow key={`row-${i}`}>
                 <TableCell>
-                  {readOnly ? r.omschrijving : (
+                  {(() => {
+                    const meta = r.product_id ? metaMap[r.product_id] : undefined;
+                    const isAssemblage = !!meta?.is_assemblage && (meta?.componenten.length ?? 0) > 0;
+                    return (
+                      <div className="flex items-start gap-1">
+                        {isAssemblage && (
+                          <button
+                            type="button"
+                            onClick={() => toggleExpand(i)}
+                            className="mt-2 text-muted-foreground hover:text-foreground"
+                            title={expandedRows[i] ? "Componenten verbergen" : "Componenten tonen"}
+                          >
+                            {expandedRows[i] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          </button>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          {readOnly ? (
+                            <span className="flex items-center gap-2">
+                              {isAssemblage && <Package className="h-3.5 w-3.5 text-muted-foreground" />}
+                              {r.omschrijving}
+                            </span>
+                          ) : (
                     <ProductSearchInput
                       value={r.omschrijving}
                       onChangeText={(v) => {
@@ -104,9 +126,9 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
                       placeholder="Zoek product of typ vrij..."
                       voorInkoop={voorInkoop}
                     />
-                  )}
-                  {!hidePricing && !voorInkoop && r.product_id && kostprijsMap[r.product_id] != null && r.prijs_per_stuk > 0 && (() => {
-                    const k = kostprijsMap[r.product_id!] as number;
+                          )}
+                          {!hidePricing && !voorInkoop && r.product_id && meta?.kostprijs != null && r.prijs_per_stuk > 0 && (() => {
+                            const k = meta.kostprijs as number;
                     const marge = ((r.prijs_per_stuk - k) / r.prijs_per_stuk) * 100;
                     const kleur = marge >= 20
                       ? "bg-success/10 text-success"
@@ -120,6 +142,15 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
                       >
                         Marge {marge.toFixed(1)}%
                       </span>
+                    );
+                  })()}
+                          {isAssemblage && (
+                            <span className="ml-2 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                              Bundel · {meta!.componenten.length} onderdelen
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     );
                   })()}
                 </TableCell>
@@ -191,6 +222,32 @@ export function DocumentRegelEditor({ regels, onChange, readOnly, hidePricing, v
                   </TableCell>
                 )}
               </TableRow>
+              {(() => {
+                const meta = r.product_id ? metaMap[r.product_id] : undefined;
+                if (!meta?.is_assemblage || !expandedRows[i] || meta.componenten.length === 0) return null;
+                const colSpan = 1 + 1 + (hidePricing ? 0 : 5) + (readOnly ? 0 : 1);
+                return (
+                  <TableRow key={`sub-${i}`} className="bg-muted/30">
+                    <TableCell colSpan={colSpan} className="py-2">
+                      <div className="pl-6 text-xs">
+                        <div className="font-medium text-muted-foreground mb-1">Componenten in deze bundel:</div>
+                        <ul className="space-y-0.5">
+                          {meta.componenten.map((c) => (
+                            <li key={c.component_id} className="flex items-center gap-2">
+                              <span className="text-muted-foreground">•</span>
+                              <span>{c.aantal}× {[c.merk, c.naam].filter(Boolean).join(" ")}</span>
+                              {c.heeft_serienummer && (
+                                <span className="text-[9px] px-1 py-0.5 rounded bg-primary/10 text-primary">SN</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })()}
+              </>
             ))}
           </TableBody>
         </Table>
