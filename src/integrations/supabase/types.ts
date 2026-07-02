@@ -7069,6 +7069,8 @@ export type Database = {
           created_at: string
           created_by: string
           documenten: Json
+          duplicaat_reden: string | null
+          duplicaat_van_id: string | null
           extra_velden: Json
           gefinaliseerd_op: string | null
           groepenverdeling: Json
@@ -7103,6 +7105,8 @@ export type Database = {
           created_at?: string
           created_by: string
           documenten?: Json
+          duplicaat_reden?: string | null
+          duplicaat_van_id?: string | null
           extra_velden?: Json
           gefinaliseerd_op?: string | null
           groepenverdeling?: Json
@@ -7137,6 +7141,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           documenten?: Json
+          duplicaat_reden?: string | null
+          duplicaat_van_id?: string | null
           extra_velden?: Json
           gefinaliseerd_op?: string | null
           groepenverdeling?: Json
@@ -7170,6 +7176,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opleverrapporten_duplicaat_van_id_fkey"
+            columns: ["duplicaat_van_id"]
+            isOneToOne: false
+            referencedRelation: "opleverrapporten"
             referencedColumns: ["id"]
           },
           {
