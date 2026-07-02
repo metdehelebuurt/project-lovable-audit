@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,15 +43,19 @@ const wizardStepLabels: Record<WizardStep, string> = {
 const SchouwDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
   const { data: schouw, isLoading } = useQuery({
-    queryKey: ["schouw", id],
+    queryKey: ["schouw", id, profile?.rol],
     queryFn: async () => {
-      const { data, error } = await supabase.from("schouwen").select("*").eq("id", id!).single();
+      const selectFields: string = profile?.rol === "installateur"
+        ? "id,schouw_nummer,lead_id,adviseur_id,installateur_id,partner_id,categorie,status,geplande_datum,klant_email,consument_naam,notities,gegevens,fotos,checklist,aandachtspunten,handtekening_data,handtekening_akkoord_op,created_at,updated_at"
+        : "*";
+      const { data, error } = await supabase.from("schouwen").select(selectFields).eq("id", id!).single();
       if (error) throw error;
-      return data;
+      return data as unknown as Database["public"]["Tables"]["schouwen"]["Row"];
     },
-    enabled: !!id,
+    enabled: !!id && !!profile?.rol,
   });
 
   if (isLoading || !schouw) return <div className="p-6 text-muted-foreground">Laden...</div>;
@@ -62,6 +67,7 @@ const SchouwDetail = () => {
   const fields = categoryFields[schouw.categorie] || [];
   const checklistItems = categoryChecklists[schouw.categorie] || [];
   const clusters = gegevens.paneel_clusters || [];
+  const canManageSelfServiceLink = !!profile?.rol && profile.rol !== "installateur";
 
   const renderFieldsForStep = (wizardStep: WizardStep) => {
     const stepFields = fields.filter(f => f.wizardStep === wizardStep);
@@ -132,15 +138,17 @@ const SchouwDetail = () => {
 
       {/* Basis info */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="md:col-span-2">
-          <SelfServiceLinkCard
-            schouwId={schouw.id}
-            token={(schouw as any).self_service_token}
-            isSelfService={(schouw as any).is_self_service ?? true}
-            voltooidOp={(schouw as any).self_service_completed_at ?? null}
-            aantalSelfServiceFotos={selfServiceFotos.length}
-          />
-        </div>
+        {canManageSelfServiceLink && (
+          <div className="md:col-span-2">
+            <SelfServiceLinkCard
+              schouwId={schouw.id}
+              token={(schouw as any).self_service_token}
+              isSelfService={(schouw as any).is_self_service ?? true}
+              voltooidOp={(schouw as any).self_service_completed_at ?? null}
+              aantalSelfServiceFotos={selfServiceFotos.length}
+            />
+          </div>
+        )}
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader><CardTitle className="text-lg">Basisgegevens</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">

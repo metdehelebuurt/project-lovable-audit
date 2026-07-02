@@ -23,7 +23,7 @@ interface Props {
   onRetour: () => void;
   onTicket: () => void;
   onOfferte: () => void;
-  onSnelleSchouw: () => void;
+  onSnelleSchouw?: () => void;
   onDelete?: () => void;
   canDelete?: boolean;
   isDeleting?: boolean;
@@ -87,9 +87,11 @@ export default function KlantHeader({
         <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={onTicket}>
           <LifeBuoy className="h-4 w-4" /> Ticket
         </Button>
-        <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={onSnelleSchouw}>
-          <Camera className="h-4 w-4" /> Snelle schouw
-        </Button>
+        {onSnelleSchouw && (
+          <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={onSnelleSchouw}>
+            <Camera className="h-4 w-4" /> Snelle schouw
+          </Button>
+        )}
         <Button size="sm" className="rounded-xl gap-1.5" onClick={onOfferte}>
           <FileText className="h-4 w-4" /> Offerte
         </Button>
@@ -132,9 +134,11 @@ export default function KlantHeader({
             <DropdownMenuItem onSelect={onTicket}>
               <LifeBuoy className="h-4 w-4 mr-2" /> Ticket
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onSnelleSchouw}>
-              <Camera className="h-4 w-4 mr-2" /> Snelle schouw
-            </DropdownMenuItem>
+            {onSnelleSchouw && (
+              <DropdownMenuItem onSelect={onSnelleSchouw}>
+                <Camera className="h-4 w-4 mr-2" /> Snelle schouw
+              </DropdownMenuItem>
+            )}
             {canDelete && onDelete && (
               <DropdownMenuItem
                 onSelect={() => setConfirmOpen(true)}

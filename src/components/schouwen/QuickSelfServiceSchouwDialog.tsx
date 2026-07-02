@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, Mail, MessageCircle, ExternalLink, Loader2, Zap, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -45,14 +46,16 @@ export default function QuickSelfServiceSchouwDialog({
   open, onOpenChange, leadId, partnerId, adviseurId,
   consumentNaam, klantEmail, klantTelefoon,
 }: Props) {
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [categorie, setCategorie] = useState<SchouwCategorie>("zonnepanelen");
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const canShareSelfService = !!profile?.rol && profile.rol !== "installateur";
 
   const { data: bestaand, isLoading, refetch } = useQuery({
     queryKey: ["snelle-schouw-self-service", leadId],
-    enabled: !!leadId && open,
+    enabled: !!leadId && open && canShareSelfService,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schouwen")
@@ -71,6 +74,10 @@ export default function QuickSelfServiceSchouwDialog({
   useEffect(() => { if (!open) { setCopied(false); } }, [open]);
 
   const aanmaken = async () => {
+    if (!canShareSelfService) {
+      toast.error("Geen toegang om een klantlink te delen");
+      return;
+    }
     if (!leadId || !partnerId || !adviseurId) {
       toast.error("Lead, partner of adviseur ontbreekt");
       return;
@@ -87,7 +94,7 @@ export default function QuickSelfServiceSchouwDialog({
         adviseur_id: adviseurId,
         schouw_nummer: generateSchouwNummer(),
         is_self_service: true,
-        status: "ingepland",
+        status: "gepland",
       } as any);
       if (error) throw error;
       toast.success("Self-service schouw aangemaakt");
@@ -106,6 +113,7 @@ export default function QuickSelfServiceSchouwDialog({
     : "";
 
   const kopieer = async () => {
+    if (!canShareSelfService) return;
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
@@ -127,6 +135,8 @@ export default function QuickSelfServiceSchouwDialog({
     `Hallo${consumentNaam ? " " + consumentNaam : ""}, kunt u via deze link enkele foto's van uw woning aanleveren? ${url}`
   );
   const waTel = (klantTelefoon || "").replace(/[^\d+]/g, "");
+
+  if (!profile?.rol || !canShareSelfService) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

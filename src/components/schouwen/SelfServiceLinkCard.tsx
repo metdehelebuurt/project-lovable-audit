@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Copy, Check, ExternalLink, Camera, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 interface Props {
@@ -19,11 +20,15 @@ interface Props {
 }
 
 export default function SelfServiceLinkCard({ schouwId, token, isSelfService, voltooidOp, aantalSelfServiceFotos, onChanged }: Props) {
+  const { profile } = useAuth();
   const url = `${window.location.origin}/public/schouw/${token}`;
   const [copied, setCopied] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const isInstallateur = profile?.rol === "installateur";
+  const canManageSelfService = !!profile?.rol && !isInstallateur;
 
   const kopieer = async () => {
+    if (!canManageSelfService) return;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -35,12 +40,15 @@ export default function SelfServiceLinkCard({ schouwId, token, isSelfService, vo
   };
 
   const wissel = async (next: boolean) => {
+    if (!canManageSelfService) return;
     setToggling(true);
     const { error } = await supabase.from("schouwen").update({ is_self_service: next }).eq("id", schouwId);
     setToggling(false);
     if (error) toast.error(error.message);
     else { toast.success(next ? "Self-service ingeschakeld" : "Self-service uitgeschakeld"); onChanged?.(); }
   };
+
+  if (!canManageSelfService) return null;
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
