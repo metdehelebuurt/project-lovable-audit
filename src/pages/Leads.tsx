@@ -175,6 +175,8 @@ const Leads = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Fetch lead voor audit-log snapshot
+      const { data: leadSnapshot } = await supabase.from("leads").select("*").eq("id", id).maybeSingle();
       // Clean up FK references before deleting
       await Promise.all([
         supabase.from("lead_notities").delete().eq("lead_id", id),
@@ -188,6 +190,15 @@ const Leads = () => {
       await supabase.from("afspraken").delete().eq("lead_id", id);
       const { error } = await supabase.from("leads").delete().eq("id", id);
       if (error) throw error;
+      // Audit-log
+      await supabase.from("audit_log").insert({
+        actie: "lead_verwijderd",
+        entity_type: "lead",
+        entity_id: id,
+        actor_id: profile?.id ?? null,
+        partner_id: profile?.partner_id ?? null,
+        oude_waarde: leadSnapshot ?? null,
+      } as any);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
