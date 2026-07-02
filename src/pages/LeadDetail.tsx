@@ -107,7 +107,7 @@ const LeadDetail = () => {
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
-  const canShareSelfServiceSchouw = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur"].includes(profile?.rol ?? "");
+  const canShareSelfServiceSchouw = !!profile?.rol && profile.rol !== "installateur";
 
   /* ─── Queries ─── */
   const { data: bronOptions = DEFAULT_BRONNEN } = useQuery({

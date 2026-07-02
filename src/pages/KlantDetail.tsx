@@ -42,7 +42,7 @@ const KlantDetail = () => {
   const [activeTab, setActiveTab] = useState("overzicht");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
-  const canShareSelfServiceSchouw = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur"].includes(profile?.rol ?? "");
+  const canShareSelfServiceSchouw = !!profile?.rol && profile.rol !== "installateur";
 
   /* ─── Queries ─── */
   const { data: klant, isLoading } = useQuery({

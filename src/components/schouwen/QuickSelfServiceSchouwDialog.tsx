@@ -26,7 +26,6 @@ const CATEGORIES: { key: SchouwCategorie; label: string }[] = [
 ];
 
 const generateSchouwNummer = () => `SCH-${Date.now().toString(36).toUpperCase()}`;
-const SELF_SERVICE_ALLOWED_ROLES: readonly string[] = ["superadmin", "partner_admin", "partner_staff", "backoffice", "adviseur"];
 
 interface Props {
   open: boolean;
@@ -52,11 +51,11 @@ export default function QuickSelfServiceSchouwDialog({
   const [categorie, setCategorie] = useState<SchouwCategorie>("zonnepanelen");
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
-  const canShareSelfService = SELF_SERVICE_ALLOWED_ROLES.includes(profile?.rol ?? "");
+  const canShareSelfService = !!profile?.rol && profile.rol !== "installateur";
 
   const { data: bestaand, isLoading, refetch } = useQuery({
     queryKey: ["snelle-schouw-self-service", leadId],
-    enabled: !!leadId && open,
+    enabled: !!leadId && open && canShareSelfService,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schouwen")
