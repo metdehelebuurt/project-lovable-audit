@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, ScanBarcode, Layers } from "lucide-react";
+import { Trash2, Plus, ScanBarcode, Layers, Camera } from "lucide-react";
+import SnPhotoScannerDialog from "./SnPhotoScannerDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +37,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const { data: producten = [] } = useQuery({
     queryKey: ["partner-producten", partnerId],
