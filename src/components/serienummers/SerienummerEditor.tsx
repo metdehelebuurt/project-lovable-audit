@@ -263,6 +263,49 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     }
   };
 
+  const bestaandeSns = useMemo(() => items.map((s: any) => s.serienummer as string), [items]);
+
+  const gekozenProductNaam = gekozenProduct
+    ? `${gekozenProduct.naam}${gekozenProduct.merk ? ` — ${gekozenProduct.merk}` : ""}`
+    : null;
+
+  const handleScanBevestig = async (
+    bevestigd: Array<{ serienummer: string; type?: string | null }>,
+  ) => {
+    if (!productId) {
+      toast.error("Kies eerst een product");
+      throw new Error("Geen product gekozen");
+    }
+    const months = jarenNaarMaanden(garantieJaren);
+    const garantieEind = months > 0
+      ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
+      : null;
+    let ok = 0;
+    let fout = 0;
+    for (const b of bevestigd) {
+      try {
+        await upsert.mutateAsync({
+          partner_id: partnerId,
+          product_id: productId,
+          serienummer: b.serienummer,
+          installatie_id: installatieId,
+          opdracht_id: opdrachtId ?? null,
+          klant_id: klantId ?? null,
+          levering_datum: new Date().toISOString().slice(0, 10),
+          garantie_maanden: months || null,
+          garantie_einddatum: garantieEind,
+          status: "geinstalleerd",
+          component_type: (b.type as any) || componentType || null,
+        } as any);
+        ok += 1;
+      } catch {
+        fout += 1;
+      }
+    }
+    if (ok > 0) toast.success(`${ok} serienummer(s) opgeslagen via scan${fout ? ` · ${fout} mislukt` : ""}`);
+    else if (fout > 0) throw new Error("Opslaan mislukt");
+  };
+
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader>
@@ -435,11 +478,16 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             ))}
           </div>
         )}
+        <SnPhotoScannerDialog
+          open={scanOpen}
+          onOpenChange={setScanOpen}
+          hint={gekozenProductNaam}
+          bestaandeSns={bestaandeSns}
+          onBevestig={handleScanBevestig}
+        />
       </CardContent>
     </Card>
   );
 };
-
-// Scan-integration helpers zijn intern; expose via extra render onder Card
 
 export default SerienummerEditor;
