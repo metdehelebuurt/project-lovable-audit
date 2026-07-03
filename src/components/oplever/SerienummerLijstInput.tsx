@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Camera } from "lucide-react";
+import SnPhotoScannerDialog from "@/components/serienummers/SnPhotoScannerDialog";
 
 interface Props {
   value: string[];
@@ -9,6 +10,7 @@ interface Props {
   legacySingle?: string;
   placeholder?: string;
   ariaLabel?: string;
+  scanHint?: string | null;
 }
 
 /**
@@ -16,8 +18,9 @@ interface Props {
  * als eerste rij (read-only chip met "→ migreer" actie) zodat oude
  * rapporten zichtbaar blijven en eenvoudig overgezet kunnen worden.
  */
-const SerienummerLijstInput = ({ value, onChange, legacySingle, placeholder, ariaLabel }: Props) => {
+const SerienummerLijstInput = ({ value, onChange, legacySingle, placeholder, ariaLabel, scanHint }: Props) => {
   const [draft, setDraft] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
   const lijst = value ?? [];
 
   const voegToe = () => {
@@ -65,6 +68,16 @@ const SerienummerLijstInput = ({ value, onChange, legacySingle, placeholder, ari
         <Button type="button" size="sm" variant="outline" onClick={voegToe} disabled={!draft.trim()} aria-label="Serienummer toevoegen">
           <Plus className="h-4 w-4" />
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setScanOpen(true)}
+          aria-label="Scan serienummer via foto"
+          title="Scan via foto"
+        >
+          <Camera className="h-4 w-4" />
+        </Button>
       </div>
 
       {toonLegacy && (
@@ -88,6 +101,19 @@ const SerienummerLijstInput = ({ value, onChange, legacySingle, placeholder, ari
           ))}
         </ul>
       )}
+
+      <SnPhotoScannerDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        hint={scanHint ?? null}
+        bestaandeSns={lijst}
+        onBevestig={(bevestigd) => {
+          const nieuw = bevestigd
+            .map((b) => b.serienummer.trim())
+            .filter((s) => s && !lijst.includes(s));
+          if (nieuw.length > 0) onChange([...lijst, ...nieuw]);
+        }}
+      />
     </div>
   );
 };
