@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, ScanBarcode, Layers } from "lucide-react";
+import { Trash2, Plus, ScanBarcode, Layers, Camera } from "lucide-react";
+import SnPhotoScannerDialog from "./SnPhotoScannerDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +37,7 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const { data: producten = [] } = useQuery({
     queryKey: ["partner-producten", partnerId],
@@ -261,6 +263,49 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
     }
   };
 
+  const bestaandeSns = useMemo(() => items.map((s: any) => s.serienummer as string), [items]);
+
+  const gekozenProductNaam = gekozenProduct
+    ? `${gekozenProduct.naam}${gekozenProduct.merk ? ` — ${gekozenProduct.merk}` : ""}`
+    : null;
+
+  const handleScanBevestig = async (
+    bevestigd: Array<{ serienummer: string; type?: string | null }>,
+  ) => {
+    if (!productId) {
+      toast.error("Kies eerst een product");
+      throw new Error("Geen product gekozen");
+    }
+    const months = jarenNaarMaanden(garantieJaren);
+    const garantieEind = months > 0
+      ? new Date(Date.now() + months * 30 * 86400000).toISOString().slice(0, 10)
+      : null;
+    let ok = 0;
+    let fout = 0;
+    for (const b of bevestigd) {
+      try {
+        await upsert.mutateAsync({
+          partner_id: partnerId,
+          product_id: productId,
+          serienummer: b.serienummer,
+          installatie_id: installatieId,
+          opdracht_id: opdrachtId ?? null,
+          klant_id: klantId ?? null,
+          levering_datum: new Date().toISOString().slice(0, 10),
+          garantie_maanden: months || null,
+          garantie_einddatum: garantieEind,
+          status: "geinstalleerd",
+          component_type: (b.type as any) || componentType || null,
+        } as any);
+        ok += 1;
+      } catch {
+        fout += 1;
+      }
+    }
+    if (ok > 0) toast.success(`${ok} serienummer(s) opgeslagen via scan${fout ? ` · ${fout} mislukt` : ""}`);
+    else if (fout > 0) throw new Error("Opslaan mislukt");
+  };
+
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
       <CardHeader>
@@ -305,6 +350,20 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!productId) {
+                toast.error("Kies eerst een product");
+                return;
+              }
+              setScanOpen(true);
+            }}
+          >
+            <Camera className="h-4 w-4" /> Scan foto
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -419,6 +478,13 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
             ))}
           </div>
         )}
+        <SnPhotoScannerDialog
+          open={scanOpen}
+          onOpenChange={setScanOpen}
+          hint={gekozenProductNaam}
+          bestaandeSns={bestaandeSns}
+          onBevestig={handleScanBevestig}
+        />
       </CardContent>
     </Card>
   );
