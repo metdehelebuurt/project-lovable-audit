@@ -440,4 +440,6 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
   );
 };
 
+// Scan-integration helpers zijn intern; expose via extra render onder Card
+
 export default SerienummerEditor;
