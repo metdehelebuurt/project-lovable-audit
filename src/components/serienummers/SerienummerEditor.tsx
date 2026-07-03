@@ -307,6 +307,20 @@ const SerienummerEditor = ({ installatieId, partnerId, opdrachtId, klantId, rege
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!productId) {
+                toast.error("Kies eerst een product");
+                return;
+              }
+              setScanOpen(true);
+            }}
+          >
+            <Camera className="h-4 w-4" /> Scan foto
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
