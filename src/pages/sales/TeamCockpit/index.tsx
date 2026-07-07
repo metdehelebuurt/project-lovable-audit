@@ -4,6 +4,8 @@ import { useTeamStats } from "@/hooks/sales/useTeamStats";
 import RepKaart from "./RepKaart";
 import DagelijkseBriefing from "./DagelijkseBriefing";
 import NextBestActionLijst from "./NextBestActionLijst";
+import TargetsKaart from "./TargetsKaart";
+import CoachingKaart from "./CoachingKaart";
 
 function magTeamCockpitZien(rollen: string[]): boolean {
   return rollen.some((r) => r === "superadmin" || r === "sales_manager");
@@ -28,6 +30,10 @@ export default function TeamCockpit() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DagelijkseBriefing />
         <NextBestActionLijst />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TargetsKaart />
+        <CoachingKaart />
       </div>
       <div>
         <h2 className="text-sm font-semibold mb-2 uppercase tracking-wide text-muted-foreground">

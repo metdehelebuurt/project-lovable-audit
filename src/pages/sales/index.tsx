@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users, TrendingUp, CalendarDays, Sparkles } from "lucide-react";
+import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users, TrendingUp, CalendarDays, Sparkles, Trophy } from "lucide-react";
 import SalesPipeline from "./SalesPipeline";
 import SalesLeads from "./SalesLeads";
 import SalesImport from "./SalesImport";
@@ -12,6 +12,7 @@ import TeamCockpit from "./TeamCockpit";
 import SalesForecast from "./Forecast";
 import TrialLifecycle from "./TrialLifecycle";
 import TeamAgenda from "./TeamAgenda";
+import WinningPlays from "./WinningPlays";
 
 export default function Sales() {
   return (
@@ -36,6 +37,7 @@ export default function Sales() {
           <TabsTrigger value="instellingen" className="gap-2"><Settings className="h-4 w-4" />Pipeline</TabsTrigger>
           <TabsTrigger value="bronnen" className="gap-2"><Tag className="h-4 w-4" />Bronnen</TabsTrigger>
           <TabsTrigger value="snippets" className="gap-2"><FileText className="h-4 w-4" />Snippets</TabsTrigger>
+          <TabsTrigger value="winning-plays" className="gap-2"><Trophy className="h-4 w-4" />Winning plays</TabsTrigger>
         </TabsList>
         <TabsContent value="team" className="mt-4"><TeamCockpit /></TabsContent>
         <TabsContent value="forecast" className="mt-4"><SalesForecast /></TabsContent>
@@ -49,6 +51,7 @@ export default function Sales() {
         <TabsContent value="instellingen" className="mt-4"><PipelineInstellingen /></TabsContent>
         <TabsContent value="bronnen" className="mt-4"><BronnenBeheer /></TabsContent>
         <TabsContent value="snippets" className="mt-4"><SnippetsBeheer /></TabsContent>
+        <TabsContent value="winning-plays" className="mt-4"><WinningPlays /></TabsContent>
       </Tabs>
     </div>
   );
