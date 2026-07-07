@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, Clock, User, PhoneCall, Video } from "lucide-react";
-import { useSalesTeam } from "@/hooks/sales/useSalesTeam";
+import { useAffiliatesMetAgenda } from "@/hooks/sales/useAffiliatesMetAgenda";
 import { useSalesPlatformAfspraken } from "@/hooks/sales/useSalesAgenda";
 
 function startOfWeek(d = new Date()): Date {
@@ -35,7 +35,7 @@ function iconVoor(type: string | null) {
 }
 
 export default function TeamAgenda() {
-  const { data: team, isLoading: teamLoading } = useSalesTeam();
+  const { data: team, isLoading: teamLoading } = useAffiliatesMetAgenda();
   const van = useMemo(() => startOfWeek(), []);
   const tot = useMemo(() => addDays(van, 7), [van]);
   const affiliateIds = useMemo(() => (team ?? []).map((t) => t.id), [team]);
