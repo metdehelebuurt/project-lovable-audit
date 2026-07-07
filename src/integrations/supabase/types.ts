@@ -778,6 +778,10 @@ export type Database = {
           review_door_id: string | null
           review_notitie: string | null
           review_op: string | null
+          risico_bijgewerkt_op: string | null
+          risico_next_step: string | null
+          risico_reden: string | null
+          risico_score: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -847,6 +851,10 @@ export type Database = {
           review_door_id?: string | null
           review_notitie?: string | null
           review_op?: string | null
+          risico_bijgewerkt_op?: string | null
+          risico_next_step?: string | null
+          risico_reden?: string | null
+          risico_score?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -916,6 +924,10 @@ export type Database = {
           review_door_id?: string | null
           review_notitie?: string | null
           review_op?: string | null
+          risico_bijgewerkt_op?: string | null
+          risico_next_step?: string | null
+          risico_reden?: string | null
+          risico_score?: string | null
           sales_fase?: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op?: string | null
           status?: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -8226,6 +8238,30 @@ export type Database = {
           },
         ]
       }
+      sales_briefings: {
+        Row: {
+          created_at: string
+          datum: string
+          gebruiker_id: string
+          id: string
+          inhoud: Json
+        }
+        Insert: {
+          created_at?: string
+          datum?: string
+          gebruiker_id: string
+          id?: string
+          inhoud: Json
+        }
+        Update: {
+          created_at?: string
+          datum?: string
+          gebruiker_id?: string
+          id?: string
+          inhoud?: Json
+        }
+        Relationships: []
+      }
       sales_snippets: {
         Row: {
           actief: boolean
@@ -9375,6 +9411,10 @@ export type Database = {
           review_door_id: string | null
           review_notitie: string | null
           review_op: string | null
+          risico_bijgewerkt_op: string | null
+          risico_next_step: string | null
+          risico_reden: string | null
+          risico_score: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -9459,6 +9499,10 @@ export type Database = {
           review_door_id: string | null
           review_notitie: string | null
           review_op: string | null
+          risico_bijgewerkt_op: string | null
+          risico_next_step: string | null
+          risico_reden: string | null
+          risico_score: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -9561,6 +9605,10 @@ export type Database = {
           review_door_id: string | null
           review_notitie: string | null
           review_op: string | null
+          risico_bijgewerkt_op: string | null
+          risico_next_step: string | null
+          risico_reden: string | null
+          risico_score: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -9685,6 +9733,10 @@ export type Database = {
           review_door_id: string | null
           review_notitie: string | null
           review_op: string | null
+          risico_bijgewerkt_op: string | null
+          risico_next_step: string | null
+          risico_reden: string | null
+          risico_score: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]
@@ -10012,6 +10064,10 @@ export type Database = {
           review_door_id: string | null
           review_notitie: string | null
           review_op: string | null
+          risico_bijgewerkt_op: string | null
+          risico_next_step: string | null
+          risico_reden: string | null
+          risico_score: string | null
           sales_fase: Database["public"]["Enums"]["sales_fase"] | null
           stale_gemeld_op: string | null
           status: Database["public"]["Enums"]["affiliate_lead_status"]

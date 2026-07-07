@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket } from "lucide-react";
+import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users } from "lucide-react";
 import SalesPipeline from "./SalesPipeline";
 import SalesLeads from "./SalesLeads";
 import SalesImport from "./SalesImport";
@@ -8,6 +8,7 @@ import PipelineInstellingen from "./PipelineInstellingen";
 import BronnenBeheer from "./BronnenBeheer";
 import SnippetsBeheer from "./SnippetsBeheer";
 import SalesTrials from "./Trials";
+import TeamCockpit from "./TeamCockpit";
 
 export default function Sales() {
   return (
@@ -18,8 +19,9 @@ export default function Sales() {
           Beheer al je leads — koud tot heet — en zet ze door naar de juiste affiliate.
         </p>
       </div>
-      <Tabs defaultValue="pipeline">
+      <Tabs defaultValue="team">
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" />Team</TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-2"><Kanban className="h-4 w-4" />Pipeline</TabsTrigger>
           <TabsTrigger value="leads" className="gap-2"><List className="h-4 w-4" />Alle leads</TabsTrigger>
           <TabsTrigger value="trials" className="gap-2"><Rocket className="h-4 w-4" />Trials</TabsTrigger>
@@ -29,6 +31,7 @@ export default function Sales() {
           <TabsTrigger value="bronnen" className="gap-2"><Tag className="h-4 w-4" />Bronnen</TabsTrigger>
           <TabsTrigger value="snippets" className="gap-2"><FileText className="h-4 w-4" />Snippets</TabsTrigger>
         </TabsList>
+        <TabsContent value="team" className="mt-4"><TeamCockpit /></TabsContent>
         <TabsContent value="pipeline" className="mt-4"><SalesPipeline /></TabsContent>
         <TabsContent value="leads" className="mt-4"><SalesLeads /></TabsContent>
         <TabsContent value="trials" className="mt-4"><SalesTrials /></TabsContent>
