@@ -7,7 +7,7 @@ import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import BronBadge from "@/components/sales/BronBadge";
 import ContactmomentDialog from "@/components/sales/ContactmomentDialog";
 import LeadScorePill from "@/components/sales/LeadScorePill";
-import type { Temperatuur } from "@/lib/sales/temperatuur";
+import { TEMP_COLOR, type Temperatuur } from "@/lib/sales/temperatuur";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 import {
   DropdownMenu,
@@ -46,10 +46,15 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
-      className={`group relative p-3 cursor-pointer hover:shadow-md transition-shadow ${
+      className={`group relative p-3 pl-4 cursor-pointer hover:shadow-md transition-shadow overflow-hidden ${
         teLaat ? "border-rose-300" : agingNiveau === "alert" ? "border-rose-200" : agingNiveau === "warn" ? "border-amber-200" : ""
       }`}
     >
+      {/* Warmte-strip aan de linkerkant — één duidelijk systeem */}
+      <span
+        aria-hidden
+        className={`absolute left-0 top-0 bottom-0 w-1 ${TEMP_COLOR[temperatuur].split(" ").find((c) => c.startsWith("bg-")) ?? "bg-muted"}`}
+      />
       {/* Titelregel */}
       <div className="flex items-start gap-2">
         <Building2 className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -59,7 +64,7 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
             <div className="text-xs text-muted-foreground truncate">{lead.contactpersoon}</div>
           )}
         </div>
-        <TemperatuurBadge temperatuur={temperatuur} showLabel={false} />
+        <TemperatuurBadge temperatuur={temperatuur} showLabel />
       </div>
 
       {/* Compacte meta-regel: icoontjes + locatie/branche + score */}
