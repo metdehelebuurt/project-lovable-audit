@@ -799,6 +799,9 @@ export type Database = {
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
           website: string | null
+          winning_play_bijgewerkt_op: string | null
+          winning_play_hoogtepunten: Json | null
+          winning_play_samenvatting: string | null
         }
         Insert: {
           aantal_medewerkers?: number | null
@@ -872,6 +875,9 @@ export type Database = {
           volgende_actie_datum?: string | null
           volgende_actie_op?: string | null
           website?: string | null
+          winning_play_bijgewerkt_op?: string | null
+          winning_play_hoogtepunten?: Json | null
+          winning_play_samenvatting?: string | null
         }
         Update: {
           aantal_medewerkers?: number | null
@@ -945,6 +951,9 @@ export type Database = {
           volgende_actie_datum?: string | null
           volgende_actie_op?: string | null
           website?: string | null
+          winning_play_bijgewerkt_op?: string | null
+          winning_play_hoogtepunten?: Json | null
+          winning_play_samenvatting?: string | null
         }
         Relationships: [
           {
@@ -8262,6 +8271,33 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_coaching_tips: {
+        Row: {
+          context: Json | null
+          created_at: string
+          eigenaar_id: string
+          gegenereerd_op: string
+          id: string
+          tips: Json
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          eigenaar_id: string
+          gegenereerd_op?: string
+          id?: string
+          tips: Json
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          eigenaar_id?: string
+          gegenereerd_op?: string
+          id?: string
+          tips?: Json
+        }
+        Relationships: []
+      }
       sales_snippets: {
         Row: {
           actief: boolean
@@ -9432,6 +9468,9 @@ export type Database = {
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
           website: string | null
+          winning_play_bijgewerkt_op: string | null
+          winning_play_hoogtepunten: Json | null
+          winning_play_samenvatting: string | null
         }
         SetofOptions: {
           from: "*"
@@ -9520,6 +9559,9 @@ export type Database = {
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
           website: string | null
+          winning_play_bijgewerkt_op: string | null
+          winning_play_hoogtepunten: Json | null
+          winning_play_samenvatting: string | null
         }
         SetofOptions: {
           from: "*"
@@ -9626,6 +9668,9 @@ export type Database = {
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
           website: string | null
+          winning_play_bijgewerkt_op: string | null
+          winning_play_hoogtepunten: Json | null
+          winning_play_samenvatting: string | null
         }
         SetofOptions: {
           from: "*"
@@ -9754,6 +9799,9 @@ export type Database = {
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
           website: string | null
+          winning_play_bijgewerkt_op: string | null
+          winning_play_hoogtepunten: Json | null
+          winning_play_samenvatting: string | null
         }
         SetofOptions: {
           from: "*"
@@ -10085,6 +10133,9 @@ export type Database = {
           volgende_actie_datum: string | null
           volgende_actie_op: string | null
           website: string | null
+          winning_play_bijgewerkt_op: string | null
+          winning_play_hoogtepunten: Json | null
+          winning_play_samenvatting: string | null
         }
         SetofOptions: {
           from: "*"
