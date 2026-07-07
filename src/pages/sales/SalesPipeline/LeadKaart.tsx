@@ -7,6 +7,7 @@ import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import BronBadge from "@/components/sales/BronBadge";
 import ContactmomentDialog from "@/components/sales/ContactmomentDialog";
 import LeadScorePill from "@/components/sales/LeadScorePill";
+import RisicoBadge from "@/components/sales/RisicoBadge";
 import { TEMP_COLOR, type Temperatuur } from "@/lib/sales/temperatuur";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 import {
@@ -82,6 +83,12 @@ export default function LeadKaart({ lead, onClick, onToewijzen }: Props) {
       {(lead.bron_id || lead.bron) && (
         <div className="mt-2 flex flex-wrap gap-1">
           <BronBadge bronId={lead.bron_id} fallbackLabel={lead.bron ?? null} />
+          <RisicoBadge score={lead.risico_score} reden={lead.risico_reden} compact />
+        </div>
+      )}
+      {!lead.bron_id && !lead.bron && lead.risico_score && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          <RisicoBadge score={lead.risico_score} reden={lead.risico_reden} compact />
         </div>
       )}
 
