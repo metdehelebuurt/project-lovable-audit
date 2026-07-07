@@ -1,52 +1,80 @@
-# Opleverrapport PDF: fail-safe handtekeningen + optimalisatie
+# Sales CRM verbeteringen
 
-## Probleem (zichtbaar in screenshot)
+Zes verbeteringen aan de sales-pipeline + trials-overzicht voor sales managers. Onderstaand plan houdt alle wijzigingen aan frontend/presentatie waar mogelijk; alleen voor "gedeelde aantekeningen" is een backend-wijziging (RLS) nodig.
 
-In de PDF-preview én de gegenereerde PDF verschijnt "handtekening" als kapotte afbeelding in plaats van de daadwerkelijke handtekening. Oorzaak: `rapport.installateur_handtekening.image_url` en `klant_handtekening.image_url` bevatten een **storage-pad** (bv. `partnerId/rapportId/klant-handtekening.png`) uit de private bucket `oplever-media`, geen bruikbare URL. Het `<img>` element krijgt dus een relatieve URL die 404't, en html2canvas rendert de alt-text.
+## 1. Filters in de Sales Pipeline uitbreiden
 
-Daarnaast is de huidige PDF onnodig zwaar: dezelfde JPEG van de volledige pagina wordt bij multi-page voor elke pagina opnieuw ingevoegd met een verschoven positie, waardoor het bestand exponentieel groeit bij lange rapporten.
+Op `src/pages/sales/SalesPipeline/index.tsx` boven de kolommen een filterbalk toevoegen naast het bestaande TemperatuurFilter:
 
-## Oplossing
+- **Periode**: dropdown "Alle" / "Vandaag" / "Deze week" / "Deze maand" / "Laatste 30 dagen" / "Dit kwartaal" — filtert op `updated_at`.
+- **Bron**: dropdown (opgehaald uit `lead_bronnen` via bestaande `useLeadBronnen`).
+- **Eigenaar / Sales**: dropdown met unieke `eigenaar_id` uit leads (naam via bestaande `useColleagues` / users lookup).
+- **Zoek**: tekstveld op bedrijfsnaam / contactpersoon / e-mail.
+- **Wissen**-knop verschijnt zodra >0 filters actief zijn.
 
-### 1. Handtekeningen fail-safe maken (kernfix)
+Filters worden gecombineerd in de bestaande `gefilterd` useMemo. Filterstate lokaal (`useState`), geen URL-sync om scope klein te houden.
 
-Voor het renderen van de PDF worden alle handtekening-paths én het partnerlogo eerst voorgeladen naar `data:`-URL's (base64), zodat html2canvas ze zonder CORS/netwerk kan tekenen.
+## 2. Warmtestatus verduidelijken (één systeem)
 
-- Nieuwe helper `src/lib/opleverPdfAssets.ts`:
-  - `resolveSignatureToDataUrl(path)`: probeert in volgorde: (a) al een data-URL? direct terug; (b) al een absolute http(s) URL? via `fetch → blob → FileReader` naar dataURL; (c) storage-pad? via `supabase.storage.from('oplever-media').createSignedUrl(path, 300)` en dan fetch → dataURL.
-  - `resolvePartnerLogoToDataUrl(url)`: idem voor externe/publieke logo-URL.
-  - Foutafhandeling: bij falen `null` teruggeven; nooit gooien.
-- `OpleverDetail.tsx`: net vóór PDF-generatie (in `handleDownloadPdf` / `handleSendMail` / preview-render) de dataURL's ophalen en meegeven als props (`installateurSigDataUrl`, `klantSigDataUrl`, `partnerLogoDataUrl`).
-- `OpleverRapportPDF.tsx` `SignBlock`:
-  - Nieuwe prop `dataUrl?: string`.
-  - Rendervolgorde: (1) `dataUrl` als `<img>` met vaste hoogte; (2) fallback: getypte naam in cursief handschriftstijl + "Digitaal ondertekend op {datum}" + kleine "✓ Geverifieerd" badge; (3) leeg-status als er echt geen ondertekening is.
-  - `<img>` krijgt `onError` handler die de fallback triggert, zodat zelfs een corrupte dataURL nooit een gebroken icoontje toont.
-  - `crossOrigin="anonymous"` blijft staan als extra vangnet.
-- Zelfde dataURL-preload voor logo, met tekst-fallback (partnernaam in groot) bij ontbreken.
+Vandaag staan er twee signalen door elkaar: `temperatuur` (koud/lauw/warm/heet) uit `useSalesLeads` en het `LeadSignalBadge` (AI-koopsignaal). Aanpak:
 
-### 2. PDF-render optimaliseren
+- In `LeadKaart` de temperatuur prominent linksboven zetten met **icoon + label + kleur** (uit `TEMP_ICON`, `TEMP_COLOR` uit `src/lib/sales/temperatuur.ts`) i.p.v. losse badge onderaan.
+- AI-signaal (`LeadSignalBadge`) blijft, maar krijgt subtitel "AI-signaal" en visueel duidelijk secundair (kleiner, outline).
+- Legenda-tooltip op de kolomkop van de pipeline die uitlegt: "Kleur = warmte (handmatig/regels), sterretje = AI-koopsignaal".
+- In `TemperatuurFilter` alle vier temperaturen consistent tonen met hetzelfde icoon dat op de kaart staat.
 
-`src/lib/pdfFromElement.ts` wordt herschreven:
+## 3. Trials-overzicht voor Sales Manager
 
-- Wachten op `document.fonts.ready` en op alle `<img>` binnen de container (`img.decode()` / `onload`) vóór `html2canvas`.
-- Multi-page: canvas per pagina **slicen** in plaats van dezelfde grote JPEG met offset her-toevoegen. Voor elke pagina:
-  1. maak een `pageCanvas` van A4-verhouding
-  2. `drawImage` alleen het relevante y-segment van de bron
-  3. `pageCanvas.toDataURL("image/jpeg", 0.82)` en `pdf.addImage(...)` binnen de pagina
-- Kwaliteit: JPEG 0.82 (was 0.92) en `scale: 2` behouden — visueel gelijk, ~50-70% kleinere bestanden.
-- Zachte page-break tussen secties: dunne witte strip (2mm) onderaan elk slice om te voorkomen dat tekst precies op de paginascheiding wordt doorgesneden. `pageBreakInside: "avoid"` op `<Section>` blijft.
-- PDF-metadata zetten: `pdf.setProperties({ title, subject, author, creator })` met rapportnummer/partnernaam voor betere archivering.
-- Failsafe: als preload van een specifieke asset faalt, wordt de PDF gewoon met tekst-fallback gegenereerd (nooit stille crash).
+Nieuw tabblad **"Trials"** in `src/pages/sales/index.tsx` naast de bestaande tabs. Nieuwe pagina `src/pages/sales/Trials/index.tsx` die de bestaande edge function `sales-manager-trials` aanroept (die geeft partners met `trial_einddatum` + gekoppelde affiliate terug).
 
-### 3. Kleine PDF-lay-outverbeteringen
+Tabel/kaarten met kolommen:
+- Bedrijfsnaam + plaats
+- Contactpersoon + e-mail/telefoon
+- Trial einddatum + "dagen resterend" badge (rood <3, oranje <7, groen anders)
+- Status (`trial` / `verlopen` / `omgezet`)
+- Affiliate die klant heeft aangebracht
+- Actie: link naar partnerdetail
 
-- Ondertekening-sectie krijgt `pageBreakInside: avoid` én komt bij voorkeur op een nieuwe pagina als er <60mm ruimte over is (via een `pageBreakBefore` op de sectie wanneer nodig).
-- `<h2>` en tabelheaders vet houden ná JPEG-compressie (voldoende contrast, kleuren aangepast van #6b7280 → #475569 waar tekst).
-- Footer krijgt paginanummer "Pagina X van Y" — na render toegevoegd via `pdf.text` op elke pagina.
+Filter bovenaan: "Actief" (default, einddatum ≥ vandaag) / "Verlopen (30d)" / "Alles".
 
-## Bestanden
+## 4. Demo-klanten / nog-geen-trial zichtbaar
 
-- **Nieuw**: `src/lib/opleverPdfAssets.ts`
-- **Wijzigen**: `src/lib/pdfFromElement.ts`, `src/components/oplever/OpleverRapportPDF.tsx`, `src/pages/OpleverDetail.tsx`
+Uitbreiding van hetzelfde Trials-tabblad met een sectie **"Demo aangevraagd, nog geen trial"**: `affiliate_leads` met status `demo_gepland` of `demo_gedaan` waar géén gekoppelde partner-trial bestaat. Hierbij:
 
-Geen databasewijzigingen, geen edge functions, geen breaking changes voor bestaande rapporten (Esteban's rapport OP-2026-0008 zal na deze fix de handtekeningen correct tonen zodra de PDF opnieuw wordt gegenereerd).
+- Nieuwe hook `useSalesDemoZonderTrial` die `affiliate_leads` fetcht met die statussen en filtert op leads zonder actieve match in `affiliate_referrals` → partner met trial.
+- Aparte tabel boven de trials-tabel: "Demo geweest, wacht op trial-start" met bedrijfsnaam, laatste contact, verantwoordelijke affiliate, en knop "Trial starten" (herbruikt bestaande `TrialStartenButton`).
+
+## 5. Smartaccu upsell-signaal
+
+Op de trials-tabel én in `LeadKaart` (pipeline) een badge **"Upsell: Smartaccu"** tonen wanneer bij de klant/lead upsell-add-ons beschikbaar zijn. `useLeadKlantstatus` levert al `upsell_addons`. Wanneer daar een addon met slug die "accu" / "smartaccu" bevat in zit → gele/violette badge "⚡ Upsell Smartaccu" met tooltip "Deze klant heeft nog geen Smartaccu-addon actief".
+
+Voor de trials-tabel dezelfde controle per partner via bestaande abonnement-addon queries (of via een compacte RPC/list uit `abonnement_addon_aankopen` vs `abonnement_addons` waar slug matcht).
+
+## 6. Gedeelde aantekeningen van actieve klanten
+
+Vandaag zijn `klant_notities` per adviseur/partner afgeschermd. Sales manager moet mee kunnen lezen.
+
+- Backend (migratie): extra RLS-policy op `klant_notities` — SELECT toegestaan wanneer `has_role(auth.uid(), 'sales_manager')` of `has_role(auth.uid(), 'superadmin')` of `has_role(auth.uid(),'sales_admin')`. Geen INSERT/UPDATE-rechten voor deze rollen (alleen lezen).
+- Frontend: in `PartnerDetail` een nieuw tabblad/section "Aantekeningen" (read-only voor sales-rollen) dat `klant_notities` toont voor die partner (join via klant → partner). In het nieuwe Trials-tabblad krijgt elke rij een uitklap met de laatste 3 notities.
+
+## Technische details
+
+**Nieuwe bestanden**
+- `src/pages/sales/Trials/index.tsx` — trials-tabblad
+- `src/pages/sales/Trials/TrialsTabel.tsx`
+- `src/pages/sales/Trials/DemoZonderTrialTabel.tsx`
+- `src/hooks/sales/useSalesTrials.ts` — wrappt `sales-manager-trials` edge function + verrijkt met upsell-info
+- `src/hooks/sales/useSalesDemoZonderTrial.ts`
+- `src/components/sales/PipelineFilters.tsx` — filterbalk (periode, bron, eigenaar, zoek)
+- `src/components/sales/UpsellBadge.tsx`
+- `supabase/migrations/<ts>_klant_notities_sales_read.sql` — nieuwe SELECT policy
+
+**Aangepaste bestanden**
+- `src/pages/sales/SalesPipeline/index.tsx` — filters + verbeterde tempweergave
+- `src/pages/sales/SalesPipeline/LeadKaart.tsx` — prominente temperatuur, upsell-badge
+- `src/pages/sales/index.tsx` — nieuwe "Trials" tab
+- `src/components/sales/TemperatuurFilter.tsx` — consistente iconen + legenda
+
+**Backend-scope**: enkel de RLS-policy op `klant_notities`. Geen tabellen bijgemaakt. Sales manager & sales admin & superadmin krijgen read-only via `has_role`.
+
+**Niet in scope**: URL-persistente filters, exports, notificaties bij bijna-verlopen trials — kan later toegevoegd worden.
