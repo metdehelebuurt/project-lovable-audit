@@ -8,8 +8,14 @@ import DoorzetDialog from "../DoorzetDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import TemperatuurFilter from "@/components/sales/TemperatuurFilter";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
-import { Maximize2, Minimize2, TrendingUp, Users, Trophy, Euro } from "lucide-react";
+import { Maximize2, Minimize2, TrendingUp, Users, Trophy, Euro, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PipelineFilters, {
+  LEGE_FILTERS,
+  periodeGrensISO,
+  type PipelineFilterState,
+} from "@/components/sales/PipelineFilters";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function formatEuro(v: number): string {
   if (v >= 1_000_000) return `€ ${(v / 1_000_000).toFixed(1)}M`;
@@ -23,16 +29,38 @@ export default function SalesPipeline() {
   const { data: pipeline, isLoading: pipelineLaadt } = useMyPipeline();
   const [toewijzenLead, setToewijzenLead] = useState<SalesLead | null>(null);
   const [tempFilter, setTempFilter] = useState<Temperatuur | "alle">("alle");
+  const [filters, setFilters] = useState<PipelineFilterState>(LEGE_FILTERS);
   const [uitgevouwen, setUitgevouwen] = useState<Set<string>>(new Set());
   const [allesUitgevouwen, setAllesUitgevouwen] = useState(false);
 
   const fases = useMemo(() => (pipeline ?? []).filter((f) => f.zichtbaar !== false), [pipeline]);
 
+  const eigenaarIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const l of leads ?? []) if (l.eigenaar_id) s.add(l.eigenaar_id);
+    return Array.from(s);
+  }, [leads]);
+
   const gefilterd = useMemo(() => {
-    return (leads ?? []).filter((l) =>
-      tempFilter === "alle" ? true : (l.temperatuur ?? "koud") === tempFilter,
-    );
-  }, [leads, tempFilter]);
+    const grens = periodeGrensISO(filters.periode);
+    const zoek = filters.zoek.trim().toLowerCase();
+    return (leads ?? []).filter((l) => {
+      if (tempFilter !== "alle" && (l.temperatuur ?? "koud") !== tempFilter) return false;
+      if (grens && (!l.updated_at || l.updated_at < grens)) return false;
+      if (filters.bronId && l.bron_id !== filters.bronId) return false;
+      if (filters.eigenaarId === "geen" && l.eigenaar_id) return false;
+      if (filters.eigenaarId && filters.eigenaarId !== "geen" && l.eigenaar_id !== filters.eigenaarId)
+        return false;
+      if (zoek) {
+        const hay = [l.bedrijfsnaam, l.contactpersoon, l.email, l.plaats]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(zoek)) return false;
+      }
+      return true;
+    });
+  }, [leads, tempFilter, filters]);
 
   const perFase = useMemo(() => {
     const map: Record<string, SalesLead[]> = {};
@@ -91,7 +119,31 @@ export default function SalesPipeline() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <TemperatuurFilter waarde={tempFilter} onWijzig={setTempFilter} counts={tempCounts as never} />
+        <div className="flex flex-wrap items-center gap-2">
+          <TemperatuurFilter waarde={tempFilter} onWijzig={setTempFilter} counts={tempCounts as never} />
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Uitleg warmte"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs text-xs">
+                <p className="font-medium mb-1">Eén warmte-systeem</p>
+                <p>
+                  De kleur en het thermometer-icoontje op elke leadkaart tonen de warmte
+                  (koud / lauw / warm / heet). Deze wordt handmatig gezet of automatisch
+                  bijgewerkt door regels. Het losse AI-signaal (indien aanwezig) is een
+                  extra hint uit gesprekken en overschrijft de warmte nooit.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -105,6 +157,12 @@ export default function SalesPipeline() {
           {allesUitgevouwen ? "Lege fases inklappen" : "Alle fases tonen"}
         </Button>
       </div>
+
+      <PipelineFilters
+        waarde={filters}
+        onWijzig={(patch) => setFilters((v) => ({ ...v, ...patch }))}
+        eigenaarIds={eigenaarIds}
+      />
 
       <div className="flex gap-3 overflow-x-auto pb-4 -mx-2 px-2 snap-x">
         {fases.map((fase) => {
