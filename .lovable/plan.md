@@ -45,11 +45,9 @@ Pipeline, trials-overzicht, warmte, filters, upsell-badge, gedeelde notities, sn
 
 ## Aanpak & bouwvolgorde
 
-**Fase A (deze ronde):** Team-cockpit, AI dagelijkse briefing, Deal-risico score, Next-Best-Action lijst.
-**Fase B (volgende ronde):** Forecast/pipeline-gezondheid, Trial-lifecycle board, Team-agenda.
-**Fase C:** Team-targets, Coaching-tips, Winning-plays library.
-
-Ik stel voor **Fase A nu te bouwen** — dat geeft direct de meeste waarde. Fase B en C leg ik vast als vervolgvoorstel.
+**Fase A (klaar):** Team-cockpit, AI dagelijkse briefing, Deal-risico score, Next-Best-Action lijst.
+**Fase B (klaar):** Forecast/pipeline-gezondheid, Trial-lifecycle board (met bulk-acties), Team-agenda.
+**Fase C (klaar):** Team-targets in cockpit, AI coaching-tips per rep (edge function `sales-coaching-tip`), Winning-plays library (edge function `sales-winning-play`, tab in sales).
 
 ## Technische opzet Fase A
 
