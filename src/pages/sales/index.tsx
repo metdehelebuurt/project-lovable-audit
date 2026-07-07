@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users } from "lucide-react";
+import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users, TrendingUp, CalendarDays, Sparkles } from "lucide-react";
 import SalesPipeline from "./SalesPipeline";
 import SalesLeads from "./SalesLeads";
 import SalesImport from "./SalesImport";
@@ -9,6 +9,9 @@ import BronnenBeheer from "./BronnenBeheer";
 import SnippetsBeheer from "./SnippetsBeheer";
 import SalesTrials from "./Trials";
 import TeamCockpit from "./TeamCockpit";
+import SalesForecast from "./Forecast";
+import TrialLifecycle from "./TrialLifecycle";
+import TeamAgenda from "./TeamAgenda";
 
 export default function Sales() {
   return (
@@ -22,9 +25,12 @@ export default function Sales() {
       <Tabs defaultValue="team">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" />Team</TabsTrigger>
+          <TabsTrigger value="forecast" className="gap-2"><TrendingUp className="h-4 w-4" />Forecast</TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-2"><Kanban className="h-4 w-4" />Pipeline</TabsTrigger>
           <TabsTrigger value="leads" className="gap-2"><List className="h-4 w-4" />Alle leads</TabsTrigger>
           <TabsTrigger value="trials" className="gap-2"><Rocket className="h-4 w-4" />Trials</TabsTrigger>
+          <TabsTrigger value="trial-lifecycle" className="gap-2"><Sparkles className="h-4 w-4" />Trial-fases</TabsTrigger>
+          <TabsTrigger value="agenda" className="gap-2"><CalendarDays className="h-4 w-4" />Team-agenda</TabsTrigger>
           <TabsTrigger value="import" className="gap-2"><Upload className="h-4 w-4" />Importeren</TabsTrigger>
           <TabsTrigger value="analytics" className="gap-2"><BarChart3 className="h-4 w-4" />Analytics</TabsTrigger>
           <TabsTrigger value="instellingen" className="gap-2"><Settings className="h-4 w-4" />Pipeline</TabsTrigger>
@@ -32,9 +38,12 @@ export default function Sales() {
           <TabsTrigger value="snippets" className="gap-2"><FileText className="h-4 w-4" />Snippets</TabsTrigger>
         </TabsList>
         <TabsContent value="team" className="mt-4"><TeamCockpit /></TabsContent>
+        <TabsContent value="forecast" className="mt-4"><SalesForecast /></TabsContent>
         <TabsContent value="pipeline" className="mt-4"><SalesPipeline /></TabsContent>
         <TabsContent value="leads" className="mt-4"><SalesLeads /></TabsContent>
         <TabsContent value="trials" className="mt-4"><SalesTrials /></TabsContent>
+        <TabsContent value="trial-lifecycle" className="mt-4"><TrialLifecycle /></TabsContent>
+        <TabsContent value="agenda" className="mt-4"><TeamAgenda /></TabsContent>
         <TabsContent value="import" className="mt-4"><SalesImport /></TabsContent>
         <TabsContent value="analytics" className="mt-4"><SalesAnalytics /></TabsContent>
         <TabsContent value="instellingen" className="mt-4"><PipelineInstellingen /></TabsContent>
