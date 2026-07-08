@@ -26,7 +26,7 @@ export default function SalesImport() {
   const [mapping, setMapping] = useState<Record<string, SalesVeld | null>>({});
   const [bestemming, setBestemming] = useState<Bestemming>("platform");
   const [affiliateId, setAffiliateId] = useState<string>("");
-  const [fase, setFase] = useState<SalesFase>("koud");
+  const [fase, setFase] = useState<SalesFase | "">("");
   const [resultaat, setResultaat] = useState<{ aangemaakt: number; geskipped: number } | null>(null);
   const [dedupeResultaat, setDedupeResultaat] = useState<DedupeResultaat | null>(null);
   const [dedupeOpen, setDedupeOpen] = useState(false);
@@ -106,7 +106,7 @@ export default function SalesImport() {
       rijen: teImporteren as unknown as Array<Record<string, unknown>>,
       bestemming,
       affiliate_id: bestemming === "affiliate" ? affiliateId : null,
-      fase,
+      fase: (fase || null) as unknown as SalesFase,
       bestandsnaam: bestand?.name ?? "csv-upload",
       kolom_mapping: Object.fromEntries(
         Object.entries(mapping).filter(([, v]) => v).map(([k, v]) => [k, v as string]),
@@ -229,12 +229,16 @@ export default function SalesImport() {
           )}
           <div>
             <Label>Startfase</Label>
-            <Select value={fase} onValueChange={(v) => setFase(v as SalesFase)}>
-              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <Select value={fase || "__geen__"} onValueChange={(v) => setFase(v === "__geen__" ? "" : (v as SalesFase))}>
+              <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="__geen__">Geen — niet in pipeline plaatsen</SelectItem>
                 {SALES_FASES.map((f) => <SelectItem key={f} value={f}>{FASE_LABEL[f]}</SelectItem>)}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Laat leeg om leads binnen te halen zonder ze automatisch in de "Koude leads"-kolom te zetten.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label>Standaard tags voor alle geïmporteerde leads (optioneel)</Label>
