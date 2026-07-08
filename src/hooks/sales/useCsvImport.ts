@@ -6,7 +6,7 @@ import type { SalesFase } from "@/lib/sales/faseLabels";
 export type Bestemming = "platform" | "pool" | "affiliate";
 
 export interface BulkImportInput {
-  rijen: Record<string, string>[];
+  rijen: Array<Record<string, unknown>>;
   bestemming: Bestemming;
   affiliate_id?: string | null;
   fase: SalesFase;

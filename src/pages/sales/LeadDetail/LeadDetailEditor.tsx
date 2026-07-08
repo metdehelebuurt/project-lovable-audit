@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Send, Trash2, User2, History, MessageSquarePlus, Building2, MapPin, Target, Sparkles, StickyNote, Save, Mail } from "lucide-react";
+import { Send, Trash2, User2, History, MessageSquarePlus, Building2, MapPin, Target, Sparkles, StickyNote, Save, Mail, Tag as TagIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useUpdateSalesLead, useDeleteSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
@@ -23,6 +23,8 @@ import SnippetMenu from "@/components/sales/SnippetMenu";
 import { useLeadBronnen } from "@/hooks/sales/useLeadBronnen";
 import EmailTab from "@/components/email/EmailTab";
 import { NotitieLijst } from "@/components/affiliate/LeadDetail/NotitieLijst";
+import TagsInput from "@/components/sales/TagsInput";
+import TagChips from "@/components/sales/TagChips";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -69,8 +71,13 @@ export default function LeadDetailEditor({ lead, onAfterDelete }: Props) {
         volgende_actie_op: vorm.volgende_actie_op,
         geschatte_waarde: vorm.geschatte_waarde,
         bron_id: vorm.bron_id,
+        tags: vorm.tags ?? [],
       },
     });
+  };
+
+  const naarLeadsMetTag = (tag: string) => {
+    navigate(`/sales?tab=leads&tag=${encodeURIComponent(tag)}`);
   };
 
   const verwijderen = () => {
@@ -260,6 +267,27 @@ export default function LeadDetailEditor({ lead, onAfterDelete }: Props) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
+              <TagIcon className="h-4 w-4 text-muted-foreground" /> Tags
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Gebruik tags om leads te groeperen (bijv. herkomst, campagne, sector). Enter of komma om toe te voegen. Klik hieronder op een tag om alle andere leads met dezelfde tag te vinden.
+            </p>
+            <TagsInput
+              waarde={vorm.tags ?? []}
+              onWijzig={(t) => setVorm({ ...vorm, tags: t })}
+              placeholder="Bijv. beurs2026, koudebellen, vriend-van…"
+            />
+            {(vorm.tags ?? []).length > 0 && (
+              <TagChips tags={vorm.tags ?? []} onKlik={naarLeadsMetTag} className="pt-1" />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
               <History className="h-4 w-4 text-muted-foreground" /> Activiteit
             </CardTitle>
           </CardHeader>
@@ -299,6 +327,9 @@ export default function LeadDetailEditor({ lead, onAfterDelete }: Props) {
               <LeadScorePill lead={lead} />
               <BronBadge bronId={lead.bron_id} fallbackLabel={lead.bron} />
             </div>
+            {(lead.tags ?? []).length > 0 && (
+              <TagChips tags={lead.tags} onKlik={naarLeadsMetTag} />
+            )}
             <Separator />
             <div className="flex items-start gap-2">
               <User2 className="h-4 w-4 text-muted-foreground mt-0.5" />

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSalesLeads, useCreateSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 import { useAffiliateGebruikers, useSalesManagerGebruikers } from "@/hooks/sales/useDoorzetten";
@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Send, CheckCircle2, Users, Building2, UserCircle2, Briefcase, ArrowUpDown, Sparkles, Search } from "lucide-react";
+import { Plus, Send, CheckCircle2, Users, Building2, UserCircle2, Briefcase, ArrowUpDown, Sparkles, Search, Tag as TagIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { kleurClasses } from "@/lib/sales/pipeline";
@@ -18,6 +18,8 @@ import TemperatuurFilter from "@/components/sales/TemperatuurFilter";
 import type { Temperatuur } from "@/lib/sales/temperatuur";
 import DoorzetDialog from "../DoorzetDialog";
 import BulkActieBalk from "../BulkActieBalk";
+import TagChips from "@/components/sales/TagChips";
+import { normaliseerTag } from "@/components/sales/TagsInput";
 
 type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
 type SorteerVeld = "updated" | "doorgezet" | "naam" | "eigenaar" | "aangemaakt";
@@ -25,6 +27,7 @@ type SorteerRichting = "asc" | "desc";
 
 export default function SalesLeads() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const { data: leads, isLoading } = useSalesLeads();
   const { data: pipeline } = useMyPipeline();
   const { data: affiliates } = useAffiliateGebruikers();
@@ -42,6 +45,47 @@ export default function SalesLeads() {
   const [sorteer, setSorteer] = useState<SorteerVeld>("updated");
   const [richting, setRichting] = useState<SorteerRichting>("desc");
   const [recentDoorgezet, setRecentDoorgezet] = useState<Set<string>>(new Set());
+  const [tagFilters, setTagFilters] = useState<string[]>(() => {
+    const raw = params.get("tag");
+    if (!raw) return [];
+    return raw
+      .split(",")
+      .map((t) => normaliseerTag(t))
+      .filter((t): t is string => t !== null);
+  });
+
+  // Synchroniseer tag-filter met URL zodat delen en detail-links werken.
+  useEffect(() => {
+    const huidig = new URLSearchParams(params);
+    if (tagFilters.length === 0) huidig.delete("tag");
+    else huidig.set("tag", tagFilters.join(","));
+    if ((huidig.get("tag") ?? "") !== (params.get("tag") ?? "")) {
+      setParams(huidig, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tagFilters]);
+
+  const voegTagFilterToe = (tag: string) => {
+    const genormaliseerd = normaliseerTag(tag);
+    if (!genormaliseerd) return;
+    setTagFilters((prev) => (prev.includes(genormaliseerd) ? prev : [...prev, genormaliseerd]));
+  };
+  const verwijderTagFilter = (tag: string) => {
+    setTagFilters((prev) => prev.filter((t) => t !== tag));
+  };
+
+  // Alle tags die in de dataset voorkomen — voor tellingen en (later) suggesties.
+  const alleTags = useMemo(() => {
+    const c = new Map<string, number>();
+    for (const l of leads ?? []) {
+      for (const t of l.tags ?? []) {
+        const n = normaliseerTag(t);
+        if (!n) continue;
+        c.set(n, (c.get(n) ?? 0) + 1);
+      }
+    }
+    return Array.from(c.entries()).sort((a, b) => b[1] - a[1]);
+  }, [leads]);
 
   /** Vlag leads als 'net doorgezet' voor ~6s zodat er een duidelijke inline chip verschijnt. */
   const markeerDoorgezet = (ids: string[] | string) => {
@@ -82,6 +126,10 @@ export default function SalesLeads() {
       if (eigenaar === "toegewezen" && !l.eigenaar_id) return false;
       if (eigenaar === "platform" && (l.eigenaar_id !== null || l.bron === "platform_pool")) return false;
       if (doorgezetAan !== "alle" && l.eigenaar_id !== doorgezetAan) return false;
+      if (tagFilters.length > 0) {
+        const leadTags = new Set((l.tags ?? []).map((t) => normaliseerTag(t)).filter(Boolean) as string[]);
+        for (const t of tagFilters) if (!leadTags.has(t)) return false;
+      }
       if (pc) {
         const leadPc = (l.postcode ?? "").toLowerCase().replace(/\s+/g, "");
         if (!leadPc.startsWith(pc)) return false;
@@ -119,7 +167,7 @@ export default function SalesLeads() {
       }
     });
     return sorted;
-  }, [leads, zoek, fase, temp, eigenaar, postcodeFilter, plaatsFilter, doorgezetAan, sorteer, richting, eigenaarLookup]);
+  }, [leads, zoek, fase, temp, eigenaar, postcodeFilter, plaatsFilter, doorgezetAan, sorteer, richting, eigenaarLookup, tagFilters]);
 
   const tempCounts = useMemo(() => {
     const c: Record<string, number> = { alle: (leads ?? []).length };
@@ -254,6 +302,42 @@ export default function SalesLeads() {
 
       <TemperatuurFilter waarde={temp} onWijzig={setTemp} counts={tempCounts as never} />
 
+      {(tagFilters.length > 0 || alleTags.length > 0) && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <TagIcon className="h-3.5 w-3.5" /> Tags:
+          </span>
+          {tagFilters.map((t) => (
+            <Badge
+              key={`sel-${t}`}
+              className="gap-1 bg-purple-600 hover:bg-purple-600 text-white cursor-pointer"
+              onClick={() => verwijderTagFilter(t)}
+              title="Klik om filter te verwijderen"
+            >
+              #{t} <X className="h-3 w-3" />
+            </Badge>
+          ))}
+          {alleTags
+            .filter(([t]) => !tagFilters.includes(t))
+            .slice(0, 12)
+            .map(([t, n]) => (
+              <Badge
+                key={t}
+                variant="outline"
+                className="cursor-pointer hover:bg-purple-50 border-purple-200 text-purple-800"
+                onClick={() => voegTagFilterToe(t)}
+              >
+                #{t} <span className="ml-1 text-[10px] text-muted-foreground">{n}</span>
+              </Badge>
+            ))}
+          {tagFilters.length > 0 && (
+            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setTagFilters([])}>
+              Wis tag-filter
+            </Button>
+          )}
+        </div>
+      )}
+
       <BulkActieBalk
         geselecteerd={Array.from(selectie)}
         onClear={() => setSelectie(new Set())}
@@ -317,6 +401,9 @@ export default function SalesLeads() {
                     )}
                     {l.telefoon && (
                       <div className="text-xs text-muted-foreground">{l.telefoon}</div>
+                    )}
+                    {(l.tags ?? []).length > 0 && (
+                      <TagChips tags={l.tags} onKlik={voegTagFilterToe} max={4} className="pt-1" />
                     )}
                   </TableCell>
                   <TableCell className="text-sm">

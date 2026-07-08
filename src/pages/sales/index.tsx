@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "react-router-dom";
 import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users, TrendingUp, CalendarDays, Sparkles, Trophy } from "lucide-react";
 import SalesPipeline from "./SalesPipeline";
 import SalesLeads from "./SalesLeads";
@@ -15,6 +16,15 @@ import TeamAgenda from "./TeamAgenda";
 import WinningPlays from "./WinningPlays";
 
 export default function Sales() {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") ?? "team";
+  const zetTab = (v: string) => {
+    const p = new URLSearchParams(params);
+    p.set("tab", v);
+    // Tag-filter alleen zinvol op de leads-tab: laat 'm staan bij leads, wis anders.
+    if (v !== "leads") p.delete("tag");
+    setParams(p, { replace: true });
+  };
   return (
     <div className="w-full px-4 md:px-6 py-4 md:py-6 space-y-4">
       <div>
@@ -23,7 +33,7 @@ export default function Sales() {
           Beheer al je leads — koud tot heet — en zet ze door naar de juiste affiliate.
         </p>
       </div>
-      <Tabs defaultValue="team">
+      <Tabs value={tab} onValueChange={zetTab}>
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" />Team</TabsTrigger>
           <TabsTrigger value="forecast" className="gap-2"><TrendingUp className="h-4 w-4" />Forecast</TabsTrigger>
