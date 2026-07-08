@@ -6,6 +6,7 @@ import { ArrowLeft, Mail, Phone, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import LeadDetailEditor from "./LeadDetailEditor";
 import type { SalesLead } from "@/hooks/sales/useSalesLeads";
+import { AffiliateDuplicaatWaarschuwing } from "@/components/affiliate/duplicaten/AffiliateDuplicaatWaarschuwing";
 
 /**
  * Detailpagina voor één sales lead.
@@ -77,6 +78,7 @@ export default function SalesLeadDetail() {
                 </div>
               </div>
             </header>
+            <AffiliateDuplicaatWaarschuwing leadId={lead.id} />
             <LeadDetailEditor lead={lead} onAfterDelete={() => navigate("/sales")} />
           </div>
         )}
