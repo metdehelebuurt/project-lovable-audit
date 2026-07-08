@@ -17,6 +17,7 @@ import { useCsvImport, type Bestemming } from "@/hooks/sales/useCsvImport";
 import { checkDedupe, type DedupeResultaat } from "@/hooks/sales/useDedupeCheck";
 import DedupeBevestigingDialog from "../DedupeBevestigingDialog";
 import { toast } from "sonner";
+import TagsInput, { normaliseerTag } from "@/components/sales/TagsInput";
 
 export default function SalesImport() {
   const [bestand, setBestand] = useState<File | null>(null);
@@ -31,6 +32,7 @@ export default function SalesImport() {
   const [dedupeOpen, setDedupeOpen] = useState(false);
   const [dedupeBezig, setDedupeBezig] = useState(false);
   const [transformedRijen, setTransformedRijen] = useState<Record<string, string>[]>([]);
+  const [defaultTags, setDefaultTags] = useState<string[]>([]);
 
   const { data: affiliates } = useAffiliateGebruikers();
   const importer = useCsvImport();
@@ -93,13 +95,15 @@ export default function SalesImport() {
 
   const bevestigImport = async (skipIndices: number[]) => {
     const skipSet = new Set(skipIndices);
-    const teImporteren = transformedRijen.filter((_, i) => !skipSet.has(i));
+    const teImporteren = transformedRijen
+      .filter((_, i) => !skipSet.has(i))
+      .map((r) => (defaultTags.length ? { ...r, tags: defaultTags } : r));
     if (teImporteren.length === 0) {
       toast.error("Geen rijen om te importeren");
       return;
     }
     const res = await importer.mutateAsync({
-      rijen: teImporteren,
+      rijen: teImporteren as unknown as Array<Record<string, unknown>>,
       bestemming,
       affiliate_id: bestemming === "affiliate" ? affiliateId : null,
       fase,
@@ -231,6 +235,17 @@ export default function SalesImport() {
                 {SALES_FASES.map((f) => <SelectItem key={f} value={f}>{FASE_LABEL[f]}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Standaard tags voor alle geïmporteerde leads (optioneel)</Label>
+            <TagsInput
+              waarde={defaultTags}
+              onWijzig={(t) => setDefaultTags(t.map((x) => normaliseerTag(x)).filter((x): x is string => !!x))}
+              placeholder="Bijv. beurs2026, campagne-q1, vriend-van-bas"
+            />
+            <p className="text-xs text-muted-foreground">
+              Deze tags worden aan élke geïmporteerde lead gehangen. Gebruik ze later om leads uit dezelfde bron of campagne terug te vinden.
+            </p>
           </div>
         </Card>
       )}
