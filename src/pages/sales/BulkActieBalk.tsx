@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Trash2, Tag, X, Thermometer } from "lucide-react";
+import { Send, Trash2, Tag, X, Thermometer, Tags as TagsIcon } from "lucide-react";
 import { SALES_FASES, FASE_LABEL, type SalesFase } from "@/lib/sales/faseLabels";
 import {
   useAffiliateGebruikers,
@@ -14,6 +14,8 @@ import { TEMPERATUREN, TEMP_LABEL, TEMP_ICON, type Temperatuur } from "@/lib/sal
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import BulkTagsDialog from "@/components/sales/BulkTagsDialog";
+import { useBulkTagsToevoegen, useBulkTagsVerwijderen } from "@/hooks/sales/useSalesTags";
 
 interface Props {
   geselecteerd: string[];
@@ -25,11 +27,14 @@ export default function BulkActieBalk({ geselecteerd, onClear, onDoorgezet }: Pr
   const [doelId, setDoelId] = useState<string>("");
   const [fase, setFase] = useState<SalesFase | "">("");
   const [temperatuur, setTemperatuur] = useState<Temperatuur | "">("");
+  const [tagsOpen, setTagsOpen] = useState(false);
   const { data: affiliates } = useAffiliateGebruikers();
   const { data: salesManagers } = useSalesManagerGebruikers();
   const doorzet = useBulkDoorzetten();
   const updFase = useBulkFase();
   const del = useBulkDelete();
+  const tagsAdd = useBulkTagsToevoegen();
+  const tagsDel = useBulkTagsVerwijderen();
   const qc = useQueryClient();
 
   const updTemp = useMutation({
@@ -80,6 +85,19 @@ export default function BulkActieBalk({ geselecteerd, onClear, onDoorgezet }: Pr
   const verwijderen = () => {
     if (!confirm(`${geselecteerd.length} leads definitief verwijderen?`)) return;
     del.mutate(geselecteerd, { onSuccess: () => onClear() });
+  };
+
+  const tagsToevoegen = (tags: string[]) => {
+    tagsAdd.mutate(
+      { lead_ids: geselecteerd, tags },
+      { onSuccess: () => setTagsOpen(false) },
+    );
+  };
+  const tagsVerwijderen = (tags: string[]) => {
+    tagsDel.mutate(
+      { lead_ids: geselecteerd, tags },
+      { onSuccess: () => setTagsOpen(false) },
+    );
   };
 
   return (
@@ -148,6 +166,10 @@ export default function BulkActieBalk({ geselecteerd, onClear, onDoorgezet }: Pr
         </Button>
       </div>
 
+      <Button size="sm" variant="outline" className="gap-1" onClick={() => setTagsOpen(true)}>
+        <TagsIcon className="h-3.5 w-3.5" /> Tags bewerken
+      </Button>
+
       <Button size="sm" variant="ghost" className="text-destructive gap-1 ml-auto"
         disabled={del.isPending} onClick={verwijderen}>
         <Trash2 className="h-3.5 w-3.5" /> Verwijder
@@ -155,6 +177,15 @@ export default function BulkActieBalk({ geselecteerd, onClear, onDoorgezet }: Pr
       <Button size="sm" variant="ghost" onClick={onClear} className="gap-1">
         <X className="h-3.5 w-3.5" /> Deselecteren
       </Button>
+
+      <BulkTagsDialog
+        open={tagsOpen}
+        onOpenChange={setTagsOpen}
+        aantal={geselecteerd.length}
+        bezig={tagsAdd.isPending || tagsDel.isPending}
+        onToevoegen={tagsToevoegen}
+        onVerwijderen={tagsVerwijderen}
+      />
     </div>
   );
 }
