@@ -218,6 +218,7 @@ const AffiliatePipeline = () => {
           <ToggleGroupItem value="alle" className="h-9 px-3 text-xs">Alle</ToggleGroupItem>
           <ToggleGroupItem value="heet" className="h-9 px-3 text-xs">🔥 Heet</ToggleGroupItem>
           <ToggleGroupItem value="warm" className="h-9 px-3 text-xs">Warm</ToggleGroupItem>
+          <ToggleGroupItem value="lauw" className="h-9 px-3 text-xs">Lauw</ToggleGroupItem>
           <ToggleGroupItem value="koud" className="h-9 px-3 text-xs">Koud</ToggleGroupItem>
         </ToggleGroup>
         <DropdownMenu>
