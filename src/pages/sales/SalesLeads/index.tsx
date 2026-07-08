@@ -20,6 +20,7 @@ import DoorzetDialog from "../DoorzetDialog";
 import BulkActieBalk from "../BulkActieBalk";
 import TagChips from "@/components/sales/TagChips";
 import { normaliseerTag } from "@/components/sales/TagsInput";
+import { AffiliateDuplicatenBanner } from "@/components/affiliate/duplicaten/AffiliateDuplicatenBanner";
 
 type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
 type SorteerVeld = "updated" | "doorgezet" | "naam" | "eigenaar" | "aangemaakt";
@@ -209,6 +210,7 @@ export default function SalesLeads() {
 
   return (
     <div className="space-y-4">
+      <AffiliateDuplicatenBanner />
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative max-w-sm flex-1 min-w-[220px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
