@@ -53,8 +53,8 @@ export function BedrijfCard({ lead, bronLabel }: Props) {
           <Rij icon={<MapPin className="h-3.5 w-3.5" />} label="Plaats" value={l.plaats} />
           <Rij icon={<Briefcase className="h-3.5 w-3.5" />} label="Branche" value={l.branche} />
           <Rij icon={<Tag className="h-3.5 w-3.5" />} label="Bron" value={bronLabel} />
-          <Rij icon={<Users className="h-3.5 w-3.5" />} label="Medewerkers" value={l.aantal_medewerkers?.toString() ?? null} />
-          <Rij icon={<TrendingUp className="h-3.5 w-3.5" />} label="Omzet" value={fmtEuro(l.jaaromzet ?? null)} />
+          <Rij icon={<Users className="h-3.5 w-3.5" />} label="Grootte" value={l.aantal_medewerkers ? `${l.aantal_medewerkers} medewerkers` : "—"} altijd />
+          <Rij icon={<TrendingUp className="h-3.5 w-3.5" />} label="Omzet" value={fmtEuro(l.jaaromzet ?? null) ?? "—"} altijd />
           {l.website && (
             <ExternLink icon={<Globe className="h-3.5 w-3.5" />} label="Website" href={l.website} />
           )}
@@ -69,13 +69,13 @@ export function BedrijfCard({ lead, bronLabel }: Props) {
   );
 }
 
-function Rij({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) {
-  if (!value) return null;
+function Rij({ icon, label, value, altijd }: { icon: React.ReactNode; label: string; value?: string | null; altijd?: boolean }) {
+  if (!value && !altijd) return null;
   return (
     <div className="flex items-center gap-2 min-w-0">
       <span className="text-muted-foreground shrink-0">{icon}</span>
       <span className="text-xs text-muted-foreground w-20 shrink-0">{label}</span>
-      <span className="truncate">{value}</span>
+      <span className={cn("truncate", (!value || value === "—") && "text-muted-foreground")}>{value || "—"}</span>
     </div>
   );
 }
