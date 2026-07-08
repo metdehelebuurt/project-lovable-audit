@@ -10028,6 +10028,7 @@ export type Database = {
       }
       normaliseer_bedrijfsnaam: { Args: { _naam: string }; Returns: string }
       normalize_bedrijfsnaam: { Args: { _input: string }; Returns: string }
+      normalize_persoonsnaam: { Args: { _naam: string }; Returns: string }
       normalize_phone: { Args: { _telefoon: string }; Returns: string }
       normalize_postcode: { Args: { _postcode: string }; Returns: string }
       normalize_website: { Args: { _input: string }; Returns: string }
