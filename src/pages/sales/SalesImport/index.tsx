@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
+import { expandWideRows } from "@/lib/sales/wideRows";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +38,31 @@ export default function SalesImport() {
   const onFile = (file: File) => {
     setBestand(file);
     setResultaat(null);
+    const naam = file.name.toLowerCase();
+    const isExcel = naam.endsWith(".xlsx") || naam.endsWith(".xls");
+    if (isExcel) {
+      file.arrayBuffer().then((buf) => {
+        const wb = XLSX.read(buf, { type: "array" });
+        // Kies eerste sheet met een "flat" contactpersonen-vorm als die bestaat, anders eerste sheet.
+        const voorkeur = wb.SheetNames.find((n) => /contact/i.test(n)) ?? wb.SheetNames[0];
+        const ws = wb.Sheets[voorkeur];
+        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: false });
+        const expanded = expandWideRows(json);
+        const data = expanded.map((r) =>
+          Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? "" : String(v)])),
+        );
+        const kols = data.length > 0 ? Object.keys(data[0]) : [];
+        setKolommen(kols);
+        setRijen(data);
+        setMapping(autoMapKolommen(kols));
+        toast.success(
+          `Sheet "${voorkeur}" ingelezen — ${data.length} rijen${expanded.length !== json.length ? ` (uitgebreid van ${json.length} bedrijven naar ${data.length} contactpersonen)` : ""}.`,
+        );
+      }).catch((e: unknown) => {
+        toast.error(e instanceof Error ? e.message : "Kon Excel-bestand niet lezen");
+      });
+      return;
+    }
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -106,7 +133,7 @@ export default function SalesImport() {
             <span>Kies bestand</span>
             <input
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="hidden"
               onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
             />
