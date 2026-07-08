@@ -8340,6 +8340,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_tags: {
+        Row: {
+          aangemaakt_door: string | null
+          created_at: string
+          id: string
+          kleur: string | null
+          label: string
+          omschrijving: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          aangemaakt_door?: string | null
+          created_at?: string
+          id?: string
+          kleur?: string | null
+          label: string
+          omschrijving?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          aangemaakt_door?: string | null
+          created_at?: string
+          id?: string
+          kleur?: string | null
+          label?: string
+          omschrijving?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       schouwen: {
         Row: {
           aandachtspunten: string | null
@@ -9305,6 +9338,19 @@ export type Database = {
           },
         ]
       }
+      sales_tags_met_aantal: {
+        Row: {
+          aantal_leads: number | null
+          created_at: string | null
+          id: string | null
+          kleur: string | null
+          label: string | null
+          omschrijving: string | null
+          slug: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       v_affiliate_lead_duplicaten: {
         Row: {
           eigenaar_id: string | null
@@ -10013,6 +10059,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mag_sales_tags_beheren: { Args: { _uid: string }; Returns: boolean }
       mark_helpdesk_escalations: {
         Args: { _partner_id: string }
         Returns: number
@@ -10044,6 +10091,22 @@ export type Database = {
       recompute_assemblage_prijzen: {
         Args: { p_assemblage_id: string }
         Returns: undefined
+      }
+      sales_leads_tags_toevoegen: {
+        Args: { _lead_ids: string[]; _tags: string[] }
+        Returns: number
+      }
+      sales_leads_tags_verwijderen: {
+        Args: { _lead_ids: string[]; _tags: string[] }
+        Returns: number
+      }
+      sales_tag_hernoemen: {
+        Args: { _nieuw: string; _oud: string }
+        Returns: number
+      }
+      sales_tag_verwijderen: {
+        Args: { _ook_van_leads?: boolean; _slug: string }
+        Returns: number
       }
       seed_affiliate_pipeline_config: {
         Args: { _partner_id: string }
