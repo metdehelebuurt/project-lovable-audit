@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { GitMerge, X, ExternalLink, Loader2 } from "lucide-react";
+import { GitMerge, X, ExternalLink, Loader2, Merge } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAffiliateDuplicaten } from "./useAffiliateDuplicaten";
 import { useNegeerAffiliateDuplicaat } from "./useNegeerAffiliateDuplicaat";
@@ -18,17 +21,65 @@ export function AffiliateDuplicatenLijstDialog({ open, onOpenChange }: Props) {
   const { data = [], isLoading } = useAffiliateDuplicaten();
   const negeer = useNegeerAffiliateDuplicaat();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [mergePair, setMergePair] = useState<{ a: AffiliateLeadLite; b: AffiliateLeadLite } | null>(null);
+
+  const bulkMerge = useMutation({
+    mutationFn: async (paren: { keep_lead_id: string; merge_lead_id: string }[]) => {
+      const { data, error } = await supabase.functions.invoke("affiliate-lead-merge-bulk", {
+        body: { paren, contactpersoon_meenemen: true },
+      });
+      if (error) throw error;
+      return data as { samengevoegd: number; overgeslagen: unknown[] };
+    },
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["affiliate-lead-duplicaten"] });
+      qc.invalidateQueries({ queryKey: ["affiliate-leads"] });
+      qc.invalidateQueries({ queryKey: ["sales-leads"] });
+      toast.success(`${res.samengevoegd} leads samengevoegd${res.overgeslagen?.length ? `, ${res.overgeslagen.length} overgeslagen` : ""}.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const startBulkMerge = () => {
+    const paren = data
+      .filter((p) => p.lead_a && p.lead_b)
+      .map((p) => {
+        const aOud = new Date(p.lead_a!.created_at).getTime() <= new Date(p.lead_b!.created_at).getTime();
+        return {
+          keep_lead_id: aOud ? p.lead_a_id : p.lead_b_id,
+          merge_lead_id: aOud ? p.lead_b_id : p.lead_a_id,
+        };
+      });
+    if (paren.length === 0) return;
+    if (!window.confirm(`${paren.length} paren samenvoegen? Van elk paar blijft de oudste lead behouden; de andere wordt als contactpersoon toegevoegd.`)) return;
+    bulkMerge.mutate(paren);
+  };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Mogelijke dubbele affiliate-leads</DialogTitle>
+            <DialogTitle>Mogelijke dubbele leads</DialogTitle>
             <DialogDescription>
-              Per paar kun je samenvoegen of aangeven dat het twee verschillende bedrijven zijn.
+              Per paar kun je samenvoegen of aangeven dat het twee verschillende bedrijven zijn. Bij het samenvoegen wordt de tweede contactpersoon automatisch aan het bedrijf gekoppeld.
             </DialogDescription>
+            {data.length > 1 && (
+              <div className="flex items-center justify-between gap-2 pt-2">
+                <p className="text-xs text-muted-foreground">{data.length} paren gevonden</p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={startBulkMerge}
+                  disabled={bulkMerge.isPending || data.length === 0}
+                  className="gap-1.5"
+                >
+                  {bulkMerge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Merge className="h-4 w-4" />}
+                  Alles samenvoegen ({data.length})
+                </Button>
+              </div>
+            )}
           </DialogHeader>
 
           <div className="overflow-y-auto -mx-6 px-6 space-y-3 flex-1">
