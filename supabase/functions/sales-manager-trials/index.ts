@@ -20,9 +20,9 @@ Deno.serve(async (req) => {
 
     const { data: rollen } = await admin
       .from('user_roles')
-      .select('role')
+      .select('rol')
       .eq('user_id', userData.user.id)
-    const rolSet = new Set((rollen ?? []).map((r: { role: string }) => r.role))
+    const rolSet = new Set((rollen ?? []).map((r: { rol: string }) => r.rol))
     const mag = rolSet.has('superadmin') || rolSet.has('sales_manager') || rolSet.has('sales_admin')
     if (!mag) return json({ error: 'Forbidden' }, 403)
 
