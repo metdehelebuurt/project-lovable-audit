@@ -1,73 +1,60 @@
 ## Doel
-Als een sales agent (`sales_manager`) een klantkaart opent vanuit het trial-overzicht, moet direct duidelijk zijn:
-- **Wie heeft de klant binnengehaald?** (affiliate / referrer of interne sales agent)
-- **Wie en wanneer heeft demo-data toegevoegd?**
-- **Wanneer loopt de trial en wie heeft deze aangemaakt?**
-- **Wat is de huidige status van de klant?** (trial actief / trial verlopen / betalend / geblokkeerd)
-
-## Probleem nu
-1. Route `/partners/:id` is beperkt tot `superadmin` → een sales_manager kan de klantkaart helemaal niet openen (klik uit AffiliateTrials leidt naar "toegang geweigerd").
-2. `PartnerDetail` toont alleen bedrijfsgegevens; er is geen sales-context (geen aanbrenger, geen trial-aanmaker, geen demo-info).
-3. In `trial-signup` wordt `aangemaakt_door` alleen in de welkomstmail gebruikt en niet opgeslagen; er is geen registratie van demo-seed.
+De trial-signup e2e vanaf de frontpage soepel, juridisch correct en robuust maken.
 
 ## Wijzigingen
 
-### 1. Database (migratie)
-Op `public.partners`, drie nieuwe kolommen (nullable, geen breaking change):
-- `trial_aangemaakt_door_id uuid` (FK → users.id, on delete set null)
-- `trial_aangemaakt_op timestamptz`
-- `demo_data_geseed_op timestamptz`
-- `demo_data_geseed_door_id uuid` (FK → users.id)
+### 1. Frontpage — `src/pages/Index.tsx`
+Vervang de lege boilerplate door een compacte, on-brand landingspagina:
+- Hero met kop "Alle software voor je verduurzamingsbedrijf op één plek", subtekst, en twee primaire CTA's: **"Start 30 dagen gratis"** (→ `/signup`) en **"Inloggen"** (→ `/login`).
+- Drie feature-tegels (Leads, Offertes, Installaties) — hergebruik bestaande design-tokens (primary purple), geen nieuwe fonts/kleuren.
+- Footer met link naar voorwaarden/privacy (bestaande routes `/voorwaarden`, `/privacy`).
+- Mobile-first, semantische HTML, één `<h1>`.
+- `useDocumentSeo` voor `<title>` + meta description.
+- Als user al ingelogd is → redirect naar `/dashboard` (zelfde patroon als Signup.tsx).
 
-Backfill:
-- `trial_aangemaakt_op` = `created_at` voor bestaande trial-partners
-- `demo_data_geseed_op` = `created_at` als er demo-notities bestaan (bestaande convention "⚡ Demo:")
+### 2. Voorwaarden-akkoord — `src/pages/Signup.tsx`
+- Nieuwe `akkoord` boolean state + verplichte checkbox onderaan formulier: "Ik ga akkoord met de [algemene voorwaarden](/voorwaarden) en het [privacybeleid](/privacy)".
+- Submit-knop `disabled` totdat aangevinkt.
+- Toast bij niet-aangevinkt.
 
-RLS: bestaande partner-policies blijven werken (kolommen erven policies). Geen nieuwe policies.
+### 3. Backend-validatie — `supabase/functions/trial-signup/index.ts`
+- Voeg `toestemming: boolean` toe aan payload; return 400 als niet `true`.
+- Sla `toestemming_op = now()` op in `partners.voorwaarden_geaccepteerd_op` (nieuwe kolom, zie migratie).
+- Vervang losse `if (!bedrijfsnaam …)` door Zod-schema (consistent met andere edge functions).
 
-### 2. Edge function `trial-signup`
-- Sla `trial_aangemaakt_door_id` (uit sessie/`aangemaakt_door_id` payload) en `trial_aangemaakt_op = now()` op bij partner-insert.
-- Na `seedDemoData()`: update partner met `demo_data_geseed_op = now()` en `demo_data_geseed_door_id`.
-- Frontend die deze functie aanroept (`SalesManagerTrials` / registratie-flows) meestuurt `aangemaakt_door_id` = huidige user.
+### 4. Migratie
+Één kolom toevoegen aan `public.partners`:
+- `voorwaarden_geaccepteerd_op timestamptz` (nullable).
+Geen policy-wijziging nodig.
 
-### 3. Route-toegang
-`src/App.tsx` regel 191-193: `allowedRoles` uitbreiden van `["superadmin"]` naar `["superadmin", "sales_manager"]` voor `/partners/:id` (blijft binnen sales-scope; overzicht `/partners` blijft superadmin-only).
-
-### 4. `src/pages/PartnerDetail.tsx`
-Nieuwe compacte **"Klantstatus"** header-strook + één nieuwe card **"Sales & Onboarding"** met vier duidelijke rijen:
-
-```text
-┌─ Klantstatus ────────────────────────────────────────┐
-│  [ Trial actief · nog 12 dagen ]  [ Demo-data aanwezig ]│
-└──────────────────────────────────────────────────────┘
-
-┌─ Sales & Onboarding ─────────────────────────────────┐
-│  Aangebracht door   Jan de Vries (affiliate)         │
-│                     via link "voorjaar24" · 12-05-26 │
-│  Trial aangemaakt   Bas Jansen · 08-07-26 14:22      │
-│  Trial periode      08-07-26 → 07-08-26 (12 dagen)   │
-│  Demo-data          Geseed door Bas · 08-07-26 14:22 │
-└──────────────────────────────────────────────────────┘
+Én een RPC voor atomic clicks-increment:
+```sql
+create or replace function public.increment_affiliate_link_clicks(_link_id uuid)
+returns void language sql security definer set search_path = public as $$
+  update public.affiliate_links set clicks = coalesce(clicks,0) + 1 where id = _link_id;
+$$;
+grant execute on function public.increment_affiliate_link_clicks(uuid) to service_role, authenticated;
 ```
 
-Data-bronnen:
-- **Aangebracht door**: query op `affiliate_referrals` waar `partner_id = :id` → join `users` op `affiliate_id` voor naam + `affiliate_links` voor code. Fallback: "Direct" (geen referral).
-- **Trial aangemaakt**: nieuwe kolommen + join `users` op `trial_aangemaakt_door_id`.
-- **Trial periode**: bestaande `contract_startdatum` + `trial_einddatum`; bereken resterende dagen; kleurcodering (groen actief, oranje <7 dagen, rood verlopen).
-- **Demo-data**: nieuwe kolommen; als niet geseed → grijze "Nog niet geseed" met verwijzing naar knop (bestaande `clear-demo-data` / eventueel seed-actie blijft ongewijzigd).
-- **Klantstatus badge**: afgeleide logica: `abonnement_type === 'trial'` + `trial_einddatum` → "Trial actief/verlopen"; anders "Betalend" of huidige `status`-label.
+### 5. Atomic clicks in `trial-signup`
+Vervang de read-modify-write op regel 129-132 door:
+```ts
+await supabaseAdmin.rpc("increment_affiliate_link_clicks", { _link_id: affLink.id });
+```
 
-Positionering: nieuwe klantstatus-strook direct onder de titel (voor de bestaande badges), de "Sales & Onboarding" card als eerste kaart in de grid (voor Bedrijfsgegevens).
-
-### 5. Terug-navigatie
-`navigate("/partners")` valt om voor sales_manager (geen toegang). Wijzig naar `navigate(-1)` zodat terugkeren naar AffiliateTrials werkt.
+### 6. Post-signup UX — `src/pages/Signup.tsx`
+Na succesvolle signup + auto-login:
+- Toast: **"Welkom! We hebben een welkomstmail gestuurd naar {email}."** (geeft mail-status weer).
+- Navigeer naar `/onboarding`.
+- Bij `loginError`: extra info-toast "Log in met je e-mail en wachtwoord."
 
 ## Verificatie
-- Build + `tsgo` check.
-- Handmatige check via preview: als superadmin trial aanmaken → PartnerDetail toont alle nieuwe velden.
-- Rol-switch (sales_manager) → klantkaart opent zonder access-error.
+- `tsgo` schoon.
+- Preview: `/` → CTA klikbaar → `/signup` → checkbox verplicht → account aangemaakt → toast met mail-melding → `/onboarding`.
+- Klantkaart van nieuwe trial toont `voorwaarden_geaccepteerd_op` in tijdlijn (optioneel — extra event toevoegen in PartnerDetail timeline).
 
 ## Technische notes
-- Bestandslengte `PartnerDetail.tsx` (218 regels) blijft ruim onder 800; nieuwe "SalesOnboardingCard" sub-component in aparte file als >50 regels functie ontstaat.
-- Geen wijziging aan `src/integrations/supabase/client.ts` of `types.ts` (types worden geregenereerd na migratie).
 - Geen nieuwe dependencies.
+- Alle bestanden blijven ruim onder 800 regels; Index.tsx wordt ~150 regels.
+- Kleuren via bestaande tokens (`bg-primary`, `text-foreground`); geen hardcoded hex.
+- Nederlands, geen emoji's in UI-copy.
