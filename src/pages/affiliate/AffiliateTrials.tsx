@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, Phone, Mail, Search, MapPin, User } from "lucide-react";
+import { AlertCircle, Phone, Mail, Search, MapPin, User, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
@@ -233,7 +234,12 @@ function SalesManagerTrials() {
               <CardContent className="pt-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="font-semibold truncate">{t.naam ?? "—"}</h3>
+                    <Link
+                      to={`/partners/${t.id}`}
+                      className="font-semibold truncate hover:underline block"
+                    >
+                      {t.naam ?? "—"}
+                    </Link>
                     {contactNaam && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <User className="h-3 w-3" /> {contactNaam}
@@ -246,9 +252,16 @@ function SalesManagerTrials() {
                       </p>
                     )}
                   </div>
-                  <Badge variant={verlopen ? "destructive" : kritiek ? "destructive" : "secondary"}>
-                    {dagen === null ? "—" : verlopen ? `${Math.abs(dagen)}d verlopen` : dagen === 0 ? "Verloopt vandaag" : `Nog ${dagen}d`}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button size="sm" variant="ghost" asChild className="h-7 w-7 p-0">
+                      <Link to={`/partners/${t.id}`} aria-label="Klantkaart openen">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                    <Badge variant={verlopen ? "destructive" : kritiek ? "destructive" : "secondary"}>
+                      {dagen === null ? "—" : verlopen ? `${Math.abs(dagen)}d verlopen` : dagen === 0 ? "Verloopt vandaag" : `Nog ${dagen}d`}
+                    </Badge>
+                  </div>
                 </div>
 
                 <div className="text-xs text-muted-foreground space-y-0.5">
