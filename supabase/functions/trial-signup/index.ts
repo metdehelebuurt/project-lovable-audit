@@ -366,7 +366,7 @@ async function seedDemoData(supabase: any, partnerId: string, userId: string) {
   // --- Demo Schouwen ---
   const schouwenData = [
     {
-      schouw_nummer: "SCH-DEMO-001", adviseur_id: userId, lead_id: leads[0].id,
+      schouw_nummer: `SCH-DEMO-${suffix}-001`, adviseur_id: userId, lead_id: leads[0].id,
       partner_id: partnerId, categorie: "zonnepanelen", status: "uitgevoerd",
       geplande_datum: fmt(addDays(today, -5)), consument_naam: `${leads[0].voornaam} ${leads[0].achternaam}`,
       klant_email: leads[0].email,
@@ -377,7 +377,7 @@ async function seedDemoData(supabase: any, partnerId: string, userId: string) {
       },
     },
     {
-      schouw_nummer: "SCH-DEMO-002", adviseur_id: userId, lead_id: leads[1].id,
+      schouw_nummer: `SCH-DEMO-${suffix}-002`, adviseur_id: userId, lead_id: leads[1].id,
       partner_id: partnerId, categorie: "warmtepomp", status: "gepland",
       geplande_datum: fmt(addDays(today, 3)), consument_naam: `${leads[1].voornaam} ${leads[1].achternaam}`,
       klant_email: leads[1].email,
