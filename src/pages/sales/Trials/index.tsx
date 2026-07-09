@@ -9,10 +9,16 @@ import TrialsTabel from "./TrialsTabel";
 import DemoZonderTrialTabel from "./DemoZonderTrialTabel";
 import NotitiesDialog from "./NotitiesDialog";
 import type { SalesTrialPartner } from "@/hooks/sales/useSalesTrials";
-import { bepaalBron, TRIAL_BRON_KORT, TRIAL_BRON_VOLGORDE, type TrialBron } from "@/lib/sales/trialBron";
+import {
+  filterOpBron,
+  telBronnen,
+  TRIAL_BRON_KORT,
+  TRIAL_BRON_VOLGORDE,
+  type BronFilter,
+  type TrialBron,
+} from "@/lib/sales/trialBron";
 
 type Weergave = "actief" | "verlopen" | "alles";
-type BronFilter = "alles" | TrialBron;
 
 export default function SalesTrials() {
   const { data: trials, isLoading } = useSalesTrials();
@@ -31,18 +37,10 @@ export default function SalesTrials() {
     } else if (weergave === "verlopen") {
       lijst = lijst.filter((p) => p.trial_einddatum && new Date(p.trial_einddatum) < vandaag);
     }
-    if (bronFilter !== "alles") {
-      lijst = lijst.filter((p) => bepaalBron(p) === bronFilter);
-    }
-    return lijst;
+    return filterOpBron(lijst, bronFilter);
   }, [trials, weergave, bronFilter]);
 
-  const bronTellingen = useMemo(() => {
-    const alle = trials ?? [];
-    const map: Record<BronFilter, number> = { alles: alle.length, selfservice: 0, affiliate: 0, sales: 0, google_oauth: 0 };
-    for (const t of alle) map[bepaalBron(t)] += 1;
-    return map;
-  }, [trials]);
+  const bronTellingen = useMemo(() => telBronnen(trials ?? []), [trials]);
 
   const partnerIds = useMemo(() => gefilterd.map((p) => p.id), [gefilterd]);
   const { data: upsells } = usePartnerUpsells(partnerIds);

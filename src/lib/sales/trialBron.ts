@@ -30,3 +30,26 @@ export function bepaalBron(t: SalesTrialPartner): TrialBron {
   if (t.affiliate) return "affiliate";
   return "selfservice";
 }
+
+export type BronFilter = "alles" | TrialBron;
+
+export type BronTellingen = Record<BronFilter, number>;
+
+/** Telt hoeveel trials per bron voorkomen, plus totaal onder key `alles`. */
+export function telBronnen(trials: SalesTrialPartner[]): BronTellingen {
+  const map: BronTellingen = {
+    alles: trials.length,
+    selfservice: 0,
+    affiliate: 0,
+    sales: 0,
+    google_oauth: 0,
+  };
+  for (const t of trials) map[bepaalBron(t)] += 1;
+  return map;
+}
+
+/** Filtert trials op de gekozen bron. `alles` retourneert de lijst ongewijzigd. */
+export function filterOpBron(trials: SalesTrialPartner[], bron: BronFilter): SalesTrialPartner[] {
+  if (bron === "alles") return trials;
+  return trials.filter((t) => bepaalBron(t) === bron);
+}
