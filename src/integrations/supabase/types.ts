@@ -7574,6 +7574,7 @@ export type Database = {
           telefoonnummer: string | null
           trial_aangemaakt_door_id: string | null
           trial_aangemaakt_op: string | null
+          trial_bron: string | null
           trial_einddatum: string | null
           updated_at: string
           voorwaarden_geaccepteerd_op: string | null
@@ -7638,6 +7639,7 @@ export type Database = {
           telefoonnummer?: string | null
           trial_aangemaakt_door_id?: string | null
           trial_aangemaakt_op?: string | null
+          trial_bron?: string | null
           trial_einddatum?: string | null
           updated_at?: string
           voorwaarden_geaccepteerd_op?: string | null
@@ -7702,6 +7704,7 @@ export type Database = {
           telefoonnummer?: string | null
           trial_aangemaakt_door_id?: string | null
           trial_aangemaakt_op?: string | null
+          trial_bron?: string | null
           trial_einddatum?: string | null
           updated_at?: string
           voorwaarden_geaccepteerd_op?: string | null
