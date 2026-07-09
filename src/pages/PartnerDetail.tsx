@@ -34,6 +34,31 @@ function Field({ label, value }: { label: string; value?: string | number | null
   );
 }
 
+function SalesRow({
+  icon,
+  label,
+  primary,
+  secondary,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  primary: string;
+  secondary?: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/30 p-3">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-sm font-medium text-foreground truncate">{primary}</p>
+        {secondary && <p className="text-xs text-muted-foreground mt-0.5">{secondary}</p>}
+      </div>
+    </div>
+  );
+}
+
 export default function PartnerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
