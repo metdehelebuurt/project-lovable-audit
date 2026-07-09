@@ -74,7 +74,8 @@ export function LeadDetailBody({ lead }: Props) {
     setWaarde(String(lead.geschatte_waarde ?? ""));
     setTemperatuur(lead.temperatuur ?? "lauw");
     setVolgendeActie(lead.volgende_actie_datum ?? "");
-  }, [lead.id, lead.status, lead.geschatte_waarde, lead.temperatuur, lead.volgende_actie_datum]);
+    setTags(lead.tags ?? []);
+  }, [lead.id, lead.status, lead.geschatte_waarde, lead.temperatuur, lead.volgende_actie_datum, lead.tags]);
 
   const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
   const bronRecord = bronnen.find((b) => b.id === lead.bron_id);
