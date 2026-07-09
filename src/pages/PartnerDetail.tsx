@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, Mail, Phone, FileText, Handshake, Clock, History, UserCheck, Sparkles, CalendarClock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, Building2, Mail, Phone, FileText, Handshake, Clock, History, UserCheck, Sparkles, CalendarClock, Info, Rocket, PlayCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { PromotePartnerToAffiliateButton } from "@/components/affiliate/PromotePartnerToAffiliateButton";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -58,6 +59,23 @@ function SalesRow({
     </div>
   );
 }
+
+type TimelineEvent = {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  at: string;
+  tone: "primary" | "success" | "warning" | "error" | "muted";
+};
+
+const toneClasses: Record<TimelineEvent["tone"], string> = {
+  primary: "bg-primary/10 text-primary",
+  success: "bg-success-light text-success",
+  warning: "bg-warning-light text-warning-foreground",
+  error: "bg-error-light text-error",
+  muted: "bg-muted text-muted-foreground",
+};
 
 export default function PartnerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -178,6 +196,102 @@ export default function PartnerDetail() {
     ? [referral.affiliate.voornaam, referral.affiliate.achternaam].filter(Boolean).join(" ") || referral.affiliate.email
     : null;
 
+  // Bouw tijdlijn
+  const timeline: TimelineEvent[] = [];
+  if (partner.created_at) {
+    timeline.push({
+      id: "created",
+      icon: <Building2 className="h-3.5 w-3.5" />,
+      title: "Partner aangemaakt",
+      description: "Account is aangemaakt in Lovable Cloud",
+      at: partner.created_at,
+      tone: "muted",
+    });
+  }
+  if (referral?.created_at) {
+    timeline.push({
+      id: "referral",
+      icon: <Handshake className="h-3.5 w-3.5" />,
+      title: `Aangebracht door ${aanbrengerNaam ?? "affiliate"}`,
+      description: referral.link?.code ? `Via affiliate-link "${referral.link.code}"` : "Via affiliate-programma",
+      at: referral.created_at,
+      tone: "primary",
+    });
+  }
+  if (trialAangemaaktOp) {
+    timeline.push({
+      id: "trial-created",
+      icon: <Rocket className="h-3.5 w-3.5" />,
+      title: `Trial aangevraagd${userLabel(trialDoorId) ? ` door ${userLabel(trialDoorId)}` : ""}`,
+      description: partner.trial_einddatum ? `Loopt tot ${formatDate(partner.trial_einddatum)}` : undefined,
+      at: trialAangemaaktOp,
+      tone: "primary",
+    });
+  }
+  if (demoGeseedOp) {
+    timeline.push({
+      id: "demo-seeded",
+      icon: <Sparkles className="h-3.5 w-3.5" />,
+      title: `Demo-data geplaatst${userLabel(demoDoorId) ? ` door ${userLabel(demoDoorId)}` : ""}`,
+      description: "Voorbeeld-leads, offertes en installaties zijn toegevoegd zodat het account direct gevuld is",
+      at: demoGeseedOp,
+      tone: "success",
+    });
+  }
+  (historie ?? []).forEach((h) => {
+    if (h.veld === "status" || h.actie === "status_gewijzigd") {
+      timeline.push({
+        id: `hist-${h.id}`,
+        icon: <UserCheck className="h-3.5 w-3.5" />,
+        title: `Status gewijzigd${h.nieuwe_waarde ? ` naar "${h.nieuwe_waarde}"` : ""}`,
+        description: [h.oude_waarde ? `van "${h.oude_waarde}"` : null, h.actor_naam ? `door ${h.actor_naam}` : null].filter(Boolean).join(" · ") || undefined,
+        at: h.created_at,
+        tone: "warning",
+      });
+    }
+  });
+  if (trialVerlopen && partner.trial_einddatum) {
+    timeline.push({
+      id: "trial-expired",
+      icon: <AlertTriangle className="h-3.5 w-3.5" />,
+      title: "Trial verlopen",
+      description: `Sinds ${Math.abs(trialDagenResterend ?? 0)} dagen`,
+      at: partner.trial_einddatum,
+      tone: "error",
+    });
+  }
+  timeline.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+  // Uitleg voor status-badge popover
+  const statusUitleg = (() => {
+    if (isTrial && trialVerlopen) {
+      return {
+        titel: "Trial verlopen",
+        tekst: "De proefperiode van 30 dagen is voorbij. De klant heeft nog geen betaald abonnement afgesloten.",
+        bron: `Berekend op basis van trial_einddatum (${formatDate(partner.trial_einddatum)}).`,
+      };
+    }
+    if (isTrial) {
+      return {
+        titel: "Trial actief",
+        tekst: "De klant zit in de gratis proefperiode. Zolang de trial loopt heeft de klant volledige toegang.",
+        bron: `Berekend op basis van abonnement_type = "trial" en trial_einddatum (${formatDate(partner.trial_einddatum)}).`,
+      };
+    }
+    if (partner.abonnement_type) {
+      return {
+        titel: `Betalend abonnement: ${partner.abonnement_type}`,
+        tekst: "Deze klant heeft een lopend betaald abonnement.",
+        bron: `Afkomstig uit partners.abonnement_type.`,
+      };
+    }
+    return {
+      titel: statusLabels[partner.status],
+      tekst: "Algemene partnerstatus in de administratie.",
+      bron: "Afkomstig uit partners.status.",
+    };
+  })();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -194,15 +308,49 @@ export default function PartnerDetail() {
           <div>
             <h1 className="text-2xl font-semibold text-foreground">{partner.naam}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge className={klantStatusClass}>{klantStatusLabel}</Badge>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-full">
+                    <Badge className={`${klantStatusClass} gap-1 cursor-pointer hover:opacity-90`}>
+                      {klantStatusLabel}
+                      <Info className="h-3 w-3 opacity-70" />
+                    </Badge>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-80 text-sm">
+                  <p className="font-semibold text-foreground">{statusUitleg.titel}</p>
+                  <p className="text-muted-foreground mt-1">{statusUitleg.tekst}</p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">Bron: {statusUitleg.bron}</p>
+                </PopoverContent>
+              </Popover>
               <Badge variant="outline">{statusLabels[partner.status]}</Badge>
               {partner.abonnement_type && (
                 <Badge variant="outline" className="capitalize">{partner.abonnement_type}</Badge>
               )}
               {demoGeseedOp && (
-                <Badge variant="outline" className="gap-1">
-                  <Sparkles className="h-3 w-3" /> Demo-data aanwezig
-                </Badge>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-full">
+                      <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-muted">
+                        <Sparkles className="h-3 w-3" /> Demo-data aanwezig
+                        <Info className="h-3 w-3 opacity-70" />
+                      </Badge>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-80 text-sm">
+                    <p className="font-semibold text-foreground">Demo-data aanwezig</p>
+                    <p className="text-muted-foreground mt-1">
+                      Het account is gevuld met voorbeeld-leads, offertes en installaties zodat de klant direct kan verkennen zonder eigen data in te voeren.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Geplaatst op {formatDateTime(demoGeseedOp)}
+                      {userLabel(demoDoorId) ? ` door ${userLabel(demoDoorId)}` : ""}.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 italic">
+                      Bron: partners.demo_data_geseed_op (gezet door de trial-signup functie of handmatige seed).
+                    </p>
+                  </PopoverContent>
+                </Popover>
               )}
               {partner.is_affiliate && (
                 <Badge className="bg-primary/10 text-primary border-0 gap-1">
@@ -272,6 +420,36 @@ export default function PartnerDetail() {
               }
               secondary={demoGeseedOp ? formatDateTime(demoGeseedOp) : undefined}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-0 shadow-sm lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <PlayCircle className="h-4 w-4" /> Tijdlijn
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {timeline.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nog geen events.</p>
+            ) : (
+              <ol className="relative space-y-4 border-l border-border/60 pl-6">
+                {timeline.map((e) => (
+                  <li key={e.id} className="relative">
+                    <span className={`absolute -left-[34px] top-0 flex h-6 w-6 items-center justify-center rounded-full ${toneClasses[e.tone]}`}>
+                      {e.icon}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{e.title}</p>
+                      {e.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{e.description}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">{formatDateTime(e.at)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
           </CardContent>
         </Card>
 
