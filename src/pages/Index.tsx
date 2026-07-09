@@ -127,7 +127,7 @@ const Index = () => {
           <nav className="flex items-center gap-4">
             <Link to="/voorwaarden" className="hover:text-foreground">Voorwaarden</Link>
             <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link to="/cookiebeleid" className="hover:text-foreground">Cookies</Link>
+            <Link to="/cookies" className="hover:text-foreground">Cookies</Link>
           </nav>
         </div>
       </footer>
