@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode, tijdelijk_wachtwoord, aangemaakt_door, trial_dagen } = await req.json();
+    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode, tijdelijk_wachtwoord, aangemaakt_door, aangemaakt_door_id, trial_dagen } = await req.json();
 
     // Validation
     if (!bedrijfsnaam || !voornaam || !achternaam || !email || !password) {
@@ -74,6 +74,8 @@ serve(async (req) => {
         contactpersoon_telefoon: telefoon || null,
         licentie_adviseurs: 2,
         licentie_installateurs: 2,
+        trial_aangemaakt_door_id: aangemaakt_door_id ?? null,
+        trial_aangemaakt_op: trialStart.toISOString(),
       })
       .select("id")
       .single();
@@ -217,6 +219,13 @@ serve(async (req) => {
     // 6. Seed demo data
     try {
       await seedDemoData(supabaseAdmin, partner.id, authUser.user.id);
+      await supabaseAdmin
+        .from("partners")
+        .update({
+          demo_data_geseed_op: new Date().toISOString(),
+          demo_data_geseed_door_id: aangemaakt_door_id ?? authUser.user.id,
+        })
+        .eq("id", partner.id);
     } catch (seedErr) {
       console.error("Demo seed error (non-fatal):", seedErr);
     }

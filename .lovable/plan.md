@@ -1,85 +1,73 @@
-# Kritische analyse Sales Manager rol + verbeterplan
+## Doel
+Als een sales agent (`sales_manager`) een klantkaart opent vanuit het trial-overzicht, moet direct duidelijk zijn:
+- **Wie heeft de klant binnengehaald?** (affiliate / referrer of interne sales agent)
+- **Wie en wanneer heeft demo-data toegevoegd?**
+- **Wanneer loopt de trial en wie heeft deze aangemaakt?**
+- **Wat is de huidige status van de klant?** (trial actief / trial verlopen / betalend / geblokkeerd)
 
-Na review van het huidige Sales CRM (pipeline, trials, leads, analytics, snippets) mist een sales manager vooral **overzicht op teamniveau, sturingsinformatie en AI-hulp bij dagelijkse beslissingen**. Alles wat we bouwen krijgt Playwright e2e-tests.
+## Probleem nu
+1. Route `/partners/:id` is beperkt tot `superadmin` → een sales_manager kan de klantkaart helemaal niet openen (klik uit AffiliateTrials leidt naar "toegang geweigerd").
+2. `PartnerDetail` toont alleen bedrijfsgegevens; er is geen sales-context (geen aanbrenger, geen trial-aanmaker, geen demo-info).
+3. In `trial-signup` wordt `aangemaakt_door` alleen in de welkomstmail gebruikt en niet opgeslagen; er is geen registratie van demo-seed.
 
-## Wat er nu goed staat
-Pipeline, trials-overzicht, warmte, filters, upsell-badge, gedeelde notities, snippets, analytics-tab, bronnenbeheer.
+## Wijzigingen
 
-## Wat een sales manager mist (kritisch)
+### 1. Database (migratie)
+Op `public.partners`, drie nieuwe kolommen (nullable, geen breaking change):
+- `trial_aangemaakt_door_id uuid` (FK → users.id, on delete set null)
+- `trial_aangemaakt_op timestamptz`
+- `demo_data_geseed_op timestamptz`
+- `demo_data_geseed_door_id uuid` (FK → users.id)
 
-### 1. Team-cockpit (nieuwe tab "Team")
-- Per sales-rep: aantal actieve leads, waarde in pipeline, activiteit deze week (calls, mails, demo's), conversie, gemiddelde doorlooptijd per fase, no-touch dagen.
-- Stoplicht-signalen: reps met achterstallige opvolging, leads zonder activiteit >7d, trials die verlopen zonder contact.
-- Werkdruk-verdeling (leads per rep vs capaciteit) + één-klik herverdeling.
+Backfill:
+- `trial_aangemaakt_op` = `created_at` voor bestaande trial-partners
+- `demo_data_geseed_op` = `created_at` als er demo-notities bestaan (bestaande convention "⚡ Demo:")
 
-### 2. AI Sales Coach (Gemini)
-- **Dagelijkse briefing** per manager: "3 deals wankelen, 2 trials verlopen deze week, rep X heeft 5 no-touch leads". Edge function `sales-manager-briefing` genereert 's ochtends een samenvatting.
-- **Deal-risico score** per lead: AI leest historie/notities/mails en scoort risico (groen/oranje/rood) + reden + aanbevolen next step.
-- **Coaching-tips per rep**: AI analyseert opvolg-log en snippets-gebruik, geeft concrete tip ("rep gebruikt geen bezwaar-snippet bij prijsvragen").
+RLS: bestaande partner-policies blijven werken (kolommen erven policies). Geen nieuwe policies.
 
-### 3. Forecast & pipeline-gezondheid
-- Weighted forecast (waarde × fase-kans) per week/maand/kwartaal, per rep en totaal.
-- Pipeline-gezondheid: dekking t.o.v. target, gap-analyse, aging per fase (hoe lang staat een lead vast).
-- Win/Loss-analyse met AI-clusters van redenen (bestaat deels, uitbreiden naar dashboard).
+### 2. Edge function `trial-signup`
+- Sla `trial_aangemaakt_door_id` (uit sessie/`aangemaakt_door_id` payload) en `trial_aangemaakt_op = now()` op bij partner-insert.
+- Na `seedDemoData()`: update partner met `demo_data_geseed_op = now()` en `demo_data_geseed_door_id`.
+- Frontend die deze functie aanroept (`SalesManagerTrials` / registratie-flows) meestuurt `aangemaakt_door_id` = huidige user.
 
-### 4. Next-Best-Action lijst
-- Één "wat-nu" lijst voor de manager en per rep: 10 acties gesorteerd op impact (trial verloopt + hoge waarde bovenaan). Direct doorklikken.
+### 3. Route-toegang
+`src/App.tsx` regel 191-193: `allowedRoles` uitbreiden van `["superadmin"]` naar `["superadmin", "sales_manager"]` voor `/partners/:id` (blijft binnen sales-scope; overzicht `/partners` blijft superadmin-only).
 
-### 5. Activiteit- & communicatie-inzicht
-- Team-agenda-view (alle demo's/belafspraken op één kalender, filter per rep).
-- Response-tijd metrics op inbox (eerste reactietijd, SLA-breaches).
-- "Silent leads" alert: leads waar 0 activiteit is geweest in X dagen.
+### 4. `src/pages/PartnerDetail.tsx`
+Nieuwe compacte **"Klantstatus"** header-strook + één nieuwe card **"Sales & Onboarding"** met vier duidelijke rijen:
 
-### 6. Trial-conversie-motor
-- Trial-lifecycle board (Dag 1 / Dag 7 / Dag 21 / Dag 28) met per fase suggested action.
-- Auto-trigger AI-mailconcept bij Dag 21-30 met upsell-argumenten uit gebruiksdata.
-- Health-score per trial (login-freq, features gebruikt, upsell-signalen) — pull uit bestaande activity/subscription tabellen.
+```text
+┌─ Klantstatus ────────────────────────────────────────┐
+│  [ Trial actief · nog 12 dagen ]  [ Demo-data aanwezig ]│
+└──────────────────────────────────────────────────────┘
 
-### 7. Doelen & targets
-- Uitbreiden `affiliate_targets` → team-target per maand + per rep. Progressbar in Team-cockpit.
-- Manager kan targets zetten en zien wie voor/achterloopt.
+┌─ Sales & Onboarding ─────────────────────────────────┐
+│  Aangebracht door   Jan de Vries (affiliate)         │
+│                     via link "voorjaar24" · 12-05-26 │
+│  Trial aangemaakt   Bas Jansen · 08-07-26 14:22      │
+│  Trial periode      08-07-26 → 07-08-26 (12 dagen)   │
+│  Demo-data          Geseed door Bas · 08-07-26 14:22 │
+└──────────────────────────────────────────────────────┘
+```
 
-### 8. Kennisdeling
-- "Winning plays" library: gewonnen deals gemarkeerd → snippet-suggestie voor de rest, met AI-samenvatting waarom die deal gewonnen werd.
-- Objection-library gevoed door Lost-reviews.
+Data-bronnen:
+- **Aangebracht door**: query op `affiliate_referrals` waar `partner_id = :id` → join `users` op `affiliate_id` voor naam + `affiliate_links` voor code. Fallback: "Direct" (geen referral).
+- **Trial aangemaakt**: nieuwe kolommen + join `users` op `trial_aangemaakt_door_id`.
+- **Trial periode**: bestaande `contract_startdatum` + `trial_einddatum`; bereken resterende dagen; kleurcodering (groen actief, oranje <7 dagen, rood verlopen).
+- **Demo-data**: nieuwe kolommen; als niet geseed → grijze "Nog niet geseed" met verwijzing naar knop (bestaande `clear-demo-data` / eventueel seed-actie blijft ongewijzigd).
+- **Klantstatus badge**: afgeleide logica: `abonnement_type === 'trial'` + `trial_einddatum` → "Trial actief/verlopen"; anders "Betalend" of huidige `status`-label.
 
-## Aanpak & bouwvolgorde
+Positionering: nieuwe klantstatus-strook direct onder de titel (voor de bestaande badges), de "Sales & Onboarding" card als eerste kaart in de grid (voor Bedrijfsgegevens).
 
-**Fase A (klaar):** Team-cockpit, AI dagelijkse briefing, Deal-risico score, Next-Best-Action lijst.
-**Fase B (klaar):** Forecast/pipeline-gezondheid, Trial-lifecycle board (met bulk-acties), Team-agenda.
-**Fase C (klaar):** Team-targets in cockpit, AI coaching-tips per rep (edge function `sales-coaching-tip`), Winning-plays library (edge function `sales-winning-play`, tab in sales).
+### 5. Terug-navigatie
+`navigate("/partners")` valt om voor sales_manager (geen toegang). Wijzig naar `navigate(-1)` zodat terugkeren naar AffiliateTrials werkt.
 
-## Technische opzet Fase A
+## Verificatie
+- Build + `tsgo` check.
+- Handmatige check via preview: als superadmin trial aanmaken → PartnerDetail toont alle nieuwe velden.
+- Rol-switch (sales_manager) → klantkaart opent zonder access-error.
 
-**Nieuwe files:**
-- `src/pages/sales/TeamCockpit/index.tsx` — dashboard-layout met KPI's per rep, stoplichten, herverdeel-actie.
-- `src/pages/sales/TeamCockpit/RepKaart.tsx` — kaart per sales-rep.
-- `src/pages/sales/TeamCockpit/NextBestActionLijst.tsx` — top-10 acties.
-- `src/pages/sales/TeamCockpit/DagelijkseBriefing.tsx` — AI-samenvatting boven in.
-- `src/hooks/sales/useTeamStats.ts` — aggregatie per eigenaar (uit `affiliate_leads`, `affiliate_opvolg_log`, `affiliate_terugbel_afspraken`).
-- `src/hooks/sales/useNextBestActions.ts` — geordende actielijst.
-- `src/hooks/sales/useDealRisico.ts` — leest cached AI-scores.
-- `src/hooks/sales/useDagelijkseBriefing.ts` — call naar edge function, dagelijks gecached.
-- `src/components/sales/RisicoBadge.tsx` — groen/oranje/rood.
-
-**Edge functions (Lovable AI Gateway, `google/gemini-3-flash-preview`):**
-- `sales-manager-briefing` — genereert dagelijkse briefing op basis van team-data, rolcheck (superadmin/sales_manager/sales_admin).
-- `sales-deal-risico` — batch of on-demand risicoscore per lead; slaat op in nieuwe kolommen op `affiliate_leads` (`risico_score`, `risico_reden`, `risico_next_step`, `risico_bijgewerkt_op`).
-
-**DB migratie:**
-- Kolommen toevoegen aan `affiliate_leads`: `risico_score text`, `risico_reden text`, `risico_next_step text`, `risico_bijgewerkt_op timestamptz`.
-- Tabel `sales_briefings` (id, gebruiker_id, datum, inhoud jsonb, created_at) + RLS + GRANTs.
-
-**Integratie:**
-- Nieuwe tab "Team" in `src/pages/sales/index.tsx` (alleen zichtbaar voor superadmin/sales_manager/sales_admin).
-- `RisicoBadge` op `SalesPipeline/LeadKaart` en `SalesLeads` tabel.
-
-**E2E tests (Playwright, `tests/sales-*.spec.ts`):**
-- `tests/sales-team-cockpit.spec.ts` — login als sales_manager, zie team-cockpit-tab, KPI's per rep, stoplichten renderen.
-- `tests/sales-briefing.spec.ts` — briefing-kaart laadt, refresh-knop werkt.
-- `tests/sales-risico.spec.ts` — risico-badge zichtbaar op leadkaart en leadlijst.
-- `tests/sales-next-best-action.spec.ts` — top-10 actielijst rendert, klik navigeert naar lead.
-- Rol-check test: gewone affiliate ziet Team-tab NIET.
-
-## Buiten scope (voor nu)
-Fase B en C (forecast, trial-lifecycle board, targets, winning-plays), URL-sync van filters, exports, real-time notificaties, mobile-native app.
+## Technische notes
+- Bestandslengte `PartnerDetail.tsx` (218 regels) blijft ruim onder 800; nieuwe "SalesOnboardingCard" sub-component in aparte file als >50 regels functie ontstaat.
+- Geen wijziging aan `src/integrations/supabase/client.ts` of `types.ts` (types worden geregenereerd na migratie).
+- Geen nieuwe dependencies.

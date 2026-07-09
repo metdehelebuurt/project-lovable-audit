@@ -7536,6 +7536,8 @@ export type Database = {
           contract_startdatum: string | null
           contract_type: string | null
           created_at: string
+          demo_data_geseed_door_id: string | null
+          demo_data_geseed_op: string | null
           email: string | null
           email_provider: string | null
           feature_flags_json: Json | null
@@ -7570,6 +7572,8 @@ export type Database = {
           smtp_user: string | null
           status: Database["public"]["Enums"]["partner_status"]
           telefoonnummer: string | null
+          trial_aangemaakt_door_id: string | null
+          trial_aangemaakt_op: string | null
           trial_einddatum: string | null
           updated_at: string
           voorwaarden_pdf_url: string | null
@@ -7595,6 +7599,8 @@ export type Database = {
           contract_startdatum?: string | null
           contract_type?: string | null
           created_at?: string
+          demo_data_geseed_door_id?: string | null
+          demo_data_geseed_op?: string | null
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
@@ -7629,6 +7635,8 @@ export type Database = {
           smtp_user?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
+          trial_aangemaakt_door_id?: string | null
+          trial_aangemaakt_op?: string | null
           trial_einddatum?: string | null
           updated_at?: string
           voorwaarden_pdf_url?: string | null
@@ -7654,6 +7662,8 @@ export type Database = {
           contract_startdatum?: string | null
           contract_type?: string | null
           created_at?: string
+          demo_data_geseed_door_id?: string | null
+          demo_data_geseed_op?: string | null
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
@@ -7688,12 +7698,29 @@ export type Database = {
           smtp_user?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           telefoonnummer?: string | null
+          trial_aangemaakt_door_id?: string | null
+          trial_aangemaakt_op?: string | null
           trial_einddatum?: string | null
           updated_at?: string
           voorwaarden_pdf_url?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "partners_demo_data_geseed_door_id_fkey"
+            columns: ["demo_data_geseed_door_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partners_trial_aangemaakt_door_id_fkey"
+            columns: ["trial_aangemaakt_door_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pipeline_configuraties: {
         Row: {
