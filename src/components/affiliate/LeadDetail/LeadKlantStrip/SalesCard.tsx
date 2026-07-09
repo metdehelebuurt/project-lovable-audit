@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { STATUS_LABEL, STATUS_VOLGORDE, type AffiliateLeadStatus } from "@/lib/affiliate/leadStatus";
 import type { AffiliateLead } from "@/hooks/affiliate/useAffiliateLeads";
 import { TrialStartenButton } from "../../TrialStartenButton";
-import TagsInput from "@/components/sales/TagsInput";
+import { AffiliateTagsEditor } from "./AffiliateTagsEditor";
 
 const TEMP_OPTIES = [
   { value: "koud", label: "Koud" },
@@ -26,7 +26,7 @@ interface Props {
   volgendeActie: string;
   setVolgendeActie: (v: string) => void;
   tags: string[];
-  setTags: (t: string[]) => void;
+  onTagsOpslaan: (t: string[]) => void | Promise<void>;
   isPending: boolean;
   onOpslaan: () => void;
   gewonnenPartnerId: string | null;
@@ -34,7 +34,7 @@ interface Props {
 
 export function SalesCard({
   lead, status, setStatus, temperatuur, setTemperatuur, waarde, setWaarde,
-  volgendeActie, setVolgendeActie, tags, setTags, isPending, onOpslaan, gewonnenPartnerId,
+  volgendeActie, setVolgendeActie, tags, onTagsOpslaan, isPending, onOpslaan, gewonnenPartnerId,
 }: Props) {
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3 min-w-0">
@@ -87,11 +87,7 @@ export function SalesCard({
           <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
             <Tag className="h-3 w-3" /> Tags
           </Label>
-          <TagsInput
-            waarde={tags}
-            onWijzig={setTags}
-            placeholder="Bijv. beurs2026, koudebellen…"
-          />
+          <AffiliateTagsEditor tags={tags} disabled={isPending} onWijzig={onTagsOpslaan} />
         </div>
 
         <Button onClick={onOpslaan} disabled={isPending} className="w-full" size="sm">

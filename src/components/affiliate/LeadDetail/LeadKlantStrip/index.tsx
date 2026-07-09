@@ -16,7 +16,7 @@ interface Props {
   volgendeActie: string;
   setVolgendeActie: (v: string) => void;
   tags: string[];
-  setTags: (t: string[]) => void;
+  onTagsOpslaan: (t: string[]) => void | Promise<void>;
   isPending: boolean;
   onOpslaan: () => void;
   gewonnenPartnerId: string | null;

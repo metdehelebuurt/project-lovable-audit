@@ -123,6 +123,17 @@ export function LeadDetailBody({ lead }: Props) {
     }
   };
 
+  const tagsOpslaan = async (volgendeTags: string[]) => {
+    const vorigeTags = tags;
+    setTags(volgendeTags);
+    try {
+      await update.mutateAsync({ id: lead.id, patch: { tags: volgendeTags } });
+      toast.success("Tags bijgewerkt");
+    } catch {
+      setTags(vorigeTags);
+    }
+  };
+
   const onActie = (a: "terugbel" | "demo" | "order" | "verrijken" | "ai") => {
     if (a === "terugbel") setOpenTerugbel(true);
     else if (a === "demo") setOpenDemo(true);
@@ -158,7 +169,7 @@ export function LeadDetailBody({ lead }: Props) {
         volgendeActie={volgendeActie}
         setVolgendeActie={setVolgendeActie}
         tags={tags}
-        setTags={setTags}
+        onTagsOpslaan={tagsOpslaan}
         isPending={update.isPending}
         onOpslaan={opslaan}
         gewonnenPartnerId={gewonnenPartnerId}
