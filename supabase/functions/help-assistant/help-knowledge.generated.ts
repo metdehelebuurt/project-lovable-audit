@@ -231,6 +231,22 @@ export const MODULE_HELP: ModuleHelp[] = [
     "howTo": "Productcatalogus met specificaties, datasheets en AI-import."
   },
   {
+    "key": "assemblages",
+    "label": "Samengestelde producten",
+    "groep": "Catalogus",
+    "roles": [
+      "superadmin",
+      "partner_admin",
+      "backoffice",
+      "partner_staff",
+      "adviseur",
+      "installateur"
+    ],
+    "primaryPath": "/assemblages",
+    "extraPaths": [],
+    "howTo": "Module Samengestelde producten."
+  },
+  {
     "key": "voorraad",
     "label": "Voorraad",
     "groep": "Logistiek",
@@ -469,7 +485,8 @@ export const MODULE_HELP: ModuleHelp[] = [
       "superadmin",
       "partner_admin",
       "partner_staff",
-      "affiliate"
+      "affiliate",
+      "sales_manager"
     ],
     "primaryPath": "/instellingen",
     "extraPaths": [],
@@ -480,7 +497,8 @@ export const MODULE_HELP: ModuleHelp[] = [
     "label": "Affiliate beheer",
     "groep": "Beheer",
     "roles": [
-      "superadmin"
+      "superadmin",
+      "sales_manager"
     ],
     "primaryPath": "/affiliate-beheer",
     "extraPaths": [],
