@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, Building2, Mail, Phone, FileText, Handshake, Clock, History, UserCheck, Sparkles, CalendarClock, Info, Rocket, PlayCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Building2, Mail, Phone, FileText, Handshake, Clock, History, UserCheck, Sparkles, CalendarClock, Info, Rocket, PlayCircle, AlertTriangle } from "lucide-react";
 import { PromotePartnerToAffiliateButton } from "@/components/affiliate/PromotePartnerToAffiliateButton";
 import type { Database } from "@/integrations/supabase/types";
 
