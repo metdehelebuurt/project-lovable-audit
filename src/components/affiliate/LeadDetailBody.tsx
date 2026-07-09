@@ -157,6 +157,8 @@ export function LeadDetailBody({ lead }: Props) {
         setWaarde={setWaarde}
         volgendeActie={volgendeActie}
         setVolgendeActie={setVolgendeActie}
+        tags={tags}
+        setTags={setTags}
         isPending={update.isPending}
         onOpslaan={opslaan}
         gewonnenPartnerId={gewonnenPartnerId}
