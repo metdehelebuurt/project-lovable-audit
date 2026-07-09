@@ -55,6 +55,7 @@ export function LeadDetailBody({ lead }: Props) {
   const [waarde, setWaarde] = useState(String(lead.geschatte_waarde ?? ""));
   const [temperatuur, setTemperatuur] = useState<string>(lead.temperatuur ?? "lauw");
   const [volgendeActie, setVolgendeActie] = useState<string>(lead.volgende_actie_datum ?? "");
+  const [tags, setTags] = useState<string[]>(lead.tags ?? []);
   const [openTerugbel, setOpenTerugbel] = useState(false);
   const [openDemo, setOpenDemo] = useState(false);
   const [openOrder, setOpenOrder] = useState(false);
@@ -73,7 +74,8 @@ export function LeadDetailBody({ lead }: Props) {
     setWaarde(String(lead.geschatte_waarde ?? ""));
     setTemperatuur(lead.temperatuur ?? "lauw");
     setVolgendeActie(lead.volgende_actie_datum ?? "");
-  }, [lead.id, lead.status, lead.geschatte_waarde, lead.temperatuur, lead.volgende_actie_datum]);
+    setTags(lead.tags ?? []);
+  }, [lead.id, lead.status, lead.geschatte_waarde, lead.temperatuur, lead.volgende_actie_datum, lead.tags]);
 
   const gewonnenPartnerId = (lead as unknown as { gewonnen_partner_id?: string | null }).gewonnen_partner_id ?? null;
   const bronRecord = bronnen.find((b) => b.id === lead.bron_id);
@@ -112,6 +114,7 @@ export function LeadDetailBody({ lead }: Props) {
           geschatte_waarde: parseFloat(waarde) || 0,
           temperatuur: temperatuur as AffiliateLead["temperatuur"],
           volgende_actie_datum: volgendeActie || null,
+          tags,
         },
       });
       toast.success("Lead opgeslagen");
@@ -154,6 +157,8 @@ export function LeadDetailBody({ lead }: Props) {
         setWaarde={setWaarde}
         volgendeActie={volgendeActie}
         setVolgendeActie={setVolgendeActie}
+        tags={tags}
+        setTags={setTags}
         isPending={update.isPending}
         onOpslaan={opslaan}
         gewonnenPartnerId={gewonnenPartnerId}
