@@ -9,27 +9,40 @@ import TrialsTabel from "./TrialsTabel";
 import DemoZonderTrialTabel from "./DemoZonderTrialTabel";
 import NotitiesDialog from "./NotitiesDialog";
 import type { SalesTrialPartner } from "@/hooks/sales/useSalesTrials";
+import { bepaalBron, TRIAL_BRON_KORT, TRIAL_BRON_VOLGORDE, type TrialBron } from "@/lib/sales/trialBron";
 
 type Weergave = "actief" | "verlopen" | "alles";
+type BronFilter = "alles" | TrialBron;
 
 export default function SalesTrials() {
   const { data: trials, isLoading } = useSalesTrials();
   const { data: demoLeads, isLoading: demoLaadt } = useSalesDemoZonderTrial();
   const [weergave, setWeergave] = useState<Weergave>("actief");
+  const [bronFilter, setBronFilter] = useState<BronFilter>("alles");
   const [openNotities, setOpenNotities] = useState<SalesTrialPartner | null>(null);
 
   const gefilterd = useMemo(() => {
     const alle = trials ?? [];
     const vandaag = new Date();
     vandaag.setHours(0, 0, 0, 0);
+    let lijst = alle;
     if (weergave === "actief") {
-      return alle.filter((p) => p.trial_einddatum && new Date(p.trial_einddatum) >= vandaag);
+      lijst = lijst.filter((p) => p.trial_einddatum && new Date(p.trial_einddatum) >= vandaag);
+    } else if (weergave === "verlopen") {
+      lijst = lijst.filter((p) => p.trial_einddatum && new Date(p.trial_einddatum) < vandaag);
     }
-    if (weergave === "verlopen") {
-      return alle.filter((p) => p.trial_einddatum && new Date(p.trial_einddatum) < vandaag);
+    if (bronFilter !== "alles") {
+      lijst = lijst.filter((p) => bepaalBron(p) === bronFilter);
     }
-    return alle;
-  }, [trials, weergave]);
+    return lijst;
+  }, [trials, weergave, bronFilter]);
+
+  const bronTellingen = useMemo(() => {
+    const alle = trials ?? [];
+    const map: Record<BronFilter, number> = { alles: alle.length, selfservice: 0, affiliate: 0, sales: 0, google_oauth: 0 };
+    for (const t of alle) map[bepaalBron(t)] += 1;
+    return map;
+  }, [trials]);
 
   const partnerIds = useMemo(() => gefilterd.map((p) => p.id), [gefilterd]);
   const { data: upsells } = usePartnerUpsells(partnerIds);
@@ -109,6 +122,24 @@ export default function SalesTrials() {
             ))}
           </div>
         </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {(["alles", ...TRIAL_BRON_VOLGORDE] as BronFilter[]).map((b) => (
+            <Button
+              key={b}
+              size="sm"
+              variant={bronFilter === b ? "default" : "outline"}
+              onClick={() => setBronFilter(b)}
+              className="h-8"
+            >
+              {b === "alles" ? "Alle bronnen" : TRIAL_BRON_KORT[b as TrialBron]}
+              <span className="ml-1.5 text-[10px] rounded-full bg-black/10 px-1.5 py-0.5">
+                {bronTellingen[b]}
+              </span>
+            </Button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <KpiTegel label="Actief in trial" waarde={kpis.actief} toon="emerald" />
           <KpiTegel label="≤ 7 dagen resterend" waarde={kpis.bijna} toon="amber" />
