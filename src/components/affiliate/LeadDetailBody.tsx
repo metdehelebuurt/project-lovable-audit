@@ -114,6 +114,7 @@ export function LeadDetailBody({ lead }: Props) {
           geschatte_waarde: parseFloat(waarde) || 0,
           temperatuur: temperatuur as AffiliateLead["temperatuur"],
           volgende_actie_datum: volgendeActie || null,
+          tags,
         },
       });
       toast.success("Lead opgeslagen");
