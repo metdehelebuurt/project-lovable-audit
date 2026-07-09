@@ -55,6 +55,7 @@ export function LeadDetailBody({ lead }: Props) {
   const [waarde, setWaarde] = useState(String(lead.geschatte_waarde ?? ""));
   const [temperatuur, setTemperatuur] = useState<string>(lead.temperatuur ?? "lauw");
   const [volgendeActie, setVolgendeActie] = useState<string>(lead.volgende_actie_datum ?? "");
+  const [tags, setTags] = useState<string[]>(lead.tags ?? []);
   const [openTerugbel, setOpenTerugbel] = useState(false);
   const [openDemo, setOpenDemo] = useState(false);
   const [openOrder, setOpenOrder] = useState(false);
