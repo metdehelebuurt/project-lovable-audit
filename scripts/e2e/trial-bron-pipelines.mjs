@@ -1,3 +1,10 @@
+// Live E2E: maakt per trial_bron een trial aan via de trial-signup edge function
+// zodat je kunt bevestigen dat elke pipeline (selfservice / affiliate / sales /
+// google_oauth) correct wordt geactiveerd. Verifieer daarna in de DB dat de
+// `trial_bron` per partner klopt en dat de bron-tellingen in /sales/trials
+// met precies +1 per bron toenemen.
+//
+// Draaien: `node scripts/e2e/trial-bron-pipelines.mjs`
 const URL = "https://xmguipmetciwvzeyxugu.supabase.co/functions/v1/trial-signup";
 const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtZ3VpcG1ldGNpd3Z6ZXl4dWd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNTQyMTIsImV4cCI6MjA4ODczMDIxMn0.xMdj0s4Zu5_PjeRcqOgDOJ7ovxP5FHhW0OIyLlYHdCY";
 const REF = "mijnhuis-nu-7853";
