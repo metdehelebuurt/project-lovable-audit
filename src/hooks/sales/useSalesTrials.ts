@@ -27,6 +27,8 @@ export interface SalesTrialPartner {
   status: string | null;
   trial_einddatum: string | null;
   created_at: string;
+  trial_bron: "selfservice" | "affiliate" | "sales" | "google_oauth" | null;
+  trial_aangemaakt_op: string | null;
   affiliate: SalesTrialAffiliate | null;
 }
 
