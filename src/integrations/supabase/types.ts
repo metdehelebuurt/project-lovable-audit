@@ -7576,6 +7576,7 @@ export type Database = {
           trial_aangemaakt_op: string | null
           trial_einddatum: string | null
           updated_at: string
+          voorwaarden_geaccepteerd_op: string | null
           voorwaarden_pdf_url: string | null
           website: string | null
         }
@@ -7639,6 +7640,7 @@ export type Database = {
           trial_aangemaakt_op?: string | null
           trial_einddatum?: string | null
           updated_at?: string
+          voorwaarden_geaccepteerd_op?: string | null
           voorwaarden_pdf_url?: string | null
           website?: string | null
         }
@@ -7702,6 +7704,7 @@ export type Database = {
           trial_aangemaakt_op?: string | null
           trial_einddatum?: string | null
           updated_at?: string
+          voorwaarden_geaccepteerd_op?: string | null
           voorwaarden_pdf_url?: string | null
           website?: string | null
         }
@@ -10005,6 +10008,10 @@ export type Database = {
       has_break_glass_access: {
         Args: { _partner_id: string; _user_id: string }
         Returns: boolean
+      }
+      increment_affiliate_link_clicks: {
+        Args: { _link_id: string }
+        Returns: undefined
       }
       increment_kb_views: { Args: { _artikel_id: string }; Returns: undefined }
       inkoop_voorstellen_naar_concept: {

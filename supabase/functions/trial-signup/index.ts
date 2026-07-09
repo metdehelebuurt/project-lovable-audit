@@ -1,10 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const BodySchema = z.object({
+  bedrijfsnaam: z.string().trim().min(2).max(200),
+  voornaam: z.string().trim().min(1).max(100),
+  achternaam: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(255),
+  password: z.string().min(8).max(100),
+  telefoon: z.string().trim().max(40).optional().nullable(),
+  ref_code: z.string().trim().max(60).optional().nullable(),
+  kortingscode: z.string().trim().max(60).optional().nullable(),
+  tijdelijk_wachtwoord: z.string().max(100).optional().nullable(),
+  aangemaakt_door: z.string().max(200).optional().nullable(),
+  aangemaakt_door_id: z.string().uuid().optional().nullable(),
+  trial_dagen: z.number().int().min(1).max(30).optional(),
+  // Selfservice signup vereist expliciet akkoord; interne flows (affiliate/admin) mogen deze weglaten.
+  toestemming: z.boolean().optional(),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,19 +35,24 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code, kortingscode, tijdelijk_wachtwoord, aangemaakt_door, aangemaakt_door_id, trial_dagen } = await req.json();
-
-    // Validation
-    if (!bedrijfsnaam || !voornaam || !achternaam || !email || !password) {
+    const raw = await req.json().catch(() => ({}));
+    const parsed = BodySchema.safeParse(raw);
+    if (!parsed.success) {
       return new Response(
-        JSON.stringify({ error: "Alle verplichte velden moeten worden ingevuld" }),
+        JSON.stringify({ error: "Ongeldige invoer: " + JSON.stringify(parsed.error.flatten().fieldErrors) }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const {
+      bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code,
+      kortingscode, tijdelijk_wachtwoord, aangemaakt_door, aangemaakt_door_id,
+      trial_dagen, toestemming,
+    } = parsed.data;
 
-    if (password.length < 8) {
+    // Selfservice (geen aangemaakt_door_id → publieke signup) vereist expliciet akkoord.
+    if (!aangemaakt_door_id && toestemming !== true) {
       return new Response(
-        JSON.stringify({ error: "Wachtwoord moet minimaal 8 karakters zijn" }),
+        JSON.stringify({ error: "Je moet akkoord gaan met de voorwaarden en het privacybeleid" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -76,6 +99,7 @@ serve(async (req) => {
         licentie_installateurs: 2,
         trial_aangemaakt_door_id: aangemaakt_door_id ?? null,
         trial_aangemaakt_op: trialStart.toISOString(),
+            voorwaarden_geaccepteerd_op: toestemming === true ? new Date().toISOString() : null,
       })
       .select("id")
       .single();
@@ -125,11 +149,8 @@ serve(async (req) => {
           .single();
 
         if (affLink) {
-          // Increment clicks
-          await supabaseAdmin
-            .from("affiliate_links")
-            .update({ clicks: (await supabaseAdmin.from("affiliate_links").select("clicks").eq("id", affLink.id).single()).data?.clicks + 1 || 1 })
-            .eq("id", affLink.id);
+          // Atomic increment via RPC (voorkomt race-condities bij gelijktijdige clicks).
+          await supabaseAdmin.rpc("increment_affiliate_link_clicks", { _link_id: affLink.id });
 
           // Get default commission
           const { data: settings } = await supabaseAdmin

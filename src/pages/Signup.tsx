@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/Logo";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [akkoord, setAkkoord] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refCode = searchParams.get("ref") || "";
@@ -72,6 +74,10 @@ const Signup = () => {
       toast.error("Wachtwoord moet minimaal 8 karakters zijn");
       return;
     }
+    if (!akkoord) {
+      toast.error("Ga eerst akkoord met de voorwaarden en het privacybeleid");
+      return;
+    }
 
     setIsLoading(true);
 
@@ -84,6 +90,7 @@ const Signup = () => {
         telefoon: form.telefoon,
         password: form.password,
         ref_code: refCode || undefined,
+        toestemming: true,
       },
     });
 
@@ -103,12 +110,12 @@ const Signup = () => {
 
     if (loginError) {
       toast.success("Account aangemaakt!", {
-        description: "Je kunt nu inloggen met je gegevens.",
+        description: `We hebben een welkomstmail gestuurd naar ${form.email}. Log in met je e-mail en wachtwoord.`,
       });
       navigate("/login");
     } else {
       toast.success("Welkom bij mijnhuis.nu!", {
-        description: "Je trial account is aangemaakt.",
+        description: `Je proefperiode is actief. Een welkomstmail is onderweg naar ${form.email}.`,
       });
       navigate("/onboarding");
     }
@@ -258,10 +265,25 @@ const Signup = () => {
               <Button
                 type="submit"
                 className="w-full rounded-pill py-3 font-medium"
-                disabled={isLoading}
+                disabled={isLoading || !akkoord}
               >
                 {isLoading ? "Account aanmaken..." : "Start gratis proefperiode"}
               </Button>
+
+              <div className="flex items-start gap-2 pt-1">
+                <Checkbox
+                  id="akkoord"
+                  checked={akkoord}
+                  onCheckedChange={(v) => setAkkoord(v === true)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="akkoord" className="text-xs font-normal text-muted-foreground leading-relaxed cursor-pointer">
+                  Ik ga akkoord met de{" "}
+                  <a href="/voorwaarden" target="_blank" rel="noopener" className="text-primary hover:underline">algemene voorwaarden</a>
+                  {" "}en het{" "}
+                  <a href="/privacy" target="_blank" rel="noopener" className="text-primary hover:underline">privacybeleid</a>.
+                </Label>
+              </div>
             </form>
 
             <div className="flex items-center gap-3 my-4">
