@@ -83,6 +83,17 @@ export function SalesCard({
           <Input type="date" value={volgendeActie} onChange={(e) => setVolgendeActie(e.target.value)} className="h-9" />
         </div>
 
+        <div>
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+            <Tag className="h-3 w-3" /> Tags
+          </Label>
+          <TagsInput
+            waarde={tags}
+            onWijzig={setTags}
+            placeholder="Bijv. beurs2026, koudebellen…"
+          />
+        </div>
+
         <Button onClick={onOpslaan} disabled={isPending} className="w-full" size="sm">
           <Save className="h-4 w-4 mr-2" /> Opslaan
         </Button>
