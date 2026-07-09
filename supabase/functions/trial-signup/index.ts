@@ -287,6 +287,8 @@ async function seedDemoData(supabase: any, partnerId: string, userId: string) {
   const today = new Date();
   const fmt = (d: Date) => d.toISOString().split("T")[0];
   const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+  // Unieke suffix zodat demo-nummers per partner niet botsen met andere trials (unique constraint).
+  const suffix = partnerId.slice(0, 8).toUpperCase();
 
   // --- Demo Leads ---
   const leadsData = [
@@ -364,7 +366,7 @@ async function seedDemoData(supabase: any, partnerId: string, userId: string) {
   // --- Demo Schouwen ---
   const schouwenData = [
     {
-      schouw_nummer: "SCH-DEMO-001", adviseur_id: userId, lead_id: leads[0].id,
+      schouw_nummer: `SCH-DEMO-${suffix}-001`, adviseur_id: userId, lead_id: leads[0].id,
       partner_id: partnerId, categorie: "zonnepanelen", status: "uitgevoerd",
       geplande_datum: fmt(addDays(today, -5)), consument_naam: `${leads[0].voornaam} ${leads[0].achternaam}`,
       klant_email: leads[0].email,
@@ -375,7 +377,7 @@ async function seedDemoData(supabase: any, partnerId: string, userId: string) {
       },
     },
     {
-      schouw_nummer: "SCH-DEMO-002", adviseur_id: userId, lead_id: leads[1].id,
+      schouw_nummer: `SCH-DEMO-${suffix}-002`, adviseur_id: userId, lead_id: leads[1].id,
       partner_id: partnerId, categorie: "warmtepomp", status: "gepland",
       geplande_datum: fmt(addDays(today, 3)), consument_naam: `${leads[1].voornaam} ${leads[1].achternaam}`,
       klant_email: leads[1].email,
@@ -392,7 +394,7 @@ async function seedDemoData(supabase: any, partnerId: string, userId: string) {
   // --- Demo Offertes ---
   const offertesData = [
     {
-      offertenummer: "OFF-DEMO-001", adviseur_id: userId, partner_id: partnerId,
+      offertenummer: `OFF-DEMO-${suffix}-001`, adviseur_id: userId, partner_id: partnerId,
       lead_id: leads[0].id, schouw_id: schouwen?.[0]?.id || null,
       klant_naam: `${leads[0].voornaam} ${leads[0].achternaam}`,
       klant_email: leads[0].email, klant_adres: "Kerkstraat 12", klant_postcode: "1234 AB", klant_plaats: "Amsterdam",
@@ -407,7 +409,7 @@ async function seedDemoData(supabase: any, partnerId: string, userId: string) {
       ],
     },
     {
-      offertenummer: "OFF-DEMO-002", adviseur_id: userId, partner_id: partnerId,
+      offertenummer: `OFF-DEMO-${suffix}-002`, adviseur_id: userId, partner_id: partnerId,
       lead_id: leads[2].id,
       klant_naam: `${leads[2].voornaam} ${leads[2].achternaam}`,
       klant_email: leads[2].email, klant_adres: "Laan van Meerdervoort 88", klant_postcode: "2517 AX", klant_plaats: "Den Haag",
