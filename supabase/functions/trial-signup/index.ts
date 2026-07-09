@@ -22,6 +22,8 @@ const BodySchema = z.object({
   trial_dagen: z.number().int().min(1).max(30).optional(),
   // Selfservice signup vereist expliciet akkoord; interne flows (affiliate/admin) mogen deze weglaten.
   toestemming: z.boolean().optional(),
+  // Bron van de trial: 'selfservice' (frontpage), 'affiliate' (via wederverkoper), 'sales' (aangemaakt door sales-team), 'google_oauth'.
+  bron: z.enum(["selfservice", "affiliate", "sales", "google_oauth"]).optional(),
 });
 
 serve(async (req) => {
@@ -46,8 +48,12 @@ serve(async (req) => {
     const {
       bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code,
       kortingscode, tijdelijk_wachtwoord, aangemaakt_door, aangemaakt_door_id,
-      trial_dagen, toestemming,
+      trial_dagen, toestemming, bron,
     } = parsed.data;
+
+    // Automatisch bepalen wanneer bron niet meegegeven is.
+    const effectieveBron: "selfservice" | "affiliate" | "sales" | "google_oauth" =
+      bron ?? (ref_code ? "affiliate" : aangemaakt_door_id ? "sales" : "selfservice");
 
     // Selfservice (geen aangemaakt_door_id → publieke signup) vereist expliciet akkoord.
     if (!aangemaakt_door_id && toestemming !== true) {
@@ -100,6 +106,7 @@ serve(async (req) => {
         trial_aangemaakt_door_id: aangemaakt_door_id ?? null,
         trial_aangemaakt_op: trialStart.toISOString(),
             voorwaarden_geaccepteerd_op: toestemming === true ? new Date().toISOString() : null,
+            trial_bron: effectieveBron,
       })
       .select("id")
       .single();

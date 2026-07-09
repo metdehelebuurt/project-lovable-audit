@@ -126,6 +126,7 @@ serve(async (req) => {
         tijdelijk_wachtwoord: body.password,
         aangemaakt_door: `${profile.voornaam ?? ""} ${profile.achternaam ?? ""}`.trim() || profile.email,
         trial_dagen: effectieveTrialDagen,
+        bron: "affiliate",
       },
     });
     if (signupRes.error) {

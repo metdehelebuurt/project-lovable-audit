@@ -81,6 +81,8 @@ serve(async (req) => {
         contactpersoon_email: user.email,
         licentie_adviseurs: 2,
         licentie_installateurs: 2,
+        trial_bron: "google_oauth",
+        trial_aangemaakt_op: trialStart.toISOString(),
       })
       .select("id")
       .single();

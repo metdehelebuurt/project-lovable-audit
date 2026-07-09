@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, ExternalLink, StickyNote, User2 } from "lucide-react";
 import type { SalesTrialPartner } from "@/hooks/sales/useSalesTrials";
 import UpsellBadge from "@/components/sales/UpsellBadge";
+import { bepaalBron, TRIAL_BRON_KLEUR, TRIAL_BRON_KORT } from "@/lib/sales/trialBron";
 
 interface Props {
   trials: SalesTrialPartner[];
@@ -64,6 +65,12 @@ export default function TrialsTabel({ trials, upsells, notitiesPerPartner, onOpe
                 </Link>
                 {dagenBadge(dagen)}
                 {upsell?.heeft_smartaccu === false && <UpsellBadge compact />}
+                {(() => {
+                  const b = bepaalBron(t);
+                  return (
+                    <Badge className={`${TRIAL_BRON_KLEUR[b]} border`}>{TRIAL_BRON_KORT[b]}</Badge>
+                  );
+                })()}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
                 {t.plaats && (

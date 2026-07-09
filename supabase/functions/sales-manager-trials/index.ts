@@ -34,7 +34,8 @@ Deno.serve(async (req) => {
       .from('partners')
       .select(`id, naam, email, telefoonnummer, contactpersoon_voornaam, contactpersoon_achternaam,
                contactpersoon_email, contactpersoon_telefoon, contactpersoon_functie,
-               plaats, postcode, adres, website, kvk, status, trial_einddatum, created_at`)
+               plaats, postcode, adres, website, kvk, status, trial_einddatum, trial_bron,
+               trial_aangemaakt_op, created_at`)
       .not('trial_einddatum', 'is', null)
       .gte('trial_einddatum', grens)
       .order('trial_einddatum', { ascending: true })
