@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, Mail, Phone, Globe, MapPin, FileText, Handshake, Clock, History } from "lucide-react";
+import { ArrowLeft, Building2, Mail, Phone, FileText, Handshake, Clock, History, UserCheck, Sparkles, CalendarClock } from "lucide-react";
 import { PromotePartnerToAffiliateButton } from "@/components/affiliate/PromotePartnerToAffiliateButton";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -48,11 +48,6 @@ export default function PartnerDetail() {
     enabled: !!id,
   });
 
-  if (isLoading) return <div className="p-6 text-muted-foreground">Laden...</div>;
-  if (!partner) return <div className="p-6">Partner niet gevonden.</div>;
-
-  const contact = [partner.contactpersoon_voornaam, partner.contactpersoon_achternaam].filter(Boolean).join(" ");
-
   const { data: historie } = useQuery({
     queryKey: ["partner-historie", id],
     queryFn: async () => {
@@ -69,13 +64,99 @@ export default function PartnerDetail() {
     enabled: !!id,
   });
 
+  // Aanbrenger (affiliate referral)
+  const { data: referral } = useQuery({
+    queryKey: ["partner-referral", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("affiliate_referrals")
+        .select("id, created_at, affiliate_id, affiliate_link_id")
+        .eq("partner_id", id!)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (!data) return null;
+      const [{ data: aff }, { data: link }] = await Promise.all([
+        supabase.from("users").select("voornaam, achternaam, email").eq("id", data.affiliate_id).maybeSingle(),
+        data.affiliate_link_id
+          ? supabase.from("affiliate_links").select("code").eq("id", data.affiliate_link_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      return { ...data, affiliate: aff, link };
+    },
+    enabled: !!id,
+  });
+
+  // Wie heeft trial aangemaakt / demo geseed
+  const trialDoorId = (partner as any)?.trial_aangemaakt_door_id ?? null;
+  const demoDoorId = (partner as any)?.demo_data_geseed_door_id ?? null;
+  const userIds = Array.from(new Set([trialDoorId, demoDoorId].filter(Boolean))) as string[];
+  const { data: users } = useQuery({
+    queryKey: ["partner-actor-users", id, userIds.join(",")],
+    queryFn: async () => {
+      if (userIds.length === 0) return {} as Record<string, { voornaam: string | null; achternaam: string | null; email: string }>;
+      const { data } = await supabase.from("users").select("id, voornaam, achternaam, email").in("id", userIds);
+      const map: Record<string, any> = {};
+      (data ?? []).forEach((u: any) => { map[u.id] = u; });
+      return map;
+    },
+    enabled: !!id && userIds.length > 0,
+  });
+
+  if (isLoading) return <div className="p-6 text-muted-foreground">Laden...</div>;
+  if (!partner) return <div className="p-6">Partner niet gevonden.</div>;
+
+  const contact = [partner.contactpersoon_voornaam, partner.contactpersoon_achternaam].filter(Boolean).join(" ");
+
+  const userLabel = (uid: string | null | undefined) => {
+    if (!uid) return null;
+    const u = users?.[uid];
+    if (!u) return "Onbekende gebruiker";
+    const naam = [u.voornaam, u.achternaam].filter(Boolean).join(" ");
+    return naam || u.email;
+  };
+
+  const trialAangemaaktOp = (partner as any).trial_aangemaakt_op as string | null;
+  const demoGeseedOp = (partner as any).demo_data_geseed_op as string | null;
+
+  const trialEinde = partner.trial_einddatum ? new Date(partner.trial_einddatum) : null;
+  const trialDagenResterend = trialEinde
+    ? Math.ceil((trialEinde.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isTrial = partner.abonnement_type === "trial";
+  const trialVerlopen = isTrial && trialDagenResterend !== null && trialDagenResterend < 0;
+
+  let klantStatusLabel = statusLabels[partner.status];
+  let klantStatusClass = statusColors[partner.status];
+  if (isTrial) {
+    if (trialVerlopen) {
+      klantStatusLabel = "Trial verlopen";
+      klantStatusClass = "bg-error-light text-error";
+    } else if (trialDagenResterend !== null) {
+      klantStatusLabel = `Trial actief · nog ${trialDagenResterend} ${trialDagenResterend === 1 ? "dag" : "dagen"}`;
+      klantStatusClass = trialDagenResterend <= 7 ? "bg-warning-light text-warning-foreground" : "bg-success-light text-success";
+    } else {
+      klantStatusLabel = "Trial actief";
+      klantStatusClass = "bg-success-light text-success";
+    }
+  } else if (partner.abonnement_type) {
+    klantStatusLabel = `Betalend · ${partner.abonnement_type}`;
+    klantStatusClass = "bg-primary/10 text-primary";
+  }
+
   const formatDateTime = (iso: string | null | undefined) =>
     iso ? new Date(iso).toLocaleString("nl-NL", { dateStyle: "medium", timeStyle: "short" }) : "—";
+  const formatDate = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleDateString("nl-NL", { dateStyle: "medium" }) : "—";
+
+  const aanbrengerNaam = referral?.affiliate
+    ? [referral.affiliate.voornaam, referral.affiliate.achternaam].filter(Boolean).join(" ") || referral.affiliate.email
+    : null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/partners")} className="gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2">
           <ArrowLeft className="h-4 w-4" /> Terug
         </Button>
       </div>
@@ -88,9 +169,15 @@ export default function PartnerDetail() {
           <div>
             <h1 className="text-2xl font-semibold text-foreground">{partner.naam}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge className={statusColors[partner.status]}>{statusLabels[partner.status]}</Badge>
+              <Badge className={klantStatusClass}>{klantStatusLabel}</Badge>
+              <Badge variant="outline">{statusLabels[partner.status]}</Badge>
               {partner.abonnement_type && (
                 <Badge variant="outline" className="capitalize">{partner.abonnement_type}</Badge>
+              )}
+              {demoGeseedOp && (
+                <Badge variant="outline" className="gap-1">
+                  <Sparkles className="h-3 w-3" /> Demo-data aanwezig
+                </Badge>
               )}
               {partner.is_affiliate && (
                 <Badge className="bg-primary/10 text-primary border-0 gap-1">
@@ -111,6 +198,58 @@ export default function PartnerDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="rounded-2xl border-0 shadow-sm lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserCheck className="h-4 w-4" /> Sales &amp; Onboarding
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SalesRow
+              icon={<Handshake className="h-4 w-4" />}
+              label="Aangebracht door"
+              primary={aanbrengerNaam ? `${aanbrengerNaam} (affiliate)` : "Direct aangemeld"}
+              secondary={
+                referral
+                  ? `${referral.link?.code ? `via link "${referral.link.code}" · ` : ""}${formatDate(referral.created_at)}`
+                  : "Geen affiliate-referral"
+              }
+            />
+            <SalesRow
+              icon={<UserCheck className="h-4 w-4" />}
+              label="Trial aangemaakt"
+              primary={userLabel(trialDoorId) ?? (trialAangemaaktOp ? "Zelf aangemeld (selfservice)" : "Onbekend")}
+              secondary={formatDateTime(trialAangemaaktOp)}
+            />
+            <SalesRow
+              icon={<CalendarClock className="h-4 w-4" />}
+              label="Trial periode"
+              primary={
+                partner.contract_startdatum || partner.trial_einddatum
+                  ? `${formatDate(partner.contract_startdatum)} → ${formatDate(partner.trial_einddatum)}`
+                  : "Geen trial actief"
+              }
+              secondary={
+                trialDagenResterend === null
+                  ? undefined
+                  : trialVerlopen
+                    ? `Verlopen sinds ${Math.abs(trialDagenResterend)} dagen`
+                    : `Nog ${trialDagenResterend} ${trialDagenResterend === 1 ? "dag" : "dagen"}`
+              }
+            />
+            <SalesRow
+              icon={<Sparkles className="h-4 w-4" />}
+              label="Demo-data"
+              primary={
+                demoGeseedOp
+                  ? `Geseed door ${userLabel(demoDoorId) ?? "systeem"}`
+                  : "Nog niet geseed"
+              }
+              secondary={demoGeseedOp ? formatDateTime(demoGeseedOp) : undefined}
+            />
+          </CardContent>
+        </Card>
+
         <Card className="rounded-2xl border-0 shadow-sm lg:col-span-2">
           <CardHeader><CardTitle className="text-base">Bedrijfsgegevens</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
