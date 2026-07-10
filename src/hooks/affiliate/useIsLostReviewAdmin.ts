@@ -4,6 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 export function useIsLostReviewAdmin() {
   const { profile } = useAuth();
   if (!profile) return false;
-  if (profile.rol === "superadmin" || profile.rol === "sales_manager") return true;
+  if (
+    profile.rol === "superadmin" ||
+    profile.rol === "sales_manager" ||
+    profile.rol === "sales_admin"
+  ) return true;
   return profile.email?.toLowerCase() === "bas@mijnhuis.nu";
 }
