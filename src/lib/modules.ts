@@ -22,7 +22,7 @@ export const MODULES: ModuleDefinition[] = [
   { key: "klanten", label: "Klanten", groep: "Relatiebeheer", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur"], configurable: true },
   { key: "berichten", label: "Berichten", groep: "Relatiebeheer", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"], configurable: true },
   { key: "schouwen", label: "Schouwen", groep: "Werkproces", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument"], configurable: true },
-  { key: "offertes", label: "Offertes", groep: "Werkproces", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "consument", "affiliate"], configurable: true },
+  { key: "offertes", label: "Offertes", groep: "Werkproces", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "consument", "affiliate", "sales_manager"], configurable: true },
   { key: "opdrachten", label: "Opdrachten", groep: "Werkproces", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"], configurable: true },
   { key: "installaties", label: "Installaties", groep: "Werkproces", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"], configurable: true },
   { key: "opleveringen", label: "Opleveringen", groep: "Werkproces", defaultRoles: ["superadmin", "partner_admin", "backoffice", "partner_staff", "installateur"], configurable: true },
