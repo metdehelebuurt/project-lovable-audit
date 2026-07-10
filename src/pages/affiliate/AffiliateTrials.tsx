@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
 import { useIsLostReviewAdmin } from "@/hooks/affiliate/useIsLostReviewAdmin";
+import SalesTrials from "@/pages/sales/Trials";
 
 interface ReferralRow {
   id: string;
@@ -57,7 +58,16 @@ const AffiliateTrials = () => {
   const { user } = useAuth();
   const isSalesManager = useIsLostReviewAdmin(); // superadmin | sales_manager | bas@mijnhuis.nu
 
-  if (isSalesManager) return <SalesManagerTrials />;
+  if (isSalesManager) {
+    // Zelfde weergave als /sales/trials zodat iedereen met sales-toegang exact
+    // dezelfde lijst, filters en KPI-tellers ziet.
+    return (
+      <div className="p-6 space-y-4">
+        <AffiliateSubnav />
+        <SalesTrials />
+      </div>
+    );
+  }
 
   const { data: referrals = [] } = useQuery({
     queryKey: ["affiliate-trials", user?.id],
