@@ -395,10 +395,10 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><AffiliateBeheer /></ProtectedRoute>
               } />
               <Route path="/sales" element={
-                <ProtectedRoute allowedRoles={["superadmin"]}><Sales /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><Sales /></ProtectedRoute>
               } />
               <Route path="/sales/leads/:id" element={
-                <ProtectedRoute allowedRoles={["superadmin"]}><SalesLeadDetail /></ProtectedRoute>
+                <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><SalesLeadDetail /></ProtectedRoute>
               } />
               <Route path="/sales/agenda" element={
                 <ProtectedRoute allowedRoles={["superadmin","sales_manager"]}><SalesAgenda /></ProtectedRoute>
