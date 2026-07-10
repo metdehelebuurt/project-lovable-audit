@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import TemperatuurBadge from "@/components/sales/TemperatuurBadge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -253,6 +254,7 @@ const AffiliateBellen = () => {
                   ) : (
                     <Badge variant="secondary">{STATUS_LABEL[current.status]}</Badge>
                   )}
+                  <TemperatuurBadge temperatuur={current.temperatuur as any} />
                   {current.branche && <Badge variant="secondary" className="gap-1"><Briefcase className="h-3 w-3" />{current.branche}</Badge>}
                   {current.regio && <Badge variant="secondary" className="gap-1"><MapPin className="h-3 w-3" />{current.regio}</Badge>}
                   {current.website && (
