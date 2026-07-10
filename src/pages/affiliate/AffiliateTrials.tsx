@@ -1,11 +1,8 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { AlertCircle, Phone, Mail, Search, MapPin, User, ExternalLink } from "lucide-react";
+import { AlertCircle, Phone, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
@@ -27,32 +24,7 @@ interface ReferralRow {
   } | null;
 }
 
-interface SalesTrialRow {
-  id: string;
-  naam: string | null;
-  email: string | null;
-  telefoonnummer: string | null;
-  contactpersoon_voornaam: string | null;
-  contactpersoon_achternaam: string | null;
-  contactpersoon_email: string | null;
-  contactpersoon_telefoon: string | null;
-  contactpersoon_functie: string | null;
-  plaats: string | null;
-  postcode: string | null;
-  adres: string | null;
-  website: string | null;
-  kvk: string | null;
-  status: string | null;
-  trial_einddatum: string | null;
-  created_at: string;
-  affiliate: {
-    affiliate_id: string;
-    commissie_percentage: number | null;
-    voornaam: string | null;
-    achternaam: string | null;
-    email: string | null;
-  } | null;
-}
+
 
 const AffiliateTrials = () => {
   const { user } = useAuth();
