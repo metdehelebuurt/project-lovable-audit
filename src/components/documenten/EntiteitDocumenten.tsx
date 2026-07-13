@@ -348,7 +348,7 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
                       canTag={canTag}
                       onTagsChange={(doc, tags) => tagsMutation.mutate({ id: doc.id, tags })}
                       tagsPending={tagsMutation.isPending}
-                      canEditMeta={canRename}
+                      canEditMeta={canUpload || d.geupload_door_id === profile?.id}
                       onEditMeta={openMeta}
                     />
                   ))}
@@ -374,7 +374,7 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
                       canTag={canTag}
                       onTagsChange={(doc, tags) => tagsMutation.mutate({ id: doc.id, tags })}
                       tagsPending={tagsMutation.isPending}
-                      canEditMeta={canRename}
+                      canEditMeta={canUpload || d.geupload_door_id === profile?.id}
                       onEditMeta={openMeta}
                     />
                   ))}
