@@ -52,11 +52,15 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
   const [file, setFile] = useState<File | null>(null);
   const [docType, setDocType] = useState<DocumentType>("overig");
   const [beschrijving, setBeschrijving] = useState("");
+  const [locatie, setLocatie] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteDoc, setDeleteDoc] = useState<Document | null>(null);
+  const [metaDoc, setMetaDoc] = useState<Document | null>(null);
+  const [metaBeschrijving, setMetaBeschrijving] = useState("");
+  const [metaLocatie, setMetaLocatie] = useState("");
   const [localOrder, setLocalOrder] = useState<Document[] | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
     if (typeof window === "undefined") return "list";
@@ -101,7 +105,7 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
   const geordend = useMemo(() => localOrder ?? documenten, [localOrder, documenten]);
 
   const resetForm = () => {
-    setFile(null); setDocType("overig"); setBeschrijving("");
+    setFile(null); setDocType("overig"); setBeschrijving(""); setLocatie("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -128,6 +132,7 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
         mime_type: file.type,
         geupload_door_id: profile!.id,
         beschrijving: beschrijving || null,
+        locatie: locatie || null,
         volgorde: nextVolgorde,
       } as any);
       if (error) throw error;
@@ -187,6 +192,31 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
     },
     onError: (err: Error) => toast.error("Wijzigen mislukt", { description: err.message }),
   });
+
+  const metaMutation = useMutation({
+    mutationFn: async ({ id, beschrijving, locatie }: { id: string; beschrijving: string; locatie: string }) => {
+      const { error } = await supabase
+        .from("documenten")
+        .update({
+          beschrijving: beschrijving.trim() || null,
+          locatie: locatie.trim() || null,
+        } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("Details opgeslagen");
+      setMetaDoc(null);
+    },
+    onError: (err: Error) => toast.error("Opslaan mislukt", { description: err.message }),
+  });
+
+  const openMeta = (d: Document) => {
+    setMetaDoc(d);
+    setMetaBeschrijving((d as any).beschrijving ?? "");
+    setMetaLocatie((d as any).locatie ?? "");
+  };
 
   const tagsMutation = useMutation({
     mutationFn: async ({ id, tags }: { id: string; tags: string[] }) => {
@@ -318,6 +348,8 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
                       canTag={canTag}
                       onTagsChange={(doc, tags) => tagsMutation.mutate({ id: doc.id, tags })}
                       tagsPending={tagsMutation.isPending}
+                      canEditMeta={canRename}
+                      onEditMeta={openMeta}
                     />
                   ))}
                 </div>
@@ -342,6 +374,8 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
                       canTag={canTag}
                       onTagsChange={(doc, tags) => tagsMutation.mutate({ id: doc.id, tags })}
                       tagsPending={tagsMutation.isPending}
+                      canEditMeta={canRename}
+                      onEditMeta={openMeta}
                     />
                   ))}
                 </div>
@@ -414,6 +448,30 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
                 placeholder="Korte beschrijving van het bestand"
               />
             </div>
+            <div>
+              <Label>Locatie (optioneel)</Label>
+              <Input
+                value={locatie}
+                onChange={(e) => setLocatie(e.target.value)}
+                className="rounded-xl"
+                placeholder="Bijv. Meterkast, Zolder, Voorgevel"
+                list="doc-locatie-suggesties"
+              />
+              <datalist id="doc-locatie-suggesties">
+                <option value="Meterkast" />
+                <option value="Zolder" />
+                <option value="Dak" />
+                <option value="Voorgevel" />
+                <option value="Achtergevel" />
+                <option value="Woonkamer" />
+                <option value="Keuken" />
+                <option value="Kruipruimte" />
+                <option value="Batterijlocatie" />
+                <option value="Omvormerlocatie" />
+                <option value="Buitenunit" />
+                <option value="Binnenunit" />
+              </datalist>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-pill">Annuleren</Button>
@@ -423,6 +481,46 @@ export default function EntiteitDocumenten({ entityType, entityId, title = "Docu
               className="rounded-pill"
             >
               {uploadMutation.isPending ? "Uploaden..." : "Uploaden"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!metaDoc} onOpenChange={(o) => !o && setMetaDoc(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Details bewerken</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Beschrijving</Label>
+              <Textarea
+                value={metaBeschrijving}
+                onChange={(e) => setMetaBeschrijving(e.target.value)}
+                className="rounded-xl"
+                rows={3}
+                placeholder="Wat is te zien op deze foto of wat bevat dit document?"
+              />
+            </div>
+            <div>
+              <Label>Locatie</Label>
+              <Input
+                value={metaLocatie}
+                onChange={(e) => setMetaLocatie(e.target.value)}
+                className="rounded-xl"
+                placeholder="Bijv. Meterkast, Zolder, Voorgevel"
+                list="doc-locatie-suggesties"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMetaDoc(null)} className="rounded-pill">Annuleren</Button>
+            <Button
+              onClick={() => metaDoc && metaMutation.mutate({ id: metaDoc.id, beschrijving: metaBeschrijving, locatie: metaLocatie })}
+              disabled={metaMutation.isPending}
+              className="rounded-pill"
+            >
+              {metaMutation.isPending ? "Opslaan..." : "Opslaan"}
             </Button>
           </DialogFooter>
         </DialogContent>
