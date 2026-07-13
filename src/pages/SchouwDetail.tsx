@@ -232,8 +232,14 @@ const SchouwDetail = () => {
                         onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
                       />
                     )}
-                    {label && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm px-2 py-1.5 text-xs font-medium">{label}</div>
+                    {(label || f.locatie || f.beschrijving) && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-background/85 backdrop-blur-sm px-2 py-1.5 space-y-0.5">
+                        {label && <p className="text-xs font-medium truncate">{label}</p>}
+                        {f.locatie && <p className="text-[10px] text-primary font-medium truncate">📍 {f.locatie}</p>}
+                        {f.beschrijving && f.beschrijving !== label && (
+                          <p className="text-[10px] text-muted-foreground line-clamp-2">{f.beschrijving}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 );
