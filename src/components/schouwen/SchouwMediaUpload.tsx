@@ -11,6 +11,8 @@ export interface SchouwFoto {
   url: string;
   label: string;
   uploaded_at: string;
+  beschrijving?: string;
+  locatie?: string;
 }
 
 interface SchouwMediaUploadProps {
@@ -23,10 +25,14 @@ interface SchouwMediaUploadProps {
 const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwMediaUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [label, setLabel] = useState("");
+  const [locatie, setLocatie] = useState("");
+  const [beschrijving, setBeschrijving] = useState("");
 
-  // Inline label editing state
+  // Inline edit state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
+  const [editingLocatie, setEditingLocatie] = useState("");
+  const [editingBeschrijving, setEditingBeschrijving] = useState("");
 
   // Video recording state
   const [showRecorder, setShowRecorder] = useState(false);
@@ -80,12 +86,16 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
       newFotos.push({
         url: publicUrl,
         label: label || file.name,
+        locatie: locatie || undefined,
+        beschrijving: beschrijving || undefined,
         uploaded_at: new Date().toISOString(),
       });
     }
 
     onFotosChange(newFotos);
     setLabel("");
+    setLocatie("");
+    setBeschrijving("");
     setUploading(false);
     toast.success("Bestanden geüpload");
     e.target.value = "";
@@ -99,21 +109,34 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
   const startEditLabel = (index: number) => {
     setEditingIndex(index);
     setEditingLabel(fotos[index].label);
+    setEditingLocatie(fotos[index].locatie ?? "");
+    setEditingBeschrijving(fotos[index].beschrijving ?? "");
   };
 
   const saveEditLabel = () => {
     if (editingIndex === null) return;
     const updated = fotos.map((f, i) =>
-      i === editingIndex ? { ...f, label: editingLabel.trim() || f.label } : f
+      i === editingIndex
+        ? {
+            ...f,
+            label: editingLabel.trim() || f.label,
+            locatie: editingLocatie.trim() || undefined,
+            beschrijving: editingBeschrijving.trim() || undefined,
+          }
+        : f
     );
     onFotosChange(updated);
     setEditingIndex(null);
     setEditingLabel("");
+    setEditingLocatie("");
+    setEditingBeschrijving("");
   };
 
   const cancelEditLabel = () => {
     setEditingIndex(null);
     setEditingLabel("");
+    setEditingLocatie("");
+    setEditingBeschrijving("");
   };
 
   // ─── Video recording ───
@@ -209,6 +232,8 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
     onFotosChange([...fotos, {
       url: publicUrl,
       label: label || `Video opname ${new Date().toLocaleTimeString("nl-NL")}`,
+        locatie: locatie || undefined,
+        beschrijving: beschrijving || undefined,
       uploaded_at: new Date().toISOString(),
     }]);
     setUploadingVideo(false);
@@ -217,8 +242,10 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
     if (recordedUrl) URL.revokeObjectURL(recordedUrl);
     setRecordedUrl(null);
     setLabel("");
+      setLocatie("");
+      setBeschrijving("");
     toast.success("Video opgeslagen");
-  }, [recordedBlob, recordedUrl, schouwId, fotos, onFotosChange, label]);
+  }, [recordedBlob, recordedUrl, schouwId, fotos, onFotosChange, label, locatie, beschrijving]);
 
   const openRecorder = useCallback(() => {
     setRecordedBlob(null);
@@ -251,18 +278,54 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
-        <div className="flex-1">
-          <Label>Label voor nieuwe uploads (optioneel)</Label>
+      <div className="rounded-xl border bg-muted/20 p-3 space-y-3">
+        <p className="text-xs font-medium text-muted-foreground">Details voor nieuwe uploads (optioneel)</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">Label</Label>
+            <Input
+              value={label}
+              onChange={e => setLabel(e.target.value)}
+              placeholder="bijv. Dakconstructie oostzijde"
+              className="rounded-xl"
+              disabled={disabled}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Locatie</Label>
+            <Input
+              value={locatie}
+              onChange={e => setLocatie(e.target.value)}
+              placeholder="bijv. Meterkast, Zolder, Voorgevel"
+              className="rounded-xl"
+              disabled={disabled}
+              list="schouw-foto-locaties"
+            />
+            <datalist id="schouw-foto-locaties">
+              <option value="Meterkast" />
+              <option value="Zolder" />
+              <option value="Dak" />
+              <option value="Voorgevel" />
+              <option value="Achtergevel" />
+              <option value="Kruipruimte" />
+              <option value="Batterijlocatie" />
+              <option value="Omvormerlocatie" />
+              <option value="Buitenunit" />
+              <option value="Binnenunit" />
+            </datalist>
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Beschrijving / doel van foto</Label>
           <Input
-            value={label}
-            onChange={e => setLabel(e.target.value)}
-            placeholder="bijv. Meterkast, Dakconstructie"
+            value={beschrijving}
+            onChange={e => setBeschrijving(e.target.value)}
+            placeholder="bijv. Aansluitpunt controleren, bekabeling zichtbaar"
             className="rounded-xl"
             disabled={disabled}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-end">
           <label className="inline-flex">
             <input
               type="file"
@@ -320,37 +383,62 @@ const SchouwMediaUpload = ({ schouwId, fotos, onFotosChange, disabled }: SchouwM
               {/* Label area — inline editable */}
               <div className="px-2 py-1.5 bg-background border-t">
                 {editingIndex === i ? (
-                  <div className="flex items-center gap-1">
+                  <div className="space-y-1">
                     <Input
                       value={editingLabel}
                       onChange={e => setEditingLabel(e.target.value)}
                       className="h-6 text-xs rounded px-1"
                       autoFocus
+                      placeholder="Label"
                       onKeyDown={e => {
                         if (e.key === "Enter") saveEditLabel();
                         if (e.key === "Escape") cancelEditLabel();
                       }}
                     />
-                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={saveEditLabel}>
-                      <Check className="h-3 w-3" />
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={cancelEditLabel}>
-                      <X className="h-3 w-3" />
-                    </Button>
+                    <Input
+                      value={editingLocatie}
+                      onChange={e => setEditingLocatie(e.target.value)}
+                      className="h-6 text-xs rounded px-1"
+                      placeholder="Locatie (bijv. Meterkast)"
+                      list="schouw-foto-locaties"
+                    />
+                    <Input
+                      value={editingBeschrijving}
+                      onChange={e => setEditingBeschrijving(e.target.value)}
+                      className="h-6 text-xs rounded px-1"
+                      placeholder="Beschrijving / doel"
+                    />
+                    <div className="flex justify-end gap-1">
+                      <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={saveEditLabel}>
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={cancelEditLabel}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1">
-                    <p className="text-xs truncate flex-1 text-muted-foreground">{foto.label}</p>
-                    {!disabled && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100"
-                        onClick={(e) => { e.stopPropagation(); startEditLabel(i); }}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs font-medium truncate flex-1 text-foreground">{foto.label}</p>
+                      {!disabled && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100"
+                          onClick={(e) => { e.stopPropagation(); startEditLabel(i); }}
+                          aria-label="Bewerken"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    {foto.locatie && (
+                      <p className="text-[10px] text-primary font-medium truncate">📍 {foto.locatie}</p>
+                    )}
+                    {foto.beschrijving && (
+                      <p className="text-[10px] text-muted-foreground line-clamp-2">{foto.beschrijving}</p>
                     )}
                   </div>
                 )}

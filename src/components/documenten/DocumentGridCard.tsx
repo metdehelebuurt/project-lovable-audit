@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   FileText, Download, ExternalLink, Trash2, Pencil, Check, X, GripVertical,
-  Tag as TagIcon, Plus,
+  Tag as TagIcon, Plus, Info,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -37,12 +37,14 @@ interface Props {
   canTag: boolean;
   onTagsChange: (d: Document, tags: string[]) => void;
   tagsPending: boolean;
+  canEditMeta?: boolean;
+  onEditMeta?: (d: Document) => void;
 }
 
 const DocumentGridCard = ({
   doc: d, editing, renameValue, renamePending, canRename, canReorder, mayDelete,
   onPreview, onStartRename, onCancelRename, onRenameChange, onRenameSubmit, onDeleteRequest,
-  canTag, onTagsChange, tagsPending,
+  canTag, onTagsChange, tagsPending, canEditMeta, onEditMeta,
 }: Props) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: d.id });
   const style: React.CSSProperties = {
@@ -122,6 +124,17 @@ const DocumentGridCard = ({
           <p className="text-xs font-medium truncate" title={d.naam}>{d.naam}</p>
         )}
 
+        {(d as any).locatie && (
+          <p className="text-[10px] text-primary font-medium truncate" title={(d as any).locatie}>
+            📍 {(d as any).locatie}
+          </p>
+        )}
+        {(d as any).beschrijving && (
+          <p className="text-[10px] text-muted-foreground line-clamp-2" title={(d as any).beschrijving}>
+            {(d as any).beschrijving}
+          </p>
+        )}
+
         {(tags.length > 0 || canTag) && (
           <div className="flex items-center gap-1 flex-wrap">
             {tags.map((t) => (
@@ -167,6 +180,11 @@ const DocumentGridCard = ({
           {canRename && !editing && (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onStartRename(d)} aria-label="Naam wijzigen">
               <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {canEditMeta && onEditMeta && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditMeta(d)} aria-label="Beschrijving en locatie bewerken" title="Beschrijving & locatie">
+              <Info className="h-3.5 w-3.5" />
             </Button>
           )}
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>

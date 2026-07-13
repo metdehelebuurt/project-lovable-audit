@@ -2087,6 +2087,7 @@ export type Database = {
           entity_type: Database["public"]["Enums"]["document_entity_type"]
           geupload_door_id: string
           id: string
+          locatie: string | null
           mime_type: string | null
           naam: string
           partner_id: string
@@ -2105,6 +2106,7 @@ export type Database = {
           entity_type: Database["public"]["Enums"]["document_entity_type"]
           geupload_door_id: string
           id?: string
+          locatie?: string | null
           mime_type?: string | null
           naam: string
           partner_id: string
@@ -2123,6 +2125,7 @@ export type Database = {
           entity_type?: Database["public"]["Enums"]["document_entity_type"]
           geupload_door_id?: string
           id?: string
+          locatie?: string | null
           mime_type?: string | null
           naam?: string
           partner_id?: string

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, ExternalLink, Trash2, Pencil, Check, X, GripVertical, Tag as TagIcon, Plus } from "lucide-react";
+import { Info } from "lucide-react";
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Database } from "@/integrations/supabase/types";
@@ -41,12 +42,14 @@ interface Props {
   canTag: boolean;
   onTagsChange: (d: Document, tags: string[]) => void;
   tagsPending: boolean;
+  canEditMeta?: boolean;
+  onEditMeta?: (d: Document) => void;
 }
 
 const SortableDocumentRow = ({
   doc: d, editing, renameValue, renamePending, canRename, canReorder, mayDelete,
   onPreview, onStartRename, onCancelRename, onRenameChange, onRenameSubmit, onDeleteRequest,
-  canTag, onTagsChange, tagsPending,
+  canTag, onTagsChange, tagsPending, canEditMeta, onEditMeta,
 }: Props) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: d.id });
   const style: React.CSSProperties = {
@@ -140,7 +143,13 @@ const SortableDocumentRow = ({
           <span>{formatSize(d.bestand_grootte)}</span>
           <span>•</span>
           <span>{new Date(d.created_at).toLocaleDateString("nl-NL")}</span>
+          {(d as any).locatie && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">📍 {(d as any).locatie}</Badge>
+          )}
         </div>
+        {(d as any).beschrijving && (
+          <p className="text-xs text-foreground/80 mt-1 line-clamp-2">{(d as any).beschrijving}</p>
+        )}
         {(tags.length > 0 || canTag) && (
           <div className="flex items-center gap-1 mt-2 flex-wrap">
             {tags.map((t) => (
@@ -195,6 +204,11 @@ const SortableDocumentRow = ({
         {canRename && !editing && (
           <Button variant="ghost" size="icon" onClick={() => onStartRename(d)} aria-label="Naam wijzigen">
             <Pencil className="h-4 w-4" />
+          </Button>
+        )}
+        {canEditMeta && onEditMeta && (
+          <Button variant="ghost" size="icon" onClick={() => onEditMeta(d)} aria-label="Beschrijving en locatie bewerken" title="Beschrijving & locatie">
+            <Info className="h-4 w-4" />
           </Button>
         )}
         <Button variant="ghost" size="icon" asChild>
