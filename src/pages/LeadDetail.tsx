@@ -166,8 +166,14 @@ const LeadDetail = () => {
         .from("lead_contactmomenten" as any)
         .select("*, user:users(voornaam, achternaam)")
         .eq("lead_id", id!)
+        .order("gebeurd_op", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
-      return (data || []) as any[];
+      const rows = (data || []) as any[];
+      return rows.slice().sort((a, b) => {
+        const ad = new Date(a.gebeurd_op ?? a.created_at).getTime();
+        const bd = new Date(b.gebeurd_op ?? b.created_at).getTime();
+        return bd - ad;
+      });
     },
     enabled: !!id,
   });
