@@ -25,7 +25,6 @@ import AssemblageConfigurator from "@/components/producten/AssemblageConfigurato
 import ConfiguratorPreview from "@/components/producten/AssemblageConfigurator/ConfiguratorPreview";
 import { CONFIGURATOR_TEMPLATES, type ConfigureerbaarType } from "@/lib/assemblage/typeTemplates";
 import ProductImageUpload from "@/components/producten/ProductImageUpload";
-import ProductImage from "@/components/producten/ProductImage";
 
 type ProductRow = {
   id: string;
