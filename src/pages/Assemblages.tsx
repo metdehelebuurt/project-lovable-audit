@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVoorraadOverzicht } from "@/hooks/voorraad/useVoorraad";
 import { useAssemblages, useDuplicateAssemblage } from "@/hooks/producten/useAssemblages";
 import { formatCurrency } from "@/types/offerte";
+import { CONFIGURATOR_TEMPLATES, type ConfigureerbaarType } from "@/lib/assemblage/typeTemplates";
 
 export default function Assemblages() {
   const { profile } = useAuth();
@@ -79,6 +80,7 @@ export default function Assemblages() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Naam</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Componenten</TableHead>
                   <TableHead>Verkoopprijs</TableHead>
                   <TableHead>Kostprijs (som)</TableHead>
@@ -100,6 +102,17 @@ export default function Assemblages() {
                       <TableCell className="font-medium">
                         {a.naam}
                         {a.merk && <span className="text-xs text-muted-foreground ml-2">{a.merk}</span>}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const t = (a.configureerbaar_type as ConfigureerbaarType) ?? "custom";
+                          const tpl = CONFIGURATOR_TEMPLATES[t];
+                          return (
+                            <Badge variant="outline" className="text-xs">
+                              {tpl?.label ?? t}
+                            </Badge>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{a.aantal_componenten ?? 0}</TableCell>
                       <TableCell>{formatCurrency(verkoop)}</TableCell>
