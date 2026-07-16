@@ -24,6 +24,7 @@ import {
 import AssemblageConfigurator from "@/components/producten/AssemblageConfigurator";
 import ConfiguratorPreview from "@/components/producten/AssemblageConfigurator/ConfiguratorPreview";
 import { CONFIGURATOR_TEMPLATES, type ConfigureerbaarType } from "@/lib/assemblage/typeTemplates";
+import ProductImageUpload from "@/components/producten/ProductImageUpload";
 
 type ProductRow = {
   id: string;
@@ -38,6 +39,7 @@ type ProductRow = {
   afbeelding_url: string | null;
   status: string;
   is_assemblage: boolean;
+  afbeeldingen?: string[] | null;
 };
 
 const CATEGORIEEN: { value: string; label: string }[] = [
@@ -72,6 +74,8 @@ export default function AssemblageEditor() {
   const [websiteOmschrijving, setWebsiteOmschrijving] = useState<string>("");
   const [configureerbaarType, setConfigureerbaarType] = useState<ConfigureerbaarType>("custom");
   const [templateAttributen, setTemplateAttributen] = useState<Record<string, unknown>>({});
+  const [afbeeldingUrl, setAfbeeldingUrl] = useState<string | null>(null);
+  const [afbeeldingen, setAfbeeldingen] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
 
   const { data: assemblage } = useQuery({
@@ -98,6 +102,12 @@ export default function AssemblageEditor() {
     setToonOpWebsite(Boolean(assemblage.toon_op_website));
     setWebsitePitch(assemblage.website_pitch ?? "");
     setWebsiteOmschrijving(assemblage.website_omschrijving ?? "");
+    setAfbeeldingUrl(assemblage.afbeelding_url ?? null);
+    setAfbeeldingen(
+      Array.isArray(assemblage.afbeeldingen)
+        ? (assemblage.afbeeldingen as string[])
+        : [],
+    );
     const type = (assemblage.configureerbaar_type as ConfigureerbaarType) ?? "custom";
     setConfigureerbaarType(CONFIGURATOR_TEMPLATES[type] ? type : "custom");
     setTemplateAttributen(
@@ -123,6 +133,8 @@ export default function AssemblageEditor() {
         toon_op_website: toonOpWebsite,
         website_pitch: websitePitch || null,
         website_omschrijving: websiteOmschrijving || null,
+        afbeelding_url: afbeeldingUrl,
+        afbeeldingen: afbeeldingen,
         is_assemblage: true,
         configureerbaar_type: configureerbaarType,
         template_attributen: templateAttributen,
@@ -365,6 +377,29 @@ export default function AssemblageEditor() {
 
       <ConfiguratorPreview assemblageId={assemblageId} dirty={dirty} />
 
+      {!isNew && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Productafbeeldingen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProductImageUpload
+              productId={assemblageId!}
+              mainImage={afbeeldingUrl}
+              galleryImages={afbeeldingen}
+              merk={merk || null}
+              naam={naam}
+              onMainImageChange={(url) => { setAfbeeldingUrl(url); markDirty(); }}
+              onGalleryChange={(urls) => { setAfbeeldingen(urls); markDirty(); }}
+            />
+            <p className="text-xs text-muted-foreground mt-3">
+              Tip: bij het toevoegen van componenten uit de catalogus vragen we of hun afbeeldingen
+              hier ook automatisch bij mogen komen.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -447,9 +482,36 @@ export default function AssemblageEditor() {
               <InlineProductPicker
                 partnerId={partnerId}
                 excludeIds={excludeIds}
-                onPick={(product_id) =>
-                  add.mutate({ assemblage_id: assemblageId!, component_id: product_id, aantal: 1 })
-                }
+                onPick={(product) => {
+                  add.mutate({ assemblage_id: assemblageId!, component_id: product.id, aantal: 1 });
+                  const gallery = Array.isArray(product.afbeeldingen) ? product.afbeeldingen : [];
+                  const beschikbaar = [product.afbeelding_url, ...gallery].filter(
+                    (u): u is string => !!u,
+                  );
+                  if (beschikbaar.length === 0) return;
+                  const alBekend = new Set([afbeeldingUrl, ...afbeeldingen].filter(Boolean));
+                  const nieuw = beschikbaar.filter((u) => !alBekend.has(u));
+                  if (nieuw.length === 0) return;
+                  const vraag = `"${product.naam}" heeft ${nieuw.length} afbeelding${nieuw.length === 1 ? "" : "en"}. Ook meenemen als productafbeelding van dit samengestelde product?`;
+                  if (!window.confirm(vraag)) return;
+                  const nieuweMain = afbeeldingUrl ?? nieuw[0];
+                  const nieuweGallery = Array.from(
+                    new Set([...afbeeldingen, ...nieuw.filter((u) => u !== nieuweMain)]),
+                  );
+                  setAfbeeldingUrl(nieuweMain);
+                  setAfbeeldingen(nieuweGallery);
+                  supabase
+                    .from("producten")
+                    .update({ afbeelding_url: nieuweMain, afbeeldingen: nieuweGallery })
+                    .eq("id", assemblageId!)
+                    .then(({ error }) => {
+                      if (error) toast.error(error.message);
+                      else {
+                        toast.success("Afbeeldingen overgenomen");
+                        qc.invalidateQueries({ queryKey: ["assemblage-detail"] });
+                      }
+                    });
+                }}
               />
             </>
           )}
@@ -466,7 +528,7 @@ function InlineProductPicker({
 }: {
   partnerId?: string | null;
   excludeIds: string[];
-  onPick: (id: string) => void;
+  onPick: (product: ProductRow) => void;
 }) {
   const [zoek, setZoek] = useState("");
   const [cat, setCat] = useState<string>("alle");
@@ -477,7 +539,7 @@ function InlineProductPicker({
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("producten")
-        .select("id, naam, merk, categorie, artikelnummer, model, prijs_excl_btw, kostprijs, heeft_serienummer, afbeelding_url, status, is_assemblage")
+        .select("id, naam, merk, categorie, artikelnummer, model, prijs_excl_btw, kostprijs, heeft_serienummer, afbeelding_url, afbeeldingen, status, is_assemblage")
         .eq("partner_id", partnerId!)
         .order("naam")
         .limit(2000);
@@ -549,7 +611,7 @@ function InlineProductPicker({
               key={p.id}
               type="button"
               className="w-full text-left px-3 py-2 hover:bg-muted/60 flex justify-between items-center gap-3"
-              onClick={() => onPick(p.id)}
+              onClick={() => onPick(p)}
             >
               <div className="flex items-center gap-3 min-w-0">
                 {p.afbeelding_url ? (
