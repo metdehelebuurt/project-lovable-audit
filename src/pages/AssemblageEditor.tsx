@@ -529,7 +529,7 @@ function InlineProductPicker({
 }: {
   partnerId?: string | null;
   excludeIds: string[];
-  onPick: (id: string) => void;
+  onPick: (product: ProductRow) => void;
 }) {
   const [zoek, setZoek] = useState("");
   const [cat, setCat] = useState<string>("alle");
@@ -540,7 +540,7 @@ function InlineProductPicker({
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("producten")
-        .select("id, naam, merk, categorie, artikelnummer, model, prijs_excl_btw, kostprijs, heeft_serienummer, afbeelding_url, status, is_assemblage")
+        .select("id, naam, merk, categorie, artikelnummer, model, prijs_excl_btw, kostprijs, heeft_serienummer, afbeelding_url, afbeeldingen, status, is_assemblage")
         .eq("partner_id", partnerId!)
         .order("naam")
         .limit(2000);
@@ -612,7 +612,7 @@ function InlineProductPicker({
               key={p.id}
               type="button"
               className="w-full text-left px-3 py-2 hover:bg-muted/60 flex justify-between items-center gap-3"
-              onClick={() => onPick(p.id)}
+              onClick={() => onPick(p)}
             >
               <div className="flex items-center gap-3 min-w-0">
                 {p.afbeelding_url ? (
