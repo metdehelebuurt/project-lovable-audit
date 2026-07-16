@@ -9,29 +9,21 @@
 // POST { assemblage_id, keuzes, attrs } → valideert & retourneert prijs-samenvatting
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import {
+  berekenPrijs,
+  resolveSpecFilter,
+  specsMatch,
+  type AssemblageDef,
+  type Keuzes,
+  type OptieDef,
+  type SlotDef,
+} from "./logic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
-
-interface Slot {
-  id: string;
-  assemblage_id: string;
-  sleutel: string;
-  label: string;
-  slot_type: "single_select" | "multi_select" | "quantity_step";
-  product_rol_filter: string | null;
-  categorie_filter: string | null;
-  spec_filter: Record<string, string> | null;
-  min_aantal: number;
-  max_aantal: number;
-  default_aantal: number;
-  verplicht: boolean;
-  volgorde: number;
-  helptekst: string | null;
-}
 
 interface Assemblage {
   id: string;
@@ -50,33 +42,6 @@ interface Assemblage {
   status: string;
   website_pitch: string | null;
   website_omschrijving: string | null;
-}
-
-function resolveSpecFilter(
-  filter: Record<string, string> | null,
-  templateAttrs: Record<string, unknown>,
-): Record<string, string> {
-  if (!filter) return {};
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(filter)) {
-    out[k] = v.replace(/\{\{template\.([a-zA-Z0-9_]+)\}\}/g, (_m, key) => {
-      const val = templateAttrs[key];
-      return val == null ? "" : String(val);
-    });
-  }
-  return out;
-}
-
-function specsMatch(productSpecs: Record<string, unknown> | null, filter: Record<string, string>): boolean {
-  if (!Object.keys(filter).length) return true;
-  if (!productSpecs) return false;
-  for (const [k, v] of Object.entries(filter)) {
-    if (!v) continue; // lege filter = geen restrictie
-    const actual = productSpecs[k];
-    if (actual == null) return false;
-    if (String(actual).toLowerCase() !== String(v).toLowerCase()) return false;
-  }
-  return true;
 }
 
 Deno.serve(async (req: Request) => {
