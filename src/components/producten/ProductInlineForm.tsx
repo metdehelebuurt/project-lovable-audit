@@ -12,6 +12,7 @@ import SpecsEditor from "@/components/producten/SpecsEditor";
 import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
 import KostprijsHistoriePopover from "@/components/producten/KostprijsHistoriePopover";
 import type { Database } from "@/integrations/supabase/types";
+import { PRODUCT_ROL_LABELS, type ProductRol } from "@/lib/assemblage/typeTemplates";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 type ProductCategorie = Database["public"]["Enums"]["product_categorie"];
@@ -51,6 +52,8 @@ export interface ProductFormData {
   marge_opslag_percentage: number;
   omvormer_modulair: boolean;
   heeft_backup_box: boolean;
+  product_rol: ProductRol | null;
+  is_installatiedienst: boolean;
 }
 
 interface Props {
