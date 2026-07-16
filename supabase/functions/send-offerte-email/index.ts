@@ -432,10 +432,8 @@ Deno.serve(async (req) => {
       await adminClient.from("offertes").update({ status: "verzonden" }).eq("id", offerte_id);
     }
 
-    // Clean up uploaded attachment
-    if (attachment_path) {
-      try { await adminClient.storage.from("email-bijlagen").remove([attachment_path]); } catch {}
-    }
+    // Bijlage NIET direct verwijderen: bewaard voor audit / hersturen.
+    // Een aparte retentie-job kan oude bestanden opruimen (bv. > 30 dagen).
 
     return new Response(JSON.stringify({ success: true, imap_saved: imapSaved }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
