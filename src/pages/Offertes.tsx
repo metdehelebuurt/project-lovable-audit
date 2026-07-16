@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import RichTextEditor from "@/components/shared/RichTextEditor";
+import OfferteEmailEditor from "@/components/offertes/OfferteEmailEditor";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { formatCurrency, regelSubtotaal as regelSubShared, generateOfferteNummer, type OfferteRegel, emptyOfferteRegel } from "@/types/offerte";
 
