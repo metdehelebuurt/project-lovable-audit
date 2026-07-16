@@ -20,6 +20,8 @@ import {
   useUpdateComponent,
   useRemoveComponent,
 } from "@/hooks/producten/useAssemblages";
+import AssemblageConfigurator from "@/components/producten/AssemblageConfigurator";
+import { CONFIGURATOR_TEMPLATES, type ConfigureerbaarType } from "@/lib/assemblage/typeTemplates";
 
 type ProductRow = {
   id: string;
@@ -63,6 +65,8 @@ export default function AssemblageEditor() {
   const [margeOpslag, setMargeOpslag] = useState<string>("20");
   const [status, setStatus] = useState<string>("actief");
   const [omschrijving, setOmschrijving] = useState("");
+  const [configureerbaarType, setConfigureerbaarType] = useState<ConfigureerbaarType>("custom");
+  const [templateAttributen, setTemplateAttributen] = useState<Record<string, unknown>>({});
   const [dirty, setDirty] = useState(false);
 
   const { data: assemblage } = useQuery({
@@ -86,6 +90,11 @@ export default function AssemblageEditor() {
     setMargeOpslag(String(assemblage.marge_opslag_percentage ?? 20));
     setStatus(assemblage.status ?? "actief");
     setOmschrijving(assemblage.omschrijving ?? "");
+    const type = (assemblage.configureerbaar_type as ConfigureerbaarType) ?? "custom";
+    setConfigureerbaarType(CONFIGURATOR_TEMPLATES[type] ? type : "custom");
+    setTemplateAttributen(
+      (assemblage.template_attributen as Record<string, unknown> | null) ?? {},
+    );
     setDirty(false);
   }, [assemblage]);
 
@@ -104,6 +113,8 @@ export default function AssemblageEditor() {
         status,
         omschrijving: omschrijving || null,
         is_assemblage: true,
+        configureerbaar_type: configureerbaarType,
+        template_attributen: templateAttributen,
       };
       if (isNew) {
         payload.partner_id = partnerId;
