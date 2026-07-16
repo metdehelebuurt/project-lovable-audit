@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Layers, Plus, Save, Search, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/types/offerte";
@@ -66,6 +67,9 @@ export default function AssemblageEditor() {
   const [margeOpslag, setMargeOpslag] = useState<string>("20");
   const [status, setStatus] = useState<string>("actief");
   const [omschrijving, setOmschrijving] = useState("");
+  const [toonOpWebsite, setToonOpWebsite] = useState<boolean>(false);
+  const [websitePitch, setWebsitePitch] = useState<string>("");
+  const [websiteOmschrijving, setWebsiteOmschrijving] = useState<string>("");
   const [configureerbaarType, setConfigureerbaarType] = useState<ConfigureerbaarType>("custom");
   const [templateAttributen, setTemplateAttributen] = useState<Record<string, unknown>>({});
   const [dirty, setDirty] = useState(false);
@@ -91,6 +95,9 @@ export default function AssemblageEditor() {
     setMargeOpslag(String(assemblage.marge_opslag_percentage ?? 20));
     setStatus(assemblage.status ?? "actief");
     setOmschrijving(assemblage.omschrijving ?? "");
+    setToonOpWebsite(Boolean(assemblage.toon_op_website));
+    setWebsitePitch(assemblage.website_pitch ?? "");
+    setWebsiteOmschrijving(assemblage.website_omschrijving ?? "");
     const type = (assemblage.configureerbaar_type as ConfigureerbaarType) ?? "custom";
     setConfigureerbaarType(CONFIGURATOR_TEMPLATES[type] ? type : "custom");
     setTemplateAttributen(
@@ -113,6 +120,9 @@ export default function AssemblageEditor() {
         marge_opslag_percentage: Number(margeOpslag) || 0,
         status,
         omschrijving: omschrijving || null,
+        toon_op_website: toonOpWebsite,
+        website_pitch: websitePitch || null,
+        website_omschrijving: websiteOmschrijving || null,
         is_assemblage: true,
         configureerbaar_type: configureerbaarType,
         template_attributen: templateAttributen,
@@ -282,6 +292,39 @@ export default function AssemblageEditor() {
                   rows={3}
                 />
               </div>
+              <div className="md:col-span-2 flex items-center justify-between gap-4 rounded-lg border p-3">
+                <div>
+                  <Label>Toon op website / publieke API</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Zet aan om deze configurator publiek beschikbaar te maken via de assemblage-config API. Vereist status "Actief".
+                  </p>
+                </div>
+                <Switch
+                  checked={toonOpWebsite}
+                  onCheckedChange={(v) => { setToonOpWebsite(v); markDirty(); }}
+                />
+              </div>
+              {toonOpWebsite && (
+                <>
+                  <div className="md:col-span-2">
+                    <Label>Website pitch (korte tagline)</Label>
+                    <Input
+                      value={websitePitch}
+                      onChange={(e) => { setWebsitePitch(e.target.value); markDirty(); }}
+                      placeholder="Bijv. Complete thuisbatterij-set, plug & play geïnstalleerd"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Website omschrijving (uitgebreid)</Label>
+                    <Textarea
+                      value={websiteOmschrijving}
+                      onChange={(e) => { setWebsiteOmschrijving(e.target.value); markDirty(); }}
+                      rows={4}
+                      placeholder="Verkoopverhaal voor de klantwebsite / configurator."
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
