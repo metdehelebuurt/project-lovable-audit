@@ -378,6 +378,29 @@ export default function AssemblageEditor() {
 
       <ConfiguratorPreview assemblageId={assemblageId} dirty={dirty} />
 
+      {!isNew && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Productafbeeldingen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProductImageUpload
+              productId={assemblageId!}
+              mainImage={afbeeldingUrl}
+              galleryImages={afbeeldingen}
+              merk={merk || null}
+              naam={naam}
+              onMainImageChange={(url) => { setAfbeeldingUrl(url); markDirty(); }}
+              onGalleryChange={(urls) => { setAfbeeldingen(urls); markDirty(); }}
+            />
+            <p className="text-xs text-muted-foreground mt-3">
+              Tip: bij het toevoegen van componenten uit de catalogus vragen we of hun afbeeldingen
+              hier ook automatisch bij mogen komen.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -460,9 +483,36 @@ export default function AssemblageEditor() {
               <InlineProductPicker
                 partnerId={partnerId}
                 excludeIds={excludeIds}
-                onPick={(product_id) =>
-                  add.mutate({ assemblage_id: assemblageId!, component_id: product_id, aantal: 1 })
-                }
+                onPick={(product) => {
+                  add.mutate({ assemblage_id: assemblageId!, component_id: product.id, aantal: 1 });
+                  const gallery = Array.isArray(product.afbeeldingen) ? product.afbeeldingen : [];
+                  const beschikbaar = [product.afbeelding_url, ...gallery].filter(
+                    (u): u is string => !!u,
+                  );
+                  if (beschikbaar.length === 0) return;
+                  const alBekend = new Set([afbeeldingUrl, ...afbeeldingen].filter(Boolean));
+                  const nieuw = beschikbaar.filter((u) => !alBekend.has(u));
+                  if (nieuw.length === 0) return;
+                  const vraag = `"${product.naam}" heeft ${nieuw.length} afbeelding${nieuw.length === 1 ? "" : "en"}. Ook meenemen als productafbeelding van dit samengestelde product?`;
+                  if (!window.confirm(vraag)) return;
+                  const nieuweMain = afbeeldingUrl ?? nieuw[0];
+                  const nieuweGallery = Array.from(
+                    new Set([...afbeeldingen, ...nieuw.filter((u) => u !== nieuweMain)]),
+                  );
+                  setAfbeeldingUrl(nieuweMain);
+                  setAfbeeldingen(nieuweGallery);
+                  supabase
+                    .from("producten")
+                    .update({ afbeelding_url: nieuweMain, afbeeldingen: nieuweGallery })
+                    .eq("id", assemblageId!)
+                    .then(({ error }) => {
+                      if (error) toast.error(error.message);
+                      else {
+                        toast.success("Afbeeldingen overgenomen");
+                        qc.invalidateQueries({ queryKey: ["assemblage-detail"] });
+                      }
+                    });
+                }}
               />
             </>
           )}
