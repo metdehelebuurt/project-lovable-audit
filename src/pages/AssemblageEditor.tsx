@@ -24,6 +24,8 @@ import {
 import AssemblageConfigurator from "@/components/producten/AssemblageConfigurator";
 import ConfiguratorPreview from "@/components/producten/AssemblageConfigurator/ConfiguratorPreview";
 import { CONFIGURATOR_TEMPLATES, type ConfigureerbaarType } from "@/lib/assemblage/typeTemplates";
+import ProductImageUpload from "@/components/producten/ProductImageUpload";
+import ProductImage from "@/components/producten/ProductImage";
 
 type ProductRow = {
   id: string;
@@ -38,6 +40,7 @@ type ProductRow = {
   afbeelding_url: string | null;
   status: string;
   is_assemblage: boolean;
+  afbeeldingen?: string[] | null;
 };
 
 const CATEGORIEEN: { value: string; label: string }[] = [
@@ -72,6 +75,8 @@ export default function AssemblageEditor() {
   const [websiteOmschrijving, setWebsiteOmschrijving] = useState<string>("");
   const [configureerbaarType, setConfigureerbaarType] = useState<ConfigureerbaarType>("custom");
   const [templateAttributen, setTemplateAttributen] = useState<Record<string, unknown>>({});
+  const [afbeeldingUrl, setAfbeeldingUrl] = useState<string | null>(null);
+  const [afbeeldingen, setAfbeeldingen] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
 
   const { data: assemblage } = useQuery({
@@ -98,6 +103,12 @@ export default function AssemblageEditor() {
     setToonOpWebsite(Boolean(assemblage.toon_op_website));
     setWebsitePitch(assemblage.website_pitch ?? "");
     setWebsiteOmschrijving(assemblage.website_omschrijving ?? "");
+    setAfbeeldingUrl(assemblage.afbeelding_url ?? null);
+    setAfbeeldingen(
+      Array.isArray(assemblage.afbeeldingen)
+        ? (assemblage.afbeeldingen as string[])
+        : [],
+    );
     const type = (assemblage.configureerbaar_type as ConfigureerbaarType) ?? "custom";
     setConfigureerbaarType(CONFIGURATOR_TEMPLATES[type] ? type : "custom");
     setTemplateAttributen(
@@ -123,6 +134,8 @@ export default function AssemblageEditor() {
         toon_op_website: toonOpWebsite,
         website_pitch: websitePitch || null,
         website_omschrijving: websiteOmschrijving || null,
+        afbeelding_url: afbeeldingUrl,
+        afbeeldingen: afbeeldingen,
         is_assemblage: true,
         configureerbaar_type: configureerbaarType,
         template_attributen: templateAttributen,
