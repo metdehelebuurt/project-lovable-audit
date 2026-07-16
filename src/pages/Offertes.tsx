@@ -106,8 +106,6 @@ const Offertes = () => {
   const [form, setForm] = useState<OfferteFormData>(emptyForm);
   const [feedbackText, setFeedbackText] = useState("");
   const [emailDialog, setEmailDialog] = useState<Offerte | null>(null);
-  const [emailTo, setEmailTo] = useState("");
-  const [sendingEmail, setSendingEmail] = useState(false);
   const [shareDialog, setShareDialog] = useState<Offerte | null>(null);
   const [shareLink, setShareLink] = useState("");
   const [generatingLink, setGeneratingLink] = useState(false);
