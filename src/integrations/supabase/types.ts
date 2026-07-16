@@ -7805,7 +7805,7 @@ export type Database = {
           product_rol_filter: Database["public"]["Enums"]["product_rol"] | null
           sleutel: string
           slot_type: string
-          spec_filter: Json
+          spec_filter: Json | null
           updated_at: string
           verplicht: boolean
           volgorde: number
@@ -7826,7 +7826,7 @@ export type Database = {
           product_rol_filter?: Database["public"]["Enums"]["product_rol"] | null
           sleutel: string
           slot_type?: string
-          spec_filter?: Json
+          spec_filter?: Json | null
           updated_at?: string
           verplicht?: boolean
           volgorde?: number
@@ -7847,7 +7847,7 @@ export type Database = {
           product_rol_filter?: Database["public"]["Enums"]["product_rol"] | null
           sleutel?: string
           slot_type?: string
-          spec_filter?: Json
+          spec_filter?: Json | null
           updated_at?: string
           verplicht?: boolean
           volgorde?: number

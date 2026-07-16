@@ -1,0 +1,1 @@
+ALTER TABLE public.product_assemblage_slots ALTER COLUMN spec_filter DROP NOT NULL, ALTER COLUMN spec_filter SET DEFAULT '{}'::jsonb;
