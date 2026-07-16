@@ -299,6 +299,37 @@ Deno.serve(async (req) => {
       ? await fetchAttachment(adminClient, attachment_path, attachment_filename || `Offerte-${offerte.offertenummer}.pdf`)
       : null;
 
+    // FAILSAFE: een offerte-mail MOET een geldige PDF-bijlage bevatten.
+    // Zonder deze check kon een verkeerd verzendpad de mail zonder PDF sturen
+    // (bug gemeld door Hoang / Smartaccu).
+    if (!attachment) {
+      await adminClient.from("email_log").insert({
+        partner_id: userRow.partner_id, offerte_id, ontvanger_email,
+        onderwerp: customSubject || `Offerte ${offerte.offertenummer}`,
+        html_body: html_body || "", status: "mislukt", type: "offerte",
+        verzonden_door_id: userId,
+        error_message: "Verzending geblokkeerd: geen PDF-bijlage meegegeven (attachment_path ontbreekt).",
+      });
+      return new Response(
+        JSON.stringify({ error: "Offerte kan niet worden verstuurd zonder PDF-bijlage. Open de offerte en gebruik de e-mail-editor die de PDF automatisch genereert." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const pdfCheck = verifyPdfBytes(attachment.bytes);
+    if (!pdfCheck.ok) {
+      await adminClient.from("email_log").insert({
+        partner_id: userRow.partner_id, offerte_id, ontvanger_email,
+        onderwerp: customSubject || `Offerte ${offerte.offertenummer}`,
+        html_body: html_body || "", status: "mislukt", type: "offerte",
+        verzonden_door_id: userId,
+        error_message: `PDF-bijlage ongeldig: ${pdfCheck.reason}`,
+      });
+      return new Response(
+        JSON.stringify({ error: `PDF-bijlage ongeldig: ${pdfCheck.reason}. Genereer de PDF opnieuw en probeer nogmaals.` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     if (hasOauth) {
       // Send via OAuth API (Gmail or Microsoft Graph)
       let accessToken = emailAccount.access_token;
