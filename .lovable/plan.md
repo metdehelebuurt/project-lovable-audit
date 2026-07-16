@@ -1,60 +1,63 @@
-## Doel
-De trial-signup e2e vanaf de frontpage soepel, juridisch correct en robuust maken.
+## Analyse — waarom de offerte zonder PDF aankwam
 
-## Wijzigingen
+Er zijn **twee verzendpaden** voor offerte-mails, en één daarvan stuurt structureel geen bijlage mee.
 
-### 1. Frontpage — `src/pages/Index.tsx`
-Vervang de lege boilerplate door een compacte, on-brand landingspagina:
-- Hero met kop "Alle software voor je verduurzamingsbedrijf op één plek", subtekst, en twee primaire CTA's: **"Start 30 dagen gratis"** (→ `/signup`) en **"Inloggen"** (→ `/login`).
-- Drie feature-tegels (Leads, Offertes, Installaties) — hergebruik bestaande design-tokens (primary purple), geen nieuwe fonts/kleuren.
-- Footer met link naar voorwaarden/privacy (bestaande routes `/voorwaarden`, `/privacy`).
-- Mobile-first, semantische HTML, één `<h1>`.
-- `useDocumentSeo` voor `<title>` + meta description.
-- Als user al ingelogd is → redirect naar `/dashboard` (zelfde patroon als Signup.tsx).
+### Pad A — Rich editor (`OfferteEmailEditor.tsx`)
+Werkt zoals bedoeld: opent modal → genereert PDF client-side via een verborgen iframe (`generateOffertePdfViaIframe`) → upload naar `email-bijlagen` bucket → knop "Versturen" is geblokkeerd tot `pdf.status === "ready"` → invoke met `attachment_path`.
 
-### 2. Voorwaarden-akkoord — `src/pages/Signup.tsx`
-- Nieuwe `akkoord` boolean state + verplichte checkbox onderaan formulier: "Ik ga akkoord met de [algemene voorwaarden](/voorwaarden) en het [privacybeleid](/privacy)".
-- Submit-knop `disabled` totdat aangevinkt.
-- Toast bij niet-aangevinkt.
+### Pad B — Snelknop "E-mail versturen" op de offertelijst (`src/pages/Offertes.tsx`, regel 962–989)
+Roept `send-offerte-email` aan met **alleen** `offerte_id` + `ontvanger_email`. Géén `attachment_path`, géén PDF-generatie. De edge function bouwt dan alleen een HTML-body en verstuurt zonder bijlage — dat is de mail die Hoang naar Meerakkers stuurde.
 
-### 3. Backend-validatie — `supabase/functions/trial-signup/index.ts`
-- Voeg `toestemming: boolean` toe aan payload; return 400 als niet `true`.
-- Sla `toestemming_op = now()` op in `partners.voorwaarden_geaccepteerd_op` (nieuwe kolom, zie migratie).
-- Vervang losse `if (!bedrijfsnaam …)` door Zod-schema (consistent met andere edge functions).
+### Bijkomende zwakke plekken (ook in pad A)
+1. **Edge function heeft geen failsafe**: `attachment_path` is optioneel. Als `attachment` `null` is, wordt gewoon verzonden. Er is geen server-side check "offertes moeten een PDF hebben". `verifyPdfBytes` bestaat in `_shared/email-send.ts` maar wordt hier niet aangeroepen.
+2. **Client-side PDF-generatie is fragiel**: iframe + `html2canvas` + fonts + externe datasheet-fetches in `pdf-lib`. Faalt stil bij achtergrond-tab throttling, CORS, ontbrekende fonts, popup-blockers, of trage `/offertes/:id/pdf/print` route → timeout na 30s. Als generatie faalt kan de gebruiker het formulier sluiten en Pad B gebruiken (geen bijlage).
+3. **Bijlage wordt direct na verzenden verwijderd** uit storage → geen forensische controle achteraf of hersturen mogelijk zonder opnieuw te renderen.
+4. **Geen server-side PDF-fallback**: als client-render faalt, is er geen alternatief.
+5. **Geen logging van bijlage-status** in `email_log` (kolom `imap_saved` is er wel, maar geen `attachment_ok` / `attachment_size`).
 
-### 4. Migratie
-Één kolom toevoegen aan `public.partners`:
-- `voorwaarden_geaccepteerd_op timestamptz` (nullable).
-Geen policy-wijziging nodig.
+## Verbeterplan
 
-Én een RPC voor atomic clicks-increment:
-```sql
-create or replace function public.increment_affiliate_link_clicks(_link_id uuid)
-returns void language sql security definer set search_path = public as $$
-  update public.affiliate_links set clicks = coalesce(clicks,0) + 1 where id = _link_id;
-$$;
-grant execute on function public.increment_affiliate_link_clicks(uuid) to service_role, authenticated;
+### 1. Snelknop-pad afsluiten (grootste fix, blokkeert het reële probleem)
+`src/pages/Offertes.tsx`: verwijder het inline snelverstuur-dialoog (regels 962–…). Vervang de "E-mail"-actieknop door **altijd** de `OfferteEmailEditor` te openen (die de PDF garandeert). Zo bestaat er nog maar één verzendpad met een PDF-garantie.
+
+### 2. Server-side failsafe in `send-offerte-email`
+- Maak `attachment_path` **verplicht** voor `action === "send"` (default action).
+- Roep `verifyPdfBytes(attachment.bytes)` aan na `fetchAttachment`; bij `ok:false` → 400 met duidelijke fout, géén verzending.
+- Log `attachment_size`, `attachment_ok` en `attachment_path` in `email_log` (nieuwe kolommen of in bestaand `metadata` JSON).
+- Verwijder de storage-cleanup direct na verzending; laat een cron/retentie het opruimen na bv. 30 dagen zodat hersturen en audit mogelijk blijven.
+
+### 3. Server-side PDF-fallback (backup als browser-render faalt)
+Nieuwe edge function `render-offerte-pdf` die dezelfde print-route rendert via headless HTML → PDF (bv. via `deno-puppeteer` op een externe service of via `pdf-lib` templating van bestaande data). In `OfferteEmailEditor`:
+- Als `generateOffertePdfViaIframe` faalt of >20s duurt → toon "PDF genereren op de server…" en roep de fallback aan.
+- Als beide falen → verzendknop blijft geblokkeerd met duidelijke foutmelding + "Probeer opnieuw".
+
+### 4. Hardening client-generator
+- Verhoog aandacht voor achtergrond-tab: waarschuw als `document.visibilityState === 'hidden'` bij start.
+- Log naar `system_error_logs` bij falen zodat we patronen zien.
+- Toon PDF-grootte + preview-link in de editor (dat is er al) én blokkeer verzending als `sizeBytes < 5000` (magic-bytes check ook client-side).
+
+### 5. Regressietest
+Playwright-test: open offerte → klik "Versturen" → verwacht dat de invoke naar `send-offerte-email` een `attachment_path` bevat. Tweede test: mock storage-download in edge function met een niet-PDF blob → verwacht 400.
+
+## Uit te voeren wijzigingen (samengevat)
+
+```text
+FE
+ - src/pages/Offertes.tsx           snelverstuur-dialoog verwijderen, altijd editor openen
+ - src/components/offertes/OfferteEmailEditor.tsx
+                                    server-fallback aanroep + betere foutmeldingen + min-size check
+
+BE
+ - supabase/functions/send-offerte-email/index.ts
+                                    attachment verplicht + verifyPdfBytes + logging + geen cleanup
+ - supabase/functions/render-offerte-pdf/index.ts (nieuw, optioneel fase 2)
+                                    server-side PDF-fallback
+
+DB
+ - migratie: email_log kolommen attachment_ok bool, attachment_size int, attachment_path text
 ```
 
-### 5. Atomic clicks in `trial-signup`
-Vervang de read-modify-write op regel 129-132 door:
-```ts
-await supabaseAdmin.rpc("increment_affiliate_link_clicks", { _link_id: affLink.id });
-```
-
-### 6. Post-signup UX — `src/pages/Signup.tsx`
-Na succesvolle signup + auto-login:
-- Toast: **"Welkom! We hebben een welkomstmail gestuurd naar {email}."** (geeft mail-status weer).
-- Navigeer naar `/onboarding`.
-- Bij `loginError`: extra info-toast "Log in met je e-mail en wachtwoord."
-
-## Verificatie
-- `tsgo` schoon.
-- Preview: `/` → CTA klikbaar → `/signup` → checkbox verplicht → account aangemaakt → toast met mail-melding → `/onboarding`.
-- Klantkaart van nieuwe trial toont `voorwaarden_geaccepteerd_op` in tijdlijn (optioneel — extra event toevoegen in PartnerDetail timeline).
-
-## Technische notes
-- Geen nieuwe dependencies.
-- Alle bestanden blijven ruim onder 800 regels; Index.tsx wordt ~150 regels.
-- Kleuren via bestaande tokens (`bg-primary`, `text-foreground`); geen hardcoded hex.
-- Nederlands, geen emoji's in UI-copy.
+## Volgorde van uitvoering
+1. **Direct** — stap 1 + 2 (elimineert het geobserveerde probleem in 1 release).
+2. **Kort daarna** — stap 4 + 5 (hardening + test).
+3. **Later** — stap 3 (server-side render als vangnet).
