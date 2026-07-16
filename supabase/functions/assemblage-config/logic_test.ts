@@ -218,9 +218,9 @@ Deno.test("berekenPrijs: BTW-fallback naar 21% als percentage null is", () => {
 Deno.test("berekenPrijs: coerceert string-prijzen naar number", () => {
   const res = berekenPrijs(
     somAssemblage,
-    [omvormerSlot],
-    { omvormer: [{ id: "omv-x", prijs_excl_btw: "750.50" }] },
-    { omvormer: [{ product_id: "omv-x", aantal: 2 }] },
+    [batterijSlot],
+    { batterij: [{ id: "bat-x", prijs_excl_btw: "750.50" }] },
+    { batterij: [{ product_id: "bat-x", aantal: 2 }] },
   );
   assertEquals(res.subtotaal_excl_btw, 1501);
 });
