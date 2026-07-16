@@ -12,8 +12,6 @@ import { toast } from "sonner";
 interface Props {
   assemblageId: string | null;
   dirty: boolean;
-  toonOpWebsite: boolean;
-  status: string;
 }
 
 type Optie = {
@@ -55,13 +53,15 @@ type ConfigResponse = {
 
 type Keuzes = Record<string, Array<{ product_id: string; aantal: number }>>;
 
-export default function ConfiguratorPreview({ assemblageId, dirty, toonOpWebsite, status }: Props) {
+export default function ConfiguratorPreview({ assemblageId, dirty }: Props) {
   const [data, setData] = useState<ConfigResponse | null>(null);
   const [keuzes, setKeuzes] = useState<Keuzes>({});
+  const [notFound, setNotFound] = useState(false);
 
   const load = useMutation({
     mutationFn: async (payload?: { keuzes: Keuzes }) => {
       if (!assemblageId) throw new Error("Geen assemblage-id");
+      setNotFound(false);
       const { data: resp, error } = await supabase.functions.invoke("assemblage-config", {
         body: {
           assemblage_id: assemblageId,
@@ -69,7 +69,12 @@ export default function ConfiguratorPreview({ assemblageId, dirty, toonOpWebsite
         },
       });
       if (error) throw error;
-      if ((resp as { error?: string })?.error) throw new Error((resp as { error: string }).error);
+      const errCode = (resp as { error?: string })?.error;
+      if (errCode === "not_found") {
+        setNotFound(true);
+        throw new Error("Assemblage niet publiek beschikbaar (status 'actief' + 'Toon op website' vereist).");
+      }
+      if (errCode) throw new Error(errCode);
       return resp as ConfigResponse;
     },
     onSuccess: (resp) => {
@@ -87,22 +92,22 @@ export default function ConfiguratorPreview({ assemblageId, dirty, toonOpWebsite
         return init;
       });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (!notFound) toast.error(e.message);
+    },
   });
 
   useEffect(() => {
-    if (assemblageId && toonOpWebsite && status === "actief" && !dirty) {
+    if (assemblageId && !dirty) {
       load.mutate(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assemblageId, toonOpWebsite, status]);
+  }, [assemblageId]);
 
   const totalen = data?.prijs;
   const waarschuwingen = totalen?.waarschuwingen ?? [];
 
   const bereken = () => load.mutate({ keuzes });
-
-  const kanTonen = assemblageId && toonOpWebsite && status === "actief";
 
   return (
     <Card className="rounded-2xl border-0 shadow-sm">
@@ -115,22 +120,17 @@ export default function ConfiguratorPreview({ assemblageId, dirty, toonOpWebsite
         {!assemblageId && (
           <p className="text-sm text-muted-foreground">Sla eerst op om de preview te laden.</p>
         )}
-        {assemblageId && !toonOpWebsite && (
-          <p className="text-sm text-muted-foreground rounded-xl border border-dashed p-4">
-            Zet "Toon op website" aan om deze assemblage publiek via de API beschikbaar te maken.
+        {notFound && assemblageId && (
+          <p className="text-sm text-warning-foreground bg-warning/10 rounded-xl border border-dashed p-4">
+            Nog niet publiek beschikbaar via de API. Zet de status op "Actief" én "Toon op website" aan bij het product, dan verschijnt de configurator hier.
           </p>
         )}
-        {assemblageId && toonOpWebsite && status !== "actief" && (
-          <p className="text-sm text-muted-foreground rounded-xl border border-dashed p-4">
-            Alleen actieve assemblages zijn zichtbaar via de publieke API.
-          </p>
-        )}
-        {dirty && kanTonen && (
+        {dirty && assemblageId && (
           <p className="text-xs text-warning-foreground bg-warning/10 rounded-lg p-2">
             Er zijn niet-opgeslagen wijzigingen — sla op om ze in de preview te zien.
           </p>
         )}
-        {kanTonen && (
+        {assemblageId && (
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => load.mutate(undefined)}
               disabled={load.isPending}>
