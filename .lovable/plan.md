@@ -1,63 +1,106 @@
-## Analyse — waarom de offerte zonder PDF aankwam
+## Doel
 
-Er zijn **twee verzendpaden** voor offerte-mails, en één daarvan stuurt structureel geen bijlage mee.
+De module "Samengestelde producten" (assemblages) omvormen tot een slimme, categorie-gedreven configurator-basis. Startpunt: **thuisbatterij totaalpakket** (zoals SolarNRG). De data & API worden zo opgezet dat we later een frontend-configurator (op klantwebsite via API, en daarna als embeddable tool) hierop kunnen bouwen zonder herwerk.
 
-### Pad A — Rich editor (`OfferteEmailEditor.tsx`)
-Werkt zoals bedoeld: opent modal → genereert PDF client-side via een verborgen iframe (`generateOffertePdfViaIframe`) → upload naar `email-bijlagen` bucket → knop "Versturen" is geblokkeerd tot `pdf.status === "ready"` → invoke met `attachment_path`.
+## Kern-inzicht
 
-### Pad B — Snelknop "E-mail versturen" op de offertelijst (`src/pages/Offertes.tsx`, regel 962–989)
-Roept `send-offerte-email` aan met **alleen** `offerte_id` + `ontvanger_email`. Géén `attachment_path`, géén PDF-generatie. De edge function bouwt dan alleen een HTML-body en verstuurt zonder bijlage — dat is de mail die Hoang naar Meerakkers stuurde.
+Een "samengesteld product" wordt een **configurator-template** met:
+- Een **producttype** (thuisbatterij, zonnepanelen-set, warmtepomp-set, laadpaal-set, …) → bepaalt welke keuzegroepen en dynamische velden verschijnen.
+- **Configurator-attributen** op template-niveau (bv. fase: 1-fase / 3-fase; met/zonder noodstroom; met/zonder installatie).
+- **Slots** (keuzegroepen) i.p.v. een platte componentenlijst. Elke slot heeft een **rol** (batterij-opslag, omvormer, backup-box, montagemateriaal, installatie, …), min/max aantal, verplicht/optioneel, en een filter op producten (categorie + rol + specs).
+- **Compatibiliteitsregels** tussen slots (bv. inverter moet zelfde fase hebben als template; capaciteit-modules alleen bij matching inverter-serie).
+- **Prijs**: som van gekozen opties + optionele installatie, met marge/opslag.
 
-### Bijkomende zwakke plekken (ook in pad A)
-1. **Edge function heeft geen failsafe**: `attachment_path` is optioneel. Als `attachment` `null` is, wordt gewoon verzonden. Er is geen server-side check "offertes moeten een PDF hebben". `verifyPdfBytes` bestaat in `_shared/email-send.ts` maar wordt hier niet aangeroepen.
-2. **Client-side PDF-generatie is fragiel**: iframe + `html2canvas` + fonts + externe datasheet-fetches in `pdf-lib`. Faalt stil bij achtergrond-tab throttling, CORS, ontbrekende fonts, popup-blockers, of trage `/offertes/:id/pdf/print` route → timeout na 30s. Als generatie faalt kan de gebruiker het formulier sluiten en Pad B gebruiken (geen bijlage).
-3. **Bijlage wordt direct na verzenden verwijderd** uit storage → geen forensische controle achteraf of hersturen mogelijk zonder opnieuw te renderen.
-4. **Geen server-side PDF-fallback**: als client-render faalt, is er geen alternatief.
-5. **Geen logging van bijlage-status** in `email_log` (kolom `imap_saved` is er wel, maar geen `attachment_ok` / `attachment_size`).
+## Wijzigingen op productniveau (`producten`)
 
-## Verbeterplan
+Nieuwe velden toevoegen:
+- `product_rol` (enum, nullable): `batterij_module`, `omvormer`, `backup_box`, `ev_lader`, `zonnepaneel`, `optimizer`, `montage_materiaal`, `installatiedienst`, `accessoire`, `overig`. Vervangt niet `categorie` — is een fijnere sub-typering voor configurator-matching.
+- `is_installatiedienst` (boolean, default false) — snelle filter voor slot "installatie".
+- `configureerbaar_type` (text, nullable) op assemblages: `thuisbatterij_pakket` | `zonnepanelen_set` | `warmtepomp_set` | `laadpaal_set` | `custom`. Alleen ingevuld als `is_assemblage=true`.
+- `template_attributen` (jsonb, default `{}`) op assemblages: normale attributen zoals `{fase:"1", noodstroom:true, incl_installatie:true}`.
 
-### 1. Snelknop-pad afsluiten (grootste fix, blokkeert het reële probleem)
-`src/pages/Offertes.tsx`: verwijder het inline snelverstuur-dialoog (regels 962–…). Vervang de "E-mail"-actieknop door **altijd** de `OfferteEmailEditor` te openen (die de PDF garandeert). Zo bestaat er nog maar één verzendpad met een PDF-garantie.
+## Nieuwe tabel: `product_assemblage_slots`
 
-### 2. Server-side failsafe in `send-offerte-email`
-- Maak `attachment_path` **verplicht** voor `action === "send"` (default action).
-- Roep `verifyPdfBytes(attachment.bytes)` aan na `fetchAttachment`; bij `ok:false` → 400 met duidelijke fout, géén verzending.
-- Log `attachment_size`, `attachment_ok` en `attachment_path` in `email_log` (nieuwe kolommen of in bestaand `metadata` JSON).
-- Verwijder de storage-cleanup direct na verzending; laat een cron/retentie het opruimen na bv. 30 dagen zodat hersturen en audit mogelijk blijven.
+Definieert de keuzegroepen van een assemblage.
 
-### 3. Server-side PDF-fallback (backup als browser-render faalt)
-Nieuwe edge function `render-offerte-pdf` die dezelfde print-route rendert via headless HTML → PDF (bv. via `deno-puppeteer` op een externe service of via `pdf-lib` templating van bestaande data). In `OfferteEmailEditor`:
-- Als `generateOffertePdfViaIframe` faalt of >20s duurt → toon "PDF genereren op de server…" en roep de fallback aan.
-- Als beide falen → verzendknop blijft geblokkeerd met duidelijke foutmelding + "Probeer opnieuw".
+Kolommen (domein-specifiek):
+- `assemblage_id` → `producten.id`
+- `partner_id`
+- `sleutel` (text, bv. `batterij_capaciteit`, `inverter`, `installatie`)
+- `label` (text)
+- `slot_type`: `single_select`, `multi_select`, `quantity_step` (bv. modules 1..n).
+- `product_rol_filter` (text) — beperkt keuze tot producten met deze rol.
+- `categorie_filter` (product_categorie, nullable)
+- `spec_filter` (jsonb) — bv. `{fase:"{{template.fase}}"}` voor compatibiliteit.
+- `min_aantal`, `max_aantal`, `default_aantal`
+- `verplicht` (bool)
+- `volgorde` (int)
+- `helptekst` (text)
 
-### 4. Hardening client-generator
-- Verhoog aandacht voor achtergrond-tab: waarschuw als `document.visibilityState === 'hidden'` bij start.
-- Log naar `system_error_logs` bij falen zodat we patronen zien.
-- Toon PDF-grootte + preview-link in de editor (dat is er al) én blokkeer verzending als `sizeBytes < 5000` (magic-bytes check ook client-side).
+Bijbehorende tabel `product_assemblage_slot_opties` (optioneel, phase 2) voor curated keuzelijsten per slot — MVP: keuzes komen dynamisch uit `producten` op basis van filters.
 
-### 5. Regressietest
-Playwright-test: open offerte → klik "Versturen" → verwacht dat de invoke naar `send-offerte-email` een `attachment_path` bevat. Tweede test: mock storage-download in edge function met een niet-PDF blob → verwacht 400.
+RLS: partner-scoped, zelfde patroon als `product_componenten`. Nette GRANTs.
 
-## Uit te voeren wijzigingen (samengevat)
+## Bestaande `product_componenten` blijft bestaan
 
-```text
-FE
- - src/pages/Offertes.tsx           snelverstuur-dialoog verwijderen, altijd editor openen
- - src/components/offertes/OfferteEmailEditor.tsx
-                                    server-fallback aanroep + betere foutmeldingen + min-size check
+Voor "vast samengestelde" bundels zonder keuzes (huidige gedrag). Slots zijn een uitbreiding — een assemblage kan óf vaste componenten hebben, óf slots, óf beide (basiscomponenten + keuzeslots).
 
-BE
- - supabase/functions/send-offerte-email/index.ts
-                                    attachment verplicht + verifyPdfBytes + logging + geen cleanup
- - supabase/functions/render-offerte-pdf/index.ts (nieuw, optioneel fase 2)
-                                    server-side PDF-fallback
+## Backend / API (edge functions)
 
-DB
- - migratie: email_log kolommen attachment_ok bool, attachment_size int, attachment_path text
-```
+Nieuwe **`assemblage-config`** edge function, publiek leesbaar (voor website-embed, met `partner_id` in URL). Endpoints:
+- `GET ?assemblage_id=...` → geeft template terug: attributen-schema, slots, standaardconfiguratie, en per slot de matchende producten (met prijzen, specs, afbeelding).
+- `POST` `{assemblage_id, keuzes:{slot_sleutel: [{product_id, aantal}]}, template_attributen:{...}}` → valideert compatibiliteit + berekent prijs + retourneert samenvatting (regels, totalen, waarschuwingen).
 
-## Volgorde van uitvoering
-1. **Direct** — stap 1 + 2 (elimineert het geobserveerde probleem in 1 release).
-2. **Kort daarna** — stap 4 + 5 (hardening + test).
-3. **Later** — stap 3 (server-side render als vangnet).
+Deze function wordt de contract-basis voor:
+1. Interne UI (nieuwe assemblage-editor).
+2. Klantwebsite (server-to-server call).
+3. Later: embeddable widget (via bestaande `web_widgets`-patroon).
+
+## UI-wijzigingen
+
+### 1. Assemblages-overzicht (`src/pages/Assemblages.tsx`)
+- Filter/badge op `configureerbaar_type`.
+- Kolom "Type" toevoegen.
+
+### 2. Nieuwe wizard: `AssemblageWizard` (vervangt `/producten/assemblages/nieuw`)
+- **Stap 1: kies type** (thuisbatterij, zonnepanelen-set, warmtepomp-set, laadpaal-set, custom).
+- **Stap 2: template-attributen** (dynamisch per type; voor thuisbatterij: fase, met/zonder noodstroom, incl. installatie).
+- **Stap 3: slots inrichten** — voorgevulde slot-templates per type (bv. thuisbatterij: `batterij_module` (1..n), `omvormer` (1), `backup_box` (0..1), `installatie` (0..1)). Per slot: filter, min/max, verplicht.
+- **Stap 4: prijsstrategie & marketing** (naam, marge, publicatie op website).
+- **Stap 5: preview** — toont exact wat de website-configurator laat zien.
+
+### 3. Productformulier (`ProductInlineForm`)
+- Toevoegen: `product_rol` dropdown, `is_installatiedienst` switch.
+- Voor rol `batterij_module`/`omvormer`: promot bestaande `fase`-spec zichtbaar in de kop.
+
+### 4. Voorbereiding embed (alleen data-laag, geen UI in deze fase)
+- Nieuwe hook `useAssemblageConfigurator(assemblageId)` die de edge function aanroept — kan direct hergebruikt worden voor de latere frontend-website.
+
+## Type-templates (in code, `src/lib/assemblage/typeTemplates.ts`)
+
+Per `configureerbaar_type` een default `template_attributen` schema + default slots. Startset:
+- `thuisbatterij_pakket`: attributen `{fase, noodstroom, incl_installatie}`; slots `batterij_module`, `omvormer`, `backup_box?`, `installatie?`.
+- `zonnepanelen_set`: attributen `{aantal_panelen, dakvorm}`; slots `paneel`, `omvormer`, `optimizer?`, `montagemateriaal`, `installatie?`.
+- `warmtepomp_set` & `laadpaal_set`: minimale stub — uitwerken zodra gebruikt.
+
+## Volgorde van uitvoer
+
+1. **Migratie** (schema + rol-enum + slots-tabel + GRANTs + RLS).
+2. **Type-templates + hook** in code.
+3. **Wizard-UI** + productform-uitbreiding.
+4. **Edge function `assemblage-config`** met validatie & prijsberekening.
+5. **Documentatie** van API-contract (README-snippet) t.b.v. website-integratie.
+6. **Later (buiten deze plan-scope)**: frontend-website configurator + embeddable widget.
+
+## Compatibiliteit met bestaande data
+
+- Bestaande assemblages krijgen `configureerbaar_type = 'custom'`; blijven werken zoals nu (vaste componentenlijst).
+- Bestaande `product_componenten` wordt niet aangeraakt.
+- Voorraad-/kostprijsberekening in `useAssemblages` blijft leidend voor "vast" bundels; voor configureerbare bundels wordt de prijs pas bekend na configuratie.
+
+## Vraag ter bevestiging
+
+Twee keuzes wil ik bevestigd hebben voordat ik bouw:
+
+1. **Scope nu**: alleen `thuisbatterij_pakket` volledig uitwerken (incl. voorbeeld-slots + API + wizard-stappen), en de rest als stubs? Of meteen ook `zonnepanelen_set`?
+2. **API-authenticatie**: mag `assemblage-config` publiek (anon) leesbaar zijn voor gepubliceerde/`toon_op_website`-assemblages, zoals `google-maps-config`/publieke catalogus doen?
