@@ -21,6 +21,7 @@ import {
   useRemoveComponent,
 } from "@/hooks/producten/useAssemblages";
 import AssemblageConfigurator from "@/components/producten/AssemblageConfigurator";
+import ConfiguratorPreview from "@/components/producten/AssemblageConfigurator/ConfiguratorPreview";
 import { CONFIGURATOR_TEMPLATES, type ConfigureerbaarType } from "@/lib/assemblage/typeTemplates";
 
 type ProductRow = {
@@ -318,6 +319,8 @@ export default function AssemblageEditor() {
         onTypeChange={(t) => { setConfigureerbaarType(t); markDirty(); }}
         onAttributenChange={(a) => { setTemplateAttributen(a); markDirty(); }}
       />
+
+      <ConfiguratorPreview assemblageId={assemblageId} dirty={dirty} />
 
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader>
