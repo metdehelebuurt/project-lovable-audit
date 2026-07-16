@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
     if (aErr) throw aErr;
     if (!rawAssemblage || !rawAssemblage.toon_op_website || rawAssemblage.status !== "actief") {
       return new Response(JSON.stringify({ error: "not_found" }), {
-        status: 404,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
