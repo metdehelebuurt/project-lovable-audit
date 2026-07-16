@@ -310,6 +310,15 @@ export default function AssemblageEditor() {
         </Card>
       </div>
 
+      <AssemblageConfigurator
+        assemblageId={assemblageId}
+        partnerId={partnerId}
+        configureerbaarType={configureerbaarType}
+        templateAttributen={templateAttributen}
+        onTypeChange={(t) => { setConfigureerbaarType(t); markDirty(); }}
+        onAttributenChange={(a) => { setTemplateAttributen(a); markDirty(); }}
+      />
+
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
