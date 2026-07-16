@@ -15,6 +15,7 @@ export interface AssemblageProduct {
   afbeelding_url: string | null;
   aantal_componenten?: number;
   som_kostprijs?: number;
+  configureerbaar_type?: string | null;
 }
 
 export interface ProductComponent {
@@ -44,7 +45,7 @@ export const useAssemblages = (partnerId?: string | null) => {
     queryFn: async (): Promise<AssemblageProduct[]> => {
       const { data, error } = await (supabase as any)
         .from("producten")
-        .select("id, naam, merk, categorie, prijs_excl_btw, kostprijs, prijs_strategie, marge_opslag_percentage, status, afbeelding_url")
+        .select("id, naam, merk, categorie, prijs_excl_btw, kostprijs, prijs_strategie, marge_opslag_percentage, status, afbeelding_url, configureerbaar_type")
         .eq("partner_id", partnerId!)
         .eq("is_assemblage", true)
         .order("naam");
@@ -76,6 +77,7 @@ export const useAssemblages = (partnerId?: string | null) => {
         afbeelding_url: r.afbeelding_url,
         aantal_componenten: map.get(r.id)?.count ?? 0,
         som_kostprijs: map.get(r.id)?.som ?? 0,
+        configureerbaar_type: r.configureerbaar_type ?? null,
       }));
     },
   });
