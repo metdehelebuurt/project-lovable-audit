@@ -60,6 +60,7 @@ const emptyForm: ProductFormData = {
   heeft_serienummer: false, is_assemblage: false,
   prijs_strategie: "vast", marge_opslag_percentage: 0,
   omvormer_modulair: false, heeft_backup_box: false,
+  product_rol: null, is_installatiedienst: false,
 };
 
 function isSimilar(a: string, b: string): boolean {
