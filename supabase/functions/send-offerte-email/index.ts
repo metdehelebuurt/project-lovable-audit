@@ -5,6 +5,7 @@ import {
   sendViaMsGraphApi as sharedSendViaMsGraphApi,
   refreshOAuthToken as sharedRefreshOAuthToken,
   fetchAttachment,
+  verifyPdfBytes,
 } from "../_shared/email-send.ts";
 import { decryptAppPassword } from "../_shared/email-crypto.ts";
 import { smtpSend } from "../_shared/smtp-send.ts";
