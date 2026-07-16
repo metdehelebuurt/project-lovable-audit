@@ -60,6 +60,7 @@ const emptyForm: ProductFormData = {
   heeft_serienummer: false, is_assemblage: false,
   prijs_strategie: "vast", marge_opslag_percentage: 0,
   omvormer_modulair: false, heeft_backup_box: false,
+  product_rol: null, is_installatiedienst: false,
 };
 
 function isSimilar(a: string, b: string): boolean {
@@ -272,6 +273,8 @@ const Producten = () => {
       marge_opslag_percentage: Number((p as any).marge_opslag_percentage ?? 0),
       omvormer_modulair: (p as any).omvormer_modulair ?? false,
       heeft_backup_box: (p as any).heeft_backup_box ?? false,
+      product_rol: ((p as any).product_rol ?? null),
+      is_installatiedienst: (p as any).is_installatiedienst ?? false,
     });
   };
 
@@ -600,6 +603,8 @@ const Producten = () => {
                                   marge_opslag_percentage: Number((product as any).marge_opslag_percentage ?? 0),
                                   omvormer_modulair: (product as any).omvormer_modulair ?? false,
                                   heeft_backup_box: (product as any).heeft_backup_box ?? false,
+                                  product_rol: ((product as any).product_rol ?? null),
+                                  is_installatiedienst: (product as any).is_installatiedienst ?? false,
                                 });
                                 toast.info("Catalogusproduct gedupliceerd — sla op om uw eigen versie te maken");
                               }}>

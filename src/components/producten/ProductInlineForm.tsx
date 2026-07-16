@@ -12,6 +12,7 @@ import SpecsEditor from "@/components/producten/SpecsEditor";
 import ProductDatasheetSection from "@/components/producten/ProductDatasheetSection";
 import KostprijsHistoriePopover from "@/components/producten/KostprijsHistoriePopover";
 import type { Database } from "@/integrations/supabase/types";
+import { PRODUCT_ROL_LABELS, type ProductRol } from "@/lib/assemblage/typeTemplates";
 
 type Product = Database["public"]["Tables"]["producten"]["Row"];
 type ProductCategorie = Database["public"]["Enums"]["product_categorie"];
@@ -51,6 +52,8 @@ export interface ProductFormData {
   marge_opslag_percentage: number;
   omvormer_modulair: boolean;
   heeft_backup_box: boolean;
+  product_rol: ProductRol | null;
+  is_installatiedienst: boolean;
 }
 
 interface Props {
@@ -225,6 +228,40 @@ export default function ProductInlineForm({
               <div><Label>Max korting %</Label><Input type="number" step="0.1" value={form.max_korting_percentage ?? ""} onChange={e => setForm(p => ({ ...p, max_korting_percentage: e.target.value ? parseFloat(e.target.value) : null }))} className="rounded-xl" /></div>
             </div>
             <div className="rounded-xl border p-4 space-y-3 bg-muted/30">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm">Rol in configurator</Label>
+                  <Select
+                    value={form.product_rol ?? "__none__"}
+                    onValueChange={(v) => setForm(p => ({
+                      ...p,
+                      product_rol: v === "__none__" ? null : (v as ProductRol),
+                      is_installatiedienst: v === "installatiedienst" ? true : p.is_installatiedienst,
+                    }))}
+                  >
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Kies rol" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Geen rol —</SelectItem>
+                      {(Object.keys(PRODUCT_ROL_LABELS) as ProductRol[]).map((r) => (
+                        <SelectItem key={r} value={r}>{PRODUCT_ROL_LABELS[r]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Bepaalt of dit product in een configurator-slot verschijnt (bv. batterij-module, omvormer, installatie).
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-4 pt-6">
+                  <div>
+                    <Label className="text-sm">Is installatiedienst</Label>
+                    <p className="text-xs text-muted-foreground">Aan als dit product arbeid/installatie is (geen voorraad-artikel).</p>
+                  </div>
+                  <Switch
+                    checked={form.is_installatiedienst}
+                    onCheckedChange={(v) => setForm(p => ({ ...p, is_installatiedienst: v }))}
+                  />
+                </div>
+              </div>
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <Label className="text-sm">Heeft serienummer</Label>

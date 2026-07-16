@@ -7788,6 +7788,87 @@ export type Database = {
         }
         Relationships: []
       }
+      product_assemblage_slots: {
+        Row: {
+          assemblage_id: string
+          categorie_filter:
+            | Database["public"]["Enums"]["product_categorie"]
+            | null
+          created_at: string
+          default_aantal: number
+          helptekst: string | null
+          id: string
+          label: string
+          max_aantal: number
+          min_aantal: number
+          partner_id: string
+          product_rol_filter: Database["public"]["Enums"]["product_rol"] | null
+          sleutel: string
+          slot_type: string
+          spec_filter: Json
+          updated_at: string
+          verplicht: boolean
+          volgorde: number
+        }
+        Insert: {
+          assemblage_id: string
+          categorie_filter?:
+            | Database["public"]["Enums"]["product_categorie"]
+            | null
+          created_at?: string
+          default_aantal?: number
+          helptekst?: string | null
+          id?: string
+          label: string
+          max_aantal?: number
+          min_aantal?: number
+          partner_id: string
+          product_rol_filter?: Database["public"]["Enums"]["product_rol"] | null
+          sleutel: string
+          slot_type?: string
+          spec_filter?: Json
+          updated_at?: string
+          verplicht?: boolean
+          volgorde?: number
+        }
+        Update: {
+          assemblage_id?: string
+          categorie_filter?:
+            | Database["public"]["Enums"]["product_categorie"]
+            | null
+          created_at?: string
+          default_aantal?: number
+          helptekst?: string | null
+          id?: string
+          label?: string
+          max_aantal?: number
+          min_aantal?: number
+          partner_id?: string
+          product_rol_filter?: Database["public"]["Enums"]["product_rol"] | null
+          sleutel?: string
+          slot_type?: string
+          spec_filter?: Json
+          updated_at?: string
+          verplicht?: boolean
+          volgorde?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_assemblage_slots_assemblage_id_fkey"
+            columns: ["assemblage_id"]
+            isOneToOne: false
+            referencedRelation: "producten"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_assemblage_slots_assemblage_id_fkey"
+            columns: ["assemblage_id"]
+            isOneToOne: false
+            referencedRelation: "producten_publiek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_componenten: {
         Row: {
           aantal: number
@@ -7974,6 +8055,7 @@ export type Database = {
           btw_percentage: number | null
           categorie: Database["public"]["Enums"]["product_categorie"]
           certificeringen: string | null
+          configureerbaar_type: string | null
           created_at: string
           datasheet_type: string | null
           datasheet_url: string | null
@@ -7989,6 +8071,7 @@ export type Database = {
           installatie_handleiding_url: string | null
           installatie_instructies: string | null
           is_assemblage: boolean
+          is_installatiedienst: boolean
           kostprijs: number | null
           leverancier: string | null
           levertijd: string | null
@@ -8007,8 +8090,10 @@ export type Database = {
           prijs_excl_btw: number
           prijs_strategie: string
           product_code: string | null
+          product_rol: Database["public"]["Enums"]["product_rol"] | null
           specs: Json | null
           status: Database["public"]["Enums"]["product_status"]
+          template_attributen: Json
           toon_op_website: boolean
           updated_at: string
           voorraad: number | null
@@ -8026,6 +8111,7 @@ export type Database = {
           btw_percentage?: number | null
           categorie: Database["public"]["Enums"]["product_categorie"]
           certificeringen?: string | null
+          configureerbaar_type?: string | null
           created_at?: string
           datasheet_type?: string | null
           datasheet_url?: string | null
@@ -8041,6 +8127,7 @@ export type Database = {
           installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
           is_assemblage?: boolean
+          is_installatiedienst?: boolean
           kostprijs?: number | null
           leverancier?: string | null
           levertijd?: string | null
@@ -8059,8 +8146,10 @@ export type Database = {
           prijs_excl_btw?: number
           prijs_strategie?: string
           product_code?: string | null
+          product_rol?: Database["public"]["Enums"]["product_rol"] | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"]
+          template_attributen?: Json
           toon_op_website?: boolean
           updated_at?: string
           voorraad?: number | null
@@ -8078,6 +8167,7 @@ export type Database = {
           btw_percentage?: number | null
           categorie?: Database["public"]["Enums"]["product_categorie"]
           certificeringen?: string | null
+          configureerbaar_type?: string | null
           created_at?: string
           datasheet_type?: string | null
           datasheet_url?: string | null
@@ -8093,6 +8183,7 @@ export type Database = {
           installatie_handleiding_url?: string | null
           installatie_instructies?: string | null
           is_assemblage?: boolean
+          is_installatiedienst?: boolean
           kostprijs?: number | null
           leverancier?: string | null
           levertijd?: string | null
@@ -8111,8 +8202,10 @@ export type Database = {
           prijs_excl_btw?: number
           prijs_strategie?: string
           product_code?: string | null
+          product_rol?: Database["public"]["Enums"]["product_rol"] | null
           specs?: Json | null
           status?: Database["public"]["Enums"]["product_status"]
+          template_attributen?: Json
           toon_op_website?: boolean
           updated_at?: string
           voorraad?: number | null
@@ -10428,6 +10521,17 @@ export type Database = {
         | "omvormer"
         | "accessoires"
         | "installatiemateriaal"
+      product_rol:
+        | "batterij_module"
+        | "omvormer"
+        | "backup_box"
+        | "ev_lader"
+        | "zonnepaneel"
+        | "optimizer"
+        | "montage_materiaal"
+        | "installatiedienst"
+        | "accessoire"
+        | "overig"
       product_status: "actief" | "uitgefaseerd" | "niet_beschikbaar"
       sales_fase:
         | "koud"
@@ -10766,6 +10870,18 @@ export const Constants = {
         "omvormer",
         "accessoires",
         "installatiemateriaal",
+      ],
+      product_rol: [
+        "batterij_module",
+        "omvormer",
+        "backup_box",
+        "ev_lader",
+        "zonnepaneel",
+        "optimizer",
+        "montage_materiaal",
+        "installatiedienst",
+        "accessoire",
+        "overig",
       ],
       product_status: ["actief", "uitgefaseerd", "niet_beschikbaar"],
       sales_fase: [
