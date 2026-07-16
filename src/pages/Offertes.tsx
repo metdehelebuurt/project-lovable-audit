@@ -504,7 +504,7 @@ const Offertes = () => {
                             <Button variant="ghost" size="icon" onClick={() => navigate(`/offertes/${o.id}/pdf`)} title="PDF">
                               <FileDown className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => { setEmailDialog(o); setEmailTo(o.klant_email); }} title="Verstuur per e-mail">
+                            <Button variant="ghost" size="icon" onClick={() => setEmailDialog(o)} title="Verstuur per e-mail">
                               <Send className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="icon" onClick={async () => {
