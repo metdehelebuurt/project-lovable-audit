@@ -181,7 +181,7 @@ export default function ConfiguratorPreview({ assemblageId, dirty, toonOpWebsite
                                 ...prev,
                                 [slot.sleutel]: [{
                                   product_id: o.id,
-                                  aantal: huidig?.aantal ?? slot.default_aantal || 1,
+                                  aantal: huidig?.aantal ?? (slot.default_aantal || 1),
                                 }],
                               }))
                             }
