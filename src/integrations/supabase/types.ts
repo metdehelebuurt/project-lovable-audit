@@ -2178,6 +2178,9 @@ export type Database = {
           imap_last_uid: number | null
           imap_port: number | null
           is_default_voor_partner: boolean | null
+          is_primair: boolean
+          laatst_gebruikt_op: string | null
+          label: string | null
           last_send_error: string | null
           last_send_error_at: string | null
           last_send_method: string | null
@@ -2208,6 +2211,9 @@ export type Database = {
           imap_last_uid?: number | null
           imap_port?: number | null
           is_default_voor_partner?: boolean | null
+          is_primair?: boolean
+          laatst_gebruikt_op?: string | null
+          label?: string | null
           last_send_error?: string | null
           last_send_error_at?: string | null
           last_send_method?: string | null
@@ -2238,6 +2244,9 @@ export type Database = {
           imap_last_uid?: number | null
           imap_port?: number | null
           is_default_voor_partner?: boolean | null
+          is_primair?: boolean
+          laatst_gebruikt_op?: string | null
+          label?: string | null
           last_send_error?: string | null
           last_send_error_at?: string | null
           last_send_method?: string | null
@@ -3348,8 +3357,11 @@ export type Database = {
           created_at: string
           google_email: string
           id: string
+          is_primair: boolean
+          kleur: string | null
           laatst_gesynchroniseerd_op: string | null
           laatste_fout: string | null
+          label: string | null
           partner_id: string
           refresh_token: string
           resource_id: string | null
@@ -3374,8 +3386,11 @@ export type Database = {
           created_at?: string
           google_email: string
           id?: string
+          is_primair?: boolean
+          kleur?: string | null
           laatst_gesynchroniseerd_op?: string | null
           laatste_fout?: string | null
+          label?: string | null
           partner_id: string
           refresh_token: string
           resource_id?: string | null
@@ -3400,8 +3415,11 @@ export type Database = {
           created_at?: string
           google_email?: string
           id?: string
+          is_primair?: boolean
+          kleur?: string | null
           laatst_gesynchroniseerd_op?: string | null
           laatste_fout?: string | null
+          label?: string | null
           partner_id?: string
           refresh_token?: string
           resource_id?: string | null
@@ -3420,6 +3438,7 @@ export type Database = {
       }
       google_calendar_event_mapping: {
         Row: {
+          calendar_account_id: string | null
           created_at: string
           entiteit_id: string
           entiteit_type: string
@@ -3433,6 +3452,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          calendar_account_id?: string | null
           created_at?: string
           entiteit_id: string
           entiteit_type: string
@@ -3446,6 +3466,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          calendar_account_id?: string | null
           created_at?: string
           entiteit_id?: string
           entiteit_type?: string
@@ -3458,7 +3479,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "google_calendar_event_mapping_calendar_account_id_fkey"
+            columns: ["calendar_account_id"]
+            isOneToOne: false
+            referencedRelation: "google_calendar_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       helpdesk_csat: {
         Row: {
