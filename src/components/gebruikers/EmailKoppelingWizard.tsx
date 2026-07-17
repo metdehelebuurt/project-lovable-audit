@@ -161,35 +161,40 @@ export const EmailKoppelingWizard = ({ userId, partnerId }: EmailKoppelingWizard
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {account ? (
+        {heeftAccount ? (
           <>
-            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800">
-              <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{account.email_adres}</p>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge variant="outline" className="text-xs">
-                    {account.provider === "google" ? "Gmail" : "Outlook"}
-                  </Badge>
-                  {account.last_sync_at && (
-                    <span className="text-xs text-muted-foreground">
-                      Laatst gesync: {new Date(account.last_sync_at).toLocaleString("nl-NL")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+            <EmailAccountsLijst userId={userId} />
             <p className="text-xs text-muted-foreground">
-              Vanaf nu worden offertes, facturen en helpdesk-berichten direct vanuit jouw e-mailadres verzonden.
+              Meerdere adressen? Het <strong>primaire</strong> adres wordt standaard gebruikt bij verzenden. Je kunt per e-mail nog kiezen vanaf welk adres je verstuurt.
             </p>
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={sync} disabled={syncing} className="gap-2 rounded-pill">
                 <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                 {syncing ? "Synchroniseren..." : "Nu synchroniseren"}
               </Button>
-              <Button variant="outline" size="sm" onClick={disconnect} className="gap-2 rounded-pill text-destructive hover:text-destructive">
-                <Unlink className="h-3.5 w-3.5" /> Ontkoppelen
-              </Button>
+            </div>
+            <div className="border-t pt-4">
+              <p className="text-xs font-medium text-foreground mb-2">Nog een e-mailadres koppelen?</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button onClick={() => startOAuth("google")} className="flex items-center gap-3 p-3 border rounded-xl hover:bg-muted/50 transition-colors text-left">
+                  <div className="h-9 w-9 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">Gmail toevoegen</p>
+                    <p className="text-xs text-muted-foreground">Werk- of privé-account</p>
+                  </div>
+                </button>
+                <button onClick={() => startOAuth("microsoft")} className="flex items-center gap-3 p-3 border rounded-xl hover:bg-muted/50 transition-colors text-left">
+                  <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">Outlook toevoegen</p>
+                    <p className="text-xs text-muted-foreground">Microsoft 365 of Outlook.com</p>
+                  </div>
+                </button>
+              </div>
             </div>
           </>
         ) : (
