@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub as string;
     const body = await req.json();
-    const { to, subject, html_body, offerte_id, lead_id, klant_id, affiliate_lead_id, document_type } = body;
+    const { to, subject, html_body, offerte_id, lead_id, klant_id, affiliate_lead_id, document_type, from_account_id } = body;
 
     if (!to || !subject || !html_body) {
       return new Response(JSON.stringify({ error: "to, subject, html_body zijn verplicht" }), { status: 400, headers: corsHeaders });
@@ -59,9 +59,16 @@ Deno.serve(async (req) => {
 
     let emailAccount: any = null;
     let resolvedBron: string = "gebruiker_persoonlijk";
-    if (partnerId) {
+    // Expliciete keuze door de gebruiker (dropdown "Verstuur vanaf …")
+    if (from_account_id) {
+      const { data: chosen } = await adminClient
+        .from("email_accounts").select("*")
+        .eq("id", from_account_id).eq("user_id", userId).eq("actief", true).maybeSingle();
+      if (chosen) { emailAccount = chosen; resolvedBron = "expliciete_keuze"; }
+    }
+    if (!emailAccount && partnerId) {
       try {
-        const resolved = await resolveEmailSender(adminClient, partnerId, docType, userId);
+        const resolved = await resolveEmailSender(adminClient, partnerId, docType, userId, from_account_id);
         if (resolved.method === "oauth" && resolved.account) {
           emailAccount = resolved.account;
           resolvedBron = resolved.routingBron;
@@ -71,10 +78,17 @@ Deno.serve(async (req) => {
       }
     }
     if (!emailAccount) {
-      const { data: ownAccount } = await adminClient
+      const { data: prim } = await adminClient
         .from("email_accounts").select("*")
-        .eq("user_id", userId).eq("actief", true).maybeSingle();
-      emailAccount = ownAccount;
+        .eq("user_id", userId).eq("actief", true).eq("is_primair", true).maybeSingle();
+      if (prim) emailAccount = prim;
+      else {
+        const { data: any1 } = await adminClient
+          .from("email_accounts").select("*")
+          .eq("user_id", userId).eq("actief", true)
+          .order("created_at", { ascending: true }).limit(1).maybeSingle();
+        emailAccount = any1;
+      }
     }
     if (!emailAccount) {
       return new Response(JSON.stringify({ error: "Geen e-mailaccount gekoppeld" }), { status: 400, headers: corsHeaders });
