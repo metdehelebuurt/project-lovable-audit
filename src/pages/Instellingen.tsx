@@ -36,6 +36,7 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
+import { getAllRoles } from "@/lib/permissions";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -92,7 +93,10 @@ const Instellingen = () => {
   ];
 
   const currentRol = (profile?.rol ?? "consument") as AppRole;
-  const visibleTabs = tabs.filter(t => !t.roles || t.roles.includes(currentRol));
+  const userRoles = getAllRoles(profile);
+  const visibleTabs = tabs.filter(
+    t => !t.roles || t.roles.some(r => userRoles.includes(r)) || t.roles.includes(currentRol),
+  );
   const [activeTab, setActiveTab] = useState("profiel");
 
   return (
