@@ -16,9 +16,9 @@ import NummerreeksConfig from "@/components/instellingen/NummerreeksConfig";
 import InkoopInstellingenForm from "@/components/instellingen/InkoopInstellingenForm";
 import WebtoolsApiInstellingen from "@/components/instellingen/WebtoolsApiInstellingen";
 import InstallateurVoorkeurenForm from "@/components/oplever/InstallateurVoorkeurenForm";
-import MijnEmailKoppeling from "@/components/instellingen/MijnEmailKoppeling";
 import GoogleAgendaKoppeling from "@/components/instellingen/GoogleAgendaKoppeling";
 import InboxZichtbaarheidBeheer from "@/components/instellingen/InboxZichtbaarheidBeheer";
+import EmailKoppelingWizard from "@/components/gebruikers/EmailKoppelingWizard";
 import NotificatieVoorkeuren from "@/pages/instellingen/NotificatieVoorkeuren";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,7 +127,9 @@ const Instellingen = () => {
           {activeTab === "profiel" && <ProfielTab />}
           {activeTab === "beveiliging" && <BeveiligingTab />}
           {activeTab === "notificaties" && <NotificatieVoorkeuren />}
-          {activeTab === "mijn-email" && <MijnEmailKoppeling />}
+          {activeTab === "mijn-email" && user?.id && (
+            <EmailKoppelingWizard userId={user.id} partnerId={profile?.partner_id || ""} />
+          )}
           {activeTab === "google-agenda" && <GoogleAgendaKoppeling />}
           {activeTab === "oplever" && <InstallateurVoorkeurenForm />}
           {activeTab === "bedrijf" && isPartnerAdmin && profile?.partner_id && <BedrijfsgegevensTab partnerId={profile.partner_id} />}

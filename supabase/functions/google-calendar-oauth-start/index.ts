@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       response_type: "code",
       scope: GOOGLE_SCOPES,
       access_type: "offline",
-      prompt: "consent",
+      prompt: "consent select_account",
       state,
     });
     return json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
