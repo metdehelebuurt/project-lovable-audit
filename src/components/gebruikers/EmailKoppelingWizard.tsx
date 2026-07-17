@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Mail, CheckCircle2, RefreshCw, Unlink, Copy, Info,
+  Mail, CheckCircle2, RefreshCw, Copy, Info,
   AlertTriangle, XCircle, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import EmailAccountsLijst from "./EmailAccountsLijst";
 
 interface EmailKoppelingWizardProps {
   userId: string;
@@ -17,7 +18,7 @@ interface EmailKoppelingWizardProps {
 }
 
 export const EmailKoppelingWizard = ({ userId, partnerId }: EmailKoppelingWizardProps) => {
-  const [account, setAccount] = useState<any>(null);
+  const [heeftAccount, setHeeftAccount] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [oauthConfig, setOauthConfig] = useState<{
@@ -31,13 +32,12 @@ export const EmailKoppelingWizard = ({ userId, partnerId }: EmailKoppelingWizard
   const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
 
   const load = async () => {
-    const { data } = await supabase
+    const { count } = await supabase
       .from("email_accounts")
-      .select("*")
+      .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("actief", true)
-      .maybeSingle();
-    setAccount(data);
+      .eq("actief", true);
+    setHeeftAccount((count ?? 0) > 0);
     setLoading(false);
   };
 
@@ -128,13 +128,6 @@ export const EmailKoppelingWizard = ({ userId, partnerId }: EmailKoppelingWizard
       }
       loadAttempts();
     }
-  };
-
-  const disconnect = async () => {
-    if (!account) return;
-    await supabase.from("email_accounts").update({ actief: false }).eq("id", account.id);
-    toast.success("E-mailaccount ontkoppeld");
-    setAccount(null);
   };
 
   const sync = async () => {
