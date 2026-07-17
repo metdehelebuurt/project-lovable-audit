@@ -267,7 +267,7 @@ export default function PartnerDetail() {
     if (isTrial && trialVerlopen) {
       return {
         titel: "Trial verlopen",
-        tekst: "De proefperiode van 30 dagen is voorbij. De klant heeft nog geen betaald abonnement afgesloten.",
+        tekst: "De proefperiode van 14 dagen is voorbij. De klant heeft nog geen betaald abonnement afgesloten.",
         bron: `Berekend op basis van trial_einddatum (${formatDate(partner.trial_einddatum)}).`,
       };
     }

@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
     // Alle partners met een lopende of onlangs verlopen trial (t.b.v. reactivatie-sales).
     const vandaag = new Date(); vandaag.setHours(0, 0, 0, 0)
-    const grens = new Date(vandaag.getTime() - 30 * 86400000).toISOString().slice(0, 10)
+    const grens = new Date(vandaag.getTime() - 14 * 86400000).toISOString().slice(0, 10)
 
     const { data: partners, error: pErr } = await admin
       .from('partners')

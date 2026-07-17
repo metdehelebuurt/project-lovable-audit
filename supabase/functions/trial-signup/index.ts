@@ -19,7 +19,7 @@ const BodySchema = z.object({
   tijdelijk_wachtwoord: z.string().max(100).optional().nullable(),
   aangemaakt_door: z.string().max(200).optional().nullable(),
   aangemaakt_door_id: z.string().uuid().optional().nullable(),
-  trial_dagen: z.number().int().min(1).max(30).optional(),
+  trial_dagen: z.number().int().min(1).max(14).optional(),
   // Selfservice signup vereist expliciet akkoord; interne flows (affiliate/admin) mogen deze weglaten.
   toestemming: z.boolean().optional(),
   // Bron van de trial: 'selfservice' (frontpage), 'affiliate' (via wederverkoper), 'sales' (aangemaakt door sales-team), 'google_oauth'.
@@ -80,8 +80,8 @@ serve(async (req) => {
       );
     }
 
-    // 2. Create partner (trial) — standaard 30 dagen, configureerbaar (1-30)
-    const dagenRaw = Number.isFinite(Number(trial_dagen)) ? Math.floor(Number(trial_dagen)) : 30;
+    // 2. Create partner (trial) — standaard 14 dagen, configureerbaar (1-14)
+    const dagenRaw = Number.isFinite(Number(trial_dagen)) ? Math.floor(Number(trial_dagen)) : 14;
     const dagen = Math.min(30, Math.max(1, dagenRaw));
     const trialStart = new Date();
     const trialEnd = new Date(trialStart);

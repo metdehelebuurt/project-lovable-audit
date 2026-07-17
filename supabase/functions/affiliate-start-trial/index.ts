@@ -16,7 +16,7 @@ const BodySchema = z.object({
   telefoon: z.string().max(40).optional().nullable(),
   password: z.string().min(8).max(100),
   toestemming: z.literal(true),
-  trial_dagen: z.number().int().min(1).max(30).optional(),
+  trial_dagen: z.number().int().min(1).max(14).optional(),
 });
 
 function err(message: string, status = 400, code = "bad_request") {
@@ -113,7 +113,7 @@ serve(async (req) => {
     // Trial-signup aanroepen
     const isTrialDurationAdmin =
       profile.rol === "superadmin" || (profile.email ?? "").toLowerCase() === "bas@mijnhuis.nu";
-    const effectieveTrialDagen = isTrialDurationAdmin && body.trial_dagen ? body.trial_dagen : 30;
+    const effectieveTrialDagen = isTrialDurationAdmin && body.trial_dagen ? body.trial_dagen : 14;
     const signupRes = await admin.functions.invoke("trial-signup", {
       body: {
         bedrijfsnaam: body.bedrijfsnaam,

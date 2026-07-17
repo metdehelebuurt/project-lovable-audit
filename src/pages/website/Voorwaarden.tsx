@@ -51,7 +51,7 @@ const Voorwaarden = () => (
 
         <h2 className="text-2xl font-bold mb-4">6. Proefperiode</h2>
         <p className="text-muted-foreground mb-6">
-          Nieuwe Gebruikers kunnen het Platform 30 dagen gratis uitproberen. Na afloop van de proefperiode
+          Nieuwe Gebruikers kunnen het Platform 14 dagen gratis uitproberen. Na afloop van de proefperiode
           dient een betaald abonnement te worden afgesloten om het Platform te blijven gebruiken. Uw data
           blijft bewaard tot 30 dagen na het einde van de proefperiode.
         </p>
