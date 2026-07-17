@@ -114,8 +114,8 @@ export const EmailKoppelingWizard = ({ userId, partnerId }: EmailKoppelingWizard
       ? "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.settings.sharing https://www.googleapis.com/auth/userinfo.email"
       : "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send offline_access";
     const url = provider === "google"
-      ? `https://accounts.google.com/o/oauth2/v2/auth?client_id=${cfg.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${state}`
-      : `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${cfg.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
+      ? `https://accounts.google.com/o/oauth2/v2/auth?client_id=${cfg.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=${encodeURIComponent("consent select_account")}&state=${state}`
+      : `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${cfg.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&prompt=select_account&state=${state}`;
     const popup = window.open(url, "email-oauth", "width=600,height=720");
     if (!popup) {
       toast.error("Popup geblokkeerd — sta popups toe en probeer opnieuw");
