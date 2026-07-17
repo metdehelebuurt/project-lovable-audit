@@ -21,6 +21,7 @@ import {
 import { useEmailConfigStatus } from "@/lib/email/useEmailConfigStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
+import SenderPicker from "@/components/email/SenderPicker";
 
 interface Props {
   open: boolean;
@@ -81,6 +82,7 @@ export default function OrderbevestigingEmailDialog({
   });
   const [sending, setSending] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [fromAccountId, setFromAccountId] = useState<string | null>(null);
 
   // Bij open: laad template + render variabelen
   useEffect(() => {
@@ -146,6 +148,7 @@ export default function OrderbevestigingEmailDialog({
             html_body: composer.bodyHtml,
             attachment_path: path || null,
             attachment_filename: `orderbevestiging-${opdracht.id}.pdf`,
+            from_account_id: fromAccountId,
           },
         },
       );
@@ -196,6 +199,7 @@ export default function OrderbevestigingEmailDialog({
           onChange={setComposer}
           currentUserEmail={user?.email || undefined}
         />
+        <SenderPicker userId={user?.id} value={fromAccountId} onChange={setFromAccountId} />
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Paperclip className="h-3.5 w-3.5" /> PDF van de orderbevestiging
