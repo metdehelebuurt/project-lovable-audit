@@ -41,7 +41,7 @@ export function TrialStartenDialog({ open, onOpenChange, lead, onStarted }: Prop
   const [telefoon, setTelefoon] = useState(lead.telefoon ?? "");
   const [password, setPassword] = useState(() => genereerWachtwoord());
   const [toestemming, setToestemming] = useState(false);
-  const [trialDagen, setTrialDagen] = useState<number>(30);
+  const [trialDagen, setTrialDagen] = useState<number>(14);
   const magDuurAanpassen = useCanCustomizeTrialDuration();
 
   const start = useStartTrialVoorLead();
@@ -56,11 +56,11 @@ export function TrialStartenDialog({ open, onOpenChange, lead, onStarted }: Prop
       setTelefoon(lead.telefoon ?? "");
       setPassword(genereerWachtwoord());
       setToestemming(false);
-      setTrialDagen(30);
+      setTrialDagen(14);
     }
   }, [open, lead]);
 
-  const dagenValide = Number.isInteger(trialDagen) && trialDagen >= 1 && trialDagen <= 30;
+  const dagenValide = Number.isInteger(trialDagen) && trialDagen >= 1 && trialDagen <= 14;
   const valide = bedrijfsnaam.trim() && voornaam.trim() && achternaam.trim() && email.trim() && password.length >= 8 && toestemming && dagenValide;
 
   const versturen = async () => {
@@ -96,8 +96,8 @@ export function TrialStartenDialog({ open, onOpenChange, lead, onStarted }: Prop
           <DialogTitle className="flex items-center gap-2"><Rocket className="h-5 w-5 text-primary" /> Trial starten voor klant</DialogTitle>
           <DialogDescription>
             {magDuurAanpassen
-              ? `Maakt direct een trial-account aan op naam van de klant (max 30 dagen). De klant ontvangt een welkomstmail. Jij wordt automatisch gekoppeld als affiliate.`
-              : `Maakt direct een 30-daags trial-account aan op naam van de klant. De klant ontvangt een welkomstmail. Jij wordt automatisch gekoppeld als affiliate.`}
+              ? `Maakt direct een trial-account aan op naam van de klant (max 14 dagen). De klant ontvangt een welkomstmail. Jij wordt automatisch gekoppeld als affiliate.`
+              : `Maakt direct een 14-daags trial-account aan op naam van de klant. De klant ontvangt een welkomstmail. Jij wordt automatisch gekoppeld als affiliate.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -136,19 +136,19 @@ export function TrialStartenDialog({ open, onOpenChange, lead, onStarted }: Prop
 
           {magDuurAanpassen && (
             <div>
-              <Label>Trial-duur (dagen, max 30)</Label>
+              <Label>Trial-duur (dagen, max 14)</Label>
               <Input
                 type="number"
                 min={1}
-                max={30}
+                max={14}
                 value={trialDagen}
                 onChange={(e) => {
                   const n = parseInt(e.target.value, 10);
                   if (Number.isNaN(n)) { setTrialDagen(0); return; }
-                  setTrialDagen(Math.min(30, Math.max(1, n)));
+                  setTrialDagen(Math.min(14, Math.max(1, n)));
                 }}
               />
-              <p className="text-xs text-muted-foreground mt-1">Alleen zichtbaar voor jou en Bas. Standaard 30 dagen.</p>
+              <p className="text-xs text-muted-foreground mt-1">Alleen zichtbaar voor jou en Bas. Standaard 14 dagen.</p>
             </div>
           )}
 
