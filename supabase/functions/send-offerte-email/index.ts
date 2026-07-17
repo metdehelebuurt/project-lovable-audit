@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub as string;
     const body = await req.json();
-    const { action } = body;
+    const { action, from_account_id } = body;
 
     const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -141,16 +141,27 @@ Deno.serve(async (req) => {
       .eq("id", userRow.partner_id)
       .single();
 
-    // Zoek beste e-mailaccount: eerst het persoonlijke account van de gebruiker,
-    // anders een actief account binnen de organisatie. Gebruik limit(1) i.p.v.
-    // maybeSingle zodat een partner met meerdere accounts geen error geeft.
+    // Zoek beste e-mailaccount:
+    // 1) Expliciete keuze (from_account_id) van de gebruiker (SenderPicker).
+    // 2) Primair persoonlijk account, anders recentst gebruikte persoonlijke.
+    // 3) Anders een actief account binnen de organisatie.
     let emailAccount: any = null;
-    {
-      const { data: own } = await adminClient
+    if (from_account_id && typeof from_account_id === "string") {
+      const { data: expl } = await adminClient
         .from("email_accounts").select("*")
-        .eq("user_id", userId).eq("actief", true)
-        .order("created_at", { ascending: false }).limit(1);
-      if (own && own.length) emailAccount = own[0];
+        .eq("id", from_account_id).eq("actief", true).maybeSingle();
+      if (expl) emailAccount = expl;
+    }
+    {
+      if (!emailAccount) {
+        const { data: own } = await adminClient
+          .from("email_accounts").select("*")
+          .eq("user_id", userId).eq("actief", true)
+          .order("is_primair", { ascending: false })
+          .order("laatst_gebruikt_op", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false }).limit(1);
+        if (own && own.length) emailAccount = own[0];
+      }
     }
     if (!emailAccount) {
       const { data: partnerAcc } = await adminClient

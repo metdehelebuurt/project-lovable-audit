@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     const {
       opdracht_id, ontvanger_email,
       cc, bcc,
-      html_body, subject: customSubject, attachment_path, attachment_filename,
+      html_body, subject: customSubject, attachment_path, attachment_filename, from_account_id,
     } = body;
 
     if (!opdracht_id || !ontvanger_email) {
@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
       bcc: Array.isArray(bcc) ? bcc : [],
       subject, html, attachment, type: "orderbevestiging",
       klantId: null, verzondenDoorId: userId,
+      preferredAccountId: from_account_id ?? null,
     });
 
     if (!opdracht.bevestiging_verzonden_op) {

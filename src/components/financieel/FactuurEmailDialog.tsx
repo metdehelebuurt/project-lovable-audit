@@ -12,6 +12,7 @@ import { renderFactuurPdf } from "@/lib/renderFactuurPdf";
 import { useAuth } from "@/contexts/AuthContext";
 import { parseAddressList } from "@/components/email/EmailComposerFields";
 import { Mail, X } from "lucide-react";
+import SenderPicker from "@/components/email/SenderPicker";
 
 interface Props {
   open: boolean;
@@ -54,7 +55,7 @@ function createDefaultBody(label: string, documentnummer: string, isResend: bool
 
 export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo, pdfElementSelector = ".pdf-print-root", isResend = false, onSent }: Props) {
   const label = getLabel(doc.type, doc.factuur_subtype);
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [to, setTo] = useState(defaultTo);
   const [cc, setCc] = useState("");
   const [bcc, setBcc] = useState("");
@@ -63,6 +64,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
   const [subject, setSubject] = useState(createDefaultSubject(label, doc.documentnummer, isResend));
   const [body, setBody] = useState(createDefaultBody(label, doc.documentnummer, isResend));
   const [sending, setSending] = useState(false);
+  const [fromAccountId, setFromAccountId] = useState<string | null>(null);
   const [pdfStatus, setPdfStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
@@ -236,6 +238,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
           is_resend: isResend,
           cc: parseAddressList(cc),
           bcc: parseAddressList(bcc),
+          from_account_id: fromAccountId,
         },
       });
       if (error || data?.error) {
@@ -352,6 +355,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
               <Input value={bcc} onChange={(e) => setBcc(e.target.value)} className="mt-1" placeholder="bcc1@voorbeeld.nl" />
             </div>
           )}
+          <SenderPicker userId={user?.id} value={fromAccountId} onChange={setFromAccountId} />
           <div><Label>Onderwerp</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} className="mt-1" /></div>
           <div><Label>Bericht</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className="mt-1" /></div>
           <div className="flex justify-end gap-2">

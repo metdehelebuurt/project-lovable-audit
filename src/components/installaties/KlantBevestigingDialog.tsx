@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { type Installatie } from "./api/installatieApi";
+import { useAuth } from "@/contexts/AuthContext";
+import SenderPicker from "@/components/email/SenderPicker";
 
 interface Props {
   open: boolean;
@@ -17,6 +19,8 @@ interface Props {
 }
 
 export default function KlantBevestigingDialog({ open, onOpenChange, installatie, onSent }: Props) {
+  const { user } = useAuth();
+  const [fromAccountId, setFromAccountId] = useState<string | null>(null);
   const datum = installatie.geplande_startdatum
     ? new Date(installatie.geplande_startdatum).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
     : "(nog niet bekend)";
@@ -56,6 +60,7 @@ Met vriendelijke groet`
           ontvanger_email: to.trim(),
           subject,
           text_body: body,
+          from_account_id: fromAccountId,
         },
       });
       if (error || data?.error) {
@@ -79,6 +84,7 @@ Met vriendelijke groet`
         <DialogHeader><DialogTitle>Installatiebevestiging naar klant</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div><Label>Aan</Label><Input value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <SenderPicker userId={user?.id} value={fromAccountId} onChange={setFromAccountId} />
           <div><Label>Onderwerp</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} /></div>
           <div><Label>Bericht</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12} /></div>
         </div>

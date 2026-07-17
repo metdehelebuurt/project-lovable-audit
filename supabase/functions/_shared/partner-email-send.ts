@@ -25,6 +25,7 @@ export interface SendPartnerEmailParams {
   leadId?: string | null;
   verzondenDoorId?: string | null;
   documentType?: DocumentType;  // Optioneel: stuurt routing-keuze. Default = mapping op `type`.
+  preferredAccountId?: string | null;
 }
 
 export interface SendPartnerEmailResult {
@@ -47,7 +48,7 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
   const {
     adminClient, partnerId, to, cc = [], bcc = [], subject, html, attachment = null,
     type, klantId = null, offerteId = null, leadId = null, verzondenDoorId = null,
-    documentType,
+    documentType, preferredAccountId = null,
   } = params;
 
   // Map het bestaande `type` naar een DocumentType voor routing-config.
@@ -59,7 +60,7 @@ export async function sendPartnerEmail(params: SendPartnerEmailParams): Promise<
 
   let resolved;
   try {
-    resolved = await resolveEmailSender(adminClient, partnerId, docType, verzondenDoorId);
+    resolved = await resolveEmailSender(adminClient, partnerId, docType, verzondenDoorId, preferredAccountId);
   } catch (err) {
     if (err instanceof EmailSenderError) {
       throw new PartnerEmailError(err.message, err.status);
