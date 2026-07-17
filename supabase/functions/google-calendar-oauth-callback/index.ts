@@ -67,22 +67,34 @@ Deno.serve(async (req) => {
 
     const expiry = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
 
-    await admin
+    // Meerdere Google-accounts per user toegestaan: match op (user_id, google_email).
+    const { data: bestaand } = await admin
       .from("google_calendar_accounts")
-      .upsert({
-        user_id: verified.userId,
-        partner_id: userRow.partner_id,
-        google_email: userinfo.email,
-        calendar_id: "primary",
-        calendar_summary: userinfo.email,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expiry: expiry,
-        scope: tokens.scope,
-        actief: true,
-        laatste_fout: null,
-        sync_token: null,
-      }, { onConflict: "user_id" });
+      .select("id")
+      .eq("user_id", verified.userId)
+      .ilike("google_email", userinfo.email)
+      .maybeSingle();
+
+    const payload = {
+      user_id: verified.userId,
+      partner_id: userRow.partner_id,
+      google_email: userinfo.email,
+      calendar_id: "primary",
+      calendar_summary: userinfo.email,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      token_expiry: expiry,
+      scope: tokens.scope,
+      actief: true,
+      laatste_fout: null,
+      sync_token: null,
+    };
+
+    if (bestaand?.id) {
+      await admin.from("google_calendar_accounts").update(payload).eq("id", bestaand.id);
+    } else {
+      await admin.from("google_calendar_accounts").insert(payload);
+    }
 
     return redirectMet(`${APP_URL}${verified.returnTo}?gcal=ok`);
   } catch (e) {
