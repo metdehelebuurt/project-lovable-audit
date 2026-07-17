@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
       subject: customSubject,
       html_body: customHtml,
       text_body: customText,
+      from_account_id,
     } = body ?? {};
 
     if (!installatie_id || typeof installatie_id !== "string") {
@@ -154,6 +155,7 @@ ${orgNaam}`;
         klantId: installatie.klant_id ?? null,
         verzondenDoorId: userId,
         documentType: "algemeen",
+        preferredAccountId: from_account_id ?? null,
       });
 
       const updates: Record<string, unknown> = {
