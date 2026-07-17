@@ -1,106 +1,67 @@
-## Doel
 
-De module "Samengestelde producten" (assemblages) omvormen tot een slimme, categorie-gedreven configurator-basis. Startpunt: **thuisbatterij totaalpakket** (zoals SolarNRG). De data & API worden zo opgezet dat we later een frontend-configurator (op klantwebsite via API, en daarna als embeddable tool) hierop kunnen bouwen zonder herwerk.
+# Meerdere e-mail- en agenda-accounts per gebruiker
 
-## Kern-inzicht
+Vandaag kan één gebruiker maar één actief `email_accounts`-record en één `google_calendar_accounts`-record hebben. Doel: meerdere gekoppelde accounts naast elkaar, met één primair per gebruiker, keuze bij verzenden en samengevoegde agenda-weergave.
 
-Een "samengesteld product" wordt een **configurator-template** met:
-- Een **producttype** (thuisbatterij, zonnepanelen-set, warmtepomp-set, laadpaal-set, …) → bepaalt welke keuzegroepen en dynamische velden verschijnen.
-- **Configurator-attributen** op template-niveau (bv. fase: 1-fase / 3-fase; met/zonder noodstroom; met/zonder installatie).
-- **Slots** (keuzegroepen) i.p.v. een platte componentenlijst. Elke slot heeft een **rol** (batterij-opslag, omvormer, backup-box, montagemateriaal, installatie, …), min/max aantal, verplicht/optioneel, en een filter op producten (categorie + rol + specs).
-- **Compatibiliteitsregels** tussen slots (bv. inverter moet zelfde fase hebben als template; capaciteit-modules alleen bij matching inverter-serie).
-- **Prijs**: som van gekozen opties + optionele installatie, met marge/opslag.
+## 1. Database
 
-## Wijzigingen op productniveau (`producten`)
+**`email_accounts`**
+- Voeg toe: `is_primair boolean not null default false`, `label text` (bijv. "Werk", "Privé"), `laatst_gebruikt_op timestamptz`.
+- Verwijder impliciete "één per user"-aanname; behoud `actief`.
+- Partial unique index: `create unique index on email_accounts (user_id) where is_primair and actief;` — max één primair per gebruiker.
+- Trigger `ensure_single_primary_email`: bij insert/update met `is_primair=true` de andere accounts van dezelfde user op `false` zetten; bij eerste actief account automatisch `is_primair=true`; bij deactiveren/verwijderen van het primaire account een ander actief account promoveren.
 
-Nieuwe velden toevoegen:
-- `product_rol` (enum, nullable): `batterij_module`, `omvormer`, `backup_box`, `ev_lader`, `zonnepaneel`, `optimizer`, `montage_materiaal`, `installatiedienst`, `accessoire`, `overig`. Vervangt niet `categorie` — is een fijnere sub-typering voor configurator-matching.
-- `is_installatiedienst` (boolean, default false) — snelle filter voor slot "installatie".
-- `configureerbaar_type` (text, nullable) op assemblages: `thuisbatterij_pakket` | `zonnepanelen_set` | `warmtepomp_set` | `laadpaal_set` | `custom`. Alleen ingevuld als `is_assemblage=true`.
-- `template_attributen` (jsonb, default `{}`) op assemblages: normale attributen zoals `{fase:"1", noodstroom:true, incl_installatie:true}`.
+**`google_calendar_accounts`**
+- Identieke uitbreiding: `is_primair`, `label`, `laatst_gesynced_op` (bestaat mogelijk al — hergebruiken).
+- Zelfde partial unique index + trigger `ensure_single_primary_calendar`.
+- `google_calendar_event_mapping.calendar_account_id uuid references google_calendar_accounts(id)` toevoegen zodat events per account herleidbaar zijn (nullable, backfill = huidig actief account per user).
 
-## Nieuwe tabel: `product_assemblage_slots`
+**`email_routing_config`**
+- Blijft; `bron='gebruiker_persoonlijk'` mapt op het **primaire** account. Nieuwe optie: `email_account_id` per user opslaan is al mogelijk via `specifiek_account`.
 
-Definieert de keuzegroepen van een assemblage.
+Migratie regelt ook: bestaande unieke `actief=true` accounts worden `is_primair=true`.
 
-Kolommen (domein-specifiek):
-- `assemblage_id` → `producten.id`
-- `partner_id`
-- `sleutel` (text, bv. `batterij_capaciteit`, `inverter`, `installatie`)
-- `label` (text)
-- `slot_type`: `single_select`, `multi_select`, `quantity_step` (bv. modules 1..n).
-- `product_rol_filter` (text) — beperkt keuze tot producten met deze rol.
-- `categorie_filter` (product_categorie, nullable)
-- `spec_filter` (jsonb) — bv. `{fase:"{{template.fase}}"}` voor compatibiliteit.
-- `min_aantal`, `max_aantal`, `default_aantal`
-- `verplicht` (bool)
-- `volgorde` (int)
-- `helptekst` (text)
+## 2. Edge functions
 
-Bijbehorende tabel `product_assemblage_slot_opties` (optioneel, phase 2) voor curated keuzelijsten per slot — MVP: keuzes komen dynamisch uit `producten` op basis van filters.
+- **`email-oauth-callback`**: verwijder "één actief account per user"-logica; nieuwe koppeling wordt actief maar wordt alleen primair als de user er nog geen heeft. Reset `state`-flow ondersteunt reeds meerdere providers.
+- **`google-calendar-oauth-callback`**: idem — sta meerdere Google-accounts per user toe (uniek op `(user_id, google_email)`), eerste = primair.
+- **`resolve-email-sender.ts`**:
+  - `pickUserAccount(uid)` selecteert nu eerst `is_primair=true`, dan meest recent gebruikt.
+  - Nieuwe optionele parameter `preferredAccountId` zodat verzendfuncties een expliciete keuze meegeven.
+- **`send-offerte-email`, `send-factuur-email`, `send-orderbevestiging-email`, `send-installatie-bevestiging-email`, `inkoop-verzend-leverancier`, `email-api-send`**: accepteren optioneel `from_account_id` en geven dit door aan `resolveEmailSender`.
+- **`google-calendar-sync-push` / `sync-pull` / `webhook` / `renew-channels`**: itereren over alle actieve accounts per user in plaats van `.maybeSingle()`. Nieuwe events worden geschreven naar het **primaire** agenda-account tenzij anders bepaald (per-entiteit veld later mogelijk).
+- **`google-calendar-disconnect`**: vereist `account_id`; promoveert een ander account tot primair indien nodig.
+- **`affiliate-busy-blocks`**: verzamelt busy-blocks over alle gekoppelde agenda's van de affiliate en dedupt.
 
-RLS: partner-scoped, zelfde patroon als `product_componenten`. Nette GRANTs.
+## 3. Frontend
 
-## Bestaande `product_componenten` blijft bestaan
+### E-mail koppeling (`src/components/gebruikers/EmailKoppelingWizard.tsx`)
+- Toon **lijst** van gekoppelde accounts i.p.v. één kaart. Elk item: provider-badge, adres, label (inline te bewerken), "Primair"-badge, knoppen: *Maak primair*, *Synchroniseer*, *Ontkoppelen*.
+- Knop "Nieuw account koppelen" met provider-keuze (Google/Microsoft) — hergebruikt bestaande OAuth-start.
+- Gebruikt nieuwe hook `useEmailAccounts(userId)` (list + setPrimair + rename + disconnect).
 
-Voor "vast samengestelde" bundels zonder keuzes (huidige gedrag). Slots zijn een uitbreiding — een assemblage kan óf vaste componenten hebben, óf slots, óf beide (basiscomponenten + keuzeslots).
+### Verzenddialogen (offerte-, factuur-, orderbevestiging-, inkoop-, chat-mailer)
+- Nieuwe `<SenderPicker>` component: dropdown "Verstuur vanaf" met alle actieve accounts van de gebruiker, standaard = primair. Value wordt als `from_account_id` meegegeven.
+- `InkoopVerzendDialog.tsx` toont nu ook meerdere mailboxen; waarschuwing "geen mailbox" alleen als lijst leeg.
 
-## Backend / API (edge functions)
+### Agenda
+- Nieuwe pagina/section **Instellingen → Agenda's**: lijst van gekoppelde Google-accounts met dezelfde acties (primair, label, ontkoppelen, opnieuw koppelen).
+- `StepAgenda.tsx` in onboarding: toont lijst + "Extra Google-agenda koppelen".
+- Team-agenda + `useSalesBusyBlocks` blijven ongewijzigd qua interface; edge function aggregeert onderliggend.
+- Agenda-kleur per account (extra veld `kleur` op `google_calendar_accounts`) zodat evenementen visueel herleidbaar zijn in Vandaag/Planning kaarten.
 
-Nieuwe **`assemblage-config`** edge function, publiek leesbaar (voor website-embed, met `partner_id` in URL). Endpoints:
-- `GET ?assemblage_id=...` → geeft template terug: attributen-schema, slots, standaardconfiguratie, en per slot de matchende producten (met prijzen, specs, afbeelding).
-- `POST` `{assemblage_id, keuzes:{slot_sleutel: [{product_id, aantal}]}, template_attributen:{...}}` → valideert compatibiliteit + berekent prijs + retourneert samenvatting (regels, totalen, waarschuwingen).
+### Routing-instellingen (`src/hooks/instellingen/useEmailRouting.ts`)
+- Bij `bron='specifiek_account'` toon dropdown met álle actieve accounts van álle partner-users (bestaand).
+- Nieuwe helptekst: "Gebruiker persoonlijk" = het primaire adres van de aangemelde gebruiker.
 
-Deze function wordt de contract-basis voor:
-1. Interne UI (nieuwe assemblage-editor).
-2. Klantwebsite (server-to-server call).
-3. Later: embeddable widget (via bestaande `web_widgets`-patroon).
+## 4. Migratiestrategie
+1. SQL-migratie (kolommen, indexes, triggers, backfill).
+2. Types regenereren.
+3. Edge functions aanpassen + deployen (`email-*`, `google-calendar-*`, alle `send-*`, `inkoop-verzend-leverancier`, `affiliate-busy-blocks`).
+4. Frontend hooks + UI.
+5. Tests: unit voor primary-trigger (via `supabase--read_query`), Playwright voor koppelen van tweede account en versturen vanaf niet-primair adres.
 
-## UI-wijzigingen
-
-### 1. Assemblages-overzicht (`src/pages/Assemblages.tsx`)
-- Filter/badge op `configureerbaar_type`.
-- Kolom "Type" toevoegen.
-
-### 2. Nieuwe wizard: `AssemblageWizard` (vervangt `/producten/assemblages/nieuw`)
-- **Stap 1: kies type** (thuisbatterij, zonnepanelen-set, warmtepomp-set, laadpaal-set, custom).
-- **Stap 2: template-attributen** (dynamisch per type; voor thuisbatterij: fase, met/zonder noodstroom, incl. installatie).
-- **Stap 3: slots inrichten** — voorgevulde slot-templates per type (bv. thuisbatterij: `batterij_module` (1..n), `omvormer` (1), `backup_box` (0..1), `installatie` (0..1)). Per slot: filter, min/max, verplicht.
-- **Stap 4: prijsstrategie & marketing** (naam, marge, publicatie op website).
-- **Stap 5: preview** — toont exact wat de website-configurator laat zien.
-
-### 3. Productformulier (`ProductInlineForm`)
-- Toevoegen: `product_rol` dropdown, `is_installatiedienst` switch.
-- Voor rol `batterij_module`/`omvormer`: promot bestaande `fase`-spec zichtbaar in de kop.
-
-### 4. Voorbereiding embed (alleen data-laag, geen UI in deze fase)
-- Nieuwe hook `useAssemblageConfigurator(assemblageId)` die de edge function aanroept — kan direct hergebruikt worden voor de latere frontend-website.
-
-## Type-templates (in code, `src/lib/assemblage/typeTemplates.ts`)
-
-Per `configureerbaar_type` een default `template_attributen` schema + default slots. Startset:
-- `thuisbatterij_pakket`: attributen `{fase, noodstroom, incl_installatie}`; slots `batterij_module`, `omvormer`, `backup_box?`, `installatie?`.
-- `zonnepanelen_set`: attributen `{aantal_panelen, dakvorm}`; slots `paneel`, `omvormer`, `optimizer?`, `montagemateriaal`, `installatie?`.
-- `warmtepomp_set` & `laadpaal_set`: minimale stub — uitwerken zodra gebruikt.
-
-## Volgorde van uitvoer
-
-1. **Migratie** (schema + rol-enum + slots-tabel + GRANTs + RLS).
-2. **Type-templates + hook** in code.
-3. **Wizard-UI** + productform-uitbreiding.
-4. **Edge function `assemblage-config`** met validatie & prijsberekening.
-5. **Documentatie** van API-contract (README-snippet) t.b.v. website-integratie.
-6. **Later (buiten deze plan-scope)**: frontend-website configurator + embeddable widget.
-
-## Compatibiliteit met bestaande data
-
-- Bestaande assemblages krijgen `configureerbaar_type = 'custom'`; blijven werken zoals nu (vaste componentenlijst).
-- Bestaande `product_componenten` wordt niet aangeraakt.
-- Voorraad-/kostprijsberekening in `useAssemblages` blijft leidend voor "vast" bundels; voor configureerbare bundels wordt de prijs pas bekend na configuratie.
-
-## Vraag ter bevestiging
-
-Twee keuzes wil ik bevestigd hebben voordat ik bouw:
-
-1. **Scope nu**: alleen `thuisbatterij_pakket` volledig uitwerken (incl. voorbeeld-slots + API + wizard-stappen), en de rest als stubs? Of meteen ook `zonnepanelen_set`?
-2. **API-authenticatie**: mag `assemblage-config` publiek (anon) leesbaar zijn voor gepubliceerde/`toon_op_website`-assemblages, zoals `google-maps-config`/publieke catalogus doen?
+## 5. Buiten scope
+- Delegated send (namens collega) — blijft via bestaande `agenda_delegaties`.
+- CalDAV / iCloud providers.
+- Per-entiteit vaste agenda-koppeling (bijv. installaties altijd naar agenda X) — apart follow-up.

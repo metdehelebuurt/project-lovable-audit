@@ -78,9 +78,19 @@ Deno.serve(async (req) => {
       return redirectWithMessage("Unknown provider", true);
     }
 
-    // Upsert email account — unique op (user_id, provider) zodat ook gebruikers
-    // zonder partner (affiliates) hun account kunnen koppelen.
-    const { error: dbError } = await adminClient.from("email_accounts").upsert({
+    // Upsert email account — unique op (user_id, provider, lower(email_adres))
+    // zodat een gebruiker meerdere accounts (ook meerdere Gmail/Outlook) kan
+    // koppelen. Het eerste account per user wordt automatisch primair via trigger.
+    const nowIso = new Date().toISOString();
+    const { data: existing } = await adminClient
+      .from("email_accounts")
+      .select("id")
+      .eq("user_id", user_id)
+      .eq("provider", provider)
+      .ilike("email_adres", tokenData.email)
+      .maybeSingle();
+
+    const payload = {
       partner_id: partner_id || null,
       user_id,
       provider,
@@ -93,8 +103,12 @@ Deno.serve(async (req) => {
       needs_reauth: false,
       last_sync_error: null,
       last_sync_error_at: null,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id,provider" });
+      updated_at: nowIso,
+    };
+
+    const { error: dbError } = existing?.id
+      ? await adminClient.from("email_accounts").update(payload).eq("id", existing.id)
+      : await adminClient.from("email_accounts").insert(payload);
 
     if (dbError) {
       console.error("DB error:", dbError);

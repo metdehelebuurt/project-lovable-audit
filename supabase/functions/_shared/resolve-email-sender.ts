@@ -34,6 +34,7 @@ export async function resolveEmailSender(
   partnerId: string,
   documentType: DocumentType,
   userId?: string | null,
+  preferredAccountId?: string | null,
 ): Promise<ResolvedSender> {
   const { data: partner, error: partnerErr } = await adminClient
     .from("partners")
@@ -80,23 +81,41 @@ export async function resolveEmailSender(
     return any1;
   };
   const pickUserAccount = async (uid: string) => {
-    const { data } = await adminClient
-      .from("email_accounts").select("*").eq("user_id", uid).eq("actief", true).maybeSingle();
-    return data;
+    // Prefer primair, val terug op recentst gebruikt.
+    const { data: prim } = await adminClient
+      .from("email_accounts").select("*")
+      .eq("user_id", uid).eq("actief", true).eq("is_primair", true)
+      .maybeSingle();
+    if (prim) return prim;
+    const { data: any1 } = await adminClient
+      .from("email_accounts").select("*")
+      .eq("user_id", uid).eq("actief", true)
+      .order("laatst_gebruikt_op", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(1).maybeSingle();
+    return any1;
   };
 
   let account: any | null = null;
-  if (bron === "specifiek_account" && specifiekAccountId) {
+  // Expliciete keuze door de gebruiker (bijv. "verstuur vanaf …") gaat vóór routing.
+  if (preferredAccountId) {
+    account = await pickAccountById(preferredAccountId);
+  }
+  if (!account && bron === "specifiek_account" && specifiekAccountId) {
     account = await pickAccountById(specifiekAccountId);
     if (!account) account = await pickPartnerDefault();
-  } else if (bron === "gebruiker_persoonlijk" && userId) {
+  } else if (!account && bron === "gebruiker_persoonlijk" && userId) {
     account = await pickUserAccount(userId);
     if (!account) account = await pickPartnerDefault();
-  } else {
+  } else if (!account) {
     account = await pickPartnerDefault();
   }
 
   if (account) {
+    // Laatst-gebruikt timestamp bijwerken (best effort, non-blocking).
+    void adminClient.from("email_accounts")
+      .update({ laatst_gebruikt_op: new Date().toISOString() })
+      .eq("id", account.id);
     return {
       method: "oauth",
       account,

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, Calendar, CheckCircle2, ExternalLink, Info, Copy } from "lucide-react";
+import { ArrowRight, ArrowLeft, Calendar, ExternalLink, Info, Copy, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InfoCallout from "./InfoCallout";
+import CalendarAccountsLijst from "@/components/agenda/CalendarAccountsLijst";
+import { useCalendarAccounts } from "@/hooks/agenda/useCalendarAccounts";
 
 interface Props {
   onNext: () => void;
@@ -11,23 +13,12 @@ interface Props {
 }
 
 export const StepAgenda = ({ onNext, onPrev }: Props) => {
-  const [gekoppeld, setGekoppeld] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
+  const { data: accounts = [] } = useCalendarAccounts();
+  const gekoppeld = accounts.length > 0;
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const redirectUri = `${supabaseUrl}/functions/v1/google-calendar-oauth-callback`;
-
-  const laad = async () => {
-    const { data } = await supabase
-      .from("google_calendar_accounts")
-      .select("google_email, actief")
-      .maybeSingle();
-    setGekoppeld(!!data?.actief);
-    setEmail(data?.google_email ?? null);
-  };
-
-  useEffect(() => { laad(); }, []);
 
   const koppel = async () => {
     setBezig(true);
@@ -52,19 +43,19 @@ export const StepAgenda = ({ onNext, onPrev }: Props) => {
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-semibold flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Agenda koppelen</h2>
-        <p className="text-sm text-muted-foreground mt-1">Synchroniseer schouwen, installaties en afspraken automatisch met Google Agenda.</p>
+        <p className="text-sm text-muted-foreground mt-1">Synchroniseer schouwen, installaties en afspraken met één of meerdere Google-agenda's. Nieuwe events landen automatisch in je <strong>primaire</strong> agenda.</p>
       </div>
 
       <InfoCallout title="Wat krijg je?">
-        Alle geplande schouwen en installaties verschijnen automatisch in je Google Agenda — met klantgegevens en locatie. Wijzigingen worden tweezijdig gesynchroniseerd.
+        Alle geplande schouwen en installaties verschijnen automatisch in je Google Agenda — met klantgegevens en locatie. Wijzigingen worden tweezijdig gesynchroniseerd. Koppel meerdere accounts (werk + privé) en geef ze een eigen kleur.
       </InfoCallout>
 
       {gekoppeld ? (
-        <div className="rounded-xl border border-success/20 bg-success/5 p-4">
-          <p className="text-sm flex items-center gap-2 text-success font-medium">
-            <CheckCircle2 className="h-4 w-4" /> Gekoppeld met {email}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Je kunt de sync-opties later fijnafstemmen bij Instellingen → Agenda.</p>
+        <div className="space-y-3">
+          <CalendarAccountsLijst />
+          <Button onClick={koppel} disabled={bezig} variant="outline" className="rounded-pill gap-2">
+            <Plus className="h-4 w-4" /> {bezig ? "Bezig…" : "Extra agenda koppelen"}
+          </Button>
         </div>
       ) : (
         <div className="rounded-xl border bg-card p-6 text-center space-y-3">

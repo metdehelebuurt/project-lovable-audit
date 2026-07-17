@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       inkooporder_id, ontvanger_email,
       html_body, subject: customSubject,
       attachment_path, attachment_filename,
-      is_resend,
+      is_resend, from_account_id,
     } = body ?? {};
 
     if (!inkooporder_id || !ontvanger_email) {
@@ -140,6 +140,7 @@ Deno.serve(async (req) => {
         subject, html, attachment,
         type: "inkooporder",
         inkooporderId: inkooporder_id,
+        fromAccountId: from_account_id ?? null,
       });
     } catch (err) {
       if (err instanceof UserMailboxError) {
