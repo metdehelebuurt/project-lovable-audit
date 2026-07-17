@@ -29,7 +29,7 @@ const TrialWelkomEmail = ({ voornaam, bedrijfsnaam, loginUrl, tijdelijkWachtwoor
         <Container style={container}>
           <Heading style={h1}>Welkom bij {SITE_NAME}, {naam}!</Heading>
           <Text style={text}>
-            Je 30‑daagse proefperiode voor <strong>{bedrijf}</strong> is gestart.
+            Je 14‑daagse proefperiode voor <strong>{bedrijf}</strong> is gestart.
             Je kunt direct aan de slag met leads, schouwen, offertes, planning,
             installaties en meer.
           </Text>

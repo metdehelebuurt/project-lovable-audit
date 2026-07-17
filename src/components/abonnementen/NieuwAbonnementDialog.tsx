@@ -40,7 +40,7 @@ export default function NieuwAbonnementDialog({ open, onOpenChange, plans, onCre
     interval: "maand" as "maand" | "jaar",
     status: "trial",
     start_datum: today(),
-    trial_dagen: 30,
+    trial_dagen: 14,
     korting_percentage: 0,
     korting_vast_bedrag: 0,
     korting_reden: "",

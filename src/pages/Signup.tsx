@@ -135,7 +135,7 @@ const Signup = () => {
               Gratis proefperiode starten
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              30 dagen gratis — geen creditcard nodig
+              14 dagen gratis — geen creditcard nodig
             </p>
           </CardHeader>
 

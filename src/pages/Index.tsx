@@ -26,7 +26,7 @@ const features = [
 ];
 
 const pluspunten = [
-  "30 dagen gratis proberen, geen creditcard nodig",
+  "14 dagen gratis proberen, geen creditcard nodig",
   "Volledig Nederlandstalig, gemaakt voor verduurzamingsprofessionals",
   "Inclusief demo-data zodat je direct aan de slag kunt",
 ];
@@ -38,7 +38,7 @@ const Index = () => {
   useDocumentSeo({
     title: "mijnhuis.nu — Alle software voor je verduurzamingsbedrijf",
     description:
-      "Leads, offertes, schouw en installatie in één platform. Start 30 dagen gratis — speciaal voor installateurs en adviseurs in verduurzaming.",
+      "Leads, offertes, schouw en installatie in één platform. Start 14 dagen gratis — speciaal voor installateurs en adviseurs in verduurzaming.",
     type: "website",
   });
 
@@ -75,7 +75,7 @@ const Index = () => {
             </p>
             <div className="flex flex-wrap gap-3 mb-8">
               <Button size="lg" onClick={() => navigate("/signup")} className="gap-2">
-                Start 30 dagen gratis <ArrowRight className="h-4 w-4" />
+                Start 14 dagen gratis <ArrowRight className="h-4 w-4" />
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/login")}>
                 Inloggen
@@ -115,7 +115,7 @@ const Index = () => {
               Binnen twee minuten heb je een werkende omgeving met demo-data om alles rustig uit te proberen.
             </p>
             <Button size="lg" onClick={() => navigate("/signup")} className="gap-2">
-              Start 30 dagen gratis <ArrowRight className="h-4 w-4" />
+              Start 14 dagen gratis <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </section>

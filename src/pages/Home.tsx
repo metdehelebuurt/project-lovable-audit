@@ -188,7 +188,7 @@ const Home = () => {
 
             <p className="text-xs text-muted-foreground mt-6 flex items-center justify-center gap-2">
               <ShieldCheck className="h-3.5 w-3.5" />
-              30 dagen gratis — geen creditcard nodig
+              14 dagen gratis — geen creditcard nodig
             </p>
           </div>
         </section>
@@ -244,7 +244,7 @@ const Home = () => {
                   Klaar om mijnhuis.nu te proberen?
                 </h3>
                 <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                  Start een gratis proefperiode van 30 dagen — inclusief
+                  Start een gratis proefperiode van 14 dagen — inclusief
                   demo-data om alle functies direct te kunnen verkennen.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">

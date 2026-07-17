@@ -32,7 +32,7 @@ export interface SalesTrialPartner {
   affiliate: SalesTrialAffiliate | null;
 }
 
-/** Alle trials (lopend en tot 30 dagen verlopen) voor sales manager/admin. */
+/** Alle trials (lopend en tot 14 dagen verlopen) voor sales manager/admin. */
 export function useSalesTrials() {
   return useQuery({
     queryKey: ["sales-trials"],

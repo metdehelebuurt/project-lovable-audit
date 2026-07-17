@@ -184,7 +184,7 @@ export const AFFILIATE_TEMPLATES: ReadonlyArray<AffiliateTemplate> = [
     trigger: "Na afronden demo",
     variabelen: STD,
     defaultOnderwerp: "Bedankt voor de demo — vervolgstappen",
-    defaultBodyHtml: `<p>Beste {{lead.voornaam}},</p><p>Bedankt voor je tijd vandaag. Zoals besproken zijn dit de mogelijke vervolgstappen:</p><ol><li>Een proefperiode (trial) van 30 dagen activeren.</li><li>Een offerte ontvangen op basis van het aantal gebruikers.</li><li>Een tweede gesprek inplannen om openstaande vragen door te nemen.</li></ol><p>Wat heeft jouw voorkeur?</p>`,
+    defaultBodyHtml: `<p>Beste {{lead.voornaam}},</p><p>Bedankt voor je tijd vandaag. Zoals besproken zijn dit de mogelijke vervolgstappen:</p><ol><li>Een proefperiode (trial) van 14 dagen activeren.</li><li>Een offerte ontvangen op basis van het aantal gebruikers.</li><li>Een tweede gesprek inplannen om openstaande vragen door te nemen.</li></ol><p>Wat heeft jouw voorkeur?</p>`,
     previewData: P,
   },
   {
