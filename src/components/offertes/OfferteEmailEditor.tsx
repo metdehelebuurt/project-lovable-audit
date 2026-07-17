@@ -367,6 +367,12 @@ export default function OfferteEmailEditor({
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
 
+          {/* Sender picker (alleen zichtbaar bij >1 gekoppelde mailbox) */}
+          <div className="grid grid-cols-[80px_1fr] items-center gap-2">
+            <div />
+            <SenderPicker userId={user?.id} value={fromAccountId} onChange={setFromAccountId} label="Vanaf" />
+          </div>
+
           <Separator />
 
           {/* Toolbar */}
