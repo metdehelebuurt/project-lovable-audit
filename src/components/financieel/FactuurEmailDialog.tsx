@@ -355,6 +355,7 @@ export default function FactuurEmailDialog({ open, onOpenChange, doc, defaultTo,
               <Input value={bcc} onChange={(e) => setBcc(e.target.value)} className="mt-1" placeholder="bcc1@voorbeeld.nl" />
             </div>
           )}
+          <SenderPicker userId={user?.id} value={fromAccountId} onChange={setFromAccountId} />
           <div><Label>Onderwerp</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} className="mt-1" /></div>
           <div><Label>Bericht</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className="mt-1" /></div>
           <div className="flex justify-end gap-2">
