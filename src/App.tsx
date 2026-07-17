@@ -115,6 +115,7 @@ import HelpdeskPlanning from "@/pages/helpdesk/Planning";
 import NotificatieVoorkeuren from "@/pages/instellingen/NotificatieVoorkeuren";
 import ChecklistTemplates from "@/pages/instellingen/ChecklistTemplates";
 import AbonnementSelfService from "@/pages/instellingen/Abonnement";
+import AgendaInstellingen from "@/pages/instellingen/Agendas";
 import Actiecentrum from "@/pages/Actiecentrum";
 import Opleveringen from "@/pages/Opleveringen";
 import OpleverNieuw from "@/pages/OpleverNieuw";
@@ -463,6 +464,9 @@ const App = () => (
               } />
               <Route path="/instellingen/checklist-templates" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin"]}><ChecklistTemplates /></ProtectedRoute>
+              } />
+              <Route path="/instellingen/agendas" element={
+                <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "sales_manager", "affiliate"]}><AgendaInstellingen /></ProtectedRoute>
               } />
               <Route path="/actiecentrum" element={
                 <ProtectedRoute allowedRoles={["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur"]}><Actiecentrum /></ProtectedRoute>
