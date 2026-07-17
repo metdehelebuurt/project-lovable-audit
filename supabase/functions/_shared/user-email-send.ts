@@ -30,6 +30,7 @@ export interface SendUserEmailParams {
   leadId?: string | null;
   offerteId?: string | null;
   inkooporderId?: string | null;
+  fromAccountId?: string | null;
 }
 
 export interface SendUserEmailResult {
@@ -46,26 +47,44 @@ export async function sendUserEmail(params: SendUserEmailParams): Promise<SendUs
   const {
     adminClient, userId, partnerId, to, subject, html, attachment = null,
     type, klantId = null, leadId = null, offerteId = null, inkooporderId = null,
+    fromAccountId = null,
   } = params;
 
-  const { data: accounts, error } = await adminClient
-    .from("email_accounts")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("actief", true)
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  if (error) {
-    throw new UserMailboxError("Kon e-mailaccount niet ophalen", 500);
+  let account: any = null;
+  // 1) Expliciete keuze door de gebruiker.
+  if (fromAccountId) {
+    const { data } = await adminClient
+      .from("email_accounts").select("*")
+      .eq("id", fromAccountId).eq("user_id", userId).eq("actief", true).maybeSingle();
+    if (data) account = data;
   }
-  const account = accounts?.[0] ?? null;
+  // 2) Primair account.
+  if (!account) {
+    const { data } = await adminClient
+      .from("email_accounts").select("*")
+      .eq("user_id", userId).eq("actief", true).eq("is_primair", true).maybeSingle();
+    account = data;
+  }
+  // 3) Val terug op meest recent gebruikt of aangemaakt.
+  if (!account) {
+    const { data } = await adminClient
+      .from("email_accounts").select("*")
+      .eq("user_id", userId).eq("actief", true)
+      .order("laatst_gebruikt_op", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(1).maybeSingle();
+    account = data;
+  }
   if (!account) {
     throw new UserMailboxError(
       "Je hebt nog geen e-mailaccount gekoppeld. Ga naar Profiel → E-mail om Gmail of Outlook te koppelen, daarna kun je deze e-mail vanuit je eigen postvak versturen.",
       400,
     );
   }
+  // Non-blocking: laatst gebruikt bijwerken.
+  void adminClient.from("email_accounts")
+    .update({ laatst_gebruikt_op: new Date().toISOString() })
+    .eq("id", account.id);
 
   const hasOAuth = !!account.refresh_token;
   const hasAppPassword = !!account.app_password_encrypted;
