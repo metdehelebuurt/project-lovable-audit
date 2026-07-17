@@ -8,6 +8,8 @@ import { Loader2, Mail, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import SenderPicker from "@/components/email/SenderPicker";
+import { useEmailAccounts } from "@/hooks/email/useEmailAccounts";
 
 interface Props {
   open: boolean;
@@ -26,8 +28,12 @@ export default function InkoopVerzendDialog({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
-  const [hasMailbox, setHasMailbox] = useState<boolean | null>(null);
-  const [mailboxAdres, setMailboxAdres] = useState<string>("");
+  const [fromAccountId, setFromAccountId] = useState<string | null>(null);
+  const { data: accounts = [], isLoading: accountsLoading } = useEmailAccounts(user?.id);
+  const hasMailbox = !accountsLoading ? accounts.length > 0 : null;
+  const selectedAccount = accounts.find((a) => a.id === fromAccountId)
+    ?? accounts.find((a) => a.is_primair)
+    ?? accounts[0];
 
   useEffect(() => {
     if (!open || !user?.id) return;
@@ -38,16 +44,6 @@ export default function InkoopVerzendDialog({
       `Hierbij onze inkooporder als bijlage. We zien de bevestiging graag tegemoet.\n\n` +
       `Met vriendelijke groet,`,
     );
-    void supabase
-      .from("email_accounts")
-      .select("email_adres")
-      .eq("user_id", user.id)
-      .eq("actief", true)
-      .maybeSingle()
-      .then(({ data }) => {
-        setHasMailbox(!!data);
-        setMailboxAdres(data?.email_adres ?? "");
-      });
   }, [open, user?.id, defaultEmail, leverancierNaam]);
 
   const verstuur = async () => {
@@ -63,6 +59,7 @@ export default function InkoopVerzendDialog({
           ontvanger_email: to.trim(),
           onderwerp: subject.trim(),
           bericht: body,
+          from_account_id: fromAccountId,
         },
       });
       if (error) throw error;
@@ -96,11 +93,12 @@ export default function InkoopVerzendDialog({
         {hasMailbox && (
           <div className="rounded-lg border bg-muted/40 p-3 text-sm flex items-center gap-2">
             <Mail className="h-4 w-4 text-muted-foreground" />
-            Wordt verstuurd vanuit <span className="font-medium">{mailboxAdres}</span>
+            Wordt verstuurd vanuit <span className="font-medium">{selectedAccount?.email_adres ?? "…"}</span>
           </div>
         )}
 
         <div className="space-y-3">
+          <SenderPicker userId={user?.id} value={fromAccountId} onChange={setFromAccountId} />
           <div className="space-y-2">
             <Label>Naar</Label>
             <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="leverancier@bedrijf.nl" />
