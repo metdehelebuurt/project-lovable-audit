@@ -26,6 +26,7 @@ import { generateOffertePdfViaIframe } from "@/lib/pdfFromPages";
 import DOMPurify from "dompurify";
 import { parseAddressList } from "@/components/email/EmailComposerFields";
 import { Mail, X } from "lucide-react";
+import SenderPicker from "@/components/email/SenderPicker";
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -58,7 +59,7 @@ export default function OfferteEmailEditor({
   partnerNaam,
   onSent,
 }: OfferteEmailEditorProps) {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [to, setTo] = useState(offerte.klant_email);
@@ -78,6 +79,7 @@ export default function OfferteEmailEditor({
   const [sent, setSent] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const [pdf, setPdf] = useState<PdfState>({ status: "idle" });
+  const [fromAccountId, setFromAccountId] = useState<string | null>(null);
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
@@ -224,6 +226,7 @@ export default function OfferteEmailEditor({
           attachment_filename: `Offerte-${offerte.offertenummer}.pdf`,
           cc: parseAddressList(cc),
           bcc: parseAddressList(bcc),
+          from_account_id: fromAccountId,
         },
       });
       if (error || data?.error) {
