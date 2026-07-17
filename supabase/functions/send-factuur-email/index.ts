@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     const {
       financieel_document_id, ontvanger_email,
       html_body, subject: customSubject, attachment_path, attachment_filename,
-      is_resend, cc, bcc, expected_attachment_size,
+      is_resend, cc, bcc, expected_attachment_size, from_account_id,
     } = body;
 
     if (!financieel_document_id || !ontvanger_email) {
@@ -150,6 +150,7 @@ Deno.serve(async (req) => {
       bcc: Array.isArray(bcc) ? bcc : [],
       subject, html, attachment, type: emailType,
       klantId: doc.klant_id || null, verzondenDoorId: userId,
+      preferredAccountId: from_account_id ?? null,
     });
 
     // Historie-entry voor verzonden/opnieuw verzonden
