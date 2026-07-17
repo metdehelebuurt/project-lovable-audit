@@ -53,7 +53,7 @@ export function useUpdateCalendarAccount() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, label, kleur }: { id: string; label?: string | null; kleur?: string | null }) => {
-      const patch: Record<string, unknown> = {};
+      const patch: { label?: string | null; kleur?: string | null } = {};
       if (label !== undefined) patch.label = label?.trim() || null;
       if (kleur !== undefined) patch.kleur = kleur;
       const { error } = await supabase
