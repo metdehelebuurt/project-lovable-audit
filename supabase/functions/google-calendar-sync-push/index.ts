@@ -30,13 +30,17 @@ Deno.serve(async (req) => {
 
     const admin = adminClient();
 
-    // Account ophalen
-    const { data: account } = await admin
+    // Account ophalen — bij meerdere gekoppelde agenda's kiezen we het
+    // primaire account (fallback: oudste actieve). Zo werkt push ook wanneer
+    // een gebruiker meerdere Google-agenda's heeft gekoppeld.
+    const { data: accounts } = await admin
       .from("google_calendar_accounts")
       .select("*")
       .eq("user_id", body.user_id)
       .eq("actief", true)
-      .maybeSingle();
+      .order("is_primair", { ascending: false })
+      .order("created_at", { ascending: true });
+    const account = accounts?.[0];
     if (!account) return json({ skipped: "geen actieve koppeling" });
 
     if (!isSyncEnabled(account as GoogleAccount, body.entiteit_type)) {
