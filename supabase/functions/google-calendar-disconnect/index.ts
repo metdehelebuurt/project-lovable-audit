@@ -15,32 +15,39 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return json({ error: "Sessie ongeldig" }, 401);
 
+    // Optioneel: één specifiek account ontkoppelen. Zonder body → alle accounts van user.
+    let accountId: string | null = null;
+    try {
+      const body = await req.json();
+      accountId = body?.account_id ?? null;
+    } catch { /* geen body, alle accounts ontkoppelen */ }
+
     const admin = adminClient();
-    const { data: account } = await admin
+    const query = admin
       .from("google_calendar_accounts")
       .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!account) return json({ ok: true });
+      .eq("user_id", user.id);
+    const { data: accounts } = accountId
+      ? await query.eq("id", accountId)
+      : await query;
+    if (!accounts || accounts.length === 0) return json({ ok: true });
 
-    // Stop webhook channel (best-effort)
-    if (account.channel_id && account.resource_id) {
+    for (const account of accounts) {
+      if (account.channel_id && account.resource_id) {
+        try {
+          await gcalFetch(account as GoogleAccount, "/channels/stop", {
+            method: "POST",
+            body: JSON.stringify({ id: account.channel_id, resourceId: account.resource_id }),
+          });
+        } catch (e) { console.warn("Channel stop fout", e); }
+      }
       try {
-        await gcalFetch(account as GoogleAccount, "/channels/stop", {
-          method: "POST",
-          body: JSON.stringify({ id: account.channel_id, resourceId: account.resource_id }),
-        });
-      } catch (e) { console.warn("Channel stop fout", e); }
+        await fetch(`https://oauth2.googleapis.com/revoke?token=${account.refresh_token}`, { method: "POST" });
+      } catch (e) { console.warn("Revoke fout", e); }
+
+      await admin.from("google_calendar_event_mapping").delete().eq("calendar_account_id", account.id);
+      await admin.from("google_calendar_accounts").delete().eq("id", account.id);
     }
-
-    // Revoke refresh token bij Google (best-effort)
-    try {
-      await fetch(`https://oauth2.googleapis.com/revoke?token=${account.refresh_token}`, { method: "POST" });
-    } catch (e) { console.warn("Revoke fout", e); }
-
-    // Verwijder mapping en account
-    await admin.from("google_calendar_event_mapping").delete().eq("user_id", user.id);
-    await admin.from("google_calendar_accounts").delete().eq("user_id", user.id);
 
     return json({ ok: true });
   } catch (e) {
