@@ -387,6 +387,12 @@ Deno.serve(async (req) => {
           bcc: Array.isArray(bcc) ? bcc : [],
           subject: emailSubject,
           html,
+          attachments: [{
+            filename: attachment.filename,
+            content: attachment.bytes,
+            contentType: attachment.contentType,
+            encoding: "binary",
+          }],
         },
       );
       imapSaved = true; // Gmail slaat SMTP-verzending automatisch op in Verzonden
