@@ -9,6 +9,14 @@ import {
 } from "../_shared/email-send.ts";
 import { decryptAppPassword } from "../_shared/email-crypto.ts";
 import { smtpSend } from "../_shared/smtp-send.ts";
+import {
+  guardAttachment,
+  recordAudit,
+  assertAttachmentReady,
+  newRequestId,
+  type AccountType,
+  type AuditContext,
+} from "../_shared/offerte-attachment-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -306,40 +314,50 @@ Deno.serve(async (req) => {
 
     let imapSaved = false;
 
-    const attachment = attachment_path
-      ? await fetchAttachment(adminClient, attachment_path, attachment_filename || `Offerte-${offerte.offertenummer}.pdf`)
-      : null;
+    // ─── Bepaal account-type voor audit-logging ───
+    const accountType: AccountType = hasOauth
+      ? (emailAccount?.provider === "google" ? "gmail_oauth" : "ms_graph_oauth")
+      : hasAppPw
+        ? "smtp_app_password"
+        : hasPartnerSmtp
+          ? "partner_smtp"
+          : "unknown";
 
-    // FAILSAFE: een offerte-mail MOET een geldige PDF-bijlage bevatten.
-    // Zonder deze check kon een verkeerd verzendpad de mail zonder PDF sturen
-    // (bug gemeld door Hoang / Smartaccu).
-    if (!attachment) {
+    const auditCtx: AuditContext = {
+      offerteId: offerte_id,
+      partnerId: userRow.partner_id,
+      userId,
+      accountId: emailAccount?.id ?? null,
+      accountType,
+      attachmentPath: attachment_path || null,
+      requestId: newRequestId(),
+    };
+
+    // FAILSAFE: centrale guard. Blokkeert verzending als PDF ontbreekt/ongeldig
+    // is, schrijft altijd een audit-rij (die via DB-trigger alerts activeert).
+    const guard = await guardAttachment(
+      adminClient,
+      auditCtx,
+      attachment_filename || `Offerte-${offerte.offertenummer}.pdf`,
+    );
+    if (!guard.ok) {
       await adminClient.from("email_log").insert({
         partner_id: userRow.partner_id, offerte_id, ontvanger_email,
         onderwerp: customSubject || `Offerte ${offerte.offertenummer}`,
         html_body: html_body || "", status: "mislukt", type: "offerte",
         verzonden_door_id: userId,
-        error_message: "Verzending geblokkeerd: geen PDF-bijlage meegegeven (attachment_path ontbreekt).",
+        error_message: `PDF-bijlage guard: ${guard.status} — ${guard.reason || ""}`.trim(),
       });
       return new Response(
-        JSON.stringify({ error: "Offerte kan niet worden verstuurd zonder PDF-bijlage. Open de offerte en gebruik de e-mail-editor die de PDF automatisch genereert." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: "MISSING_PDF_ATTACHMENT",
+          detail: guard.reason,
+          status: guard.status,
+        }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const pdfCheck = verifyPdfBytes(attachment.bytes);
-    if (!pdfCheck.ok) {
-      await adminClient.from("email_log").insert({
-        partner_id: userRow.partner_id, offerte_id, ontvanger_email,
-        onderwerp: customSubject || `Offerte ${offerte.offertenummer}`,
-        html_body: html_body || "", status: "mislukt", type: "offerte",
-        verzonden_door_id: userId,
-        error_message: `PDF-bijlage ongeldig: ${pdfCheck.reason}`,
-      });
-      return new Response(
-        JSON.stringify({ error: `PDF-bijlage ongeldig: ${pdfCheck.reason}. Genereer de PDF opnieuw en probeer nogmaals.` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    const attachment = guard.attachment!;
 
     if (hasOauth) {
       // Send via OAuth API (Gmail or Microsoft Graph)
@@ -348,12 +366,30 @@ Deno.serve(async (req) => {
         accessToken = await sharedRefreshOAuthToken(adminClient, emailAccount);
       }
 
-      if (emailAccount.provider === "google") {
-        await sharedSendViaGmailApi({ accessToken, from: emailAccount.email_adres, to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment });
-      } else {
-        await sharedSendViaMsGraphApi({ accessToken, to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment });
+      assertAttachmentReady(attachment);
+      try {
+        if (emailAccount.provider === "google") {
+          await sharedSendViaGmailApi({ accessToken, from: emailAccount.email_adres, to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment });
+        } else {
+          await sharedSendViaMsGraphApi({ accessToken, to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment });
+        }
+      } catch (sendErr) {
+        await recordAudit(adminClient, auditCtx, {
+          status: "send_error",
+          bytesSize: attachment.bytes.length,
+          pdfValid: true,
+          provider: emailAccount.provider === "google" ? "gmail_api" : "ms_graph_api",
+          error: (sendErr as Error).message,
+        });
+        throw sendErr;
       }
       imapSaved = true; // OAuth APIs auto-save to sent
+      await recordAudit(adminClient, auditCtx, {
+        status: "ok",
+        bytesSize: attachment.bytes.length,
+        pdfValid: true,
+        provider: emailAccount.provider === "google" ? "gmail_api" : "ms_graph_api",
+      });
 
       // Also save to email_berichten
       await adminClient.from("email_berichten").insert({
@@ -372,30 +408,53 @@ Deno.serve(async (req) => {
     } else if (hasAppPw) {
       // Send via SMTP met Gmail App Password vanaf het gekoppelde account
       const plain = await decryptAppPassword(emailAccount.app_password_encrypted as string);
-      await smtpSend(
-        {
-          email_adres: emailAccount.email_adres,
-          smtp_host: emailAccount.smtp_host,
-          smtp_port: emailAccount.smtp_port,
-          app_password_plain: plain,
-        },
-        {
-          from: emailAccount.email_adres,
-          fromName: partner.afzender_naam || partner.naam,
-          to: ontvanger_email,
-          cc: Array.isArray(cc) ? cc : [],
-          bcc: Array.isArray(bcc) ? bcc : [],
-          subject: emailSubject,
-          html,
-          attachments: [{
-            filename: attachment.filename,
-            content: attachment.bytes,
-            contentType: attachment.contentType,
-            encoding: "binary",
-          }],
-        },
-      );
+      assertAttachmentReady(attachment);
+      const smtpAttachments = [{
+        filename: attachment.filename,
+        content: attachment.bytes,
+        contentType: attachment.contentType,
+        encoding: "binary" as const,
+      }];
+      // Post-guard sanity check op de outgoing payload zelf.
+      if (!smtpAttachments[0].content || (smtpAttachments[0].content as Uint8Array).length === 0) {
+        await recordAudit(adminClient, auditCtx, {
+          status: "sent_without_attachment", provider: "smtp_app_password",
+          error: "outgoing SMTP payload heeft lege attachment array",
+        });
+        throw new Error("SMTP payload attachment leeg (guard bypass)");
+      }
+      try {
+        await smtpSend(
+          {
+            email_adres: emailAccount.email_adres,
+            smtp_host: emailAccount.smtp_host,
+            smtp_port: emailAccount.smtp_port,
+            app_password_plain: plain,
+          },
+          {
+            from: emailAccount.email_adres,
+            fromName: partner.afzender_naam || partner.naam,
+            to: ontvanger_email,
+            cc: Array.isArray(cc) ? cc : [],
+            bcc: Array.isArray(bcc) ? bcc : [],
+            subject: emailSubject,
+            html,
+            attachments: smtpAttachments,
+          },
+        );
+      } catch (sendErr) {
+        await recordAudit(adminClient, auditCtx, {
+          status: "send_error", bytesSize: attachment.bytes.length,
+          pdfValid: true, provider: "smtp_app_password",
+          error: (sendErr as Error).message,
+        });
+        throw sendErr;
+      }
       imapSaved = true; // Gmail slaat SMTP-verzending automatisch op in Verzonden
+      await recordAudit(adminClient, auditCtx, {
+        status: "ok", bytesSize: attachment.bytes.length,
+        pdfValid: true, provider: "smtp_app_password",
+      });
 
       await adminClient.from("email_berichten").insert({
         email_account_id: emailAccount.id,
@@ -413,11 +472,25 @@ Deno.serve(async (req) => {
       });
     } else {
       // Send via SMTP
-      await sharedSendViaSMTP({
-        host: partner.smtp_host, port: partner.smtp_port || 587,
-        user: partner.smtp_user, pass: partner.smtp_pass_encrypted,
-        from: partner.afzender_email, fromName: partner.afzender_naam || partner.naam,
-        to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment,
+      assertAttachmentReady(attachment);
+      try {
+        await sharedSendViaSMTP({
+          host: partner.smtp_host, port: partner.smtp_port || 587,
+          user: partner.smtp_user, pass: partner.smtp_pass_encrypted,
+          from: partner.afzender_email, fromName: partner.afzender_naam || partner.naam,
+          to: ontvanger_email, cc: Array.isArray(cc) ? cc : [], bcc: Array.isArray(bcc) ? bcc : [], subject: emailSubject, html, attachment,
+        });
+      } catch (sendErr) {
+        await recordAudit(adminClient, auditCtx, {
+          status: "send_error", bytesSize: attachment.bytes.length,
+          pdfValid: true, provider: "partner_smtp",
+          error: (sendErr as Error).message,
+        });
+        throw sendErr;
+      }
+      await recordAudit(adminClient, auditCtx, {
+        status: "ok", bytesSize: attachment.bytes.length,
+        pdfValid: true, provider: "partner_smtp",
       });
 
       // Save to IMAP sent folder

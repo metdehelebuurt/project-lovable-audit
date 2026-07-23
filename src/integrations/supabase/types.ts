@@ -6539,6 +6539,60 @@ export type Database = {
           },
         ]
       }
+      offerte_email_attachment_audit: {
+        Row: {
+          account_id: string | null
+          account_type: string
+          attachment_path: string | null
+          bytes_size: number | null
+          created_at: string
+          error: string | null
+          id: string
+          offerte_id: string | null
+          partner_id: string | null
+          pdf_valid: boolean
+          provider: string | null
+          request_id: string | null
+          sent_message_id: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          account_type: string
+          attachment_path?: string | null
+          bytes_size?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          offerte_id?: string | null
+          partner_id?: string | null
+          pdf_valid?: boolean
+          provider?: string | null
+          request_id?: string | null
+          sent_message_id?: string | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          account_type?: string
+          attachment_path?: string | null
+          bytes_size?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          offerte_id?: string | null
+          partner_id?: string | null
+          pdf_valid?: boolean
+          provider?: string | null
+          request_id?: string | null
+          sent_message_id?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       offerte_herinneringen: {
         Row: {
           created_at: string
