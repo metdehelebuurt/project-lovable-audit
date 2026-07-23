@@ -9,6 +9,14 @@ import {
 } from "../_shared/email-send.ts";
 import { decryptAppPassword } from "../_shared/email-crypto.ts";
 import { smtpSend } from "../_shared/smtp-send.ts";
+import {
+  guardAttachment,
+  recordAudit,
+  assertAttachmentReady,
+  newRequestId,
+  type AccountType,
+  type AuditContext,
+} from "../_shared/offerte-attachment-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
