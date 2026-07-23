@@ -49,8 +49,8 @@ function makeClient(opts: {
           async download(_path: string) {
             if (opts.storageError) return { data: null, error: { message: opts.storageError } };
             if (opts.bytes === null) return { data: null, error: null };
-            const blob = new Blob([opts.bytes! as any], { type: opts.contentType || "application/pdf" });
-            (blob as any).type = opts.contentType || "application/pdf";
+            const ct = opts.contentType || "application/pdf";
+            const blob = new Blob([opts.bytes! as any], { type: ct });
             return { data: blob, error: null };
           },
         };
