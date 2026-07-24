@@ -442,6 +442,7 @@ const AffiliateBellen = () => {
                     label="Geen gehoor"
                     accent="muted"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "geen_gehoor")!)}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={Phone}
@@ -449,6 +450,7 @@ const AffiliateBellen = () => {
                     hint="Verplicht inplannen"
                     accent="amber"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "terugbellen")!)}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={Mail}
@@ -456,6 +458,7 @@ const AffiliateBellen = () => {
                     hint="Logt mail + plant nabel"
                     accent="amber"
                     onClick={handleMailGestuurd}
+                    disabled={busy}
                   />
                 </UitkomstGroep>
 
@@ -467,6 +470,7 @@ const AffiliateBellen = () => {
                     hint="Notitie verplicht"
                     accent="rose"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "niet_interessant")!)}
+                    disabled={busy}
                   />
                 </UitkomstGroep>
 
@@ -478,6 +482,7 @@ const AffiliateBellen = () => {
                     hint="Check: staat de afspraak?"
                     accent="blue"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "gesprek_gepland")!)}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={Presentation}
@@ -485,12 +490,14 @@ const AffiliateBellen = () => {
                     hint="Plant demo + mail"
                     accent="blue"
                     onClick={handleDemoInplannen}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={FileText}
                     label="Voorstel doen"
                     accent="violet"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "voorstel")!)}
+                    disabled={busy}
                   />
                 </UitkomstGroep>
 
@@ -501,6 +508,7 @@ const AffiliateBellen = () => {
                     label="Gewonnen"
                     accent="emerald"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "gewonnen")!)}
+                    disabled={busy}
                   />
                   {current && (
                     <TrialStartenButton
