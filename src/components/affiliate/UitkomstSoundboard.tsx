@@ -28,18 +28,21 @@ export function UitkomstKnop({
   hint,
   accent = "muted",
   onClick,
+  disabled,
 }: {
   icon: LucideIcon | ComponentType<{ className?: string }>;
   label: string;
   hint?: string;
   accent?: Accent;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Button
       variant="outline"
-      className={`w-full justify-start h-auto py-2.5 px-3 text-sm font-medium transition-colors ${accentClass[accent]}`}
+      className={`w-full justify-start h-auto py-2.5 px-3 text-sm font-medium transition-colors ${accentClass[accent]} disabled:opacity-50 disabled:cursor-not-allowed`}
       onClick={onClick}
+      disabled={disabled}
     >
       <Icon className="h-4 w-4 mr-2.5 shrink-0" />
       <span className="flex-1 text-left">
