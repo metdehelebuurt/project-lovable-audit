@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,22 @@ const AffiliateBellen = () => {
   const [pendingUitkomst, setPendingUitkomst] = useState<typeof CONTACT_UITKOMST_OPTIES[number] | null>(null);
   const [openVerrijk, setOpenVerrijk] = useState(false);
   const [openVerloren, setOpenVerloren] = useState(false);
+  // Beschermt tegen dubbele klikken op de soundboard-knoppen terwijl er nog
+  // een insert/mutatie loopt. Combineert React-state (voor UI) met een ref
+  // (voor synchrone guard binnen dezelfde event-loop tick).
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const guard = async (fn: () => Promise<void> | void) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
   const belQueue = useMemo(() => {
     const eindVandaag = new Date(); eindVandaag.setHours(23, 59, 59, 999);
@@ -128,6 +144,7 @@ const AffiliateBellen = () => {
   /** Slimme afhandeling: dwingt afspraak/terugbel-popup af voordat de status wordt gezet. */
   const handleUitkomstSmart = async (uitkomst: typeof CONTACT_UITKOMST_OPTIES[number]) => {
     if (!current) return;
+    if (busyRef.current) return;
     // Verloren: verplichte popup met categorie + reden.
     if (uitkomst.value === "niet_interessant") {
       setOpenVerloren(true);
@@ -140,10 +157,12 @@ const AffiliateBellen = () => {
       setOpenAfspraak(true);
       return;
     }
-    await handleUitkomst(uitkomst);
-    if (uitkomst.value === "voorstel") {
-      toast.success("Status op 'voorstel verstuurd'. Open de lead om een offerte te maken.");
-    }
+    await guard(async () => {
+      await handleUitkomst(uitkomst);
+      if (uitkomst.value === "voorstel") {
+        toast.success("Status op 'voorstel verstuurd'. Open de lead om een offerte te maken.");
+      }
+    });
   };
 
   /** Knop "Demo inplannen" — opent direct demo-dialog en zet daarna status. */
@@ -157,17 +176,20 @@ const AffiliateBellen = () => {
   /** Knop "Mail gestuurd → nabellen" — logt mailmoment en plant verplicht terugbelafspraak. */
   const handleMailGestuurd = async () => {
     if (!current) return;
-    await log.mutateAsync({
-      lead_id: current.id,
-      type: "email",
-      uitkomst: "Mail gestuurd",
-      notitie: notitie || null,
-      duur_seconden: seconden,
+    if (busyRef.current) return;
+    await guard(async () => {
+      await log.mutateAsync({
+        lead_id: current.id,
+        type: "email",
+        uitkomst: "Mail gestuurd",
+        notitie: notitie || null,
+        duur_seconden: seconden,
+      });
+      toast.success("Mail gelogd — plan nu de nabel-afspraak");
+      setAfspraakType("terugbel");
+      setPendingUitkomst({ value: "terugbellen", label: "Nabellen na mail", nextStatus: "mail_gestuurd" });
+      setOpenAfspraak(true);
     });
-    toast.success("Mail gelogd — plan nu de nabel-afspraak");
-    setAfspraakType("terugbel");
-    setPendingUitkomst({ value: "terugbellen", label: "Nabellen na mail", nextStatus: "mail_gestuurd" });
-    setOpenAfspraak(true);
   };
 
   const onAfspraakSaved = async () => {
@@ -182,14 +204,17 @@ const AffiliateBellen = () => {
 
   const handleTrialGestart = async () => {
     if (!current) return;
-    await log.mutateAsync({
-      lead_id: current.id,
-      type: "telefoon",
-      uitkomst: "Trial gestart",
-      notitie: notitie || null,
-      duur_seconden: seconden,
+    if (busyRef.current) return;
+    await guard(async () => {
+      await log.mutateAsync({
+        lead_id: current.id,
+        type: "telefoon",
+        uitkomst: "Trial gestart",
+        notitie: notitie || null,
+        duur_seconden: seconden,
+      });
+      next();
     });
-    next();
   };
 
   const tel = current ? telLink(current.telefoon) : null;
@@ -306,6 +331,34 @@ const AffiliateBellen = () => {
                 <TabsContent value="gesprek" className="space-y-3 pt-3">
                   <StatusKaart lead={current} afspraken={terugbelAfspraken} />
                   <BriefingKaart leadId={current.id} />
+                  {historie.length > 0 && (
+                    <div className="text-sm border rounded-md p-3 bg-muted/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                          <HistoryIcon className="h-3.5 w-3.5" /> Recente contactmomenten
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">
+                          {historie.length} totaal
+                        </span>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {historie.slice(0, 3).map((c) => (
+                          <li key={c.id} className="flex items-start gap-2 text-xs">
+                            <Badge variant="outline" className="text-[10px] shrink-0">{c.type}</Badge>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                {c.uitkomst && <span className="font-medium truncate">{c.uitkomst}</span>}
+                                <span className="text-muted-foreground shrink-0 text-[10px]">
+                                  {new Date(c.created_at).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                              {c.notitie && <p className="text-muted-foreground line-clamp-2 mt-0.5">{c.notitie}</p>}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {huidigeTaken.length > 0 && (
                     <div className="text-sm border rounded-md p-3 bg-primary/5 border-primary/20">
                       <p className="font-medium mb-2 text-xs uppercase tracking-wide text-primary">Openstaande opvolg-taken</p>
@@ -389,6 +442,7 @@ const AffiliateBellen = () => {
                     label="Geen gehoor"
                     accent="muted"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "geen_gehoor")!)}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={Phone}
@@ -396,6 +450,7 @@ const AffiliateBellen = () => {
                     hint="Verplicht inplannen"
                     accent="amber"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "terugbellen")!)}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={Mail}
@@ -403,6 +458,7 @@ const AffiliateBellen = () => {
                     hint="Logt mail + plant nabel"
                     accent="amber"
                     onClick={handleMailGestuurd}
+                    disabled={busy}
                   />
                 </UitkomstGroep>
 
@@ -414,6 +470,7 @@ const AffiliateBellen = () => {
                     hint="Notitie verplicht"
                     accent="rose"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "niet_interessant")!)}
+                    disabled={busy}
                   />
                 </UitkomstGroep>
 
@@ -425,6 +482,7 @@ const AffiliateBellen = () => {
                     hint="Check: staat de afspraak?"
                     accent="blue"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "gesprek_gepland")!)}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={Presentation}
@@ -432,12 +490,14 @@ const AffiliateBellen = () => {
                     hint="Plant demo + mail"
                     accent="blue"
                     onClick={handleDemoInplannen}
+                    disabled={busy}
                   />
                   <UitkomstKnop
                     icon={FileText}
                     label="Voorstel doen"
                     accent="violet"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "voorstel")!)}
+                    disabled={busy}
                   />
                 </UitkomstGroep>
 
@@ -448,6 +508,7 @@ const AffiliateBellen = () => {
                     label="Gewonnen"
                     accent="emerald"
                     onClick={() => handleUitkomstSmart(CONTACT_UITKOMST_OPTIES.find((u) => u.value === "gewonnen")!)}
+                    disabled={busy}
                   />
                   {current && (
                     <TrialStartenButton
