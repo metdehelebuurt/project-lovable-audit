@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,22 @@ const AffiliateBellen = () => {
   const [pendingUitkomst, setPendingUitkomst] = useState<typeof CONTACT_UITKOMST_OPTIES[number] | null>(null);
   const [openVerrijk, setOpenVerrijk] = useState(false);
   const [openVerloren, setOpenVerloren] = useState(false);
+  // Beschermt tegen dubbele klikken op de soundboard-knoppen terwijl er nog
+  // een insert/mutatie loopt. Combineert React-state (voor UI) met een ref
+  // (voor synchrone guard binnen dezelfde event-loop tick).
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const guard = async (fn: () => Promise<void> | void) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
   const belQueue = useMemo(() => {
     const eindVandaag = new Date(); eindVandaag.setHours(23, 59, 59, 999);
@@ -128,6 +144,7 @@ const AffiliateBellen = () => {
   /** Slimme afhandeling: dwingt afspraak/terugbel-popup af voordat de status wordt gezet. */
   const handleUitkomstSmart = async (uitkomst: typeof CONTACT_UITKOMST_OPTIES[number]) => {
     if (!current) return;
+    if (busyRef.current) return;
     // Verloren: verplichte popup met categorie + reden.
     if (uitkomst.value === "niet_interessant") {
       setOpenVerloren(true);
@@ -140,10 +157,12 @@ const AffiliateBellen = () => {
       setOpenAfspraak(true);
       return;
     }
-    await handleUitkomst(uitkomst);
-    if (uitkomst.value === "voorstel") {
-      toast.success("Status op 'voorstel verstuurd'. Open de lead om een offerte te maken.");
-    }
+    await guard(async () => {
+      await handleUitkomst(uitkomst);
+      if (uitkomst.value === "voorstel") {
+        toast.success("Status op 'voorstel verstuurd'. Open de lead om een offerte te maken.");
+      }
+    });
   };
 
   /** Knop "Demo inplannen" — opent direct demo-dialog en zet daarna status. */
@@ -157,17 +176,20 @@ const AffiliateBellen = () => {
   /** Knop "Mail gestuurd → nabellen" — logt mailmoment en plant verplicht terugbelafspraak. */
   const handleMailGestuurd = async () => {
     if (!current) return;
-    await log.mutateAsync({
-      lead_id: current.id,
-      type: "email",
-      uitkomst: "Mail gestuurd",
-      notitie: notitie || null,
-      duur_seconden: seconden,
+    if (busyRef.current) return;
+    await guard(async () => {
+      await log.mutateAsync({
+        lead_id: current.id,
+        type: "email",
+        uitkomst: "Mail gestuurd",
+        notitie: notitie || null,
+        duur_seconden: seconden,
+      });
+      toast.success("Mail gelogd — plan nu de nabel-afspraak");
+      setAfspraakType("terugbel");
+      setPendingUitkomst({ value: "terugbellen", label: "Nabellen na mail", nextStatus: "mail_gestuurd" });
+      setOpenAfspraak(true);
     });
-    toast.success("Mail gelogd — plan nu de nabel-afspraak");
-    setAfspraakType("terugbel");
-    setPendingUitkomst({ value: "terugbellen", label: "Nabellen na mail", nextStatus: "mail_gestuurd" });
-    setOpenAfspraak(true);
   };
 
   const onAfspraakSaved = async () => {
