@@ -204,14 +204,17 @@ const AffiliateBellen = () => {
 
   const handleTrialGestart = async () => {
     if (!current) return;
-    await log.mutateAsync({
-      lead_id: current.id,
-      type: "telefoon",
-      uitkomst: "Trial gestart",
-      notitie: notitie || null,
-      duur_seconden: seconden,
+    if (busyRef.current) return;
+    await guard(async () => {
+      await log.mutateAsync({
+        lead_id: current.id,
+        type: "telefoon",
+        uitkomst: "Trial gestart",
+        notitie: notitie || null,
+        duur_seconden: seconden,
+      });
+      next();
     });
-    next();
   };
 
   const tel = current ? telLink(current.telefoon) : null;
@@ -328,6 +331,34 @@ const AffiliateBellen = () => {
                 <TabsContent value="gesprek" className="space-y-3 pt-3">
                   <StatusKaart lead={current} afspraken={terugbelAfspraken} />
                   <BriefingKaart leadId={current.id} />
+                  {historie.length > 0 && (
+                    <div className="text-sm border rounded-md p-3 bg-muted/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                          <HistoryIcon className="h-3.5 w-3.5" /> Recente contactmomenten
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">
+                          {historie.length} totaal
+                        </span>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {historie.slice(0, 3).map((c) => (
+                          <li key={c.id} className="flex items-start gap-2 text-xs">
+                            <Badge variant="outline" className="text-[10px] shrink-0">{c.type}</Badge>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                {c.uitkomst && <span className="font-medium truncate">{c.uitkomst}</span>}
+                                <span className="text-muted-foreground shrink-0 text-[10px]">
+                                  {new Date(c.created_at).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                              {c.notitie && <p className="text-muted-foreground line-clamp-2 mt-0.5">{c.notitie}</p>}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {huidigeTaken.length > 0 && (
                     <div className="text-sm border rounded-md p-3 bg-primary/5 border-primary/20">
                       <p className="font-medium mb-2 text-xs uppercase tracking-wide text-primary">Openstaande opvolg-taken</p>
