@@ -177,7 +177,7 @@ export function NotificatieCenter() {
             </TabsList>
           </Tabs>
         </div>
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="h-80">
           {gefilterd.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-8">Geen notificaties</p>
           ) : (
