@@ -1,0 +1,26 @@
+name: RLS-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rls-policies:
+    name: Permissieve RLS-policies detecteren
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Dependencies installeren
+        run: bun install --frozen-lockfile
+      - name: RLS-policies controleren
+        env:
+          PGHOST: ${{ secrets.PGHOST }}
+          PGPORT: ${{ secrets.PGPORT }}
+          PGUSER: ${{ secrets.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+          PGDATABASE: ${{ secrets.PGDATABASE }}
+        run: bun run check:rls

@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prebuild": "tsx scripts/generate-help-knowledge.ts",
-    "generate:help": "tsx scripts/generate-help-knowledge.ts"
+    "generate:help": "tsx scripts/generate-help-knowledge.ts",
+    "check:rls": "tsx scripts/check-rls-policies.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
