@@ -187,6 +187,21 @@ export default function OfferteEmailEditor({
     setAiLoading(false);
   };
 
+  /** Zorgt dat er altijd een share_token is zodat de interactieve offertelink meegaat. */
+  const ensureShareToken = async (): Promise<string | null> => {
+    if (offerte.share_token) return offerte.share_token;
+    const token = crypto.randomUUID();
+    const { error } = await supabase
+      .from("offertes")
+      .update({
+        share_token: token,
+        share_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      } as never)
+      .eq("id", offerte.id);
+    if (error) return null;
+    return token;
+  };
+
   const handleSend = async () => {
     if (!to.trim()) {
       toast.error("Vul een ontvanger e-mailadres in");
