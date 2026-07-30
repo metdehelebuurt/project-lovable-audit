@@ -78,12 +78,16 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
+  const eigenPartnerId = profile?.partner_id ?? null;
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users", filterRol],
+    queryKey: ["users", filterRol, isSuperadmin ? "alle" : eigenPartnerId],
+    enabled: isSuperadmin || !!eigenPartnerId,
     queryFn: async () => {
       let query = supabase.from("users").select("*").order("created_at", { ascending: false });
       if (filterRol) query = query.eq("rol", filterRol);
+      // Defense in depth: niet-superadmins zien uitsluitend hun eigen organisatie
+      if (!isSuperadmin) query = query.eq("partner_id", eigenPartnerId as string);
       const { data, error } = await query;
       if (error) throw error;
       return data as UserRow[];
@@ -141,6 +145,10 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...data }: Partial<UserRow> & { id: string }) => {
+      const doelwit = users.find((u) => u.id === id);
+      if (doelwit && !magBeheren(doelwit)) {
+        throw new Error("Je mag alleen gebruikers van je eigen organisatie bewerken.");
+      }
       const { error } = await supabase.from("users").update(data).eq("id", id);
       if (error) throw error;
     },
@@ -243,6 +251,10 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
     ? ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument", "affiliate"]
     : ["backoffice", "partner_staff", "adviseur", "installateur", "affiliate"];
 
+  /** Alleen superadmins mogen buiten de eigen organisatie beheren. */
+  const magBeheren = (u: UserRow): boolean =>
+    isSuperadmin || (!!eigenPartnerId && u.partner_id === eigenPartnerId);
+
   const filtered = users.filter(u =>
     `${u.voornaam} ${u.achternaam} ${u.email}`.toLowerCase().includes(search.toLowerCase())
   );
@@ -312,10 +324,12 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                       <TableCell>{user.telefoon || "—"}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Bewerken">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {user.id !== profile?.id && (
+                          {magBeheren(user) && (
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Bewerken">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {user.id !== profile?.id && magBeheren(user) && (
                             <Button variant="ghost" size="icon" onClick={() => openPasswordDialog(user)} title="Wachtwoord wijzigen">
                               <KeyRound className="h-4 w-4" />
                             </Button>
@@ -329,7 +343,7 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                               size="sm"
                             />
                           )}
-                          {user.id !== profile?.id && (
+                          {user.id !== profile?.id && magBeheren(user) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-destructive">
