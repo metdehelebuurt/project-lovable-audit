@@ -320,10 +320,12 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                       <TableCell>{user.telefoon || "—"}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Bewerken">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {user.id !== profile?.id && (
+                          {magBeheren(user) && (
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Bewerken">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {user.id !== profile?.id && magBeheren(user) && (
                             <Button variant="ghost" size="icon" onClick={() => openPasswordDialog(user)} title="Wachtwoord wijzigen">
                               <KeyRound className="h-4 w-4" />
                             </Button>
@@ -337,7 +339,7 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
                               size="sm"
                             />
                           )}
-                          {user.id !== profile?.id && (
+                          {user.id !== profile?.id && magBeheren(user) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-destructive">
