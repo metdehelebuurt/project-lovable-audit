@@ -39,8 +39,15 @@ serve(async (req) => {
       });
     }
 
-    // Check expiry
-    if (offerte.share_expires_at && new Date(offerte.share_expires_at) < new Date()) {
+    // Check expiry — geaccepteerde/ondertekende offertes blijven inzichtelijk voor de klant
+    const blijftInzichtelijk = ["geaccepteerd", "ondertekend", "afgerond"].includes(
+      String(offerte.status ?? "").toLowerCase()
+    );
+    if (
+      !blijftInzichtelijk &&
+      offerte.share_expires_at &&
+      new Date(offerte.share_expires_at) < new Date()
+    ) {
       return new Response(JSON.stringify({ error: "Deze offertelink is verlopen" }), {
         status: 410,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

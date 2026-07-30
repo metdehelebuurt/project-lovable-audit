@@ -58,7 +58,17 @@ export default function OffertePublic() {
           body: { share_token: token },
         });
         if (fnErr || data?.error) {
-          setError(data?.error || fnErr?.message || "Deze offertelink is ongeldig of verlopen.");
+          let melding = data?.error as string | undefined;
+          const context = (fnErr as { context?: Response } | null)?.context;
+          if (!melding && context && typeof context.json === "function") {
+            try {
+              const body = await context.json();
+              if (body?.error) melding = String(body.error);
+            } catch {
+              /* geen JSON-body beschikbaar */
+            }
+          }
+          setError(melding || "Deze offertelink is ongeldig of verlopen.");
           setLoading(false);
           return;
         }
