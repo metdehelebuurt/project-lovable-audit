@@ -187,6 +187,21 @@ export default function OfferteEmailEditor({
     setAiLoading(false);
   };
 
+  /** Zorgt dat er altijd een share_token is zodat de interactieve offertelink meegaat. */
+  const ensureShareToken = async (): Promise<string | null> => {
+    if (offerte.share_token) return offerte.share_token;
+    const token = crypto.randomUUID();
+    const { error } = await supabase
+      .from("offertes")
+      .update({
+        share_token: token,
+        share_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      } as never)
+      .eq("id", offerte.id);
+    if (error) return null;
+    return token;
+  };
+
   const handleSend = async () => {
     if (!to.trim()) {
       toast.error("Vul een ontvanger e-mailadres in");
@@ -201,9 +216,15 @@ export default function OfferteEmailEditor({
       const htmlBody = editorRef.current?.innerHTML || "";
 
       let linksHtml = "";
-      const portalUrl = offerte.share_token
-        ? `${window.location.origin}/offerte/${offerte.share_token}`
-        : "";
+      const shareToken = await ensureShareToken();
+      const portalUrl = shareToken ? `${window.location.origin}/offerte/${shareToken}` : "";
+      if ((includeAcceptLink || includePortalLink) && !portalUrl) {
+        toast.error("Offertelink kon niet worden aangemaakt", {
+          description: "Probeer opnieuw of deel de link handmatig.",
+        });
+        setSending(false);
+        return;
+      }
       if (includeAcceptLink && portalUrl) {
         linksHtml += `<p><a href="${portalUrl}" style="display:inline-block;padding:12px 32px;background-color:#5B58E1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Offerte bekijken & accepteren</a></p>`;
       }

@@ -285,7 +285,10 @@ Deno.serve(async (req) => {
     const formatCurrency = (n: number) =>
       new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(n);
 
-    const html = html_body || `
+    const portalBase = Deno.env.get("PUBLIC_APP_URL") || "https://app.mijnhuis.nu";
+    const portalUrl = `${portalBase.replace(/\/$/, "")}/offerte/${offerte.share_token}`;
+
+    const baseHtml = html_body || `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
         <div style="border-bottom:3px solid #5B58E1;padding-bottom:16px;margin-bottom:24px;">
           <h2 style="margin:0;color:#1a1a2e;">${partner.afzender_naam || partner.naam}</h2>
@@ -309,6 +312,11 @@ Deno.serve(async (req) => {
         <p style="color:#888;font-size:12px;">Deze e-mail is verstuurd via het Mijnhuis.nu platform.</p>
       </div>
     `;
+
+    // Failsafe: als de interactieve offertelink ontbreekt in de body, voeg hem alsnog toe.
+    const html = baseHtml.includes(`/offerte/${offerte.share_token}`)
+      ? baseHtml
+      : `${baseHtml}<p style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:0 20px;"><a href="${portalUrl}" style="display:inline-block;padding:12px 32px;background-color:#5B58E1;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">Offerte online bekijken &amp; accepteren</a></p>`;
 
     const emailSubject = customSubject || `Offerte ${offerte.offertenummer} — ${partner.afzender_naam || partner.naam}`;
 
