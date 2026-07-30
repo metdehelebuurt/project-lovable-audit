@@ -201,9 +201,15 @@ export default function OfferteEmailEditor({
       const htmlBody = editorRef.current?.innerHTML || "";
 
       let linksHtml = "";
-      const portalUrl = offerte.share_token
-        ? `${window.location.origin}/offerte/${offerte.share_token}`
-        : "";
+      const shareToken = await ensureShareToken();
+      const portalUrl = shareToken ? `${window.location.origin}/offerte/${shareToken}` : "";
+      if ((includeAcceptLink || includePortalLink) && !portalUrl) {
+        toast.error("Offertelink kon niet worden aangemaakt", {
+          description: "Probeer opnieuw of deel de link handmatig.",
+        });
+        setSending(false);
+        return;
+      }
       if (includeAcceptLink && portalUrl) {
         linksHtml += `<p><a href="${portalUrl}" style="display:inline-block;padding:12px 32px;background-color:#5B58E1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Offerte bekijken & accepteren</a></p>`;
       }
