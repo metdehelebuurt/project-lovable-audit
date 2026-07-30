@@ -44,25 +44,28 @@ function leesMigraties(): { bestand: string; sql: string }[] {
     .map((naam) => ({ bestand: naam, sql: readFileSync(join(MIGRATIES_DIR, naam), "utf8") }));
 }
 
-function scanMigratieSql(bestand: string, sql: string): Bevinding[] {
-  const statements = sql.split(";");
-  const bevindingen: Bevinding[] = [];
-  for (const statement of statements) {
-    const genormaliseerd = statement.replace(/\s+/g, " ").toLowerCase();
-    if (!genormaliseerd.includes("create policy")) continue;
-    if (!genormaliseerd.includes(BREAK_GLASS_POLICY)) continue;
-    if (genormaliseerd.includes("as restrictive")) continue;
-    const tabel = GEVOELIGE_TABELLEN.find((t) =>
-      genormaliseerd.includes(`on public.${t} `),
-    );
-    if (!tabel) continue;
-    bevindingen.push({ tabel, policy: BREAK_GLASS_POLICY, bron: bestand });
+function laatsteDefinitiePerTabel(): Map<string, { bestand: string; restrictief: boolean }> {
+  const laatste = new Map<string, { bestand: string; restrictief: boolean }>();
+  for (const { bestand, sql } of leesMigraties()) {
+    for (const statement of sql.split(";")) {
+      const genormaliseerd = statement.replace(/\s+/g, " ").toLowerCase();
+      if (!genormaliseerd.includes("create policy")) continue;
+      if (!genormaliseerd.includes(BREAK_GLASS_POLICY)) continue;
+      const tabel = GEVOELIGE_TABELLEN.find((t) => genormaliseerd.includes(`on public.${t} `));
+      if (!tabel) continue;
+      laatste.set(tabel, { bestand, restrictief: genormaliseerd.includes("as restrictive") });
+    }
   }
-  return bevindingen;
+  return laatste;
 }
 
 function scanMigraties(): Bevinding[] {
-  return leesMigraties().flatMap(({ bestand, sql }) => scanMigratieSql(bestand, sql));
+  const bevindingen: Bevinding[] = [];
+  for (const [tabel, definitie] of laatsteDefinitiePerTabel()) {
+    if (definitie.restrictief) continue;
+    bevindingen.push({ tabel, policy: BREAK_GLASS_POLICY, bron: definitie.bestand });
+  }
+  return bevindingen;
 }
 
 function rapporteer(bevindingen: Bevinding[], modus: string): void {
