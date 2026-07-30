@@ -563,8 +563,10 @@ const Leads = () => {
                           <TableCell className="capitalize">{lead.bron || "—"}</TableCell>
                           <TableCell onClick={e => e.stopPropagation()}>
                             <Select value={lead.lead_status} onValueChange={v => statusMutation.mutate({ id: lead.id, status: v as LeadStatus })}>
-                              <SelectTrigger className="w-40 h-8">
-                                <Badge className={statusColors[lead.lead_status]}>{statusLabels[lead.lead_status]}</Badge>
+                              <SelectTrigger className="w-44 h-8 overflow-hidden">
+                                <Badge className={`${statusColors[lead.lead_status]} max-w-full whitespace-nowrap truncate block`}>
+                                  {statusLabels[lead.lead_status]}
+                                </Badge>
                               </SelectTrigger>
                               <SelectContent>
                                 {(Object.keys(statusLabels) as LeadStatus[]).map(s => (
