@@ -1,69 +1,66 @@
+## Wat er precies mis is (geverifieerd)
 
-# Doel
-Garanderen dat elke offerte-mail met bijlage-intentie ook daadwerkelijk een geldige PDF meestuurt. Als dat niet lukt: verzending blokkeren, structureel loggen en een alert triggeren met `offerte_id`, `account_id`, `account_type` (gmail_oauth | ms_graph_oauth | smtp_app_password | partner_smtp) en de faalreden.
+Bij het break-glass-project is op **66 tabellen** een policy `break_glass_superadmin_restrict` gezet met de conditie:
 
-# Aanpak in het kort
-1. Één centrale "attachment guard" in `send-offerte-email` die vóór elk verzendpad draait.
-2. Nieuwe tabel `offerte_email_attachment_audit` voor structurele logging per poging.
-3. Alert-kanaal (in-app notificatie + optionele mail naar partner-admin) bij missing/lege/invalide PDF.
-4. E2E-tests per verzendpad die falen als er geen geldige PDF in de outgoing message zit.
-5. Zwakhedenrapport uit de audit-logs (dashboard voor superadmin).
+```text
+(NOT is_superadmin(auth.uid())) OR has_break_glass_access(auth.uid(), partner_id)
+```
 
-# Wijzigingen
+Die conditie is bedoeld als *restrictive* (AND-laag bovenop de andere policies): "als je superadmin bent, moet je break-glass hebben".
 
-## 1. Backend — `supabase/functions/send-offerte-email/index.ts`
-- Nieuwe helper `enforceAttachment({ offerteId, accountId, accountType, attachmentPath, bytes })`:
-  - Faalt hard (HTTP 422 `MISSING_PDF_ATTACHMENT`) als: geen `attachment_path`, storage-download leeg, `bytes.length < 1KB`, of `verifyPdfBytes` faalt (geen `%PDF-` header / geen `%%EOF`).
-  - Schrijft altijd een rij in `offerte_email_attachment_audit` met status `ok | missing_path | empty | invalid_pdf | storage_error`.
-- Één `sendPayload` object dat door álle takken (Gmail API, MS Graph, SMTP app-password, partner-SMTP) hergebruikt wordt; `attachments` wordt centraal geïnjecteerd en per tak wordt met een `assertHasAttachment(sendPayload)` gecontroleerd vlak vóór de netwerkoproep.
-- Bij succesvolle send: audit-rij updaten met `sent_message_id` en `provider`.
-- Bij falen na verzendpoging (bijv. provider strip attachments): audit-rij markeren als `sent_without_attachment` + alert.
+Uit de database blijkt: **64 van de 66 staan correct als RESTRICTIVE**, maar **2 staan als PERMISSIVE**:
 
-## 2. Database — nieuwe migratie
-Tabel `public.offerte_email_attachment_audit`:
-- `id uuid pk`, `offerte_id uuid`, `partner_id uuid`, `user_id uuid`,
-- `account_id uuid null`, `account_type text` (enum-achtig via check),
-- `attachment_path text null`, `bytes_size int null`, `pdf_valid boolean`,
-- `status text` (`ok|missing_path|empty|invalid_pdf|storage_error|sent_without_attachment`),
-- `provider text null`, `sent_message_id text null`, `error text null`,
-- `created_at timestamptz default now()`.
-- RLS: `service_role` insert/update; partner_admin/superadmin select binnen eigen `partner_id`.
-- GRANTs conform projectregels.
+- `public.users`
+- `public.contactpersonen`
 
-## 3. Alerts
-- DB-trigger `after insert` op audit: als `status <> 'ok'` → `pg_notify` + insert in bestaande `notificaties` tabel voor partner_admin (kanaal `offerte_pdf_alert`).
-- Optionele mail via bestaande `send-transactional-email` template `offerte-pdf-missing-alert` (nieuw sjabloon) naar partner-admins, throttled 1× per uur per offerte.
+Permissieve policies worden ge-OR'd. Voor iedere niet-superadmin is `NOT is_superadmin(...)` = `true`, dus de policy geeft op zichzelf al toegang tot **alle rijen, voor alle commando's (ALL)**, aan rol `public`. Alle nette partner-scoped policies eronder worden daardoor irrelevant.
 
-## 4. Frontend
-- `OfferteEmailEditor`: toont een blocking foutstate wanneer de edge function `MISSING_PDF_ATTACHMENT` retourneert, met "PDF opnieuw genereren" knop.
-- Nieuwe superadmin-pagina `/superadmin/email-diagnose`: lijst uit `offerte_email_attachment_audit` met filters op status/account_type/partner. Puur read-only.
+Gevolg: elke ingelogde gebruiker (zoals een verse trial-account) kan **alle gebruikers en alle contactpersonen van het hele platform lezen, wijzigen en verwijderen**. Precies wat je zag.
 
-## 5. E2E tests — `supabase/functions/send-offerte-email/*_test.ts`
-Per verzendpad een Deno-test met een gemockte provider-transport:
-- `gmail_oauth_test.ts` — verifieert MIME bevat `Content-Disposition: attachment; filename="offerte-*.pdf"` en base64 body start met `JVBERi` (PDF-magic).
-- `ms_graph_test.ts` — verifieert `attachments[0].contentBytes` decodeert naar geldige PDF.
-- `smtp_app_password_test.ts` — regressietest voor de eerder gemiste tak; asserteert attachment in outgoing SMTP DATA.
-- `partner_smtp_test.ts` — idem voor partner-SMTP configuratie.
-- `guard_test.ts` — asserteert dat elk pad met leeg/ongeldig PDF-pad 422 geeft én een audit-rij `status != 'ok'` schrijft.
-Testrunner: `supabase--test_edge_functions`.
+Extra bijdragende factor in de frontend: `src/pages/Gebruikers.tsx` haalt `supabase.from("users").select("*")` op **zonder enige partner-filter** — de pagina leunt 100% op RLS. Er is dus geen tweede vangnet.
 
-## 6. Zwakhedenrapport (op te leveren in `docs/offerte-email-pdf-zwakheden.md`)
-Documenteert bekende failure modes en of ze nu afgedekt zijn:
-- Snel-verstuur zonder editor (afgedekt: knop verwijderd).
-- SMTP-tak zonder attachments (afgedekt: guard + test).
-- Storage race (PDF nog niet klaar bij invoke) → guard blokkeert.
-- Provider strip (bv. size limit >25MB) → post-send audit + alert.
-- OAuth token expired midden in send → retry-once, anders alert.
-- Verkeerd `attachment_path` van oude offerte-versie → guard verifieert dat pad hoort bij `offerte_id` (path-prefix check).
+## Reparatie
 
-# Acceptatiecriteria
-- Geen enkele `send-offerte-email` call kan een 200 teruggeven zonder dat er een geldige PDF in de outgoing message zat (bewezen per pad in tests).
-- Elke poging (ok of fail) staat in `offerte_email_attachment_audit`.
-- Bij fail krijgt de partner_admin een notificatie binnen 60s.
-- Alle 5 e2e-tests slagen; CI faalt als één pad regressie krijgt.
+**1. Migratie — policies omzetten naar RESTRICTIVE**
 
-# Technische details (kort)
-- `verifyPdfBytes`: check `bytes.slice(0,5) === '%PDF-'` en laatste 1KB bevat `%%EOF`.
-- `assertHasAttachment`: throw als `sendPayload.attachments?.[0]?.content?.byteLength` ontbreekt/0.
-- Path-prefix check: `attachment_path.startsWith(`offertes/${offerteId}/`)`.
-- Alerts throttlen via `on conflict (offerte_id, date_trunc('hour', created_at)) do nothing` in een aparte alert-tabel.
+Voor `public.users` en `public.contactpersonen`: de permissieve policy droppen en opnieuw aanmaken als `AS RESTRICTIVE ... TO authenticated`, met exact dezelfde conditie als de andere 64 tabellen (voor `users` inclusief de bestaande uitzonderingen: eigen profiel, partnerloze rijen, affiliate-rijen).
+
+**2. Migratie — controle-guard tegen herhaling**
+
+Een event trigger of een expliciete verificatiequery is te zwaar; in plaats daarvan voegen we een migratie-check toe die faalt zolang er nog een permissieve policy met die naam bestaat:
+
+```text
+DO $$ BEGIN
+  IF EXISTS (... polname='break_glass_superadmin_restrict' AND polpermissive) THEN
+    RAISE EXCEPTION 'break-glass policy staat permissief';
+  END IF;
+END $$;
+```
+
+**3. Frontend — defense in depth**
+
+In `src/pages/Gebruikers.tsx` de query scopen op `partner_id` van het eigen profiel voor niet-superadmins (superadmin behoudt het volledige overzicht). Zelfde check op de mutaties: bewerken/verwijderen alleen tonen voor gebruikers binnen de eigen organisatie. Zo lekt de pagina niets meer, ook niet als een policy ooit weer misgaat.
+
+**4. Verificatie**
+
+- Alle 66 policies opnieuw uitlezen en bevestigen dat er 0 permissieve tussen zitten.
+- Supabase-linter draaien.
+- Een gerichte query per rol-scenario (trial partner_admin, affiliate, sales_manager) om te bevestigen dat `users` alleen eigen-partnerrijen teruggeeft.
+- Controleren dat superadmin-flows (gebruikersbeheer, break-glass) nog werken.
+
+## Overige plekken — scanresultaat
+
+Ik heb de hele `public`-schema doorzocht op vergelijkbare patronen:
+
+- Permissieve policies met conditie `true` op ALL: alleen op `affiliate_opvolg_log`, `affiliate_opvolg_regels`, `email_routing_config`, `offerte_email_attachment_audit` — allemaal beperkt tot `service_role`. Dat is correct.
+- Publieke leesrechten met `true`: abonnementsplannen, add-ons, lead-bronnen, sales-tags, affiliate-instellingen. Dat is bewust publieke/gedeelde referentiedata; wel neem ik `affiliate_instellingen` mee in de check of daar geen gevoelige velden in staan.
+- `klanten`, `partners`, `offertes`: correct partner-scoped, break-glass staat daar wél restrictive.
+
+Andere lekken van dit type zijn er dus niet — het beperkt zich tot deze twee tabellen.
+
+## Technische details
+
+- Migratie 1: `DROP POLICY break_glass_superadmin_restrict ON public.users` + `CREATE POLICY ... AS RESTRICTIVE FOR ALL TO authenticated USING (...) WITH CHECK (...)`; idem voor `contactpersonen` (daar zonder de users-specifieke uitzonderingen, conform de standaardvariant).
+- Let op: bij RESTRICTIVE moet ook `WITH CHECK` gezet worden, anders blijven schrijfacties ongefilterd.
+- Geen wijziging aan `get_user_role`, `is_superadmin` of `has_break_glass_access` nodig.
+- Frontend-wijziging blijft beperkt tot `src/pages/Gebruikers.tsx` (en zo nodig `GebruikerDetail.tsx` voor dezelfde scope-check).
