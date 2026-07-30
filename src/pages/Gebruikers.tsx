@@ -78,12 +78,16 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
   const queryClient = useQueryClient();
 
   const isSuperadmin = profile?.rol === "superadmin";
+  const eigenPartnerId = profile?.partner_id ?? null;
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users", filterRol],
+    queryKey: ["users", filterRol, isSuperadmin ? "alle" : eigenPartnerId],
+    enabled: isSuperadmin || !!eigenPartnerId,
     queryFn: async () => {
       let query = supabase.from("users").select("*").order("created_at", { ascending: false });
       if (filterRol) query = query.eq("rol", filterRol);
+      // Defense in depth: niet-superadmins zien uitsluitend hun eigen organisatie
+      if (!isSuperadmin) query = query.eq("partner_id", eigenPartnerId as string);
       const { data, error } = await query;
       if (error) throw error;
       return data as UserRow[];
