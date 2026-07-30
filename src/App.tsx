@@ -9,6 +9,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { CookieConsent } from "@/components/CookieConsent";
 import { SessionTimeout } from "@/components/SessionTimeout";
 import Login from "@/pages/Login";
+import OAuthConsent from "@/pages/OAuthConsent";
 import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Vandaag from "@/pages/Vandaag";
@@ -153,6 +154,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
             {/* Public embed routes — no auth, no layout */}
             <Route path="/offerte/:token" element={<OffertePublic />} />
