@@ -145,6 +145,10 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...data }: Partial<UserRow> & { id: string }) => {
+      const doelwit = users.find((u) => u.id === id);
+      if (doelwit && !magBeheren(doelwit)) {
+        throw new Error("Je mag alleen gebruikers van je eigen organisatie bewerken.");
+      }
       const { error } = await supabase.from("users").update(data).eq("id", id);
       if (error) throw error;
     },
