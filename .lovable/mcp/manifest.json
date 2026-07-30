@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "sdk_version": "0.25.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://xmguipmetciwvzeyxugu.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "mijnhuis-nu-backend",
+      "version": "0.1.0",
+      "title": "Mijnhuis.nu (backend)"
+    },
+    "tools": [
+      {
+        "name": "whoami",
+        "title": "Wie ben ik",
+        "description": "Geeft het profiel van de ingelogde gebruiker terug: naam, e-mail, rol en organisatie.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_leads",
+        "title": "Leads zoeken",
+        "description": "Zoekt leads waar de ingelogde gebruiker toegang toe heeft, optioneel gefilterd op status of zoekterm (naam, bedrijf, e-mail, plaats).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "zoekterm": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Zoekt in naam, bedrijfsnaam, e-mail en plaats."
+            },
+            "status": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Filter op lead_status, bijv. 'nieuw' of 'gekwalificeerd'."
+            },
+            "limiet": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Maximaal aantal leads."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_lead",
+        "title": "Lead ophalen",
+        "description": "Haalt één lead op met de laatste notities en bijbehorende offertes.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Het id van de lead."
+            }
+          },
+          "required": [
+            "lead_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_offertes",
+        "title": "Offertes zoeken",
+        "description": "Toont offertes waar de ingelogde gebruiker toegang toe heeft, optioneel gefilterd op status of klantnaam.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Filter op status, bijv. 'concept', 'verzonden' of 'geaccepteerd'."
+            },
+            "klant": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Zoekt in klantnaam en offertenummer."
+            },
+            "limiet": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Maximaal aantal offertes."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_installaties",
+        "title": "Installaties plannen bekijken",
+        "description": "Toont geplande installaties, optioneel gefilterd op status en startdatum-bereik.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Filter op status, bijv. 'gepland' of 'afgerond'."
+            },
+            "vanaf": {
+              "type": "string",
+              "format": "date",
+              "description": "Startdatum vanaf (YYYY-MM-DD)."
+            },
+            "tot": {
+              "type": "string",
+              "format": "date",
+              "description": "Startdatum tot en met (YYYY-MM-DD)."
+            },
+            "limiet": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Maximaal aantal installaties."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_lead_notitie",
+        "title": "Notitie bij lead plaatsen",
+        "description": "Voegt een notitie toe aan een lead namens de ingelogde gebruiker.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Het id van de lead."
+            },
+            "inhoud": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 5000,
+              "description": "De tekst van de notitie."
+            },
+            "titel": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Optionele titel."
+            },
+            "intern": {
+              "type": "boolean",
+              "default": true,
+              "description": "Interne notitie (niet zichtbaar voor de klant)."
+            }
+          },
+          "required": [
+            "lead_id",
+            "inhoud"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
