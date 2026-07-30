@@ -247,6 +247,10 @@ const Gebruikers = ({ filterRol, title = "Gebruikers", description = "Beheer all
     ? ["superadmin", "partner_admin", "backoffice", "partner_staff", "adviseur", "installateur", "consument", "affiliate"]
     : ["backoffice", "partner_staff", "adviseur", "installateur", "affiliate"];
 
+  /** Alleen superadmins mogen buiten de eigen organisatie beheren. */
+  const magBeheren = (u: UserRow): boolean =>
+    isSuperadmin || (!!eigenPartnerId && u.partner_id === eigenPartnerId);
+
   const filtered = users.filter(u =>
     `${u.voornaam} ${u.achternaam} ${u.email}`.toLowerCase().includes(search.toLowerCase())
   );
