@@ -87,6 +87,15 @@ const AffiliateBellen = () => {
     return leads.filter((l) => {
       // Leads zonder telefoon kunnen we niet bellen — verberg ze in de cockpit.
       if (!l.telefoon) return false;
+      // Afgesloten leads (verloren/gewonnen) horen nooit in de belqueue.
+      // Uitzondering: een verloren lead die via de lost-review terug in de
+      // pipeline is gezet en waarvan die datum bereikt is.
+      if (l.status === "gewonnen") return false;
+      if (l.status === "verloren") {
+        if (!l.terug_in_pipeline_op) return false;
+        if (new Date(l.terug_in_pipeline_op) > eindVandaag) return false;
+        return true;
+      }
       // Een toekomstige afspraak heeft voorrang: lead niet in queue.
       if (leadsMetToekomstigeAfspraak.has(l.id) && !dueLeadIds.has(l.id)) return false;
       if (dueLeadIds.has(l.id)) return true;
