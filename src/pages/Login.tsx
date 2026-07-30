@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -20,19 +20,25 @@ const Login = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const { signIn, resetPassword, user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Alleen same-origin relatieve paden toestaan als terugkeerbestemming.
+  const nextParam = searchParams.get("next");
+  const veiligeNext = nextParam && /^\/(?!\/)/.test(nextParam) ? nextParam : null;
+  const naLoginPad = veiligeNext ?? "/dashboard";
 
   // Auto-redirect if already logged in
   useEffect(() => {
     if (!loading && user && profile) {
-      navigate("/dashboard", { replace: true });
+      navigate(naLoginPad, { replace: true });
     }
-  }, [loading, user, profile, navigate]);
+  }, [loading, user, profile, navigate, naLoginPad]);
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: veiligeNext ? `${window.location.origin}${veiligeNext}` : window.location.origin,
       });
       if (result.error) {
         toast.error("Google inloggen mislukt", { description: result.error.message });
@@ -41,7 +47,7 @@ const Login = () => {
         return;
       }
       // Tokens ontvangen - user is ingelogd
-      navigate("/dashboard");
+      navigate(naLoginPad);
     } catch (err: any) {
       toast.error("Google inloggen mislukt", { description: err.message });
     } finally {
@@ -60,7 +66,7 @@ const Login = () => {
       });
     } else {
       toast.success("Succesvol ingelogd");
-      navigate("/dashboard");
+      navigate(naLoginPad);
     }
     setIsLoading(false);
   };
