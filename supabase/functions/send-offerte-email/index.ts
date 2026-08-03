@@ -9,6 +9,7 @@ import {
 } from "../_shared/email-send.ts";
 import { decryptAppPassword } from "../_shared/email-crypto.ts";
 import { smtpSend } from "../_shared/smtp-send.ts";
+import { toAsciiHeader } from "../_shared/mail-header.ts";
 import {
   guardAttachment,
   recordAudit,
