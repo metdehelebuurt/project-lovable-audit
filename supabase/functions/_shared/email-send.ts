@@ -7,6 +7,8 @@ export interface AttachmentInfo {
   contentType: string;
 }
 
+import { toAsciiHeader } from "./mail-header.ts";
+
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46]; // %PDF
 const MIN_PDF_BYTES = 5000;
 
@@ -57,9 +59,9 @@ export async function sendViaSMTP(opts: {
     connection: { hostname: opts.host, port: opts.port, tls: opts.port === 465, auth: { username: opts.user, password: opts.pass } },
   });
   const message: any = {
-    from: `${opts.fromName} <${opts.from}>`,
+    from: `${toAsciiHeader(opts.fromName, 80)} <${opts.from}>`,
     to: opts.to,
-    subject: opts.subject,
+    subject: toAsciiHeader(opts.subject),
     content: "auto",
     html: opts.html,
   };
