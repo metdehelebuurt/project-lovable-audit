@@ -32,7 +32,13 @@ async function sendViaSMTP(
   const client = new SMTPClient({
     connection: { hostname: host, port, tls: port === 465, auth: { username: user, password: pass } },
   });
-  await client.send({ from: `${fromName} <${from}>`, to, subject, content: "auto", html });
+  await client.send({
+    from: `${toAsciiHeader(fromName, 80)} <${from}>`,
+    to,
+    subject: toAsciiHeader(subject),
+    content: "auto",
+    html,
+  });
   await client.close();
 }
 
