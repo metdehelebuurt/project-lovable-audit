@@ -1,6 +1,7 @@
 // SMTP send helper voor Gmail App Passwords (denomailer, Deno-native).
 
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { toAsciiHeader } from "./mail-header.ts";
 
 export interface SmtpAccount {
   email_adres: string;
@@ -41,13 +42,17 @@ function newClient(a: SmtpAccount) {
 
 export async function smtpSend(a: SmtpAccount, msg: SmtpSendInput): Promise<void> {
   const client = newClient(a);
+  // Headers ASCII-veilig maken: denomailer breekt lange encoded-words af,
+  // waardoor de ontvanger ruwe MIME-tekst in plaats van de e-mail ziet.
+  const safeSubject = toAsciiHeader(msg.subject);
+  const safeFromName = msg.fromName ? toAsciiHeader(msg.fromName, 80) : "";
   try {
     await client.send({
-      from: msg.fromName ? `${msg.fromName} <${msg.from}>` : msg.from,
+      from: safeFromName ? `${safeFromName} <${msg.from}>` : msg.from,
       to: msg.to,
       cc: msg.cc,
       bcc: msg.bcc,
-      subject: msg.subject,
+      subject: safeSubject,
       content: msg.text ?? "Deze e-mail bevat HTML-inhoud.",
       html: msg.html,
       replyTo: msg.replyTo,
