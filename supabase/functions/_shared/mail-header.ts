@@ -32,6 +32,9 @@ export function toAsciiHeader(value: string, maxLength = 200): string {
   out = out.replace(/[^\x20-\x7E]/g, "");
   out = out.replace(/\s{2,}/g, " ").trim();
 
-  if (out.length > maxLength) out = `${out.slice(0, maxLength - 1).trimEnd()}…`.replace("…", "...");
+  if (out.length > maxLength) {
+    // "..." telt mee in maxLength, anders overschrijdt de header alsnog de limiet.
+    out = `${out.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
+  }
   return out;
 }
