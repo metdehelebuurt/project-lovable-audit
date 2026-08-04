@@ -251,7 +251,8 @@ export default function OfferteEmailEditor({
         },
       });
       if (error || data?.error) {
-        toast.error("Versturen mislukt", { description: data?.error || error?.message });
+        const detail = await leesFunctieFout(error, data);
+        toast.error("Versturen mislukt", { description: detail });
       } else {
         toast.success("E-mail verstuurd!");
         setSent(true);
