@@ -9937,6 +9937,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      affiliate_lead_fase_van_status: {
+        Args: { _status: string }
+        Returns: string
+      }
       affiliate_lead_is_editable: {
         Args: { _lead_id: string; _user_id: string }
         Returns: boolean

@@ -28,6 +28,7 @@ import { UitkomstGroep, UitkomstKnop } from "@/components/affiliate/UitkomstSoun
 import { GespreksTimer } from "@/components/affiliate/Belsessie/Timer";
 import { BriefingKaart } from "@/components/affiliate/Belsessie/BriefingKaart";
 import { StatusKaart } from "@/components/affiliate/Belsessie/StatusKaart";
+import { useNotitieConcept } from "@/hooks/affiliate/useNotitieConcept";
 import { toast } from "sonner";
 
 const AffiliateBellen = () => {
@@ -39,7 +40,6 @@ const AffiliateBellen = () => {
   const log = useLogContactmoment();
   const { data: belStats } = useBelStats();
   const { data: pipelineConfig = [] } = useAffiliatePipelineConfig();
-  const [notitie, setNotitie] = useState("");
   const [idx, setIdx] = useState(0);
   const [seconden, setSeconden] = useState(0);
   const [timerLoopt, setTimerLoopt] = useState(false);
@@ -60,6 +60,8 @@ const AffiliateBellen = () => {
     setBusy(true);
     try {
       await fn();
+    } catch {
+      /* foutmelding is al getoond; notitie blijft als concept bewaard */
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -115,6 +117,7 @@ const AffiliateBellen = () => {
 
   const current: AffiliateLead | undefined = belQueue[idx];
   const { data: historie = [] } = useLeadContactmomenten(current?.id);
+  const { notitie, setNotitie, wisConcept, heeftConcept } = useNotitieConcept(current?.id);
 
   const huidigeTaken = useMemo(() => {
     if (!current) return [];
@@ -129,24 +132,31 @@ const AffiliateBellen = () => {
   }, [current?.id]);
 
   const next = () => {
-    setNotitie("");
     setIdx((i) => Math.min(i + 1, belQueue.length));
   };
 
   const handleUitkomst = async (uitkomst: { value: string; label: string; nextStatus: AffiliateLead["status"] }) => {
     if (!current) return;
-    await log.mutateAsync({
-      lead_id: current.id,
-      type: "telefoon",
-      uitkomst: uitkomst.label,
-      notitie: notitie || null,
-      duur_seconden: seconden,
-    });
+    try {
+      await log.mutateAsync({
+        lead_id: current.id,
+        type: "telefoon",
+        uitkomst: uitkomst.label,
+        notitie: notitie || null,
+        duur_seconden: seconden,
+      });
+    } catch (e) {
+      toast.error(
+        `Notitie niet opgeslagen: ${e instanceof Error ? e.message : "onbekende fout"}. Je tekst blijft bewaard — probeer het opnieuw.`,
+      );
+      throw e;
+    }
     await update.mutateAsync({ id: current.id, patch: { status: uitkomst.nextStatus } });
     // Sluit openstaande opvolg-taken voor deze lead — ze zijn nu opgevolgd.
     for (const t of huidigeTaken) {
       await voltooiTaak.mutateAsync(t.id).catch(() => undefined);
     }
+    wisConcept();
     next();
   };
 
@@ -205,7 +215,7 @@ const AffiliateBellen = () => {
     const u = pendingUitkomst;
     setPendingUitkomst(null);
     if (u) {
-      await handleUitkomst(u);
+      await guard(() => handleUitkomst(u));
     } else {
       toast.success("Afspraak ingepland");
     }
@@ -222,6 +232,41 @@ const AffiliateBellen = () => {
         notitie: notitie || null,
         duur_seconden: seconden,
       });
+      wisConcept();
+      next();
+    });
+  };
+
+  /**
+   * Overslaan zonder uitkomst: een al getypte notitie wordt eerst vastgelegd,
+   * zodat er nooit tekst verdwijnt bij het doorklikken.
+   */
+  const handleOverslaan = async () => {
+    if (!current) {
+      next();
+      return;
+    }
+    if (!notitie.trim()) {
+      next();
+      return;
+    }
+    await guard(async () => {
+      try {
+        await log.mutateAsync({
+          lead_id: current.id,
+          type: "notitie",
+          uitkomst: "Notitie tijdens belsessie",
+          notitie: notitie.trim(),
+          duur_seconden: seconden || null,
+        });
+      } catch (e) {
+        toast.error(
+          `Notitie niet opgeslagen: ${e instanceof Error ? e.message : "onbekende fout"}. Je tekst blijft bewaard.`,
+        );
+        throw e;
+      }
+      toast.success("Notitie vastgelegd");
+      wisConcept();
       next();
     });
   };
@@ -394,8 +439,18 @@ const AffiliateBellen = () => {
                     </div>
                   )}
                   <div>
-                    <label className="text-sm font-medium">Gespreksnotitie</label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label htmlFor="gespreksnotitie" className="text-sm font-medium">Gespreksnotitie</label>
+                      {heeftConcept && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                          Nog niet opgeslagen — blijft bewaard
+                        </span>
+                      )}
+                    </div>
                     <Textarea rows={5} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder="Wat is besproken?" />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Wordt vastgelegd zodra je hiernaast een uitkomst kiest. Bij "Overslaan" bewaren we de notitie als losse notitie.
+                    </p>
                   </div>
                 </TabsContent>
 
@@ -530,8 +585,14 @@ const AffiliateBellen = () => {
                 </UitkomstGroep>
 
                 <div className="pt-2 border-t">
-                  <Button variant="ghost" className="w-full justify-start text-muted-foreground h-9" onClick={next}>
-                    <SkipForward className="h-4 w-4 mr-2" /> Overslaan
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-muted-foreground h-9"
+                    onClick={handleOverslaan}
+                    disabled={busy}
+                  >
+                    <SkipForward className="h-4 w-4 mr-2" />
+                    {heeftConcept ? "Notitie bewaren & overslaan" : "Overslaan"}
                   </Button>
                 </div>
               </CardContent>
@@ -554,7 +615,10 @@ const AffiliateBellen = () => {
           open={openAfspraak}
           onOpenChange={(o) => {
             setOpenAfspraak(o);
-            if (!o) setPendingUitkomst(null);
+            if (!o && pendingUitkomst) {
+              setPendingUitkomst(null);
+              toast.info("Nog niets gelogd — je gespreksnotitie blijft bewaard.");
+            }
           }}
           leadId={current.id}
           leadNaam={current.bedrijfsnaam}
@@ -570,10 +634,14 @@ const AffiliateBellen = () => {
       {current && (
         <VerlorenRedenDialog
           open={openVerloren}
-          onOpenChange={setOpenVerloren}
+          onOpenChange={(o) => {
+            setOpenVerloren(o);
+            if (!o && heeftConcept) toast.info("Nog niets gelogd — je gespreksnotitie blijft bewaard.");
+          }}
           leadId={current.id}
           leadNaam={current.bedrijfsnaam}
-          onSaved={next}
+          initieleReden={notitie}
+          onSaved={() => { wisConcept(); next(); }}
         />
       )}
     </div>

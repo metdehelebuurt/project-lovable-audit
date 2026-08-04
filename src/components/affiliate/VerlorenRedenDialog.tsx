@@ -25,10 +25,12 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   leadId: string;
   leadNaam: string;
+  /** Voorvulling voor de toelichting, bijv. de al getypte gespreksnotitie. */
+  initieleReden?: string;
   onSaved?: () => void;
 }
 
-export function VerlorenRedenDialog({ open, onOpenChange, leadId, leadNaam, onSaved }: Props) {
+export function VerlorenRedenDialog({ open, onOpenChange, leadId, leadNaam, initieleReden, onSaved }: Props) {
   const update = useUpdateAffiliateLead();
   const log = useLogContactmoment();
   const [categorie, setCategorie] = useState<VerlorenCategorie | "">("");
@@ -37,9 +39,9 @@ export function VerlorenRedenDialog({ open, onOpenChange, leadId, leadNaam, onSa
   useEffect(() => {
     if (open) {
       setCategorie("");
-      setReden("");
+      setReden(initieleReden?.trim() ?? "");
     }
-  }, [open]);
+  }, [open, initieleReden]);
 
   const valid = !!categorie && reden.trim().length >= 10;
 
