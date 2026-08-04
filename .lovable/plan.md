@@ -1,66 +1,38 @@
-## Wat er precies mis is (geverifieerd)
+# Fix: verdwenen gespreksnotities + lead blijft bij "nieuwe leads"
 
-Bij het break-glass-project is op **66 tabellen** een policy `break_glass_superadmin_restrict` gezet met de conditie:
+## Wat er aan de hand is (geverifieerd)
 
-```text
-(NOT is_superadmin(auth.uid())) OR has_break_glass_access(auth.uid(), partner_id)
-```
+**1. Heative staat bij de nieuwe leads**
+De lead Heative heeft status `mail_gestuurd` (door Bas gezet op 4-8 om 11:13), maar `fase_slug` staat nog op `nieuw`.
+De app gebruikt twee losse velden voor dezelfde pijplijn:
+- de affiliate-pijplijn groepeert op `status`
+- de sales-pijplijn en de dashboards groeperen op `fase_slug`
 
-Die conditie is bedoeld als *restrictive* (AND-laag bovenop de andere policies): "als je superadmin bent, moet je break-glass hebben".
+Niets houdt deze twee gelijk. Dit speelt breder: **71 leads** hebben een status verder dan nieuw terwijl hun fase nog op "nieuw" staat (22 verloren, 17 geen gehoor, 13 mail gestuurd, 6 terugbel gepland, 6 demo gepland, 1 gewonnen, enz.).
 
-Uit de database blijkt: **64 van de 66 staan correct als RESTRICTIVE**, maar **2 staan als PERMISSIVE**:
+**2. Gespreksnotities gaan verloren**
+Bij Heative is geen enkel contactmoment vastgelegd, terwijl de statuswijziging wel is doorgekomen. In het belscherm zitten drie plekken waar een getypte notitie stilzwijgend weg is:
+- "Overslaan" wist het notitieveld zonder iets op te slaan
+- als de verplichte afspraak- of verloren-dialoog wordt afgebroken, wordt er niets vastgelegd
+- als het opslaan van het contactmoment faalt, breekt de hele actie af zonder duidelijke melding en zonder dat de tekst ergens bewaard blijft (bij verversen of van lead wisselen is hij weg)
 
-- `public.users`
-- `public.contactpersonen`
+Rechten zijn niet de oorzaak: Bas heeft zowel de affiliate- als de sales_manager-rol en mag contactmomenten aanmaken.
 
-Permissieve policies worden ge-OR'd. Voor iedere niet-superadmin is `NOT is_superadmin(...)` = `true`, dus de policy geeft op zichzelf al toegang tot **alle rijen, voor alle commando's (ALL)**, aan rol `public`. Alle nette partner-scoped policies eronder worden daardoor irrelevant.
+## Wat ik ga doen
 
-Gevolg: elke ingelogde gebruiker (zoals een verse trial-account) kan **alle gebruikers en alle contactpersonen van het hele platform lezen, wijzigen en verwijderen**. Precies wat je zag.
+### A. Fase en status automatisch gelijkhouden (database)
+- Vertaaltabel status -> fase: nieuw/campagne/demo-voltooid -> Nieuw, geen gehoor/mail gestuurd/terugbel gepland -> Benaderd, gesprek/demo gepland en in gesprek -> Gekwalificeerd, voorstel verstuurd -> Voorstel, trial gestart -> Trial, gewonnen -> Gewonnen, verloren -> Verloren.
+- Automatische koppeling bij elke statuswijziging. Handmatig gekozen fases blijven staan: de koppeling grijpt alleen in als de status wijzigt zonder dat de fase zelf wordt aangepast.
+- Eenmalige correctie van de 71 leads met een achtergebleven fase, zodat Heative en de rest meteen in de juiste kolom staan.
 
-Extra bijdragende factor in de frontend: `src/pages/Gebruikers.tsx` haalt `supabase.from("users").select("*")` op **zonder enige partner-filter** — de pagina leunt 100% op RLS. Er is dus geen tweede vangnet.
-
-## Reparatie
-
-**1. Migratie — policies omzetten naar RESTRICTIVE**
-
-Voor `public.users` en `public.contactpersonen`: de permissieve policy droppen en opnieuw aanmaken als `AS RESTRICTIVE ... TO authenticated`, met exact dezelfde conditie als de andere 64 tabellen (voor `users` inclusief de bestaande uitzonderingen: eigen profiel, partnerloze rijen, affiliate-rijen).
-
-**2. Migratie — controle-guard tegen herhaling**
-
-Een event trigger of een expliciete verificatiequery is te zwaar; in plaats daarvan voegen we een migratie-check toe die faalt zolang er nog een permissieve policy met die naam bestaat:
-
-```text
-DO $$ BEGIN
-  IF EXISTS (... polname='break_glass_superadmin_restrict' AND polpermissive) THEN
-    RAISE EXCEPTION 'break-glass policy staat permissief';
-  END IF;
-END $$;
-```
-
-**3. Frontend — defense in depth**
-
-In `src/pages/Gebruikers.tsx` de query scopen op `partner_id` van het eigen profiel voor niet-superadmins (superadmin behoudt het volledige overzicht). Zelfde check op de mutaties: bewerken/verwijderen alleen tonen voor gebruikers binnen de eigen organisatie. Zo lekt de pagina niets meer, ook niet als een policy ooit weer misgaat.
-
-**4. Verificatie**
-
-- Alle 66 policies opnieuw uitlezen en bevestigen dat er 0 permissieve tussen zitten.
-- Supabase-linter draaien.
-- Een gerichte query per rol-scenario (trial partner_admin, affiliate, sales_manager) om te bevestigen dat `users` alleen eigen-partnerrijen teruggeeft.
-- Controleren dat superadmin-flows (gebruikersbeheer, break-glass) nog werken.
-
-## Overige plekken — scanresultaat
-
-Ik heb de hele `public`-schema doorzocht op vergelijkbare patronen:
-
-- Permissieve policies met conditie `true` op ALL: alleen op `affiliate_opvolg_log`, `affiliate_opvolg_regels`, `email_routing_config`, `offerte_email_attachment_audit` — allemaal beperkt tot `service_role`. Dat is correct.
-- Publieke leesrechten met `true`: abonnementsplannen, add-ons, lead-bronnen, sales-tags, affiliate-instellingen. Dat is bewust publieke/gedeelde referentiedata; wel neem ik `affiliate_instellingen` mee in de check of daar geen gevoelige velden in staan.
-- `klanten`, `partners`, `offertes`: correct partner-scoped, break-glass staat daar wél restrictive.
-
-Andere lekken van dit type zijn er dus niet — het beperkt zich tot deze twee tabellen.
+### B. Notities failsafe maken in het belscherm
+- Concept-notitie per lead bewaren in de browser, zodat de tekst blijft staan bij verversen, van lead wisselen of een mislukte opslagpoging.
+- "Overslaan": als er nog tekst staat, wordt die eerst als losse notitie vastgelegd voordat naar de volgende lead wordt gegaan.
+- Afgebroken afspraak- of verloren-dialoog: notitie blijft staan en er komt een duidelijke melding dat er nog niets is gelogd.
+- Mislukt opslaan geeft voortaan een expliciete foutmelding met de reden; de tekst blijft in beeld staan zodat niets verloren gaat.
+- Zichtbare "niet-opgeslagen"-indicator naast het notitieveld.
 
 ## Technische details
-
-- Migratie 1: `DROP POLICY break_glass_superadmin_restrict ON public.users` + `CREATE POLICY ... AS RESTRICTIVE FOR ALL TO authenticated USING (...) WITH CHECK (...)`; idem voor `contactpersonen` (daar zonder de users-specifieke uitzonderingen, conform de standaardvariant).
-- Let op: bij RESTRICTIVE moet ook `WITH CHECK` gezet worden, anders blijven schrijfacties ongefilterd.
-- Geen wijziging aan `get_user_role`, `is_superadmin` of `has_break_glass_access` nodig.
-- Frontend-wijziging blijft beperkt tot `src/pages/Gebruikers.tsx` (en zo nodig `GebruikerDetail.tsx` voor dezelfde scope-check).
+- Migratie: functies `affiliate_lead_fase_van_status` en `sync_affiliate_lead_fase`, trigger `trg_sync_affiliate_lead_fase` (BEFORE INSERT OR UPDATE OF status) op `affiliate_leads` + backfill-UPDATE.
+- Frontend: `src/pages/affiliate/AffiliateBellen.tsx` (concept-opslag, guard rond `log.mutateAsync`, overslaan-flow) en een kleine hook `src/hooks/affiliate/useNotitieConcept.ts` voor de conceptopslag.
+- Geen wijziging in rechten of RLS nodig.
