@@ -215,7 +215,7 @@ const AffiliateBellen = () => {
     const u = pendingUitkomst;
     setPendingUitkomst(null);
     if (u) {
-      await handleUitkomst(u);
+      await guard(() => handleUitkomst(u));
     } else {
       toast.success("Afspraak ingepland");
     }
@@ -232,6 +232,41 @@ const AffiliateBellen = () => {
         notitie: notitie || null,
         duur_seconden: seconden,
       });
+      wisConcept();
+      next();
+    });
+  };
+
+  /**
+   * Overslaan zonder uitkomst: een al getypte notitie wordt eerst vastgelegd,
+   * zodat er nooit tekst verdwijnt bij het doorklikken.
+   */
+  const handleOverslaan = async () => {
+    if (!current) {
+      next();
+      return;
+    }
+    if (!notitie.trim()) {
+      next();
+      return;
+    }
+    await guard(async () => {
+      try {
+        await log.mutateAsync({
+          lead_id: current.id,
+          type: "notitie",
+          uitkomst: "Notitie tijdens belsessie",
+          notitie: notitie.trim(),
+          duur_seconden: seconden || null,
+        });
+      } catch (e) {
+        toast.error(
+          `Notitie niet opgeslagen: ${e instanceof Error ? e.message : "onbekende fout"}. Je tekst blijft bewaard.`,
+        );
+        throw e;
+      }
+      toast.success("Notitie vastgelegd");
+      wisConcept();
       next();
     });
   };
