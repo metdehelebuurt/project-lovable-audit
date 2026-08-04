@@ -27,6 +27,7 @@ import DOMPurify from "dompurify";
 import { parseAddressList } from "@/components/email/EmailComposerFields";
 import { Mail, X } from "lucide-react";
 import SenderPicker from "@/components/email/SenderPicker";
+import { leesFunctieFout } from "@/lib/email/leesFunctieFout";
 
 interface OfferteEmailEditorProps {
   open: boolean;
