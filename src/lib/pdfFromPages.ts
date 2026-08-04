@@ -141,6 +141,21 @@ async function mergeExternalPdfs(
   return new Blob([new Uint8Array(merged)], { type: "application/pdf" });
 }
 
+/**
+ * Rendert de PDF en herhaalt met een agressiever compressieprofiel zolang het
+ * resultaat boven het groottebudget blijft. Zo blijft de bijlage klein genoeg
+ * voor snelle base64-encoding in de mail-Edge-Function.
+ */
+export async function renderPagesToPdfBlobBinnenBudget(root: HTMLElement): Promise<Blob> {
+  let laatste: Blob | null = null;
+  for (const profiel of COMPRESSIE_PROFIELEN) {
+    const blob = await renderPagesToPdfBlob(root, profiel);
+    laatste = blob;
+    if (blob.size <= PDF_GROOTTE_BUDGET_BYTES) return blob;
+  }
+  return laatste!;
+}
+
 export async function uploadPdfToStorage(
   supabase: any,
   partnerId: string,
@@ -205,7 +220,7 @@ export async function generateOffertePdfViaIframe(
         await waitForImages(root);
         await new Promise((r) => setTimeout(r, 600));
 
-        const blob = await renderPagesToPdfBlob(root);
+        const blob = await renderPagesToPdfBlobBinnenBudget(root);
         const path = await uploadPdfToStorage(supabase, partnerId, "offerte", offerteId, blob);
 
         clearTimeout(timeout);
