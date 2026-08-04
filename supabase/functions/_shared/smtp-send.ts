@@ -27,6 +27,26 @@ export interface SmtpSendInput {
   }>;
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  const chunks: string[] = [];
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    chunks.push(String.fromCharCode(...bytes.subarray(offset, offset + chunkSize)));
+  }
+  return btoa(chunks.join(""));
+}
+
+function prepareAttachments(attachments: SmtpSendInput["attachments"]) {
+  return attachments?.map((attachment) => {
+    if (!(attachment.content instanceof Uint8Array)) return attachment;
+    return {
+      ...attachment,
+      content: bytesToBase64(attachment.content),
+      encoding: "base64" as const,
+    };
+  });
+}
+
 function newClient(a: SmtpAccount) {
   const host = a.smtp_host || "smtp.gmail.com";
   const port = a.smtp_port || 465;
@@ -46,6 +66,7 @@ export async function smtpSend(a: SmtpAccount, msg: SmtpSendInput): Promise<void
   // waardoor de ontvanger ruwe MIME-tekst in plaats van de e-mail ziet.
   const safeSubject = toAsciiHeader(msg.subject);
   const safeFromName = msg.fromName ? toAsciiHeader(msg.fromName, 80) : "";
+  const attachments = prepareAttachments(msg.attachments);
   try {
     await client.send({
       from: safeFromName ? `${safeFromName} <${msg.from}>` : msg.from,
@@ -56,7 +77,7 @@ export async function smtpSend(a: SmtpAccount, msg: SmtpSendInput): Promise<void
       content: msg.text ?? "Deze e-mail bevat HTML-inhoud.",
       html: msg.html,
       replyTo: msg.replyTo,
-      attachments: msg.attachments as any,
+      attachments,
     });
   } finally {
     try { await client.close(); } catch { /* ignore */ }
