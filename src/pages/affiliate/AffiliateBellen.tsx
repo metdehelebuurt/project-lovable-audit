@@ -439,8 +439,18 @@ const AffiliateBellen = () => {
                     </div>
                   )}
                   <div>
-                    <label className="text-sm font-medium">Gespreksnotitie</label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label htmlFor="gespreksnotitie" className="text-sm font-medium">Gespreksnotitie</label>
+                      {heeftConcept && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                          Nog niet opgeslagen — blijft bewaard
+                        </span>
+                      )}
+                    </div>
                     <Textarea rows={5} value={notitie} onChange={(e) => setNotitie(e.target.value)} placeholder="Wat is besproken?" />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Wordt vastgelegd zodra je hiernaast een uitkomst kiest. Bij "Overslaan" bewaren we de notitie als losse notitie.
+                    </p>
                   </div>
                 </TabsContent>
 
@@ -575,8 +585,14 @@ const AffiliateBellen = () => {
                 </UitkomstGroep>
 
                 <div className="pt-2 border-t">
-                  <Button variant="ghost" className="w-full justify-start text-muted-foreground h-9" onClick={next}>
-                    <SkipForward className="h-4 w-4 mr-2" /> Overslaan
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-muted-foreground h-9"
+                    onClick={handleOverslaan}
+                    disabled={busy}
+                  >
+                    <SkipForward className="h-4 w-4 mr-2" />
+                    {heeftConcept ? "Notitie bewaren & overslaan" : "Overslaan"}
                   </Button>
                 </div>
               </CardContent>
