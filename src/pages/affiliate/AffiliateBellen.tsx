@@ -615,7 +615,10 @@ const AffiliateBellen = () => {
           open={openAfspraak}
           onOpenChange={(o) => {
             setOpenAfspraak(o);
-            if (!o) setPendingUitkomst(null);
+            if (!o && pendingUitkomst) {
+              setPendingUitkomst(null);
+              toast.info("Nog niets gelogd — je gespreksnotitie blijft bewaard.");
+            }
           }}
           leadId={current.id}
           leadNaam={current.bedrijfsnaam}
@@ -631,10 +634,13 @@ const AffiliateBellen = () => {
       {current && (
         <VerlorenRedenDialog
           open={openVerloren}
-          onOpenChange={setOpenVerloren}
+          onOpenChange={(o) => {
+            setOpenVerloren(o);
+            if (!o && heeftConcept) toast.info("Nog niets gelogd — je gespreksnotitie blijft bewaard.");
+          }}
           leadId={current.id}
           leadNaam={current.bedrijfsnaam}
-          onSaved={next}
+          onSaved={() => { wisConcept(); next(); }}
         />
       )}
     </div>
