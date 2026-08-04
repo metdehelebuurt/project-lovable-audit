@@ -28,6 +28,7 @@ import { UitkomstGroep, UitkomstKnop } from "@/components/affiliate/UitkomstSoun
 import { GespreksTimer } from "@/components/affiliate/Belsessie/Timer";
 import { BriefingKaart } from "@/components/affiliate/Belsessie/BriefingKaart";
 import { StatusKaart } from "@/components/affiliate/Belsessie/StatusKaart";
+import { useNotitieConcept } from "@/hooks/affiliate/useNotitieConcept";
 import { toast } from "sonner";
 
 const AffiliateBellen = () => {
@@ -39,7 +40,6 @@ const AffiliateBellen = () => {
   const log = useLogContactmoment();
   const { data: belStats } = useBelStats();
   const { data: pipelineConfig = [] } = useAffiliatePipelineConfig();
-  const [notitie, setNotitie] = useState("");
   const [idx, setIdx] = useState(0);
   const [seconden, setSeconden] = useState(0);
   const [timerLoopt, setTimerLoopt] = useState(false);
@@ -115,6 +115,7 @@ const AffiliateBellen = () => {
 
   const current: AffiliateLead | undefined = belQueue[idx];
   const { data: historie = [] } = useLeadContactmomenten(current?.id);
+  const { notitie, setNotitie, wisConcept, heeftConcept } = useNotitieConcept(current?.id);
 
   const huidigeTaken = useMemo(() => {
     if (!current) return [];
@@ -129,24 +130,31 @@ const AffiliateBellen = () => {
   }, [current?.id]);
 
   const next = () => {
-    setNotitie("");
     setIdx((i) => Math.min(i + 1, belQueue.length));
   };
 
   const handleUitkomst = async (uitkomst: { value: string; label: string; nextStatus: AffiliateLead["status"] }) => {
     if (!current) return;
-    await log.mutateAsync({
-      lead_id: current.id,
-      type: "telefoon",
-      uitkomst: uitkomst.label,
-      notitie: notitie || null,
-      duur_seconden: seconden,
-    });
+    try {
+      await log.mutateAsync({
+        lead_id: current.id,
+        type: "telefoon",
+        uitkomst: uitkomst.label,
+        notitie: notitie || null,
+        duur_seconden: seconden,
+      });
+    } catch (e) {
+      toast.error(
+        `Notitie niet opgeslagen: ${e instanceof Error ? e.message : "onbekende fout"}. Je tekst blijft bewaard — probeer het opnieuw.`,
+      );
+      throw e;
+    }
     await update.mutateAsync({ id: current.id, patch: { status: uitkomst.nextStatus } });
     // Sluit openstaande opvolg-taken voor deze lead — ze zijn nu opgevolgd.
     for (const t of huidigeTaken) {
       await voltooiTaak.mutateAsync(t.id).catch(() => undefined);
     }
+    wisConcept();
     next();
   };
 
