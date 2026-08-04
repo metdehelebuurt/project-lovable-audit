@@ -640,6 +640,7 @@ const AffiliateBellen = () => {
           }}
           leadId={current.id}
           leadNaam={current.bedrijfsnaam}
+          initieleReden={notitie}
           onSaved={() => { wisConcept(); next(); }}
         />
       )}
