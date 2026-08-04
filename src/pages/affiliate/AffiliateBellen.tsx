@@ -60,6 +60,8 @@ const AffiliateBellen = () => {
     setBusy(true);
     try {
       await fn();
+    } catch {
+      /* foutmelding is al getoond; notitie blijft als concept bewaard */
     } finally {
       busyRef.current = false;
       setBusy(false);
