@@ -1,6 +1,13 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { PDFDocument } from "pdf-lib";
+import {
+  COMPRESSIE_PROFIELEN,
+  PDF_GROOTTE_BUDGET_BYTES,
+  bepaalCaptureSchaal,
+  canvasNaarJpeg,
+  type CompressieProfiel,
+} from "./pdf/compressCanvas";
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
@@ -13,14 +20,19 @@ const A4_RATIO = A4_WIDTH_MM / A4_HEIGHT_MM;
  *   (geen vervorming meer door rekken/persen).
  * - Pagina's met `data-external-pdf` worden vervangen door de originele PDF
  *   (fabrikant-datasheet) via pdf-lib merge in plaats van een html2canvas-snapshot.
+ * - Snapshots worden als geschaalde JPEG geplaatst (zie compressCanvas) zodat de
+ *   PDF klein blijft en de mail-functie hem zonder CPU-piek kan base64-encoderen.
  */
-export async function renderPagesToPdfBlob(root: HTMLElement): Promise<Blob> {
+export async function renderPagesToPdfBlob(
+  root: HTMLElement,
+  profiel: CompressieProfiel = COMPRESSIE_PROFIELEN[0],
+): Promise<Blob> {
   const pages = Array.from(root.querySelectorAll<HTMLElement>(".pdf-page"));
   if (pages.length === 0) {
     throw new Error("Geen .pdf-page elementen gevonden in print-root");
   }
 
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
   // Verzamel placeholders die later vervangen worden door externe fabrikant-PDFs.
   // We registreren {pdfPageIndex, externalUrl} en stripen de placeholder-pagina
   // achteraf met pdf-lib.
@@ -40,7 +52,7 @@ export async function renderPagesToPdfBlob(root: HTMLElement): Promise<Blob> {
     }
 
     const canvas = await html2canvas(page, {
-      scale: 3,
+      scale: bepaalCaptureSchaal(page.scrollWidth, profiel),
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
@@ -48,7 +60,7 @@ export async function renderPagesToPdfBlob(root: HTMLElement): Promise<Blob> {
       windowHeight: page.scrollHeight,
     });
 
-    const imgData = canvas.toDataURL("image/png");
+    const imgData = canvasNaarJpeg(canvas, profiel);
     // Proportionele hoogte op basis van canvas-ratio.
     const proportionalHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
     const canvasRatio = canvas.width / canvas.height;
@@ -57,20 +69,20 @@ export async function renderPagesToPdfBlob(root: HTMLElement): Promise<Blob> {
 
     if (Math.abs(canvasRatio - A4_RATIO) < 0.005 && proportionalHeight <= A4_HEIGHT_MM + 0.5) {
       // Past exact op één A4 → 1-op-1 plaatsen.
-      pdf.addImage(imgData, "PNG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, "FAST");
+      pdf.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, "FAST");
       pdfPageCursor++;
     } else {
       // Content is langer/korter dan A4 → over meerdere pagina's slicen
       // met behoud van verhouding (geen vervorming).
       let heightLeft = proportionalHeight;
       let position = 0;
-      pdf.addImage(imgData, "PNG", 0, position, A4_WIDTH_MM, proportionalHeight, undefined, "FAST");
+      pdf.addImage(imgData, "JPEG", 0, position, A4_WIDTH_MM, proportionalHeight, undefined, "FAST");
       heightLeft -= A4_HEIGHT_MM;
       pdfPageCursor++;
       while (heightLeft > 0) {
         position -= A4_HEIGHT_MM;
         pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, A4_WIDTH_MM, proportionalHeight, undefined, "FAST");
+        pdf.addImage(imgData, "JPEG", 0, position, A4_WIDTH_MM, proportionalHeight, undefined, "FAST");
         heightLeft -= A4_HEIGHT_MM;
         pdfPageCursor++;
       }
@@ -127,6 +139,21 @@ async function mergeExternalPdfs(
 
   const merged = await outDoc.save();
   return new Blob([new Uint8Array(merged)], { type: "application/pdf" });
+}
+
+/**
+ * Rendert de PDF en herhaalt met een agressiever compressieprofiel zolang het
+ * resultaat boven het groottebudget blijft. Zo blijft de bijlage klein genoeg
+ * voor snelle base64-encoding in de mail-Edge-Function.
+ */
+export async function renderPagesToPdfBlobBinnenBudget(root: HTMLElement): Promise<Blob> {
+  let laatste: Blob | null = null;
+  for (const profiel of COMPRESSIE_PROFIELEN) {
+    const blob = await renderPagesToPdfBlob(root, profiel);
+    laatste = blob;
+    if (blob.size <= PDF_GROOTTE_BUDGET_BYTES) return blob;
+  }
+  return laatste!;
 }
 
 export async function uploadPdfToStorage(
@@ -193,7 +220,7 @@ export async function generateOffertePdfViaIframe(
         await waitForImages(root);
         await new Promise((r) => setTimeout(r, 600));
 
-        const blob = await renderPagesToPdfBlob(root);
+        const blob = await renderPagesToPdfBlobBinnenBudget(root);
         const path = await uploadPdfToStorage(supabase, partnerId, "offerte", offerteId, blob);
 
         clearTimeout(timeout);
