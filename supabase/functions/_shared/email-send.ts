@@ -48,6 +48,25 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+/** UTF-8 tekst -> base64, zonder de trage unescape(encodeURIComponent(...))-truc. */
+function utf8ToBase64(text: string): string {
+  return bytesToBase64(new TextEncoder().encode(text));
+}
+
+/**
+ * Breekt base64 in regels van 76 tekens. Een regex met /(.{76})/g op een
+ * multi-MB string vreet CPU; slicen is lineair en goedkoop.
+ */
+function wrapBase64(b64: string): string {
+  const lines: string[] = [];
+  for (let i = 0; i < b64.length; i += 76) lines.push(b64.slice(i, i + 76));
+  return lines.join("\r\n");
+}
+
+function base64UrlFromString(text: string): string {
+  return utf8ToBase64(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 export async function sendViaSMTP(opts: {
   host: string; port: number; user: string; pass: string;
   from: string; fromName: string; to: string; subject: string; html: string;
@@ -84,18 +103,18 @@ export async function sendViaGmailApi(opts: {
   cc?: string[]; bcc?: string[];
   attachment?: AttachmentInfo | null;
 }) {
-  const subjectEnc = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(opts.subject)))}?=`;
+  const subjectEnc = `=?UTF-8?B?${utf8ToBase64(opts.subject)}?=`;
   const ccLine = opts.cc && opts.cc.length > 0 ? `Cc: ${opts.cc.join(", ")}\r\n` : "";
   const bccLine = opts.bcc && opts.bcc.length > 0 ? `Bcc: ${opts.bcc.join(", ")}\r\n` : "";
   let raw: string;
 
   // HTML altijd als base64 encoderen om quoted-printable artefacten (=20, =\r\n)
   // te voorkomen bij lange regels in inline-styled templates.
-  const htmlB64 = btoa(unescape(encodeURIComponent(opts.html))).replace(/(.{76})/g, "$1\r\n");
+  const htmlB64 = wrapBase64(utf8ToBase64(opts.html));
 
   if (opts.attachment) {
     const boundary = `mh_${Date.now().toString(36)}`;
-    const pdfB64 = bytesToBase64(opts.attachment.bytes).replace(/(.{76})/g, "$1\r\n");
+    const pdfB64 = wrapBase64(bytesToBase64(opts.attachment.bytes));
     raw = [
       `From: ${opts.from}`,
       `To: ${opts.to}`,
@@ -134,8 +153,7 @@ export async function sendViaGmailApi(opts: {
     ].join("\r\n");
   }
 
-  const encoded = btoa(unescape(encodeURIComponent(raw)))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const encoded = base64UrlFromString(raw);
 
   const resp = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",

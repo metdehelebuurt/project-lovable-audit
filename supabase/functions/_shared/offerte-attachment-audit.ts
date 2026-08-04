@@ -157,6 +157,24 @@ export async function guardAttachment(
     return { ok: false, status: "empty", reason: "PDF is 0 bytes" };
   }
 
+  // Bovengrens: boven ~18 MB loopt base64-encoding + provider-upload tegen de
+  // CPU-limiet van de edge-runtime aan. Liever een duidelijke melding dan een
+  // harde "CPU Time exceeded" waar de gebruiker niets mee kan.
+  const MAX_ATTACHMENT_BYTES = 18 * 1024 * 1024;
+  if (bytes.length > MAX_ATTACHMENT_BYTES) {
+    const mb = (bytes.length / (1024 * 1024)).toFixed(1);
+    await recordAudit(adminClient, ctx, {
+      status: "invalid_pdf",
+      bytesSize: bytes.length,
+      error: `PDF te groot: ${mb} MB`,
+    });
+    return {
+      ok: false,
+      status: "invalid_pdf",
+      reason: `De PDF is ${mb} MB en daarmee te groot om te mailen (max 18 MB). Verklein de offerte-PDF, bijvoorbeeld door minder datasheets of afbeeldingen mee te sturen.`,
+    };
+  }
+
   const check = verifyPdfBytes(bytes);
   if (!check.ok) {
     await recordAudit(adminClient, ctx, {

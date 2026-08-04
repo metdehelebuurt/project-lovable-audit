@@ -27,6 +27,7 @@ import DOMPurify from "dompurify";
 import { parseAddressList } from "@/components/email/EmailComposerFields";
 import { Mail, X } from "lucide-react";
 import SenderPicker from "@/components/email/SenderPicker";
+import { leesFunctieFout } from "@/lib/email/leesFunctieFout";
 
 interface OfferteEmailEditorProps {
   open: boolean;
@@ -251,7 +252,8 @@ export default function OfferteEmailEditor({
         },
       });
       if (error || data?.error) {
-        toast.error("Versturen mislukt", { description: data?.error || error?.message });
+        const detail = await leesFunctieFout(error, data);
+        toast.error("Versturen mislukt", { description: detail });
       } else {
         toast.success("E-mail verstuurd!");
         setSent(true);
