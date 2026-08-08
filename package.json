@@ -11,8 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prebuild": "tsx scripts/generate-help-knowledge.ts",
+    "prebuild": "tsx scripts/generate-help-knowledge.ts && tsx scripts/generate-tour-knowledge.ts",
     "generate:help": "tsx scripts/generate-help-knowledge.ts",
+    "generate:tour": "tsx scripts/generate-tour-knowledge.ts",
     "check:rls": "tsx scripts/check-rls-policies.ts"
   },
   "dependencies": {
