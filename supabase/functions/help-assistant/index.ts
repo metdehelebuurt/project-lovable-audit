@@ -84,6 +84,10 @@ Deno.serve(async (req) => {
 
     const systemPrompt = buildHelpSystemPrompt(rol, moduleKeys);
 
+    if (body.mode === "tutorial") {
+      return await handleTutorial(apiKey, messages, rol, moduleKeys);
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
