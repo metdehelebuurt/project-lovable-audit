@@ -18,9 +18,11 @@ Deno.test("filtert verzonnen ankers en behoudt geldige stappen", () => {
     ROL,
     MODULES,
   );
-  assertEquals(plan?.stappen.length, 3);
-  assertEquals(plan?.stappen[1].anchor, undefined);
-  assertEquals(plan?.stappen[2].anchor, "offertes:nieuw");
+  // De stap met een verzonnen anker en zonder route/tekst valt weg.
+  assertEquals(plan?.stappen.length, 2);
+  assertEquals(plan?.stappen[0].route, "/offertes");
+  assertEquals(plan?.stappen[1].anchor, "offertes:nieuw");
+  assertEquals(plan?.stappen[1].id, "stap-2");
 });
 
 Deno.test("geeft null bij een leeg of onbruikbaar plan", () => {
