@@ -1,4 +1,6 @@
 import { buildHelpSystemPrompt } from "./help-knowledge.ts";
+import { buildTutorialPrompt, valideerPlan } from "./tutorial-plan.ts";
+import { vraagTutorialPlan } from "./tutorial-request.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,12 +17,41 @@ interface RequestBody {
   messages: ChatMessage[];
   rol?: string;
   module_keys?: string[];
+  /** "chat" (standaard) of "tutorial" voor een interactief stappenplan. */
+  mode?: "chat" | "tutorial";
 }
 
 function isValidMessage(m: unknown): m is ChatMessage {
   if (!m || typeof m !== "object") return false;
   const obj = m as Record<string, unknown>;
   return (obj.role === "user" || obj.role === "assistant") && typeof obj.content === "string";
+}
+
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function handleTutorial(
+  apiKey: string,
+  messages: ChatMessage[],
+  rol: string,
+  moduleKeys: string[],
+): Promise<Response> {
+  const vraag = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  if (!vraag) return jsonResponse({ error: "geen vraag" }, 400);
+
+  const context = messages.slice(-4).map((m) => `${m.role}: ${m.content}`).join("\n\n");
+  const resultaat = await vraagTutorialPlan(apiKey, buildTutorialPrompt(rol, moduleKeys), context);
+  if (resultaat.status === 429) return jsonResponse({ error: "Even druk, probeer het zo opnieuw." }, 429);
+  if (resultaat.status === 402) return jsonResponse({ error: "AI-tegoed op." }, 402);
+  if (resultaat.status !== 200) return jsonResponse({ error: resultaat.fout ?? "AI fout" }, 500);
+
+  const plan = valideerPlan(resultaat.json, rol, moduleKeys);
+  if (!plan) return jsonResponse({ plan: null }, 200);
+  return jsonResponse({ plan }, 200);
 }
 
 Deno.serve(async (req) => {
