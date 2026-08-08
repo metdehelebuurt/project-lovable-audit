@@ -66,3 +66,8 @@ export function tourAnchor(id: string): { "data-tour": string } {
 export function isBekendAnker(id: string): boolean {
   return TOUR_ANCHORS.some((a) => a.id === id);
 }
+
+/** Zoekt de metadata van een anker; undefined bij een onbekend id. */
+export function getAnchor(id: string): TourAnchor | undefined {
+  return TOUR_ANCHORS.find((a) => a.id === id);
+}
