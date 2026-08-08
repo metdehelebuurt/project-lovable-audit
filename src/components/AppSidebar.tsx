@@ -35,6 +35,7 @@ function NavItem({
     <NavLink
       to={item.url}
       end={item.url === "/dashboard"}
+      data-tour={`nav:${item.url}`}
       className="relative flex items-center gap-3 px-3 py-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-[40px] w-full pr-9"
       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
       onClick={() => onActivate?.(item.url)}

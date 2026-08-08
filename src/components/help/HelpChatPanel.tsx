@@ -1,4 +1,4 @@
-import { Trash2, Lightbulb } from "lucide-react";
+import { Trash2, Lightbulb, PlayCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { HelpMessageList } from "./HelpMessageList";
 import { HelpMessageInput } from "./HelpMessageInput";
 import { useHelpChat } from "./useHelpChat";
+import { useTutorialPlan } from "./useTutorialPlan";
+import { useTour } from "@/components/tour/TourProvider";
 import { getSuggestions } from "./suggestionsByRol";
 
 interface HelpChatPanelProps {
@@ -18,10 +20,22 @@ export function HelpChatPanel({ open, onOpenChange }: HelpChatPanelProps) {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { messages, isStreaming, send, clear } = useHelpChat();
+  const { haalPlan, bezig } = useTutorialPlan();
+  const { startTour } = useTour();
   const suggestions = getSuggestions(profile?.rol);
 
   const lastUserVraag = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
+
+  // Zodra er een compleet antwoord staat, kan de gebruiker het laten voordoen.
+  const toonTutorial = !isStreaming && !!lastAssistant && !!lastUserVraag;
+
+  const startTutorial = async () => {
+    const plan = await haalPlan(messages);
+    if (!plan) return;
+    onOpenChange(false);
+    startTour(plan);
+  };
 
   // Toon de "functieverzoek"-knop alleen wanneer het AI-antwoord aangeeft dat
   // de gevraagde functie (nog) niet bestaat of niet beschikbaar is.
@@ -97,6 +111,19 @@ export function HelpChatPanel({ open, onOpenChange }: HelpChatPanelProps) {
             onNavigate={() => onOpenChange(false)}
           />
         </ScrollArea>
+        {toonTutorial && (
+          <div className="border-t px-4 py-2">
+            <Button
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={startTutorial}
+              disabled={bezig}
+            >
+              {bezig ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+              <span className="truncate">{bezig ? "Tutorial voorbereiden…" : "Start tutorial"}</span>
+            </Button>
+          </div>
+        )}
         {toonFunctieverzoek && lastUserVraag && (
           <div className="border-t bg-muted/40 px-4 py-2">
             <Button
