@@ -1,4 +1,5 @@
 import type { TourElementType, TourStep } from "./types";
+import { getAnchor } from "./anchors";
 
 const ROL_SELECTORS: Record<TourElementType, string> = {
   button: "button, [role='button'], a[href]",
@@ -56,6 +57,12 @@ export function resolveTarget(step: TourStep): HTMLElement | null {
   if (step.anchor) {
     const viaAnker = viaAnchor(step.anchor);
     if (viaAnker) return viaAnker;
+    // Anker nog niet in de DOM geplaatst: val terug op het bekende label.
+    const label = getAnchor(step.anchor)?.label;
+    if (label) {
+      const viaAnkerLabel = viaTekst(label, step.elementType ?? "any");
+      if (viaAnkerLabel) return viaAnkerLabel;
+    }
   }
   if (step.textMatch) {
     const viaLabel = viaTekst(step.textMatch, step.elementType ?? "any");
