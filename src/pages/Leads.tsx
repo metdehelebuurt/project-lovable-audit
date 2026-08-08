@@ -312,7 +312,7 @@ const Leads = () => {
               <span className="hidden sm:inline">Kanban</span>
             </button>
           </div>
-          <Button onClick={openCreate} className="rounded-pill gap-2">
+          <Button onClick={openCreate} data-tour="leads:nieuw" className="rounded-pill gap-2">
             <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nieuwe Lead</span><span className="sm:hidden">Nieuw</span>
           </Button>
         </div>

@@ -13,6 +13,7 @@ export function HelpButton({ onClick, className }: HelpButtonProps) {
       type="button"
       onClick={onClick}
       aria-label="Hulp nodig"
+      data-tour="app:hulp"
       size="icon"
       className={cn(
         "fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full shadow-lg",

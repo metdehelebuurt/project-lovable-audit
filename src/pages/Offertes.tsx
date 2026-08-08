@@ -423,7 +423,7 @@ const Offertes = () => {
             queryKey={["offertes"]}
           />
           {canCreate && (
-            <Button onClick={openCreate} className="rounded-pill gap-2">
+            <Button onClick={openCreate} data-tour="offertes:nieuw" className="rounded-pill gap-2">
               <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nieuwe Offerte</span><span className="sm:hidden">Nieuw</span>
             </Button>
           )}
@@ -647,7 +647,7 @@ const Offertes = () => {
             <div className="space-y-4 border-t pt-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-foreground">Offerteregels</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addRegel} className="rounded-pill gap-1">
+                <Button type="button" variant="outline" size="sm" onClick={addRegel} data-tour="offerte:regel-toevoegen" className="rounded-pill gap-1">
                   <Plus className="h-3 w-3" /> Regel toevoegen
                 </Button>
               </div>
