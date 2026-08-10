@@ -10320,6 +10320,23 @@ export type Database = {
         Args: { _lead_ids: string[]; _tags: string[] }
         Returns: number
       }
+      sales_lijst_affiliates_beheer: {
+        Args: never
+        Returns: {
+          achternaam: string
+          affiliate_tier: Database["public"]["Enums"]["affiliate_tier"]
+          created_at: string
+          email: string
+          id: string
+          is_extra_rol: boolean
+          partner_id: string
+          partner_naam: string
+          rol: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["user_status"]
+          telefoon: string
+          voornaam: string
+        }[]
+      }
       sales_tag_hernoemen: {
         Args: { _nieuw: string; _oud: string }
         Returns: number
@@ -10327,6 +10344,17 @@ export type Database = {
       sales_tag_verwijderen: {
         Args: { _ook_van_leads?: boolean; _slug: string }
         Returns: number
+      }
+      sales_zet_affiliate_status: {
+        Args: { _actief: boolean; _user_id: string }
+        Returns: undefined
+      }
+      sales_zet_affiliate_tier: {
+        Args: {
+          _tier: Database["public"]["Enums"]["affiliate_tier"]
+          _user_id: string
+        }
+        Returns: undefined
       }
       seed_affiliate_pipeline_config: {
         Args: { _partner_id: string }
