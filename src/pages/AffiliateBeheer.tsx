@@ -57,9 +57,10 @@ const AffiliateBeheer = () => {
   const { data: affiliates = [] } = useQuery({
     queryKey: ["all-affiliates"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("users").select("*").eq("rol", "affiliate").order("created_at", { ascending: false });
+      // RPC: toont ook gebruikers met affiliate als extra rol (naast bv. backoffice/partner_admin)
+      const { data, error } = await (supabase.rpc as any)("sales_lijst_affiliates_beheer");
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
   });
 
@@ -109,7 +110,7 @@ const AffiliateBeheer = () => {
   // Tier wijzigen
   const updateTier = useMutation({
     mutationFn: async ({ id, tier }: { id: string; tier: "brons" | "zilver" | "goud" }) => {
-      const { error } = await supabase.from("users").update({ affiliate_tier: tier }).eq("id", id);
+      const { error } = await (supabase.rpc as any)("sales_zet_affiliate_tier", { _user_id: id, _tier: tier });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -143,13 +144,15 @@ const AffiliateBeheer = () => {
   // Toggle affiliate status
   const toggleStatus = useMutation({
     mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
-      const newStatus = currentStatus === "actief" ? "inactief" : "actief";
-      const { error } = await supabase.from("users").update({ status: newStatus }).eq("id", id);
+      const { error } = await (supabase.rpc as any)("sales_zet_affiliate_status", {
+        _user_id: id,
+        _actief: currentStatus !== "actief",
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-affiliates"] });
-      toast.success("Status gewijzigd");
+      toast.success("Affiliate-toegang gewijzigd");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -273,7 +276,17 @@ const AffiliateBeheer = () => {
                 {affiliates.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nog geen affiliates</TableCell></TableRow>}
                 {affiliates.map((a: any) => (
                   <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAffiliate(a)}>
-                    <TableCell className="font-medium">{a.voornaam} {a.achternaam}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <span>{a.voornaam} {a.achternaam}</span>
+                        {a.is_extra_rol && (
+                          <Badge variant="outline" className="text-xs font-normal">Affiliate-module</Badge>
+                        )}
+                      </div>
+                      {a.partner_naam && (
+                        <div className="text-xs text-muted-foreground">{a.partner_naam}</div>
+                      )}
+                    </TableCell>
                     <TableCell>{a.email}</TableCell>
                     <TableCell>{a.telefoon || "—"}</TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
