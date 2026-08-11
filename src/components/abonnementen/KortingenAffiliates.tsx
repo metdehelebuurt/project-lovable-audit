@@ -48,7 +48,10 @@ export default function KortingenAffiliates() {
     const [{ data: comm }, { data: codes }, { data: affUsers }] = await Promise.all([
       supabase.from("affiliate_commissies").select("*, partners(naam)").order("created_at", { ascending: false }),
       supabase.from("kortingscodes").select("*").order("created_at", { ascending: false }),
-      supabase.from("users").select("id, voornaam, achternaam, email").eq("rol", "affiliate"),
+      // Inclusief gebruikers met affiliate als extra rol
+      (supabase.rpc as unknown as (fn: string) => Promise<{ data: Affiliate[] | null }>)(
+        "sales_lijst_affiliates_beheer",
+      ),
     ]);
     if (comm) setCommissies(comm as Commissie[]);
     if (codes) setKortingscodes(codes as Kortingscode[]);
