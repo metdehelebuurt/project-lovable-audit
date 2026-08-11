@@ -21,6 +21,7 @@ import BulkActieBalk from "../BulkActieBalk";
 import TagChips from "@/components/sales/TagChips";
 import { normaliseerTag } from "@/components/sales/TagsInput";
 import { AffiliateDuplicatenBanner } from "@/components/affiliate/duplicaten/AffiliateDuplicatenBanner";
+import NieuweSalesLeadDialog from "./NieuweSalesLeadDialog";
 
 type EigenaarFilter = "alle" | "platform" | "pool" | "toegewezen";
 type SorteerVeld = "updated" | "doorgezet" | "naam" | "eigenaar" | "aangemaakt";
@@ -34,6 +35,7 @@ export default function SalesLeads() {
   const { data: affiliates } = useAffiliateGebruikers();
   const { data: salesManagers } = useSalesManagerGebruikers();
   const create = useCreateSalesLead();
+  const [nieuwOpen, setNieuwOpen] = useState(false);
   const [zoek, setZoek] = useState("");
   const [fase, setFase] = useState<string>("alle");
   const [eigenaar, setEigenaar] = useState<EigenaarFilter>("alle");
@@ -295,12 +297,14 @@ export default function SalesLeads() {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => create.mutate({ bedrijfsnaam: "Nieuwe lead", sales_fase: "koud" })}
+          onClick={() => setNieuwOpen(true)}
           className="gap-1"
         >
           <Plus className="h-4 w-4" /> Nieuwe lead
         </Button>
       </div>
+
+      <NieuweSalesLeadDialog open={nieuwOpen} onOpenChange={setNieuwOpen} />
 
       <TemperatuurFilter waarde={temp} onWijzig={setTemp} counts={tempCounts as never} />
 
