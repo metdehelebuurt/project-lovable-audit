@@ -10320,6 +10320,19 @@ export type Database = {
         Args: { _lead_ids: string[]; _tags: string[] }
         Returns: number
       }
+      sales_lijst_affiliate_afwezigheid: {
+        Args: { _tot: string; _van: string }
+        Returns: {
+          email: string
+          id: string
+          naam: string
+          partner_naam: string
+          reden: string
+          tot: string
+          user_id: string
+          van: string
+        }[]
+      }
       sales_lijst_affiliates_beheer: {
         Args: never
         Returns: {
@@ -10345,6 +10358,7 @@ export type Database = {
         Args: { _ook_van_leads?: boolean; _slug: string }
         Returns: number
       }
+      sales_verwijder_afwezigheid: { Args: { _id: string }; Returns: undefined }
       sales_zet_affiliate_status: {
         Args: { _actief: boolean; _user_id: string }
         Returns: undefined
@@ -10355,6 +10369,10 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      sales_zet_afwezigheid: {
+        Args: { _reden?: string; _tot: string; _user_id: string; _van: string }
+        Returns: string
       }
       seed_affiliate_pipeline_config: {
         Args: { _partner_id: string }
