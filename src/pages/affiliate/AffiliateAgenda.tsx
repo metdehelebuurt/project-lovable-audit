@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Calendar, Phone, UserPlus } from "lucide-react";
 import { AffiliateSubnav } from "@/components/affiliate/AffiliateSubnav";
+import { MijnAanwezigheid } from "@/components/affiliate/MijnAanwezigheid";
 import { useTerugbelAfspraken, useAfvinkenTerugbel, useAfsprakenVoorMij } from "@/hooks/affiliate/useTerugbelAfspraken";
 import { useAffiliateLeads } from "@/hooks/affiliate/useAffiliateLeads";
 import { telLink, whatsappLink } from "@/lib/affiliate/contact";
@@ -106,6 +107,7 @@ const AffiliateAgenda = () => {
       {sectie("Vandaag", groepen.vandaag, "bg-amber-100 text-amber-800 border-amber-300")}
       {sectie("Komende dagen", groepen.deze_week, "bg-blue-100 text-blue-800 border-blue-300")}
       {sectie("Later", groepen.later, "bg-slate-100 text-slate-700 border-slate-300")}
+      <MijnAanwezigheid />
     </div>
   );
 };
