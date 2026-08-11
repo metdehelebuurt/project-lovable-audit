@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "react-router-dom";
-import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users, TrendingUp, CalendarDays, Sparkles, Trophy, Tags as TagsIcon } from "lucide-react";
+import { Kanban, List, Upload, BarChart3, Settings, Tag, FileText, Rocket, Users, TrendingUp, CalendarDays, CalendarCheck, Sparkles, Trophy, Tags as TagsIcon } from "lucide-react";
 import SalesPipeline from "./SalesPipeline";
 import SalesLeads from "./SalesLeads";
 import SalesImport from "./SalesImport";
@@ -13,6 +13,7 @@ import TeamCockpit from "./TeamCockpit";
 import SalesForecast from "./Forecast";
 import TrialLifecycle from "./TrialLifecycle";
 import TeamAgenda from "./TeamAgenda";
+import SalesAanwezigheid from "./Aanwezigheid";
 import WinningPlays from "./WinningPlays";
 import TagBeheer from "./TagBeheer";
 
@@ -43,6 +44,7 @@ export default function Sales() {
           <TabsTrigger value="trials" className="gap-2"><Rocket className="h-4 w-4" />Trials</TabsTrigger>
           <TabsTrigger value="trial-lifecycle" className="gap-2"><Sparkles className="h-4 w-4" />Trial-fases</TabsTrigger>
           <TabsTrigger value="agenda" className="gap-2"><CalendarDays className="h-4 w-4" />Team-agenda</TabsTrigger>
+          <TabsTrigger value="aanwezigheid" className="gap-2"><CalendarCheck className="h-4 w-4" />Aanwezigheid</TabsTrigger>
           <TabsTrigger value="import" className="gap-2"><Upload className="h-4 w-4" />Importeren</TabsTrigger>
           <TabsTrigger value="analytics" className="gap-2"><BarChart3 className="h-4 w-4" />Analytics</TabsTrigger>
           <TabsTrigger value="instellingen" className="gap-2"><Settings className="h-4 w-4" />Pipeline</TabsTrigger>
@@ -58,6 +60,7 @@ export default function Sales() {
         <TabsContent value="trials" className="mt-4"><SalesTrials /></TabsContent>
         <TabsContent value="trial-lifecycle" className="mt-4"><TrialLifecycle /></TabsContent>
         <TabsContent value="agenda" className="mt-4"><TeamAgenda /></TabsContent>
+        <TabsContent value="aanwezigheid" className="mt-4"><SalesAanwezigheid /></TabsContent>
         <TabsContent value="import" className="mt-4"><SalesImport /></TabsContent>
         <TabsContent value="analytics" className="mt-4"><SalesAnalytics /></TabsContent>
         <TabsContent value="instellingen" className="mt-4"><PipelineInstellingen /></TabsContent>
