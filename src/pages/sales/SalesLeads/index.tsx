@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useSalesLeads, useCreateSalesLead, type SalesLead } from "@/hooks/sales/useSalesLeads";
+import { useSalesLeads, type SalesLead } from "@/hooks/sales/useSalesLeads";
 import { useMyPipeline } from "@/hooks/sales/usePipelineConfig";
 import { useAffiliateGebruikers, useSalesManagerGebruikers } from "@/hooks/sales/useDoorzetten";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,6 @@ export default function SalesLeads() {
   const { data: pipeline } = useMyPipeline();
   const { data: affiliates } = useAffiliateGebruikers();
   const { data: salesManagers } = useSalesManagerGebruikers();
-  const create = useCreateSalesLead();
   const [nieuwOpen, setNieuwOpen] = useState(false);
   const [zoek, setZoek] = useState("");
   const [fase, setFase] = useState<string>("alle");
