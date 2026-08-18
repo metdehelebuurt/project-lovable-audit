@@ -273,6 +273,11 @@ const Berichten = () => {
 
   useEffect(() => { fetchTickets(); }, []);
 
+  // Meldingen over nieuwe e-mailberichten zijn gezien zodra de pagina opent.
+  useEffect(() => {
+    if (user?.id) void markeerModuleGelezen(user.id, "email_berichten");
+  }, [user?.id]);
+
   const generateTicketNr = () => `TKT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   const handleCreate = async () => {
