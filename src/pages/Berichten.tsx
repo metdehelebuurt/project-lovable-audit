@@ -26,6 +26,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import EmailInbox from "@/components/email/EmailInbox";
 import EmailLog from "@/components/email/EmailLog";
 import EmailTemplates from "@/components/email/EmailTemplates";
+import { markeerModuleGelezen } from "@/hooks/useModuleNotificatieCounts";
 
 type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 type TicketPrioriteit = Database["public"]["Enums"]["ticket_prioriteit"];
@@ -271,6 +272,11 @@ const Berichten = () => {
   };
 
   useEffect(() => { fetchTickets(); }, []);
+
+  // Meldingen over nieuwe e-mailberichten zijn gezien zodra de pagina opent.
+  useEffect(() => {
+    if (user?.id) void markeerModuleGelezen(user.id, "email_berichten");
+  }, [user?.id]);
 
   const generateTicketNr = () => `TKT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 

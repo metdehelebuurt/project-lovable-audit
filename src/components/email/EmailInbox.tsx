@@ -43,25 +43,39 @@ const EmailInbox = () => {
   const [composeOpen, setComposeOpen] = useState(false);
 
   useEffect(() => {
+    if (!profile?.id) return;
     checkAndLoad();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, profile?.partner_id, zichtbaarheid]);
 
   const checkAndLoad = async () => {
-    if (!profile?.partner_id) return;
+    if (!profile?.id) return;
     if (zichtbaarheid === "geen") {
       setHasAccount(true);
       setLoading(false);
       return;
     }
-    const { data: account } = await supabase
+    // Eerst eigen accounts; anders partner-accounts (meerdere mogelijk).
+    const { data: eigen } = await supabase
       .from("email_accounts" as any)
       .select("id")
-      .eq("partner_id", profile.partner_id)
+      .eq("user_id", profile.id)
       .eq("actief", true)
-      .maybeSingle();
+      .limit(1);
 
-    setHasAccount(!!account);
-    if (account) loadEmails();
+    let gevonden = (eigen ?? []).length > 0;
+    if (!gevonden && profile.partner_id) {
+      const { data: partnerAccounts } = await supabase
+        .from("email_accounts" as any)
+        .select("id")
+        .eq("partner_id", profile.partner_id)
+        .eq("actief", true)
+        .limit(1);
+      gevonden = (partnerAccounts ?? []).length > 0;
+    }
+
+    setHasAccount(gevonden);
+    if (gevonden) loadEmails();
     else setLoading(false);
   };
 
