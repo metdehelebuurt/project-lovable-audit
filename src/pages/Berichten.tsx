@@ -26,6 +26,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import EmailInbox from "@/components/email/EmailInbox";
 import EmailLog from "@/components/email/EmailLog";
 import EmailTemplates from "@/components/email/EmailTemplates";
+import { markeerModuleGelezen } from "@/hooks/useModuleNotificatieCounts";
 
 type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 type TicketPrioriteit = Database["public"]["Enums"]["ticket_prioriteit"];
