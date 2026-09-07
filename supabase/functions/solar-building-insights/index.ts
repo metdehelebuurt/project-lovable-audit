@@ -3,7 +3,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY") || "";
+// Server-sleutel heeft voorkeur (geen referrer-restricties). Valt terug op de
+// browsersleutel; die is referrer-beperkt, dus sturen we een toegestane Referer mee.
+const SERVER_KEY = Deno.env.get("GOOGLE_SOLAR_API_KEY") || "";
+const BROWSER_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY") || "";
+const GOOGLE_API_KEY = SERVER_KEY || BROWSER_KEY;
+const ALLOWED_REFERER = Deno.env.get("GOOGLE_MAPS_REFERER") || "https://app.mijnhuis.nu/";
+
+const solarFetch = (url: string): Promise<Response> =>
+  fetch(url, SERVER_KEY ? undefined : { headers: { Referer: ALLOWED_REFERER } });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,10 +54,16 @@ Deno.serve(async (req) => {
       if (attempt.experiments) {
         url += `&experiments=${attempt.experiments}`;
       }
-      insightsRes = await fetch(url);
+      insightsRes = await solarFetch(url);
       if (insightsRes.ok) break;
-      // Consume body before retrying
-      await insightsRes.text();
+      const body = await insightsRes.text();
+      if (insightsRes.status === 403 || insightsRes.status === 400) {
+        console.error(`Solar API geweigerd [${insightsRes.status}]: ${body.slice(0, 400)}`);
+        return new Response(JSON.stringify({
+          status: "api_not_enabled",
+          error: "De Google Solar API weigert de sleutel (403). Controleer of de Solar API is ingeschakeld en of de sleutel server-side gebruikt mag worden.",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       insightsRes = null;
     }
 
@@ -124,7 +138,7 @@ Deno.serve(async (req) => {
       if (usedExperiments) {
         layersUrl += `&experiments=${usedExperiments}`;
       }
-      const layersRes = await fetch(layersUrl);
+      const layersRes = await solarFetch(layersUrl);
       if (layersRes.ok) {
         const layers = await layersRes.json();
         dataLayers = {
