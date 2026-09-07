@@ -56,8 +56,14 @@ Deno.serve(async (req) => {
       }
       insightsRes = await solarFetch(url);
       if (insightsRes.ok) break;
-      // Consume body before retrying
-      await insightsRes.text();
+      const body = await insightsRes.text();
+      if (insightsRes.status === 403 || insightsRes.status === 400) {
+        console.error(`Solar API geweigerd [${insightsRes.status}]: ${body.slice(0, 400)}`);
+        return new Response(JSON.stringify({
+          status: "api_not_enabled",
+          error: "De Google Solar API weigert de sleutel (403). Controleer of de Solar API is ingeschakeld en of de sleutel server-side gebruikt mag worden.",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       insightsRes = null;
     }
 
