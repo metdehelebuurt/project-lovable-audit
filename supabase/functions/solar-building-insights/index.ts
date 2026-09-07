@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       if (attempt.experiments) {
         url += `&experiments=${attempt.experiments}`;
       }
-      insightsRes = await fetch(url);
+      insightsRes = await solarFetch(url);
       if (insightsRes.ok) break;
       // Consume body before retrying
       await insightsRes.text();
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
       if (usedExperiments) {
         layersUrl += `&experiments=${usedExperiments}`;
       }
-      const layersRes = await fetch(layersUrl);
+      const layersRes = await solarFetch(layersUrl);
       if (layersRes.ok) {
         const layers = await layersRes.json();
         dataLayers = {
