@@ -3,7 +3,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY") || "";
+// Server-sleutel heeft voorkeur (geen referrer-restricties). Valt terug op de
+// browsersleutel; die is referrer-beperkt, dus sturen we een toegestane Referer mee.
+const SERVER_KEY = Deno.env.get("GOOGLE_SOLAR_API_KEY") || "";
+const BROWSER_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY") || "";
+const GOOGLE_API_KEY = SERVER_KEY || BROWSER_KEY;
+const ALLOWED_REFERER = Deno.env.get("GOOGLE_MAPS_REFERER") || "https://app.mijnhuis.nu/";
+
+const solarFetch = (url: string): Promise<Response> =>
+  fetch(url, SERVER_KEY ? undefined : { headers: { Referer: ALLOWED_REFERER } });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
