@@ -13,15 +13,15 @@ function useReveal(pathname: string) {
     }
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const el = entry.target as HTMLElement;
-          const delay = Number(el.dataset.rv ?? 0) * 70;
-          window.setTimeout(() => el.classList.remove("mh-hidden"), delay);
+        const zichtbaar = entries
+          .filter((entry) => entry.isIntersecting)
+          .map((entry) => entry.target as HTMLElement);
+        zichtbaar.forEach((el, index) => {
+          window.setTimeout(() => el.classList.remove("mh-hidden"), index * 90);
           observer.unobserve(el);
         });
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.05 },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 },
     );
     nodes.forEach((n) => observer.observe(n));
     return () => observer.disconnect();
