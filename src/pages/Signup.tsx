@@ -43,7 +43,7 @@ const Signup = () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/auth/callback`,
       });
       if (result.error) {
         toast.error("Google registratie mislukt", { description: result.error.message });
