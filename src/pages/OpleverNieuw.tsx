@@ -32,6 +32,7 @@ interface PendingCreate {
   omvormer_spec?: Opleverrapport["omvormer_spec"];
   backup_box_spec?: Opleverrapport["backup_box_spec"];
   extra_velden?: Opleverrapport["extra_velden"];
+  rapport_type: Opleverrapport["rapport_type"];
 }
 
 export default function OpleverNieuw() {
@@ -70,6 +71,7 @@ export default function OpleverNieuw() {
           omvormer_spec: prefill?.omvormer_spec,
           backup_box_spec: prefill?.backup_box_spec,
           extra_velden: prefill?.extra_velden,
+          rapport_type: params.get("type") === "isolatie" ? "isolatie" : "elektra",
         };
 
         // Check bestaande rapporten voor dezelfde verkooporder/installatie

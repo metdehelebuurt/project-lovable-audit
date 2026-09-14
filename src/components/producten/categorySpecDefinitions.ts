@@ -242,7 +242,38 @@ const installatiemateriaal: SpecDefinition[] = [
   { key: "inhoud_verpakking", label: "Inhoud verpakking", group: "Algemeen", type: "text" },
 ];
 
+const isolatie: SpecDefinition[] = [
+  // Thermisch
+  { key: "rd_waarde_m2kw", label: "Rd-waarde", group: "Thermisch", unit: "m²K/W", type: "number" },
+  { key: "lambda_wmk", label: "Lambda-waarde (λD)", group: "Thermisch", unit: "W/mK", type: "number" },
+  { key: "u_waarde_wm2k", label: "U-waarde (na toepassing)", group: "Thermisch", unit: "W/m²K", type: "number" },
+  { key: "dikte_mm", label: "Dikte", group: "Thermisch", unit: "mm", type: "number" },
+  { key: "beschikbare_diktes_mm", label: "Beschikbare diktes", group: "Thermisch", unit: "mm", type: "text" },
+  // Materiaal
+  { key: "materiaaltype", label: "Materiaaltype", group: "Materiaal", type: "select", options: ["Glaswol", "Steenwol", "EPS", "XPS", "PIR", "PUR (spray)", "Houtvezel", "Cellulose", "Vlas/hennep", "Parelgrind (EPS)", "Schuim (spouw)", "Reflecterende folie", "Anders"] },
+  { key: "toepassing", label: "Toepassing", group: "Materiaal", type: "select", options: ["Dakisolatie binnen", "Dakisolatie buiten (sarking)", "Spouwmuurisolatie", "Binnengevelisolatie", "Buitengevelisolatie", "Vloerisolatie", "Bodemisolatie kruipruimte", "Kelderisolatie", "Universeel"] },
+  { key: "verwerkingsmethode", label: "Verwerkingsmethode", group: "Materiaal", type: "select", options: ["Platen", "Rollen/dekens", "Inblazen", "Spuiten", "Bodemafdekking", "Anders"] },
+  { key: "plaat_lengte_mm", label: "Plaatlengte", group: "Materiaal", unit: "mm", type: "number" },
+  { key: "plaat_breedte_mm", label: "Plaatbreedte", group: "Materiaal", unit: "mm", type: "number" },
+  { key: "m2_per_verpakking", label: "m² per verpakking", group: "Materiaal", unit: "m²", type: "number" },
+  { key: "soortelijke_massa_kg_m3", label: "Soortelijke massa", group: "Materiaal", unit: "kg/m³", type: "number" },
+  // Bouwfysisch
+  { key: "brandklasse", label: "Brandklasse (EN 13501-1)", group: "Bouwfysisch", type: "select", options: ["A1", "A2-s1,d0", "B-s1,d0", "B-s2,d0", "C-s3,d0", "D-s2,d0", "E", "F"] },
+  { key: "dampdiffusieweerstand_mu", label: "Dampdiffusieweerstand (µ)", group: "Bouwfysisch", type: "number" },
+  { key: "waterabsorptie_pct", label: "Wateropname", group: "Bouwfysisch", unit: "%", type: "number" },
+  { key: "drukvastheid_kpa", label: "Drukvastheid", group: "Bouwfysisch", unit: "kPa", type: "number" },
+  { key: "geluidsabsorptie_klasse", label: "Geluidsabsorptieklasse", group: "Bouwfysisch", type: "text" },
+  { key: "dampremmer_nodig", label: "Dampremmende laag nodig", group: "Bouwfysisch", type: "boolean" },
+  // Duurzaamheid & subsidie
+  { key: "isde_subsidiabel", label: "ISDE-subsidiabel", group: "Subsidie & Certificering", type: "boolean" },
+  { key: "isde_categorie", label: "ISDE-maatregelcategorie", group: "Subsidie & Certificering", type: "select", options: ["Dakisolatie", "Spouwmuurisolatie", "Gevelisolatie", "Vloer-/bodemisolatie", "Glas/kozijnpaneel/deur", "Niet van toepassing"] },
+  { key: "komo_certificaat", label: "KOMO-/Keurmerkcertificaat", group: "Subsidie & Certificering", type: "text" },
+  { key: "mrpi_epd", label: "MRPI/EPD beschikbaar", group: "Subsidie & Certificering", type: "boolean" },
+  { key: "recyclebaar", label: "Recyclebaar", group: "Subsidie & Certificering", type: "boolean" },
+];
+
 export const categorySpecDefinitions: Record<string, SpecDefinition[]> = {
+  isolatie: [...isolatie, ...shared],
   zonnepanelen: [...zonnepanelen, ...shared],
   thuisbatterij: [...thuisbatterij, ...shared],
   warmtepomp: [...warmtepomp, ...shared],

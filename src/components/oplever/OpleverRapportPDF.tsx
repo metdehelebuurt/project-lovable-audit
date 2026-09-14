@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import IsolatieRapportPDF from "./IsolatieRapportPDF";
 import type { ChecklistItem, Opleverrapport, Verdict } from "./types";
 
 const VERDICT_COLOR: Record<string, string> = {
@@ -39,7 +40,9 @@ interface Props {
   partnerLogoDataUrl?: string | null;
 }
 
-const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>(({ rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer, meegeleverdeDocumenten, installateurSigDataUrl, klantSigDataUrl, partnerLogoDataUrl }, ref) => {
+const OpleverRapportPDF = forwardRef<HTMLDivElement, Props>((props, ref) => {
+  const { rapport, partnerNaam, klantNaam, klantContact, partnerLogoUrl, partnerContact, ordernummer, meegeleverdeDocumenten, installateurSigDataUrl, klantSigDataUrl, partnerLogoDataUrl } = props;
+  if (rapport.rapport_type === "isolatie") return <IsolatieRapportPDF {...props} ref={ref} />;
   const verdict = (rapport.bevindingen?.verdict ?? "goedgekeurd") as Verdict;
   const stempelColor = VERDICT_COLOR[verdict];
   const stempelLabel = VERDICT_LABEL[verdict];

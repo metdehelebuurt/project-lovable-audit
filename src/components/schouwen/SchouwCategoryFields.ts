@@ -22,6 +22,30 @@ export const isFieldVisible = (field: CategoryField, gegevens: Record<string, an
   return field.visibleWhen.values.includes(currentValue);
 };
 
+/** Gedeelde wensen-vragen voor alle isolatiecategorieën (incl. HR++ glas). */
+export const isolatieWensen: CategoryField[] = [
+  { key: "motivatie_isolatie", label: "Motivatie", type: "select", options: ["besparing", "comfort", "duurzaamheid", "vocht_klachten", "subsidie", "combinatie"], section: "Motivatie", wizardStep: "wensen" },
+  { key: "comfortklacht", label: "Belangrijkste comfortklacht", type: "select", options: ["koude_ruimte", "tocht", "warmte_zomer", "geluid", "vocht_schimmel", "geen"], section: "Motivatie", wizardStep: "wensen" },
+  { key: "gewenste_rd_waarde", label: "Gewenste Rd-waarde (m²K/W)", type: "number", section: "Voorkeuren", wizardStep: "wensen" },
+  { key: "voorkeur_materiaal", label: "Voorkeur isolatiemateriaal", type: "select", options: ["glaswol", "steenwol", "PIR", "EPS", "houtvezel", "cellulose", "geen_voorkeur"], section: "Voorkeuren", wizardStep: "wensen" },
+  { key: "duurzaam_materiaal_gewenst", label: "Voorkeur biobased/duurzaam materiaal", type: "select", options: ["ja", "nee", "geen_voorkeur"], section: "Voorkeuren", wizardStep: "wensen" },
+  { key: "budget_min", label: "Budget minimum (€)", type: "number", section: "Budget", wizardStep: "wensen" },
+  { key: "budget_max", label: "Budget maximum (€)", type: "number", section: "Budget", wizardStep: "wensen" },
+  { key: "isde_subsidie_gewenst", label: "ISDE-subsidie aanvragen", type: "select", options: ["ja", "nee", "onbekend"], section: "Subsidie", wizardStep: "wensen" },
+  { key: "tweede_maatregel_gepland", label: "Tweede maatregel gepland (ISDE-voorwaarde)", type: "select", options: ["ja", "nee", "onbekend"], section: "Subsidie", wizardStep: "wensen" },
+  { key: "gewenste_uitvoerperiode", label: "Gewenste uitvoerperiode", type: "text", section: "Planning", wizardStep: "wensen" },
+  { key: "bewoond_tijdens_werk", label: "Woning bewoond tijdens werk", type: "select", options: ["ja", "nee"], section: "Planning", wizardStep: "wensen" },
+];
+
+/** Gedeelde woninggegevens voor isolatiecategorieën. */
+export const isolatieWoning: CategoryField[] = [
+  { key: "bouwjaar", label: "Bouwjaar woning", type: "number", section: "Woning", wizardStep: "situatie" },
+  { key: "woningtype", label: "Woningtype", type: "select", options: ["vrijstaand", "2_onder_1_kap", "hoekwoning", "tussenwoning", "appartement"], section: "Woning", wizardStep: "situatie" },
+  { key: "energielabel", label: "Energielabel woning", type: "select", options: ["A++++", "A+++", "A++", "A+", "A", "B", "C", "D", "E", "F", "G", "onbekend"], section: "Woning", wizardStep: "situatie" },
+  { key: "gasverbruik_m3", label: "Gasverbruik (m³/jaar)", type: "number", section: "Woning", wizardStep: "situatie" },
+  { key: "verwarmingssysteem", label: "Verwarmingssysteem", type: "select", options: ["cv_ketel", "warmtepomp", "hybride", "stadsverwarming", "anders"], section: "Woning", wizardStep: "situatie" },
+];
+
 export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
   zonnepanelen: [
     // WENSEN
@@ -97,8 +121,8 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "elektrische_aansluiting_a", label: "Elektrische aansluiting (A)", type: "number", section: "Elektra", wizardStep: "technisch" },
   ],
   isolatie_dak: [
-    // SITUATIE
-    { key: "bouwjaar", label: "Bouwjaar woning", type: "number", section: "Woning", wizardStep: "situatie" },
+    ...isolatieWensen,
+    ...isolatieWoning,
     { key: "daktype", label: "Daktype", type: "select", options: ["schuin", "plat"], section: "Dak", wizardStep: "situatie" },
     { key: "oppervlakte_m2", label: "Oppervlakte (m²)", type: "number", section: "Dak", wizardStep: "situatie" },
     { key: "huidige_isolatie", label: "Huidige isolatie", type: "select", options: ["geen", "dun", "matig", "goed"], section: "Dak", wizardStep: "situatie" },
@@ -112,9 +136,17 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "bereikbaarheid_kruipzolder", label: "Bereikbaarheid kruipzolder", type: "select", options: ["goed", "beperkt", "niet_bereikbaar"], section: "Constructie", wizardStep: "technisch" },
     { key: "leidingen_kabels_in_dak", label: "Leidingen/kabels in dakconstructie", type: "select", options: ["ja", "nee"], section: "Constructie", wizardStep: "technisch" },
     { key: "vochtproblemen", label: "Vochtproblemen", type: "select", options: ["ja", "nee"], section: "Staat", wizardStep: "technisch" },
+    { key: "schimmel_aanwezig", label: "Schimmel/houtrot aanwezig", type: "select", options: ["ja", "nee"], section: "Staat", wizardStep: "technisch" },
+    { key: "dakbedekking_staat", label: "Staat dakbedekking", type: "select", options: ["goed", "matig", "vervangen_nodig"], section: "Staat", wizardStep: "technisch" },
+    { key: "asbest_verdacht", label: "Asbestverdacht materiaal", type: "select", options: ["ja", "nee", "onbekend"], section: "Staat", wizardStep: "technisch" },
+    { key: "werkhoogte_m", label: "Werkhoogte (m)", type: "number", section: "Uitvoering", wizardStep: "technisch" },
+    { key: "steiger_nodig", label: "Steiger/hoogwerker nodig", type: "select", options: ["ja", "nee"], section: "Uitvoering", wizardStep: "technisch" },
+    { key: "toegang_zolder", label: "Toegang zolder/werkplek", type: "select", options: ["ruim", "krap", "via_luik", "niet_bereikbaar"], section: "Uitvoering", wizardStep: "technisch" },
+    { key: "afvoer_oud_materiaal", label: "Afvoer oud isolatiemateriaal nodig", type: "select", options: ["ja", "nee"], section: "Uitvoering", wizardStep: "technisch" },
   ],
   isolatie_muur: [
-    { key: "bouwjaar", label: "Bouwjaar woning", type: "number", section: "Woning", wizardStep: "situatie" },
+    ...isolatieWensen,
+    ...isolatieWoning,
     { key: "muurtype", label: "Muurtype", type: "select", options: ["spouwmuur", "massief", "houtskelet"], section: "Muur", wizardStep: "situatie" },
     { key: "oppervlakte_m2", label: "Oppervlakte (m²)", type: "number", section: "Muur", wizardStep: "situatie" },
     { key: "spouwbreedte_mm", label: "Spouwbreedte (mm)", type: "number", section: "Muur", wizardStep: "situatie", visibleWhen: { field: "muurtype", values: ["spouwmuur"] } },
@@ -129,9 +161,18 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "voeg_type", label: "Voeg type", type: "text", section: "Details", wizardStep: "technisch" },
     { key: "gevel_orientatie", label: "Gevel oriëntatie", type: "text", section: "Details", wizardStep: "technisch" },
     { key: "vochtproblemen", label: "Vochtproblemen", type: "select", options: ["ja", "nee"], section: "Staat", wizardStep: "technisch" },
+    { key: "doorslaand_vocht", label: "Doorslaand vocht / optrekkend vocht", type: "select", options: ["ja", "nee"], section: "Staat", wizardStep: "technisch" },
+    { key: "scheurvorming_gevel", label: "Scheurvorming in gevel", type: "select", options: ["geen", "licht", "ernstig"], section: "Staat", wizardStep: "technisch" },
+    { key: "spouw_vrij_van_puin", label: "Spouw vrij van puin/vuil", type: "select", options: ["ja", "nee", "onbekend"], section: "Staat", wizardStep: "technisch", visibleWhen: { field: "muurtype", values: ["spouwmuur"] } },
+    { key: "endoscopie_uitgevoerd", label: "Endoscopisch onderzoek uitgevoerd", type: "select", options: ["ja", "nee"], section: "Staat", wizardStep: "technisch", visibleWhen: { field: "muurtype", values: ["spouwmuur"] } },
+    { key: "boorgaten_herstel", label: "Herstelwerk boorgaten inbegrepen", type: "select", options: ["ja", "nee"], section: "Uitvoering", wizardStep: "technisch" },
+    { key: "steiger_nodig", label: "Steiger/hoogwerker nodig", type: "select", options: ["ja", "nee"], section: "Uitvoering", wizardStep: "technisch" },
+    { key: "bereikbaarheid_gevel", label: "Bereikbaarheid gevels", type: "select", options: ["goed", "beperkt", "zeer_beperkt"], section: "Uitvoering", wizardStep: "technisch" },
+    { key: "beschermde_diersoorten", label: "Controle beschermde diersoorten (vleermuizen/gierzwaluw)", type: "select", options: ["uitgevoerd", "nodig", "niet_van_toepassing"], section: "Uitvoering", wizardStep: "technisch" },
   ],
   isolatie_vloer: [
-    { key: "bouwjaar", label: "Bouwjaar woning", type: "number", section: "Woning", wizardStep: "situatie" },
+    ...isolatieWensen,
+    ...isolatieWoning,
     { key: "vloertype", label: "Vloertype", type: "select", options: ["kruipruimte", "begane_grond", "souterrain"], section: "Vloer", wizardStep: "situatie" },
     { key: "oppervlakte_m2", label: "Oppervlakte (m²)", type: "number", section: "Vloer", wizardStep: "situatie" },
     { key: "kruipruimte_hoogte_cm", label: "Kruipruimte hoogte (cm)", type: "number", section: "Vloer", wizardStep: "situatie", visibleWhen: { field: "vloertype", values: ["kruipruimte"] } },
@@ -145,9 +186,17 @@ export const categoryFields: Record<SchouwCategorie, CategoryField[]> = {
     { key: "grondwater_stand", label: "Grondwaterstand", type: "select", options: ["droog", "vochtig", "nat"], section: "Staat", wizardStep: "technisch" },
     { key: "ventilatieopeningen", label: "Ventilatieopeningen kruipruimte", type: "select", options: ["voldoende", "onvoldoende", "geen"], section: "Staat", wizardStep: "technisch" },
     { key: "vochtproblemen", label: "Vochtproblemen", type: "select", options: ["ja", "nee"], section: "Staat", wizardStep: "technisch" },
+    { key: "waterstand_kruipruimte", label: "Water in kruipruimte", type: "select", options: ["geen", "plassen", "permanent_water"], section: "Staat", wizardStep: "technisch" },
+    { key: "bodemafdekking_aanwezig", label: "Bodemafdekking aanwezig", type: "select", options: ["ja", "nee"], section: "Staat", wizardStep: "technisch" },
+    { key: "kruipluik_afmeting_cm", label: "Afmeting kruipluik (cm)", type: "text", section: "Uitvoering", wizardStep: "technisch" },
+    { key: "kruipluik_locatie", label: "Locatie kruipluik", type: "text", section: "Uitvoering", wizardStep: "technisch" },
+    { key: "werkruimte_voldoende", label: "Voldoende werkruimte (min. 35 cm)", type: "select", options: ["ja", "nee"], section: "Uitvoering", wizardStep: "technisch" },
+    { key: "puin_obstakels", label: "Puin/obstakels in kruipruimte", type: "select", options: ["geen", "beperkt", "veel"], section: "Uitvoering", wizardStep: "technisch" },
+    { key: "asbest_verdacht", label: "Asbestverdacht materiaal", type: "select", options: ["ja", "nee", "onbekend"], section: "Uitvoering", wizardStep: "technisch" },
   ],
   hr_glas: [
-    { key: "bouwjaar", label: "Bouwjaar woning", type: "number", section: "Woning", wizardStep: "situatie" },
+    ...isolatieWensen,
+    ...isolatieWoning,
     { key: "aantal_gevels_met_glas", label: "Aantal gevels met glas", type: "number", section: "Glas", wizardStep: "situatie" },
     { key: "aantal_ramen", label: "Totaal aantal ramen", type: "number", section: "Glas", wizardStep: "situatie" },
     { key: "huidig_glastype", label: "Huidig glastype", type: "select", options: ["enkel", "dubbel", "hr", "hr_plus", "hr_plusplus"], section: "Glas", wizardStep: "situatie" },

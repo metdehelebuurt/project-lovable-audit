@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ISOLATIE_CONFIG, berekenIsolatieBesparing, isolatieVlakkenUitSchouw } from "@/lib/offerte/isolatieBesparing";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -81,7 +82,7 @@ function hexToTint(hex: string, opacity: number): string {
 const categoryLabels: Record<string, string> = {
   zonnepanelen: "Zonnepanelen", thuisbatterij: "Thuisbatterij", warmtepomp: "Warmtepomp",
   laadpaal: "Laadpaal", omvormer: "Omvormer", accessoires: "Accessoires",
-  installatiemateriaal: "Installatiemateriaal", isolatie_dak: "Dakisolatie",
+  installatiemateriaal: "Installatiemateriaal", isolatie: "Isolatie", isolatie_dak: "Dakisolatie",
   isolatie_muur: "Muurisolatie", isolatie_vloer: "Vloerisolatie",
   hr_glas: "HR++ Glas", ventilatie: "Ventilatie",
 };
@@ -193,6 +194,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     capaciteit: number; besparing: number; terugverdientijd: number; investering: number;
     co2Reductie: number; maandBesparing: number; besparingLevensduur: number; zelfvoorzieningsgraad: number;
   } | null = null;
+  const isIsolatieOfferte = producten.some((p) => String(p.categorie).startsWith("isolatie"));
   if (offerte.include_energieadvies) {
     if (schouw?.gegevens) {
       const g = schouw.gegevens as any;
@@ -213,6 +215,22 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
           maandBesparing: Math.round(besparing / 12),
           besparingLevensduur: besparing * CONFIG.levensduur_jaren,
           zelfvoorzieningsgraad: verbruik > 0 ? Math.round((jaarOpwekking * CONFIG.zelfconsumptie_met_batterij / verbruik) * 100) : 0,
+        };
+      }
+    }
+    if (!energieadvies && producten.some((p) => String(p.categorie).startsWith("isolatie"))) {
+      const iso = berekenIsolatieBesparing(isolatieVlakkenUitSchouw(schouw?.gegevens as Record<string, unknown> | null));
+      if (iso) {
+        const investering = regels.reduce((sum, r) => sum + r.aantal * r.prijs_per_stuk, 0);
+        energieadvies = {
+          capaciteit: iso.oppervlakte,
+          besparing: iso.besparing,
+          terugverdientijd: iso.besparing > 0 ? Math.round((investering / iso.besparing) * 10) / 10 : 0,
+          investering,
+          co2Reductie: iso.co2Reductie,
+          maandBesparing: Math.round(iso.besparing / 12),
+          besparingLevensduur: iso.besparing * ISOLATIE_CONFIG.levensduur_jaren,
+          zelfvoorzieningsgraad: 0,
         };
       }
     }
@@ -520,7 +538,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
               <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, marginBottom: 28 }}>
                 Op basis van de schouwgegevens en uw energieverbruik hebben wij berekend wat de geschatte besparing en terugverdientijd is.
               </p>
-              <EnergieComp pc={pc} sc={sc} pcTint={pcTint} capaciteit={energieadvies.capaciteit} besparing={energieadvies.besparing} terugverdientijd={energieadvies.terugverdientijd} investering={energieadvies.investering} formatCurrency={formatCurrency} co2Reductie={energieadvies.co2Reductie} maandBesparing={energieadvies.maandBesparing} besparingLevensduur={energieadvies.besparingLevensduur} zelfvoorzieningsgraad={energieadvies.zelfvoorzieningsgraad} />
+              <EnergieComp pc={pc} sc={sc} pcTint={pcTint} capaciteit={energieadvies.capaciteit} besparing={energieadvies.besparing} terugverdientijd={energieadvies.terugverdientijd} investering={energieadvies.investering} formatCurrency={formatCurrency} co2Reductie={energieadvies.co2Reductie} maandBesparing={energieadvies.maandBesparing} besparingLevensduur={energieadvies.besparingLevensduur} zelfvoorzieningsgraad={energieadvies.zelfvoorzieningsgraad} capaciteitLabel={isIsolatieOfferte ? "Geïsoleerd oppervlak" : undefined} capaciteitEenheid={isIsolatieOfferte ? "m²" : undefined} />
               <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 24 }}>* Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen.</p>
             </div>
             <PageFooter />

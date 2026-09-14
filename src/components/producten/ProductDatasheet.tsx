@@ -46,6 +46,7 @@ const categorieLabels: Record<string, string> = {
   omvormer: "Omvormer",
   accessoires: "Accessoire",
   installatiemateriaal: "Installatiemateriaal",
+  isolatie: "Isolatie",
 };
 
 function hexToRgba(hex: string, opacity: number): string {

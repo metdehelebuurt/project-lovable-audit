@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Opleverrapport, OpleverStatus } from "../types";
 import { DEFAULT_CONFORMITEITSTEKST } from "../types";
 import { STANDAARD_CHECKLIST } from "../GrenswaardenLogic";
+import { DEFAULT_CONFORMITEITSTEKST_ISOLATIE, STANDAARD_ISOLATIE_CHECKLIST, STANDAARD_ISOLATIE_DOCUMENTEN } from "../isolatieConfig";
 
 interface CreateRapportInput {
   partner_id: string;
@@ -15,6 +16,7 @@ interface CreateRapportInput {
   omvormer_spec?: Opleverrapport["omvormer_spec"];
   backup_box_spec?: Opleverrapport["backup_box_spec"];
   extra_velden?: Opleverrapport["extra_velden"];
+  rapport_type?: Opleverrapport["rapport_type"];
 }
 
 export async function createRapport(input: CreateRapportInput): Promise<string> {
@@ -25,9 +27,11 @@ export async function createRapport(input: CreateRapportInput): Promise<string> 
   });
   if (nrErr) throw nrErr;
 
-  const visuele = STANDAARD_CHECKLIST.map((c) => ({ key: c.key, label: c.label, status: null }));
+  const isIsolatie = input.rapport_type === "isolatie";
+  const visuele = isIsolatie ? [] : STANDAARD_CHECKLIST.map((c) => ({ key: c.key, label: c.label, status: null }));
 
   const insertPayload: Record<string, unknown> = {
+    rapport_type: input.rapport_type ?? "elektra",
     partner_id: input.partner_id,
     installateur_id: input.installateur_id,
     installatie_id: input.installatie_id ?? null,
@@ -36,7 +40,7 @@ export async function createRapport(input: CreateRapportInput): Promise<string> 
     created_by: input.installateur_id,
     rapportnummer: nrData as string,
     visuele_inspectie: visuele,
-    conformiteitstekst: DEFAULT_CONFORMITEITSTEKST,
+    conformiteitstekst: isIsolatie ? DEFAULT_CONFORMITEITSTEKST_ISOLATIE : DEFAULT_CONFORMITEITSTEKST,
   };
   if (input.scope_omschrijving) insertPayload.scope_omschrijving = input.scope_omschrijving;
   if (input.opleverdatum) insertPayload.opleverdatum = input.opleverdatum;
@@ -49,8 +53,16 @@ export async function createRapport(input: CreateRapportInput): Promise<string> 
   if (input.backup_box_spec && Object.keys(input.backup_box_spec).length > 0) {
     insertPayload.backup_box_spec = input.backup_box_spec;
   }
-  if (input.extra_velden && Object.keys(input.extra_velden).length > 0) {
-    insertPayload.extra_velden = input.extra_velden;
+  const isolatieSeed = isIsolatie
+    ? {
+        isolatie_vlakken: [],
+        isolatie_controle: STANDAARD_ISOLATIE_CHECKLIST.map((c) => ({ key: c.key, label: c.label, status: null })),
+        isolatie_documenten: STANDAARD_ISOLATIE_DOCUMENTEN.map((c) => ({ key: c.key, label: c.label, status: null })),
+      }
+    : {};
+  const extra = { ...isolatieSeed, ...(input.extra_velden ?? {}) };
+  if (Object.keys(extra).length > 0) {
+    insertPayload.extra_velden = extra;
   }
 
   const { data, error } = await supabase

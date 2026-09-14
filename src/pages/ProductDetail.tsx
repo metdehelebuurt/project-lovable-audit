@@ -31,6 +31,7 @@ const categorieLabels: Record<string, string> = {
   zonnepanelen: "Zonnepanelen", thuisbatterij: "Thuisbatterij", warmtepomp: "Warmtepomp",
   laadpaal: "Laadpaal", omvormer: "Omvormer", accessoires: "Accessoires",
   installatiemateriaal: "Installatiemateriaal",
+  isolatie: "Isolatie",
 };
 
 const statusColors: Record<string, string> = {

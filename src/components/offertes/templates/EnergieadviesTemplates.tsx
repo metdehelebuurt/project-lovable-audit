@@ -14,6 +14,10 @@ interface EnergieadviesProps {
   maandBesparing?: number;
   besparingLevensduur?: number;
   zelfvoorzieningsgraad?: number;
+  /** Label bij het capaciteitsveld, bijv. "Geïsoleerd oppervlak". */
+  capaciteitLabel?: string;
+  /** Eenheid bij het capaciteitsveld, standaard kWh. */
+  capaciteitEenheid?: string;
 }
 
 function hexToTint(hex: string, opacity: number): string {
@@ -23,9 +27,9 @@ function hexToTint(hex: string, opacity: number): string {
   return `rgba(${r},${g},${b},${opacity})`;
 }
 
-export const EnergyCards: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, maandBesparing, besparingLevensduur }) => {
+export const EnergyCards: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, maandBesparing, besparingLevensduur , capaciteitLabel, capaciteitEenheid }) => {
   const items = [
-    ...(capaciteit > 0 ? [{ label: "Aanbevolen capaciteit", value: `${capaciteit} kWh`, icon: "⚡" }] : []),
+    ...(capaciteit > 0 ? [{ label: capaciteitLabel ?? "Aanbevolen capaciteit", value: `${capaciteit} ${capaciteitEenheid ?? "kWh"}`, icon: "⚡" }] : []),
     { label: "Geschatte investering", value: formatCurrency(investering), icon: "💰" },
     { label: "Jaarlijkse besparing", value: formatCurrency(besparing), icon: "📉" },
     { label: "Terugverdientijd", value: `${terugverdientijd} jaar`, icon: "⏱" },
@@ -46,7 +50,7 @@ export const EnergyCards: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, capa
   );
 };
 
-export const EnergyInfographic: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, besparingLevensduur }) => {
+export const EnergyInfographic: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, besparingLevensduur , capaciteitLabel, capaciteitEenheid }) => {
   const roiPercent = Math.min((besparing * 15 / investering) * 100, 100);
   return (
     <div style={{ fontFamily: "'Rubik', sans-serif" }}>
@@ -55,7 +59,7 @@ export const EnergyInfographic: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint
           {capaciteit > 0 && (
             <div style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 11, fontWeight: 600, color: "#888", margin: "0 0 4px", textTransform: "uppercase" }}>Capaciteit</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: pc, margin: 0 }}>{capaciteit} kWh</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: pc, margin: 0 }}>{capaciteit} {capaciteitEenheid ?? "kWh"}</p>
             </div>
           )}
           <div style={{ marginBottom: 16 }}>
@@ -98,14 +102,14 @@ export const EnergyInfographic: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint
   );
 };
 
-export const EnergyMinimal: React.FC<EnergieadviesProps> = ({ pc, sc, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, maandBesparing, besparingLevensduur }) => (
+export const EnergyMinimal: React.FC<EnergieadviesProps> = ({ pc, sc, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, maandBesparing, besparingLevensduur , capaciteitLabel, capaciteitEenheid }) => (
   <div style={{ fontFamily: "'Rubik', sans-serif" }}>
     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
       <tbody>
         {capaciteit > 0 && (
           <tr style={{ borderBottom: "1px solid #eee" }}>
-            <td style={{ padding: "10px 0", color: "#555" }}>Aanbevolen capaciteit</td>
-            <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 700, color: sc }}>{capaciteit} kWh</td>
+            <td style={{ padding: "10px 0", color: "#555" }}>{capaciteitLabel ?? "Aanbevolen capaciteit"}</td>
+            <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 700, color: sc }}>{capaciteit} {capaciteitEenheid ?? "kWh"}</td>
           </tr>
         )}
         <tr style={{ borderBottom: "1px solid #eee" }}>
@@ -143,7 +147,7 @@ export const EnergyMinimal: React.FC<EnergieadviesProps> = ({ pc, sc, capaciteit
   </div>
 );
 
-export const EnergyDashboard: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, maandBesparing, besparingLevensduur, zelfvoorzieningsgraad }) => {
+export const EnergyDashboard: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, capaciteit, besparing, terugverdientijd, investering, formatCurrency, co2Reductie, maandBesparing, besparingLevensduur, zelfvoorzieningsgraad , capaciteitLabel, capaciteitEenheid }) => {
   const roiPercent = Math.min((besparing * 15 / investering) * 100, 100);
   const co2Pct = co2Reductie ? Math.min((co2Reductie / 2000) * 100, 100) : 0;
   const zelfPct = zelfvoorzieningsgraad || 0;
@@ -164,7 +168,7 @@ export const EnergyDashboard: React.FC<EnergieadviesProps> = ({ pc, sc, pcTint, 
     <div style={{ fontFamily: "'Rubik', sans-serif" }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 28 }}>
         {[
-          { label: "Investering", value: formatCurrency(investering), sub: capaciteit > 0 ? `${capaciteit} kWh` : undefined },
+          { label: "Investering", value: formatCurrency(investering), sub: capaciteit > 0 ? `${capaciteit} ${capaciteitEenheid ?? "kWh"}` : undefined },
           { label: "Jaarlijks bespaard", value: formatCurrency(besparing), sub: maandBesparing ? `${formatCurrency(maandBesparing)}/mnd` : undefined },
           { label: "Terugverdientijd", value: `${terugverdientijd} jr`, sub: besparingLevensduur ? formatCurrency(besparingLevensduur) + " over 15 jr" : undefined },
         ].map((kpi, i) => (

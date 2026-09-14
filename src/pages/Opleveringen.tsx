@@ -73,11 +73,16 @@ export default function Opleveringen() {
       <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">Opleveringen</h1>
-          <p className="text-sm text-muted-foreground">NEN 1010 opleverrapporten</p>
+          <p className="text-sm text-muted-foreground">Opleverrapporten elektra en isolatie</p>
         </div>
-        <Button onClick={() => nav("/opleveringen/nieuw")}>
-          <Plus className="h-4 w-4 mr-2" /> Nieuw rapport
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => nav("/opleveringen/nieuw")}>
+            <Plus className="h-4 w-4 mr-2" /> Nieuw rapport (elektra)
+          </Button>
+          <Button variant="outline" onClick={() => nav("/opleveringen/nieuw?type=isolatie")}>
+            <Plus className="h-4 w-4 mr-2" /> Nieuw rapport (isolatie)
+          </Button>
+        </div>
       </div>
 
       <Card>
