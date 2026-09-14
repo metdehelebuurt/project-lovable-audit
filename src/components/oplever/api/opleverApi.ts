@@ -39,7 +39,7 @@ export async function createRapport(input: CreateRapportInput): Promise<string> 
     created_by: input.installateur_id,
     rapportnummer: nrData as string,
     visuele_inspectie: visuele,
-    conformiteitstekst: DEFAULT_CONFORMITEITSTEKST,
+    conformiteitstekst: isIsolatie ? DEFAULT_CONFORMITEITSTEKST_ISOLATIE : DEFAULT_CONFORMITEITSTEKST,
   };
   if (input.scope_omschrijving) insertPayload.scope_omschrijving = input.scope_omschrijving;
   if (input.opleverdatum) insertPayload.opleverdatum = input.opleverdatum;
