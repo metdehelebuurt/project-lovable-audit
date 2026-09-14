@@ -196,6 +196,17 @@ export interface ExtraVelden {
   backup_check?: ChecklistItem[];
   doc_labels?: ChecklistItem[];
   opmerkingen_afwijkingen?: string;
+  // Isolatie-specifiek
+  isolatie_vlakken?: IsolatieVlak[];
+  isolatie_controle?: ChecklistItem[];
+  isolatie_documenten?: ChecklistItem[];
+  isolatie_thermografie_uitgevoerd?: boolean;
+  isolatie_thermografie_notitie?: string;
+  isolatie_luchtdichtheid_qv10?: number | null;
+  isolatie_co2_besparing_kg?: number | null;
+  isolatie_besparing_m3_gas?: number | null;
+  isde_aanvraag_ingediend?: boolean;
+  isde_aanvraagnummer?: string;
 }
 
 export const DEFAULT_CONFORMITEITSTEKST =
