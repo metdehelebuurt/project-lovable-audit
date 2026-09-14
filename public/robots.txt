@@ -12,3 +12,8 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /instellingen
+Disallow: /offerte/
+
+Sitemap: https://app.mijnhuis.nu/sitemap.xml
