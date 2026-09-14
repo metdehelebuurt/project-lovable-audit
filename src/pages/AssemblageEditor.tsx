@@ -49,6 +49,7 @@ const CATEGORIEEN: { value: string; label: string }[] = [
   { value: "laadpaal", label: "Laadpaal" },
   { value: "warmtepomp", label: "Warmtepomp" },
   { value: "installatiemateriaal", label: "Installatiemateriaal" },
+  { value: "isolatie", label: "Isolatie" },
   { value: "accessoires", label: "Accessoires" },
 ];
 

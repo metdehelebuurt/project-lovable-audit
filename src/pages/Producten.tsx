@@ -34,6 +34,7 @@ const categorieLabels: Record<ProductCategorie, string> = {
   omvormer: "Omvormer",
   accessoires: "Accessoires",
   installatiemateriaal: "Installatiemateriaal",
+  isolatie: "Isolatie",
 };
 
 const statusLabels: Record<ProductStatus, string> = {

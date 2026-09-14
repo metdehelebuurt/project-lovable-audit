@@ -111,7 +111,7 @@ function hexToTint(hex: string, opacity: number): string {
 const categoryLabels: Record<string, string> = {
   zonnepanelen: "Zonnepanelen", thuisbatterij: "Thuisbatterij", warmtepomp: "Warmtepomp",
   laadpaal: "Laadpaal", omvormer: "Omvormer", accessoires: "Accessoires",
-  installatiemateriaal: "Installatiemateriaal", isolatie_dak: "Dakisolatie",
+  installatiemateriaal: "Installatiemateriaal", isolatie: "Isolatie", isolatie_dak: "Dakisolatie",
   isolatie_muur: "Muurisolatie", isolatie_vloer: "Vloerisolatie",
   hr_glas: "HR++ Glas", ventilatie: "Ventilatie",
 };

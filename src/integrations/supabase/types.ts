@@ -7201,6 +7201,7 @@ export type Database = {
           partner_id: string
           pdf_hash: string | null
           pdf_url: string | null
+          rapport_type: string
           rapportnummer: string
           scope_omschrijving: string | null
           status: string
@@ -7247,6 +7248,7 @@ export type Database = {
           partner_id: string
           pdf_hash?: string | null
           pdf_url?: string | null
+          rapport_type?: string
           rapportnummer: string
           scope_omschrijving?: string | null
           status?: string
@@ -7293,6 +7295,7 @@ export type Database = {
           partner_id?: string
           pdf_hash?: string | null
           pdf_url?: string | null
+          rapport_type?: string
           rapportnummer?: string
           scope_omschrijving?: string | null
           status?: string
@@ -10654,6 +10657,7 @@ export type Database = {
         | "omvormer"
         | "accessoires"
         | "installatiemateriaal"
+        | "isolatie"
       product_rol:
         | "batterij_module"
         | "omvormer"
@@ -10665,6 +10669,7 @@ export type Database = {
         | "installatiedienst"
         | "accessoire"
         | "overig"
+        | "isolatiemateriaal"
       product_status: "actief" | "uitgefaseerd" | "niet_beschikbaar"
       sales_fase:
         | "koud"
@@ -11003,6 +11008,7 @@ export const Constants = {
         "omvormer",
         "accessoires",
         "installatiemateriaal",
+        "isolatie",
       ],
       product_rol: [
         "batterij_module",
@@ -11015,6 +11021,7 @@ export const Constants = {
         "installatiedienst",
         "accessoire",
         "overig",
+        "isolatiemateriaal",
       ],
       product_status: ["actief", "uitgefaseerd", "niet_beschikbaar"],
       sales_fase: [
