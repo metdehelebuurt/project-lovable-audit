@@ -16,6 +16,8 @@ const SiteLayout = () => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [pathname]);
 
+  useSiteEnhancements(pathname);
+
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null;
     const anchor = target?.closest("a");
