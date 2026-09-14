@@ -11,10 +11,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prebuild": "tsx scripts/generate-help-knowledge.ts && tsx scripts/generate-tour-knowledge.ts",
+    "prebuild": "bunx tsx scripts/generate-sitemap.ts",
     "generate:help": "tsx scripts/generate-help-knowledge.ts",
     "generate:tour": "tsx scripts/generate-tour-knowledge.ts",
-    "check:rls": "tsx scripts/check-rls-policies.ts"
+    "check:rls": "tsx scripts/check-rls-policies.ts",
+    "predev": "bunx tsx scripts/generate-sitemap.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
