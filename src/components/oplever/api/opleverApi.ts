@@ -53,8 +53,16 @@ export async function createRapport(input: CreateRapportInput): Promise<string> 
   if (input.backup_box_spec && Object.keys(input.backup_box_spec).length > 0) {
     insertPayload.backup_box_spec = input.backup_box_spec;
   }
-  if (input.extra_velden && Object.keys(input.extra_velden).length > 0) {
-    insertPayload.extra_velden = input.extra_velden;
+  const isolatieSeed = isIsolatie
+    ? {
+        isolatie_vlakken: [],
+        isolatie_controle: STANDAARD_ISOLATIE_CHECKLIST.map((c) => ({ key: c.key, label: c.label, status: null })),
+        isolatie_documenten: STANDAARD_ISOLATIE_DOCUMENTEN.map((c) => ({ key: c.key, label: c.label, status: null })),
+      }
+    : {};
+  const extra = { ...isolatieSeed, ...(input.extra_velden ?? {}) };
+  if (Object.keys(extra).length > 0) {
+    insertPayload.extra_velden = extra;
   }
 
   const { data, error } = await supabase
