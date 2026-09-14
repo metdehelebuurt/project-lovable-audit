@@ -48,7 +48,6 @@ import Documenten from "@/pages/Documenten";
 import Instellingen from "@/pages/Instellingen";
 import OffertePDF from "@/pages/OffertePDF";
 import OffertePDFPrint from "@/pages/OffertePDFPrint";
-import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Energieadvies from "@/pages/Energieadvies";
 import OAuthReturn from "@/pages/OAuthReturn";
@@ -135,6 +134,7 @@ import PublicCatalogus from "@/pages/public/PublicCatalogus";
 import MerkenBeheer from "@/pages/MerkenBeheer";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
+import { websiteRoutes } from "@/website/routes";
 import Privacy from "@/pages/website/Privacy";
 import Voorwaarden from "@/pages/website/Voorwaarden";
 import CookieBeleid from "@/pages/website/CookieBeleid";
@@ -152,7 +152,8 @@ const App = () => (
         <AuthProvider>
           <SessionTimeout />
           <Routes>
-            <Route path="/" element={<Home />} />
+            {/* Publieke website */}
+            {websiteRoutes}
             <Route path="/login" element={<Login />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
