@@ -3,6 +3,8 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { SiteHeader } from "./chrome/SiteHeader";
 import { SiteFooter } from "./chrome/SiteFooter";
 import { useSiteEnhancements } from "./useSiteEnhancements";
+import { getPageSeo } from "./seo";
+import { useDocumentSeo } from "@/lib/seo/useDocumentSeo";
 import "./website.css";
 
 const isInternal = (href: string) =>
@@ -17,6 +19,7 @@ const SiteLayout = () => {
   }, [pathname]);
 
   useSiteEnhancements(pathname);
+  useDocumentSeo(getPageSeo(pathname));
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null;
