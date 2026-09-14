@@ -2,6 +2,7 @@ import { useEffect, type MouseEvent } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { SiteHeader } from "./chrome/SiteHeader";
 import { SiteFooter } from "./chrome/SiteFooter";
+import { useSiteEnhancements } from "./useSiteEnhancements";
 import "./website.css";
 
 const isInternal = (href: string) =>
