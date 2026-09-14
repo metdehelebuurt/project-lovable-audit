@@ -450,6 +450,22 @@ export default function OffertePDF() {
         };
       }
     }
+    if (!energieadvies && producten.some((p) => String(p.categorie).startsWith("isolatie"))) {
+      const iso = berekenIsolatieBesparing(isolatieVlakkenUitSchouw(schouw?.gegevens as Record<string, unknown> | null));
+      if (iso) {
+        const investering = regels.reduce((sum, r) => sum + r.aantal * r.prijs_per_stuk, 0);
+        energieadvies = {
+          capaciteit: iso.oppervlakte,
+          besparing: iso.besparing,
+          terugverdientijd: iso.besparing > 0 ? Math.round((investering / iso.besparing) * 10) / 10 : 0,
+          investering,
+          co2Reductie: iso.co2Reductie,
+          maandBesparing: Math.round(iso.besparing / 12),
+          besparingLevensduur: iso.besparing * ISOLATIE_CONFIG.levensduur_jaren,
+          zelfvoorzieningsgraad: 0,
+        };
+      }
+    }
     if (!energieadvies && producten.length > 0) {
       const totalInvestering = regels.reduce((sum, r) => {
         const bruto = r.aantal * r.prijs_per_stuk;
