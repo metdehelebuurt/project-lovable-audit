@@ -215,6 +215,14 @@ export default function OpleverDetail() {
     else toast({ title: "Archief niet beschikbaar", variant: "destructive" });
   };
 
+  const isIsolatie = merged.rapport_type === "isolatie";
+
+  const isolatieSteps = [
+    { key: "vlakken", label: "Geïsoleerde vlakken", icon: LayoutGrid, content: <StepIsolatieVlakken rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
+    { key: "controle", label: "Controle & metingen", icon: Thermometer, content: <StepIsolatieControle draft={merged} onChange={update} /> },
+    { key: "isodoc", label: "Documenten & overdracht", icon: FileText, content: <StepIsolatieDocumenten rapportId={merged.id} partnerId={merged.partner_id} draft={merged} onChange={update} /> },
+  ];
+
   const steps = [
     {
       key: "id",
