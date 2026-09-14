@@ -1,11 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { notifyMijnhuis, regelsHtml } from "../_shared/mijnhuis-notify.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+/** Volgende werkdag om 09:00 Nederlandse tijd, als ISO-tijdstip. */
+function volgendeWerkdagNegenUur(): string {
+  const dag = new Date();
+  dag.setUTCDate(dag.getUTCDate() + 1);
+  while (dag.getUTCDay() === 0 || dag.getUTCDay() === 6) {
+    dag.setUTCDate(dag.getUTCDate() + 1);
+  }
+  const offsetUur = Number(
+    new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", hour: "numeric", hour12: false })
+      .format(new Date(Date.UTC(dag.getUTCFullYear(), dag.getUTCMonth(), dag.getUTCDate(), 12))),
+  ) - 12;
+  dag.setUTCHours(9 - offsetUur, 0, 0, 0);
+  return dag.toISOString();
+}
 
 const BodySchema = z.object({
   bedrijfsnaam: z.string().trim().min(2).max(200),
@@ -24,6 +40,7 @@ const BodySchema = z.object({
   toestemming: z.boolean().optional(),
   // Bron van de trial: 'selfservice' (frontpage), 'affiliate' (via wederverkoper), 'sales' (aangemaakt door sales-team), 'google_oauth'.
   bron: z.enum(["selfservice", "affiliate", "sales", "google_oauth"]).optional(),
+  branche: z.string().trim().max(80).optional().nullable(),
 });
 
 serve(async (req) => {
@@ -48,7 +65,7 @@ serve(async (req) => {
     const {
       bedrijfsnaam, voornaam, achternaam, email, password, telefoon, ref_code,
       kortingscode, tijdelijk_wachtwoord, aangemaakt_door, aangemaakt_door_id,
-      trial_dagen, toestemming, bron,
+      trial_dagen, toestemming, bron, branche,
     } = parsed.data;
 
     // Automatisch bepalen wanneer bron niet meegegeven is.
@@ -276,6 +293,36 @@ serve(async (req) => {
       });
     } catch (mailErr) {
       console.error("Trial welkomstmail mislukt (non-fatal):", mailErr);
+    }
+
+    // 8. Interne melding + opvolgafspraak in de agenda (niet-blokkerend)
+    try {
+      await notifyMijnhuis({
+        adminClient: supabaseAdmin,
+        subject: `Nieuwe proefperiode: ${bedrijfsnaam}`,
+        html: `
+          <div style="font-family:Inter,Arial,sans-serif;color:#222;max-width:560px">
+            <h2 style="margin:0 0 12px">Nieuwe proefperiode gestart</h2>
+            <div style="background:#f6f6f9;padding:14px 18px;border-radius:10px">
+              ${regelsHtml([
+                ["Bedrijf", bedrijfsnaam],
+                ["Contactpersoon", `${voornaam} ${achternaam}`],
+                ["E-mail", email],
+                ["Telefoon", telefoon],
+                ["Branche", branche],
+                ["Bron", effectieveBron],
+              ])}
+            </div>
+          </div>`,
+        afspraak: {
+          titel: `Opvolgen proefperiode — ${bedrijfsnaam}`,
+          omschrijving: `${voornaam} ${achternaam} (${email})\nProefperiode gestart via ${effectieveBron}.`,
+          startIso: volgendeWerkdagNegenUur(),
+          duurMinuten: 15,
+        },
+      });
+    } catch (notifyErr) {
+      console.error("Interne trialmelding mislukt (non-fatal):", notifyErr);
     }
 
     return new Response(
