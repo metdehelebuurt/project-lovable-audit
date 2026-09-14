@@ -19,6 +19,7 @@ const SiteLayout = () => {
   }, [pathname]);
 
   useSiteEnhancements(pathname);
+  useDocumentSeo(getPageSeo(pathname));
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null;
