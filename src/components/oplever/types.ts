@@ -106,9 +106,32 @@ export interface Handtekening {
   ip?: string;
 }
 
+export type RapportType = "elektra" | "isolatie";
+
+/** Eén geïsoleerd bouwdeel binnen een isolatie-opleverrapport. */
+export interface IsolatieVlak {
+  id: string;
+  vlak_type: string;
+  omschrijving?: string;
+  oppervlakte_m2?: number | null;
+  materiaal?: string;
+  merk_type?: string;
+  verwerking?: string;
+  dikte_mm?: number | null;
+  lambda?: number | null;
+  rd_waarde?: number | null;
+  u_waarde?: number | null;
+  dampremmer?: boolean;
+  charge_batchnummer?: string;
+  fotos_voor?: string[];
+  fotos_na?: string[];
+  opmerking?: string;
+}
+
 export interface Opleverrapport {
   id: string;
   partner_id: string;
+  rapport_type?: RapportType;
   installatie_id: string | null;
   klant_id: string | null;
   opdracht_id: string | null;
