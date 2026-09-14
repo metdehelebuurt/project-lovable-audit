@@ -36,9 +36,10 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
+    sessionStorage.setItem("mh:na-login-pad", naLoginPad);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: veiligeNext ? `${window.location.origin}${veiligeNext}` : window.location.origin,
+        redirect_uri: `${window.location.origin}/auth/callback`,
       });
       if (result.error) {
         toast.error("Google inloggen mislukt", { description: result.error.message });

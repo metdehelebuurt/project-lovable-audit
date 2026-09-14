@@ -139,6 +139,7 @@ import Privacy from "@/pages/website/Privacy";
 import Voorwaarden from "@/pages/website/Voorwaarden";
 import CookieBeleid from "@/pages/website/CookieBeleid";
 import Onboarding from "@/pages/Onboarding";
+import AuthCallback from "@/pages/AuthCallback";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 
 const queryClient = new QueryClient();
@@ -172,6 +173,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/oauth-return" element={<OAuthReturn />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Onboarding-wizard — protected, geen AppLayout */}
             <Route path="/onboarding" element={
