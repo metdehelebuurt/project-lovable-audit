@@ -71,6 +71,7 @@ export default function OpleverNieuw() {
           omvormer_spec: prefill?.omvormer_spec,
           backup_box_spec: prefill?.backup_box_spec,
           extra_velden: prefill?.extra_velden,
+          rapport_type: params.get("type") === "isolatie" ? "isolatie" : "elektra",
         };
 
         // Check bestaande rapporten voor dezelfde verkooporder/installatie
