@@ -291,3 +291,27 @@
 
 .mh-site .mh-skip{position:absolute;left:-9999px;top:0;z-index:200;padding:12px 20px;background:var(--indigo-600);color:#fff;font-weight:600;font-size:15px;border-radius:0 0 10px 0}
 .mh-site .mh-skip:focus{left:0}
+
+/* --- Subtiele interactie-effecten --- */
+.mh-site .mh-card{transition:transform .32s var(--ease-standard),box-shadow .32s var(--ease-standard),border-color .32s var(--ease-standard)}
+.mh-site .mh-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -22px rgba(24,24,60,.38);border-color:var(--indigo-300)}
+.mh-site a .mh-card:hover,.mh-site .mh-card:focus-within{transform:translateY(-4px)}
+.mh-site .mh-btn{will-change:transform}
+.mh-site .mh-btn:hover{transform:translateY(-2px);box-shadow:0 12px 24px -14px rgba(24,24,60,.55);filter:brightness(1.04)}
+.mh-site .mh-btn:active{transform:translateY(0);box-shadow:none}
+.mh-site .mh-btn svg{transition:transform .28s var(--ease-standard)}
+.mh-site .mh-btn:hover svg.lucide-arrow-right{transform:translateX(3px)}
+.mh-site a:hover>svg.lucide-arrow-right,.mh-site a:hover svg.lucide-chevron-right{transform:translateX(3px)}
+.mh-site a svg.lucide-arrow-right,.mh-site a svg.lucide-chevron-right{transition:transform .28s var(--ease-standard)}
+.mh-site .mh-navlinks a,.mh-site .mh-navlinks button{border-radius:10px}
+.mh-site .mh-outcome{transition:transform .32s var(--ease-standard)}
+.mh-site .mh-outcome:hover{transform:translateY(-2px)}
+.mh-site button[aria-expanded]{transition:background-color .25s var(--ease-standard)}
+.mh-site button[aria-expanded]:hover{background:var(--surface-tint,#f4f4fb)!important}
+.mh-site button[aria-expanded] span[aria-hidden]{transition:transform .35s var(--ease-standard)}
+.mh-site .mh-reveal{transition:opacity .6s var(--ease-standard),transform .6s var(--ease-standard)}
+.mh-site .mh-reveal.mh-hidden{opacity:0;transform:translateY(22px)}
+@media (prefers-reduced-motion: reduce){
+  .mh-site .mh-card:hover,.mh-site .mh-btn:hover,.mh-site .mh-outcome:hover{transform:none;box-shadow:none;filter:none}
+  .mh-site .mh-reveal.mh-hidden{opacity:1;transform:none}
+}
