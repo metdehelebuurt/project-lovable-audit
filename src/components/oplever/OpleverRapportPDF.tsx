@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import IsolatieRapportPDF from "./IsolatieRapportPDF";
 import type { ChecklistItem, Opleverrapport, Verdict } from "./types";
 
 const VERDICT_COLOR: Record<string, string> = {
