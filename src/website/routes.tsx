@@ -66,6 +66,7 @@ export const websiteRoutes = (
       <Route path="/kennisbank" element={<Kennisbank />} />
       <Route path="/kennismaking" element={<Kennismaking />} />
       <Route path="/succesverhalen" element={<Succesverhalen />} />
+      <Route path="/klantverhalen" element={<Succesverhalen />} />
       <Route path="/oplossingen/klantportaal" element={<OplossingKlantportaal />} />
       <Route path="/oplossingen/lead" element={<OplossingLead />} />
       <Route path="/oplossingen/monteursapp" element={<OplossingMonteursapp />} />
