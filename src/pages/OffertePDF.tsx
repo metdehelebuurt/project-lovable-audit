@@ -427,6 +427,7 @@ export default function OffertePDF() {
     co2Reductie: number; maandBesparing: number; besparingLevensduur: number; zelfvoorzieningsgraad: number;
   } | null = null;
 
+  const isIsolatieOfferte = producten.some((p) => String(p.categorie).startsWith("isolatie"));
   if (offerte.include_energieadvies) {
     if (schouw?.gegevens) {
       const g = schouw.gegevens as any;
@@ -752,6 +753,7 @@ export default function OffertePDF() {
               formatCurrency={formatCurrency}
               co2Reductie={energieadvies.co2Reductie} maandBesparing={energieadvies.maandBesparing}
               besparingLevensduur={energieadvies.besparingLevensduur} zelfvoorzieningsgraad={energieadvies.zelfvoorzieningsgraad}
+              capaciteitLabel={isIsolatieOfferte ? "Geïsoleerd oppervlak" : undefined} capaciteitEenheid={isIsolatieOfferte ? "m²" : undefined}
             />
             <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 24 }}>
               * Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen. Werkelijke resultaten kunnen afwijken.

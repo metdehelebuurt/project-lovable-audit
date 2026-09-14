@@ -194,6 +194,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
     capaciteit: number; besparing: number; terugverdientijd: number; investering: number;
     co2Reductie: number; maandBesparing: number; besparingLevensduur: number; zelfvoorzieningsgraad: number;
   } | null = null;
+  const isIsolatieOfferte = producten.some((p) => String(p.categorie).startsWith("isolatie"));
   if (offerte.include_energieadvies) {
     if (schouw?.gegevens) {
       const g = schouw.gegevens as any;
@@ -537,7 +538,7 @@ export default function OffertePDFPreview({ templateConfigOverride, hideActionBa
               <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, marginBottom: 28 }}>
                 Op basis van de schouwgegevens en uw energieverbruik hebben wij berekend wat de geschatte besparing en terugverdientijd is.
               </p>
-              <EnergieComp pc={pc} sc={sc} pcTint={pcTint} capaciteit={energieadvies.capaciteit} besparing={energieadvies.besparing} terugverdientijd={energieadvies.terugverdientijd} investering={energieadvies.investering} formatCurrency={formatCurrency} co2Reductie={energieadvies.co2Reductie} maandBesparing={energieadvies.maandBesparing} besparingLevensduur={energieadvies.besparingLevensduur} zelfvoorzieningsgraad={energieadvies.zelfvoorzieningsgraad} />
+              <EnergieComp pc={pc} sc={sc} pcTint={pcTint} capaciteit={energieadvies.capaciteit} besparing={energieadvies.besparing} terugverdientijd={energieadvies.terugverdientijd} investering={energieadvies.investering} formatCurrency={formatCurrency} co2Reductie={energieadvies.co2Reductie} maandBesparing={energieadvies.maandBesparing} besparingLevensduur={energieadvies.besparingLevensduur} zelfvoorzieningsgraad={energieadvies.zelfvoorzieningsgraad} capaciteitLabel={isIsolatieOfferte ? "Geïsoleerd oppervlak" : undefined} capaciteitEenheid={isIsolatieOfferte ? "m²" : undefined} />
               <p style={{ fontSize: 10, color: "#aaa", fontStyle: "italic", marginTop: 24 }}>* Dit advies is indicatief en gebaseerd op de opgegeven schouwgegevens en actuele energieprijzen.</p>
             </div>
             <PageFooter />
