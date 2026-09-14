@@ -32,6 +32,7 @@ interface PendingCreate {
   omvormer_spec?: Opleverrapport["omvormer_spec"];
   backup_box_spec?: Opleverrapport["backup_box_spec"];
   extra_velden?: Opleverrapport["extra_velden"];
+  rapport_type: Opleverrapport["rapport_type"];
 }
 
 export default function OpleverNieuw() {
