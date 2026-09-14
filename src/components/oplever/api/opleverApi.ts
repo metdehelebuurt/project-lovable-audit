@@ -26,9 +26,11 @@ export async function createRapport(input: CreateRapportInput): Promise<string> 
   });
   if (nrErr) throw nrErr;
 
-  const visuele = STANDAARD_CHECKLIST.map((c) => ({ key: c.key, label: c.label, status: null }));
+  const isIsolatie = input.rapport_type === "isolatie";
+  const visuele = isIsolatie ? [] : STANDAARD_CHECKLIST.map((c) => ({ key: c.key, label: c.label, status: null }));
 
   const insertPayload: Record<string, unknown> = {
+    rapport_type: input.rapport_type ?? "elektra",
     partner_id: input.partner_id,
     installateur_id: input.installateur_id,
     installatie_id: input.installatie_id ?? null,
