@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ISOLATIE_CONFIG, berekenIsolatieBesparing, isolatieVlakkenUitSchouw } from "@/lib/offerte/isolatieBesparing";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
