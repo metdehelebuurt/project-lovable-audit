@@ -288,3 +288,6 @@
 
 }
 
+
+.mh-site .mh-skip{position:absolute;left:-9999px;top:0;z-index:200;padding:12px 20px;background:var(--indigo-600);color:#fff;font-weight:600;font-size:15px;border-radius:0 0 10px 0}
+.mh-site .mh-skip:focus{left:0}
