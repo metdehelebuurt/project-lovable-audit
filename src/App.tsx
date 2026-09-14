@@ -135,6 +135,7 @@ import PublicCatalogus from "@/pages/public/PublicCatalogus";
 import MerkenBeheer from "@/pages/MerkenBeheer";
 
 import WebsiteLayout from "@/components/website/WebsiteLayout";
+import { websiteRoutes } from "@/website/routes";
 import Privacy from "@/pages/website/Privacy";
 import Voorwaarden from "@/pages/website/Voorwaarden";
 import CookieBeleid from "@/pages/website/CookieBeleid";
@@ -152,7 +153,8 @@ const App = () => (
         <AuthProvider>
           <SessionTimeout />
           <Routes>
-            <Route path="/" element={<Home />} />
+            {/* Publieke website */}
+            {websiteRoutes}
             <Route path="/login" element={<Login />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
