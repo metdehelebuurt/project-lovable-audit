@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Opleverrapport, OpleverStatus } from "../types";
 import { DEFAULT_CONFORMITEITSTEKST } from "../types";
 import { STANDAARD_CHECKLIST } from "../GrenswaardenLogic";
+import { DEFAULT_CONFORMITEITSTEKST_ISOLATIE, STANDAARD_ISOLATIE_CHECKLIST, STANDAARD_ISOLATIE_DOCUMENTEN } from "../isolatieConfig";
 
 interface CreateRapportInput {
   partner_id: string;
