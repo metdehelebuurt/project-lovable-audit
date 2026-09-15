@@ -9,7 +9,7 @@ export const S02 = () => (
           <a
             className="mh-bcard"
             href="/kennisbank/subsidies-2026-zon-pv"
-            style={{ gridColumn: "span 7", height: "430px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"blob:http://localhost:8899/eccc055d-3508-43c5-9dc3-6315ce8a53da\")", backgroundSize: "cover", backgroundPosition: "center center" }}
+            style={{ gridColumn: "span 7", height: "430px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"/__l5e/assets-v1/f070ceaa-9772-42cd-aec9-1851c839b586/img40.jpg")", backgroundSize: "cover", backgroundPosition: "center center" }}
           >
             <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.34) 44%, rgba(33, 31, 84, 0.9) 100%)" }}></span>
             <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.66) 0%, rgba(33, 31, 84, 0.93) 100%)" }}></span>
@@ -82,7 +82,7 @@ export const S02 = () => (
           <a
             className="mh-bcard"
             href="/kennisbank/warmtepomp-inregelen-opleveren"
-            style={{ gridColumn: "span 5", height: "430px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"blob:http://localhost:8899/d0051da4-c29c-4446-81c9-34b16c1b26c7\")", backgroundSize: "cover", backgroundPosition: "center center" }}
+            style={{ gridColumn: "span 5", height: "430px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"/__l5e/assets-v1/eb5826ec-5859-4345-89e3-439bb8f6bbc5/img34.jpg")", backgroundSize: "cover", backgroundPosition: "center center" }}
           >
             <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.34) 44%, rgba(33, 31, 84, 0.9) 100%)" }}></span>
             <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.66) 0%, rgba(33, 31, 84, 0.93) 100%)" }}></span>
@@ -155,7 +155,7 @@ export const S02 = () => (
           <a
             className="mh-bcard"
             href="/kennisbank/nen-1010-veelgemaakte-fouten"
-            style={{ gridColumn: "span 4", height: "330px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"blob:http://localhost:8899/18fb6693-d856-4575-a0ae-f707e91b37b9\")", backgroundSize: "cover", backgroundPosition: "center center" }}
+            style={{ gridColumn: "span 4", height: "330px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"/__l5e/assets-v1/8216563e-9791-4f8c-a849-d11bd641d0d6/img06.jpg")", backgroundSize: "cover", backgroundPosition: "center center" }}
           >
             <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.34) 44%, rgba(33, 31, 84, 0.9) 100%)" }}></span>
             <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.66) 0%, rgba(33, 31, 84, 0.93) 100%)" }}></span>
@@ -228,7 +228,7 @@ export const S02 = () => (
           <a
             className="mh-bcard"
             href="/kennisbank/load-balancing-laadpalen"
-            style={{ gridColumn: "span 4", height: "330px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"blob:http://localhost:8899/d09be30d-7cca-48c9-a41a-0656fdc6de03\")", backgroundSize: "cover", backgroundPosition: "center center" }}
+            style={{ gridColumn: "span 4", height: "330px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"/__l5e/assets-v1/d75477f7-8d52-4ae9-9a2a-b1396bf5789a/img36.jpg")", backgroundSize: "cover", backgroundPosition: "center center" }}
           >
             <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.34) 44%, rgba(33, 31, 84, 0.9) 100%)" }}></span>
             <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.66) 0%, rgba(33, 31, 84, 0.93) 100%)" }}></span>
@@ -301,7 +301,7 @@ export const S02 = () => (
           <a
             className="mh-bcard"
             href="/kennisbank/offerte-in-vijf-minuten"
-            style={{ gridColumn: "span 4", height: "330px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"blob:http://localhost:8899/63895bcc-bb00-4290-9193-64074b34f01e\")", backgroundSize: "cover", backgroundPosition: "center center" }}
+            style={{ gridColumn: "span 4", height: "330px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"/__l5e/assets-v1/ce7d2dbc-5b5a-4bf8-b24d-774048ad16a9/img17.jpg")", backgroundSize: "cover", backgroundPosition: "center center" }}
           >
             <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.34) 44%, rgba(33, 31, 84, 0.9) 100%)" }}></span>
             <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.66) 0%, rgba(33, 31, 84, 0.93) 100%)" }}></span>
@@ -374,7 +374,7 @@ export const S02 = () => (
           <a
             className="mh-bcard"
             href="/kennisbank/overstappen-in-drie-weken"
-            style={{ gridColumn: "span 12", height: "260px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"blob:http://localhost:8899/8603b621-7dab-409c-a340-dcb91422d59e\")", backgroundSize: "cover", backgroundPosition: "center center" }}
+            style={{ gridColumn: "span 12", height: "260px", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", backgroundImage: "url(\"/__l5e/assets-v1/8302ba8f-4fec-43d2-9f6f-d1ff185f8b10/img26.jpg")", backgroundSize: "cover", backgroundPosition: "center center" }}
           >
             <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.34) 44%, rgba(33, 31, 84, 0.9) 100%)" }}></span>
             <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.66) 0%, rgba(33, 31, 84, 0.93) 100%)" }}></span>
