@@ -321,6 +321,8 @@ const Dashboard = () => {
         )}
       </div>
 
+      {toonTrialWelkom && <TrialWelkom />}
+
       {rol === "installateur" ? (
         <MonteurDashboard />
       ) : (
