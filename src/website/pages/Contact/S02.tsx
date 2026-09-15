@@ -1,4 +1,6 @@
 
+import { ContactForm } from "./ContactForm";
+
 export const S02 = () => (
     <section className="mh-secpad" style={{ padding: "80px 0px", background: "var(--surface-page)" }}>
       <div className="mh-container">
