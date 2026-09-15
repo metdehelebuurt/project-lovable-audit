@@ -108,6 +108,10 @@ export default function SalesTrials() {
             </p>
           </div>
           <div className="flex gap-1.5">
+            <Button size="sm" className="h-8" onClick={() => setNieuweTrialOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nieuwe trial
+            </Button>
             {(["actief", "verlopen", "alles"] as Weergave[]).map((w) => (
               <Button
                 key={w}
