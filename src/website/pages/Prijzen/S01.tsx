@@ -1,5 +1,5 @@
-import { useBilling } from "./billingContext";
-import type { Facturatie } from "./planPrijzen";
+import { useBilling } from "@/website/components/prijzen/billingContext";
+import type { Facturatie } from "@/website/components/prijzen/planPrijzen";
 
 const knopStijl = (actief: boolean) => ({
   padding: "9px 18px",

@@ -1,4 +1,4 @@
-import { BillingProvider } from "./BillingProvider";
+import { BillingProvider } from "@/website/components/prijzen/BillingProvider";
 import { S01 } from "./S01";
 import { S02 } from "./S02";
 import { S03 } from "./S03";

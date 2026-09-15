@@ -1,5 +1,5 @@
 
-import { PlanPrijs } from "./PlanPrijs";
+import { PlanPrijs } from "@/website/components/prijzen/PlanPrijs";
 
 export const S02 = () => (
     <section className="mh-secpad" style={{ padding: "8px 0px 72px", background: "var(--surface-page)" }}>
