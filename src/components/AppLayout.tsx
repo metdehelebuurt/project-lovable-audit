@@ -6,9 +6,11 @@ import { TourProvider } from "@/components/tour/TourProvider";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { Outlet } from "react-router-dom";
+import { BlokkadeGate } from "@/components/BlokkadeGate";
 
 export function AppLayout() {
   return (
+    <BlokkadeGate>
     <SidebarProvider>
       <TourProvider>
       <div className="min-h-screen flex w-full overflow-x-hidden">
