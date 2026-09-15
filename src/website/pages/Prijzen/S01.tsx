@@ -1,5 +1,36 @@
+import { useBilling } from "./billingContext";
+import type { Facturatie } from "./planPrijzen";
 
-export const S01 = () => (
+const knopStijl = (actief: boolean) => ({
+  padding: "9px 18px",
+  borderRadius: "999px",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "var(--font-body)",
+  fontSize: "14px",
+  fontWeight: "600",
+  background: actief ? "rgb(255, 255, 255)" : "transparent",
+  color: actief ? "var(--color-primary)" : "var(--neutral-600)",
+  boxShadow: actief ? "var(--shadow-sm)" : "none",
+  transition: "all var(--dur-fast) var(--ease-standard)",
+  whiteSpace: "nowrap" as const,
+});
+
+export const S01 = () => {
+  const { facturatie, setFacturatie } = useBilling();
+
+  const knop = (waarde: Facturatie, label: string) => (
+    <button
+      type="button"
+      aria-pressed={facturatie === waarde}
+      onClick={() => setFacturatie(waarde)}
+      style={knopStijl(facturatie === waarde)}
+    >
+      {label}
+    </button>
+  );
+
+  return (
     <section
       className="mh-secpad"
       style={{ padding: "88px 0px 56px", background: "radial-gradient(120% 90% at 50% -20%, var(--ice-lilac) 0%, var(--white) 60%)" }}
@@ -20,18 +51,11 @@ export const S01 = () => (
           <div
             style={{ display: "inline-flex", padding: "5px", background: "var(--indigo-50)", borderRadius: "999px", gap: "4px" }}
           >
-            <button
-              style={{ padding: "9px 18px", borderRadius: "999px", border: "none", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: "600", background: "transparent", color: "var(--neutral-600)", boxShadow: "none", transition: "all var(--dur-fast) var(--ease-standard)", whiteSpace: "nowrap" }}
-            >
-              {"Maandelijks"}
-            </button>
-            <button
-              style={{ padding: "9px 18px", borderRadius: "999px", border: "none", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: "600", background: "rgb(255, 255, 255)", color: "var(--color-primary)", boxShadow: "var(--shadow-sm)", transition: "all var(--dur-fast) var(--ease-standard)", whiteSpace: "nowrap" }}
-            >
-              {"Jaarlijks \u00b7 bespaar 21%"}
-            </button>
+            {knop("maandelijks", "Maandelijks")}
+            {knop("jaarlijks", "Jaarlijks \u00b7 bespaar 21%")}
           </div>
         </div>
       </div>
     </section>
-);
+  );
+};
