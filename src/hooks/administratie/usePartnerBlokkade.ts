@@ -6,15 +6,16 @@ interface BlokkadeInvoer {
   partnerId: string;
   actie: "blokkeren" | "deblokkeren";
   reden: string;
+  betaalUrl?: string | null;
 }
 
 /** Blokkeert of deblokkeert een klantorganisatie via de beveiligde serverfunctie. */
 export function usePartnerBlokkade() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ partnerId, actie, reden }: BlokkadeInvoer) => {
+    mutationFn: async ({ partnerId, actie, reden, betaalUrl }: BlokkadeInvoer) => {
       const { data, error } = await supabase.functions.invoke("partner-blokkade", {
-        body: { partner_id: partnerId, actie, reden },
+        body: { partner_id: partnerId, actie, reden, betaal_url: betaalUrl || null },
       });
       if (error) throw new Error(error.message);
       const fout = (data as { error?: { message?: string } } | null)?.error;
@@ -25,6 +26,7 @@ export function usePartnerBlokkade() {
       qc.invalidateQueries({ queryKey: ["partner-administratie"] });
       qc.invalidateQueries({ queryKey: ["partner-blokkades"] });
       qc.invalidateQueries({ queryKey: ["partner-blokkadestatus"] });
+      qc.invalidateQueries({ queryKey: ["partner-klantdetail"] });
       toast.success(variabelen.actie === "blokkeren" ? "Organisatie geblokkeerd" : "Blokkade opgeheven");
     },
     onError: (e: Error) => toast.error(e.message),
