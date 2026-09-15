@@ -27,5 +27,6 @@ export function AppLayout() {
       </div>
       </TourProvider>
     </SidebarProvider>
+    </BlokkadeGate>
   );
 }
