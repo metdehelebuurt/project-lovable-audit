@@ -65,7 +65,7 @@ export function usePartnerAdministratie() {
           .select("id, naam, email, status, geblokkeerd_op, geblokkeerd_reden")
           .order("naam"),
         supabase
-          .from("abonnement_facturen")
+          .from("facturen")
           .select("partner_id, factuurnummer, totaal_bedrag, periode_eind, status")
           .in("status", ["verstuurd", "vervallen"]),
       ]);
