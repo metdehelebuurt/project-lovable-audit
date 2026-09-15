@@ -1,4 +1,6 @@
 
+import { PlanPrijs } from "@/website/components/prijzen/PlanPrijs";
+
 export const S02 = () => (
     <section className="mh-secpad" style={{ padding: "8px 0px 72px", background: "var(--surface-page)" }}>
       <div className="mh-container">
@@ -21,23 +23,7 @@ export const S02 = () => (
                 {"Voor het bedrijf dat van Excel af wil en zijn eerste stappen digitaal zet."}
               </span>
             </p>
-            <span
-              style={{ display: "block", fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "46px", lineHeight: "1", letterSpacing: "-0.02em", color: "var(--indigo-700)", marginBottom: "8px" }}
-            >
-              <span className="sc-interp">
-                {"\u20ac 75"}
-              </span>
-            </span>
-            <div style={{ fontSize: "14.5px", color: "var(--text-body)", marginBottom: "3px" }}>
-              <span className="sc-interp">
-                {"per maand, jaarlijks gefactureerd"}
-              </span>
-            </div>
-            <div style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "22px" }}>
-              <span className="sc-interp">
-                {"\u20ac 899 per jaar, je bespaart 21%"}
-              </span>
-            </div>
+            <PlanPrijs slug="starter" />
             <div
               style={{ display: "flex", flexDirection: "column", gap: "11px", padding: "20px 0px", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", marginBottom: "18px" }}
             >
@@ -174,23 +160,7 @@ export const S02 = () => (
                 {"Voor het bedrijf met een vast kantoor en meerdere ploegen buiten."}
               </span>
             </p>
-            <span
-              style={{ display: "block", fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "46px", lineHeight: "1", letterSpacing: "-0.02em", color: "var(--indigo-700)", marginBottom: "8px" }}
-            >
-              <span className="sc-interp">
-                {"\u20ac 142"}
-              </span>
-            </span>
-            <div style={{ fontSize: "14.5px", color: "var(--text-body)", marginBottom: "3px" }}>
-              <span className="sc-interp">
-                {"per maand, jaarlijks gefactureerd"}
-              </span>
-            </div>
-            <div style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "22px" }}>
-              <span className="sc-interp">
-                {"\u20ac 1.699 per jaar, je bespaart 21%"}
-              </span>
-            </div>
+            <PlanPrijs slug="professional" />
             <div
               style={{ display: "flex", flexDirection: "column", gap: "11px", padding: "20px 0px", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", marginBottom: "18px" }}
             >
@@ -322,23 +292,7 @@ export const S02 = () => (
                 {"Voor bedrijven met meerdere vestigingen, een eigen merk en eigen koppelingen."}
               </span>
             </p>
-            <span
-              style={{ display: "block", fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "46px", lineHeight: "1", letterSpacing: "-0.02em", color: "var(--indigo-700)", marginBottom: "8px" }}
-            >
-              <span className="sc-interp">
-                {"\u20ac 200"}
-              </span>
-            </span>
-            <div style={{ fontSize: "14.5px", color: "var(--text-body)", marginBottom: "3px" }}>
-              <span className="sc-interp">
-                {"per maand, jaarlijks gefactureerd"}
-              </span>
-            </div>
-            <div style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "22px" }}>
-              <span className="sc-interp">
-                {"\u20ac 2.399 per jaar, je bespaart 20%"}
-              </span>
-            </div>
+            <PlanPrijs slug="enterprise" />
             <div
               style={{ display: "flex", flexDirection: "column", gap: "11px", padding: "20px 0px", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", marginBottom: "18px" }}
             >

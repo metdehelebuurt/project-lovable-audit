@@ -88,38 +88,38 @@ export const S06 = () => (
               {"OP DEZE PAGINA"}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "11px" }}>
-              <button
+              <a href="#b-uitleg"
                 className="scp5"
                 style={{ textAlign: "left", background: "none", border: "none", padding: "0px", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "14.5px", fontWeight: "500", color: "var(--text-body)" }}
               >
                 <span className="sc-interp">
                   {"Wat komt er kijken?"}
                 </span>
-              </button>
-              <button
+              </a>
+              <a href="#b-normen"
                 className="scp5"
                 style={{ textAlign: "left", background: "none", border: "none", padding: "0px", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "14.5px", fontWeight: "500", color: "var(--text-body)" }}
               >
                 <span className="sc-interp">
                   {"Normen en regelgeving"}
                 </span>
-              </button>
-              <button
+              </a>
+              <a href="#b-faq"
                 className="scp5"
                 style={{ textAlign: "left", background: "none", border: "none", padding: "0px", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "14.5px", fontWeight: "500", color: "var(--text-body)" }}
               >
                 <span className="sc-interp">
                   {"Veelgestelde vragen"}
                 </span>
-              </button>
-              <button
+              </a>
+              <a href="#b-tools"
                 className="scp5"
                 style={{ textAlign: "left", background: "none", border: "none", padding: "0px", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "14.5px", fontWeight: "500", color: "var(--text-body)" }}
               >
                 <span className="sc-interp">
                   {"Oplossingen die je gebruikt"}
                 </span>
-              </button>
+              </a>
             </div>
             <div
               style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "18px", paddingTop: "16px", display: "flex", flexDirection: "column", gap: "11px" }}
