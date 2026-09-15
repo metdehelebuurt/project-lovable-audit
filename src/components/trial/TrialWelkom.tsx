@@ -40,7 +40,7 @@ const TRIAL_BEPERKINGEN: TrialBeperking[] = [
 
 const TrialWelkom = () => {
   const navigate = useNavigate();
-  const { partnerNaam, einddatum, dagenResterend, isVerlopen } = useTrialStatus();
+  const { isTrial, partnerNaam, einddatum, dagenResterend, isVerlopen, loading } = useTrialStatus();
 
   const verstreken = Math.min(TRIAL_DUUR_DAGEN, TRIAL_DUUR_DAGEN - dagenResterend);
   const percentage = Math.round((verstreken / TRIAL_DUUR_DAGEN) * 100);
@@ -65,7 +65,13 @@ const TrialWelkom = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {isVerlopen ? (
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Proefperiode laden…</p>
+          ) : !isTrial ? (
+            <p className="text-sm text-muted-foreground">
+              Voor dit account is geen actieve proefperiode gevonden.
+            </p>
+          ) : isVerlopen ? (
             <p className="text-sm text-destructive">
               Je proefperiode is verlopen. Neem contact met ons op om je account te activeren.
             </p>
