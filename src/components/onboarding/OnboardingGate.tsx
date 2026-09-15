@@ -44,7 +44,18 @@ export const OnboardingGate = () => {
       if (cancelled) return;
       const done = !!(data as any)?.onboarding_voltooid_op || !!(data as any)?.onboarding_overgeslagen_op;
       if (!done) {
-        navigate("/onboarding", { replace: true });
+        const trial = await heeftActieveTrial(profile.partner_id);
+        if (cancelled) return;
+        if (trial) {
+          await supabase
+            .from("users")
+            .update({ onboarding_overgeslagen_op: new Date().toISOString() })
+            .eq("id", profile.id);
+          if (cancelled) return;
+          navigate("/welkom", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
       }
       setChecked(true);
     };
