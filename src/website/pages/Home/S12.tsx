@@ -17,9 +17,11 @@ export const S12 = () => (
           </p>
         </div>
         <div className="mh-reveal" style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "28px" }}>
-          <button
-            style={{ flex: "1 1 260px", display: "flex", gap: "18px", alignItems: "center", textAlign: "left", cursor: "pointer", padding: "22px 26px", borderRadius: "16px", fontFamily: "var(--font-body)", position: "relative", overflow: "hidden", border: "1px solid var(--indigo-600)", background: "var(--indigo-600)", boxShadow: "rgba(33, 31, 84, 0.18) 0px 14px 30px" }}
+          <a
+            href="/proefperiode"
+            style={{ flex: "1 1 260px", display: "flex", gap: "18px", alignItems: "center", textAlign: "left", cursor: "pointer", padding: "22px 26px", borderRadius: "16px", fontFamily: "var(--font-body)", position: "relative", overflow: "hidden", border: "1px solid var(--indigo-600)", background: "var(--indigo-600)", boxShadow: "rgba(33, 31, 84, 0.18) 0px 14px 30px", textDecoration: "none" }}
           >
+
             <span
               style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "rgb(255, 255, 255)" }}
             >
@@ -57,10 +59,12 @@ export const S12 = () => (
                 </span>
               </span>
             </span>
-          </button>
-          <button
-            style={{ flex: "1 1 260px", display: "flex", gap: "18px", alignItems: "center", textAlign: "left", cursor: "pointer", padding: "22px 26px", borderRadius: "16px", fontFamily: "var(--font-body)", position: "relative", overflow: "hidden", border: "1px solid var(--border-subtle)", background: "var(--surface-page)", boxShadow: "none" }}
+          </a>
+          <a
+            href="/kennismaking"
+            style={{ flex: "1 1 260px", display: "flex", gap: "18px", alignItems: "center", textAlign: "left", cursor: "pointer", padding: "22px 26px", borderRadius: "16px", fontFamily: "var(--font-body)", position: "relative", overflow: "hidden", border: "1px solid var(--border-subtle)", background: "var(--surface-page)", boxShadow: "none", textDecoration: "none" }}
           >
+
             <span
               style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary)" }}
             >
@@ -99,7 +103,7 @@ export const S12 = () => (
                 </span>
               </span>
             </span>
-          </button>
+          </a>
         </div>
         <div
           className="mh-reveal"
