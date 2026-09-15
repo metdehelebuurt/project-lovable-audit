@@ -8,6 +8,8 @@ import { useSalesDemoZonderTrial } from "@/hooks/sales/useSalesDemoZonderTrial";
 import TrialsTabel from "./TrialsTabel";
 import DemoZonderTrialTabel from "./DemoZonderTrialTabel";
 import NotitiesDialog from "./NotitiesDialog";
+import NieuweTrialDialog from "./NieuweTrialDialog";
+import { Plus } from "lucide-react";
 import type { SalesTrialPartner } from "@/hooks/sales/useSalesTrials";
 import {
   filterOpBron,
@@ -26,6 +28,7 @@ export default function SalesTrials() {
   const [weergave, setWeergave] = useState<Weergave>("actief");
   const [bronFilter, setBronFilter] = useState<BronFilter>("alles");
   const [openNotities, setOpenNotities] = useState<SalesTrialPartner | null>(null);
+  const [nieuweTrialOpen, setNieuweTrialOpen] = useState(false);
 
   const gefilterd = useMemo(() => {
     const alle = trials ?? [];
@@ -105,6 +108,10 @@ export default function SalesTrials() {
             </p>
           </div>
           <div className="flex gap-1.5">
+            <Button size="sm" className="h-8" onClick={() => setNieuweTrialOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nieuwe trial
+            </Button>
             {(["actief", "verlopen", "alles"] as Weergave[]).map((w) => (
               <Button
                 key={w}
@@ -161,6 +168,8 @@ export default function SalesTrials() {
         open={!!openNotities}
         onOpenChange={(o) => !o && setOpenNotities(null)}
       />
+
+      <NieuweTrialDialog open={nieuweTrialOpen} onOpenChange={setNieuweTrialOpen} />
     </div>
   );
 }
