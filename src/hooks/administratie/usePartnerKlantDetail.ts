@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface KlantGebruiker {
   id: string;
-  naam: string | null;
-  email: string | null;
-  rol: string | null;
-  status: string | null;
-  laatste_login: string | null;
+  voornaam: string;
+  achternaam: string;
+  email: string;
+  rol: string;
+  status: string;
+  last_login_at: string | null;
 }
 
 export interface KlantFactuur {
@@ -23,7 +24,6 @@ export interface KlantDetail {
     id: string;
     naam: string;
     email: string | null;
-    telefoon: string | null;
     status: string;
     trial_einddatum: string | null;
     geblokkeerd_op: string | null;
@@ -65,7 +65,7 @@ export function usePartnerKlantDetail(partnerId: string | undefined) {
         await Promise.all([
           supabase
             .from("partners")
-            .select("id, naam, email, telefoon, status, trial_einddatum, geblokkeerd_op, geblokkeerd_reden, geblokkeerd_betaal_url")
+            .select("id, naam, email, status, trial_einddatum, geblokkeerd_op, geblokkeerd_reden, geblokkeerd_betaal_url")
             .eq("id", id)
             .maybeSingle(),
           supabase
@@ -77,9 +77,9 @@ export function usePartnerKlantDetail(partnerId: string | undefined) {
             .maybeSingle(),
           supabase
             .from("users")
-            .select("id, naam, email, rol, status, laatste_login")
+            .select("id, voornaam, achternaam, email, rol, status, last_login_at")
             .eq("partner_id", id)
-            .order("naam"),
+            .order("achternaam"),
           supabase
             .from("facturen")
             .select("id, factuurnummer, totaal_bedrag, status, periode_eind")
