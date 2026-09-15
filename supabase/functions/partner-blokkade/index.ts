@@ -6,6 +6,7 @@ const BodySchema = z.object({
   partner_id: z.string().uuid(),
   actie: z.enum(['blokkeren', 'deblokkeren']),
   reden: z.string().trim().min(5).max(500),
+  betaal_url: z.string().trim().url().max(2000).nullable().optional(),
 })
 
 function json(body: unknown, status = 200) {

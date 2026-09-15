@@ -97,6 +97,7 @@ import FeedbackDetail from "@/pages/FeedbackDetail";
 import FeedbackNotificatieInstellingen from "@/pages/FeedbackNotificatieInstellingen";
 import FeedbackRoadmap from "@/pages/FeedbackRoadmap";
 import AdminAbonnementen from "@/pages/AdminAbonnementen";
+import AdminKlantDetail from "@/pages/AdminKlantDetail";
 import Financieel from "@/pages/Financieel";
 import FactuurNieuw from "@/pages/FactuurNieuw";
 import FactuurDetail from "@/pages/FactuurDetail";
@@ -419,6 +420,9 @@ const App = () => (
               } />
               <Route path="/admin/abonnementen" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><AdminAbonnementen /></ProtectedRoute>
+              } />
+              <Route path="/admin/abonnementen/klant/:id" element={
+                <ProtectedRoute allowedRoles={["superadmin"]}><AdminKlantDetail /></ProtectedRoute>
               } />
               <Route path="/financieel" element={
                 <ProtectedRoute moduleKey="financieel_verkoop" allowedRoles={["superadmin", "partner_admin", "backoffice"]}><Financieel /></ProtectedRoute>
