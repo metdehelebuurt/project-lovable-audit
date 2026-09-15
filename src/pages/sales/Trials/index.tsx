@@ -28,6 +28,7 @@ export default function SalesTrials() {
   const [weergave, setWeergave] = useState<Weergave>("actief");
   const [bronFilter, setBronFilter] = useState<BronFilter>("alles");
   const [openNotities, setOpenNotities] = useState<SalesTrialPartner | null>(null);
+  const [nieuweTrialOpen, setNieuweTrialOpen] = useState(false);
 
   const gefilterd = useMemo(() => {
     const alle = trials ?? [];
