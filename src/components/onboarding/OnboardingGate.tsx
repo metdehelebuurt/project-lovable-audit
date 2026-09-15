@@ -9,7 +9,19 @@ import { supabase } from "@/integrations/supabase/client";
  * worden niet geforceerd (eigen portalen).
  */
 const SKIP_ROLES = new Set(["consument", "affiliate"]);
-const ALLOWED_WHILE_PENDING = ["/onboarding", "/profiel", "/instellingen", "/login", "/reset-password"];
+const ALLOWED_WHILE_PENDING = ["/onboarding", "/welkom", "/profiel", "/instellingen", "/login", "/reset-password"];
+
+/** Heeft de partner van deze gebruiker een lopende proefperiode? */
+const heeftActieveTrial = async (partnerId: string | null | undefined) => {
+  if (!partnerId) return false;
+  const { data } = await supabase
+    .from("partners")
+    .select("trial_einddatum")
+    .eq("id", partnerId)
+    .maybeSingle();
+  const einde = data?.trial_einddatum;
+  return !!einde && new Date(`${einde}T23:59:59`).getTime() >= Date.now();
+};
 
 export const OnboardingGate = () => {
   const { profile, loading } = useAuth();
