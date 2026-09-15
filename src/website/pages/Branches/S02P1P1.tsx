@@ -3,7 +3,7 @@ export const S02P1P1 = () => (
     <a
       className="mh-bcard"
       href="/branches/zonnepanelen"
-      style={{ gridColumn: "span 7", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", height: "420px", backgroundImage: "url(\"blob:http://localhost:8899/11422c64-7394-4ca5-a618-afb13296dc41\")", backgroundSize: "cover", backgroundPosition: "center center" }}
+      style={{ gridColumn: "span 7", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", height: "420px", backgroundImage: "url(\"/__l5e/assets-v1/c391fed2-f629-464f-a11c-11dfb72fd591/img02.jpg\")", backgroundSize: "cover", backgroundPosition: "center center" }}
     >
       <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.3) 46%, rgba(33, 31, 84, 0.88) 100%)" }}></span>
       <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.62) 0%, rgba(33, 31, 84, 0.92) 100%)" }}></span>

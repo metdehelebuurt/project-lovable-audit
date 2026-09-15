@@ -39,7 +39,7 @@ export const S04 = () => (
             className="scp4"
             style={{ display: "flex", gap: "0px", alignItems: "stretch", borderRadius: "16px", overflow: "hidden", background: "var(--surface-page)", border: "1px solid var(--border-subtle)", color: "var(--text-heading)" }}
           >
-            <span style={{ flex: "0 0 132px", backgroundSize: "cover", backgroundPosition: "center center", backgroundImage: "url(\"blob:http://localhost:8899/eccc055d-3508-43c5-9dc3-6315ce8a53da\")" }}></span>
+            <span style={{ flex: "0 0 132px", backgroundSize: "cover", backgroundPosition: "center center", backgroundImage: "url(\"/__l5e/assets-v1/f070ceaa-9772-42cd-aec9-1851c839b586/img40.jpg\")" }}></span>
             <span style={{ flex: "1 1 0%", padding: "22px 24px", display: "flex", flexDirection: "column", gap: "9px" }}>
               <span
                 style={{ fontFamily: "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--indigo-600)" }}
@@ -85,7 +85,7 @@ export const S04 = () => (
             className="scp4"
             style={{ display: "flex", gap: "0px", alignItems: "stretch", borderRadius: "16px", overflow: "hidden", background: "var(--surface-page)", border: "1px solid var(--border-subtle)", color: "var(--text-heading)" }}
           >
-            <span style={{ flex: "0 0 132px", backgroundSize: "cover", backgroundPosition: "center center", backgroundImage: "url(\"blob:http://localhost:8899/8603b621-7dab-409c-a340-dcb91422d59e\")" }}></span>
+            <span style={{ flex: "0 0 132px", backgroundSize: "cover", backgroundPosition: "center center", backgroundImage: "url(\"/__l5e/assets-v1/f070ceaa-9772-42cd-aec9-1851c839b586/img40.jpg\")" }}></span>
             <span style={{ flex: "1 1 0%", padding: "22px 24px", display: "flex", flexDirection: "column", gap: "9px" }}>
               <span
                 style={{ fontFamily: "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--indigo-600)" }}
