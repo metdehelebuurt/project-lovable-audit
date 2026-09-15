@@ -39,13 +39,14 @@ export function useTrialStatus(): TrialStatus {
   }
 
   const einddatum = new Date(`${data.trial_einddatum}T23:59:59`);
-  const dagenResterend = Math.max(0, Math.ceil((einddatum.getTime() - Date.now()) / MS_PER_DAG));
+  const isVerlopen = einddatum.getTime() < Date.now();
+  const dagenResterend = isVerlopen ? 0 : Math.ceil((einddatum.getTime() - Date.now()) / MS_PER_DAG);
   return {
     isTrial: true,
     partnerNaam: data.naam,
     einddatum,
     dagenResterend,
-    isVerlopen: dagenResterend === 0,
+    isVerlopen,
     loading: isLoading,
   };
 }
