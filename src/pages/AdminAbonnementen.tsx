@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Users, FileText, Percent, BarChart3 } from "lucide-react";
+import { Settings, Users, FileText, Percent, BarChart3, Ban } from "lucide-react";
+import AdministratieOverzicht from "@/components/administratie/AdministratieOverzicht";
 import PlanConfigurator from "@/components/abonnementen/PlanConfigurator";
 import AbonnementOverzicht from "@/components/abonnementen/AbonnementOverzicht";
 import FactuurBeheer from "@/components/abonnementen/FactuurBeheer";
@@ -31,6 +32,9 @@ const AdminAbonnementen = () => {
           <TabsTrigger value="analytics" className="flex items-center gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" />Revenue
           </TabsTrigger>
+          <TabsTrigger value="administratie" className="flex items-center gap-1.5">
+            <Ban className="h-3.5 w-3.5" />Administratie
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="plannen"><PlanConfigurator /></TabsContent>
@@ -38,6 +42,7 @@ const AdminAbonnementen = () => {
         <TabsContent value="facturen"><FactuurBeheer /></TabsContent>
         <TabsContent value="kortingen"><KortingenAffiliates /></TabsContent>
         <TabsContent value="analytics"><RevenueAnalytics /></TabsContent>
+        <TabsContent value="administratie"><AdministratieOverzicht /></TabsContent>
       </Tabs>
     </div>
   );
