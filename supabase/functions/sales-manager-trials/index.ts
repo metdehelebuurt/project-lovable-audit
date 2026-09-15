@@ -18,11 +18,13 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, serviceKey)
 
-    const { data: rollen } = await admin
-      .from('user_roles')
-      .select('rol')
-      .eq('user_id', userData.user.id)
+    // Rollen zijn additief: primaire rol staat op users.rol, extra rollen in user_roles.
+    const [{ data: rollen }, { data: profiel }] = await Promise.all([
+      admin.from('user_roles').select('rol').eq('user_id', userData.user.id),
+      admin.from('users').select('rol').eq('id', userData.user.id).maybeSingle(),
+    ])
     const rolSet = new Set((rollen ?? []).map((r: { rol: string }) => r.rol))
+    if (profiel?.rol) rolSet.add(profiel.rol as string)
     const mag = rolSet.has('superadmin') || rolSet.has('sales_manager') || rolSet.has('sales_admin')
     if (!mag) return json({ error: 'Forbidden' }, 403)
 
