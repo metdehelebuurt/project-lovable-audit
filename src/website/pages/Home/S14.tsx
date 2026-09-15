@@ -37,6 +37,8 @@ export const S14 = () => (
               style={{ border: "1px solid var(--border-subtle)", borderRadius: "14px", background: "rgb(255, 255, 255)", overflow: "hidden" }}
             >
               <button
+                type="button"
+                aria-expanded={true}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "20px 24px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "var(--font-display)", fontWeight: "600", fontSize: "18px", color: "var(--text-heading)" }}
               >
                 <span className="sc-interp">
@@ -69,7 +71,7 @@ export const S14 = () => (
               >
                 <div style={{ padding: "0px 24px 22px", fontSize: "16px", lineHeight: "1.6", color: "var(--text-body)" }}>
                   <span className="sc-interp">
-                    {"Je betaalt per gebruiker per maand: Start \u20ac 39, Groei \u20ac 59, Compleet \u20ac 79 (bij jaarbetaling). Inclusief onbeperkte projecten, Nederlandse support en begeleide onboarding, zonder setupkosten."}
+                    {"Je betaalt \u00e9\u00e9n vast bedrag per bedrijf, niet per gebruiker: Starter \u20ac 75, Professional \u20ac 142 en Enterprise \u20ac 200 per maand bij jaarbetaling. Alle modules zitten in elk plan, inclusief Nederlandse support en begeleide onboarding, zonder setupkosten."}
                   </span>
                 </div>
               </div>
@@ -78,6 +80,8 @@ export const S14 = () => (
               style={{ border: "1px solid var(--border-subtle)", borderRadius: "14px", background: "rgb(255, 255, 255)", overflow: "hidden" }}
             >
               <button
+                type="button"
+                aria-expanded={false}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "20px 24px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "var(--font-display)", fontWeight: "600", fontSize: "18px", color: "var(--text-heading)" }}
               >
                 <span className="sc-interp">
@@ -119,6 +123,8 @@ export const S14 = () => (
               style={{ border: "1px solid var(--border-subtle)", borderRadius: "14px", background: "rgb(255, 255, 255)", overflow: "hidden" }}
             >
               <button
+                type="button"
+                aria-expanded={false}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "20px 24px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "var(--font-display)", fontWeight: "600", fontSize: "18px", color: "var(--text-heading)" }}
               >
                 <span className="sc-interp">
@@ -160,6 +166,8 @@ export const S14 = () => (
               style={{ border: "1px solid var(--border-subtle)", borderRadius: "14px", background: "rgb(255, 255, 255)", overflow: "hidden" }}
             >
               <button
+                type="button"
+                aria-expanded={false}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "20px 24px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "var(--font-display)", fontWeight: "600", fontSize: "18px", color: "var(--text-heading)" }}
               >
                 <span className="sc-interp">
@@ -201,6 +209,8 @@ export const S14 = () => (
               style={{ border: "1px solid var(--border-subtle)", borderRadius: "14px", background: "rgb(255, 255, 255)", overflow: "hidden" }}
             >
               <button
+                type="button"
+                aria-expanded={false}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "20px 24px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "var(--font-display)", fontWeight: "600", fontSize: "18px", color: "var(--text-heading)" }}
               >
                 <span className="sc-interp">
@@ -242,6 +252,8 @@ export const S14 = () => (
               style={{ border: "1px solid var(--border-subtle)", borderRadius: "14px", background: "rgb(255, 255, 255)", overflow: "hidden" }}
             >
               <button
+                type="button"
+                aria-expanded={false}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "20px 24px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "var(--font-display)", fontWeight: "600", fontSize: "18px", color: "var(--text-heading)" }}
               >
                 <span className="sc-interp">
