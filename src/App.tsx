@@ -12,6 +12,7 @@ import Login from "@/pages/Login";
 import OAuthConsent from "@/pages/OAuthConsent";
 import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
+import Welkom from "@/pages/Welkom";
 import Vandaag from "@/pages/Vandaag";
 import Partners from "@/pages/Partners";
 import PartnerDetail from "@/pages/PartnerDetail";
