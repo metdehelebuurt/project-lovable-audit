@@ -168,6 +168,8 @@ export default function SalesTrials() {
         open={!!openNotities}
         onOpenChange={(o) => !o && setOpenNotities(null)}
       />
+
+      <NieuweTrialDialog open={nieuweTrialOpen} onOpenChange={setNieuweTrialOpen} />
     </div>
   );
 }
