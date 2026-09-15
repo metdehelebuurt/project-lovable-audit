@@ -5,7 +5,7 @@ import {
   LifeBuoy, BookOpen, Handshake, CreditCard, Settings, MessageSquareHeart,
   Lightbulb, Link2, Home, ShieldAlert, ShoppingCart, type LucideIcon,
   ScrollText, PhoneCall, Kanban, AlertCircle,
-  Target, Sparkles, Layers,
+  Target, Sparkles, Layers, Rocket,
 } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
