@@ -15,6 +15,8 @@ import MonteurDashboard from "@/components/dashboard/MonteurDashboard";
 import { AppsView } from "@/components/dashboard/apps-view";
 import { DashboardViewSwitcher } from "@/components/dashboard/DashboardViewSwitcher";
 import { useDashboardView } from "@/components/dashboard/apps-view/useDashboardView";
+import TrialWelkom from "@/components/trial/TrialWelkom";
+import { useTrialStatus } from "@/components/trial/useTrialStatus";
 
 /* ─── Mini Stat Card ─── */
 const StatCard = ({ label, value, icon: Icon, trend }: {
@@ -89,6 +91,8 @@ const Dashboard = () => {
   const rol = profile?.rol ?? "consument";
   const dash = rolDashboards[rol] ?? rolDashboards.consument;
   const { view, setView } = useDashboardView();
+  const { isTrial } = useTrialStatus();
+  const toonTrialWelkom = isTrial && ["partner_admin", "partner_staff", "adviseur"].includes(rol);
 
   /* ─── Stats ─── */
   const { data: stats } = useQuery({
@@ -316,6 +320,8 @@ const Dashboard = () => {
           <DashboardViewSwitcher view={view} onChange={setView} />
         )}
       </div>
+
+      {toonTrialWelkom && <TrialWelkom />}
 
       {rol === "installateur" ? (
         <MonteurDashboard />
