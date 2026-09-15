@@ -3,7 +3,7 @@ export const S02P1P3 = () => (
     <a
       className="mh-bcard"
       href="/branches/thuisbatterijen"
-      style={{ gridColumn: "span 4", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", height: "330px", backgroundImage: "url(\"/__l5e/assets-v1/c8c303ec-4cb7-4167-a995-2ffb331f2c76/img01.png")", backgroundSize: "cover", backgroundPosition: "center center" }}
+      style={{ gridColumn: "span 4", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", height: "330px", backgroundImage: "url(\"/__l5e/assets-v1/c8c303ec-4cb7-4167-a995-2ffb331f2c76/img01.png\")", backgroundSize: "cover", backgroundPosition: "center center" }}
     >
       <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.3) 46%, rgba(33, 31, 84, 0.88) 100%)" }}></span>
       <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.62) 0%, rgba(33, 31, 84, 0.92) 100%)" }}></span>

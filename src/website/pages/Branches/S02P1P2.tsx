@@ -3,7 +3,7 @@ export const S02P1P2 = () => (
     <a
       className="mh-bcard"
       href="/branches/warmtepompen"
-      style={{ gridColumn: "span 5", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", height: "420px", backgroundImage: "url(\"/__l5e/assets-v1/eb5826ec-5859-4345-89e3-439bb8f6bbc5/img34.jpg")", backgroundSize: "cover", backgroundPosition: "center center" }}
+      style={{ gridColumn: "span 5", position: "relative", display: "block", overflow: "hidden", color: "rgb(255, 255, 255)", height: "420px", backgroundImage: "url(\"/__l5e/assets-v1/eb5826ec-5859-4345-89e3-439bb8f6bbc5/img34.jpg\")", backgroundSize: "cover", backgroundPosition: "center center" }}
     >
       <span aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.1) 0%, rgba(33, 31, 84, 0.3) 46%, rgba(33, 31, 84, 0.88) 100%)" }}></span>
       <span className="mh-bveil" aria-hidden="true" style={{ position: "absolute", inset: "0px", background: "linear-gradient(rgba(33, 31, 84, 0.62) 0%, rgba(33, 31, 84, 0.92) 100%)" }}></span>
