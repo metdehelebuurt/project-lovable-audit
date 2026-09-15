@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Ban, History, ShieldCheck } from "lucide-react";
@@ -39,6 +40,7 @@ function pasFilterToe(rijen: PartnerAdministratieRij[], filter: Filter, zoek: st
 }
 
 export default function AdministratieOverzicht() {
+  const navigate = useNavigate();
   const { data = [], isLoading, error } = usePartnerAdministratie();
   const [filter, setFilter] = useState<Filter>("achterstallig");
   const [zoek, setZoek] = useState("");
@@ -95,9 +97,13 @@ export default function AdministratieOverzicht() {
                 <TableRow><TableCell colSpan={5} className="text-sm text-muted-foreground">Geen klanten in deze selectie.</TableCell></TableRow>
               )}
               {rijen.map((rij) => (
-                <TableRow key={rij.partner_id}>
+                <TableRow
+                  key={rij.partner_id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/admin/abonnementen/klant/${rij.partner_id}`)}
+                >
                   <TableCell>
-                    <div className="font-medium">{rij.naam}</div>
+                    <div className="font-medium text-primary underline">{rij.naam}</div>
                     {rij.geblokkeerd_reden && (
                       <div className="text-xs text-muted-foreground">Reden: {rij.geblokkeerd_reden}</div>
                     )}
@@ -109,7 +115,7 @@ export default function AdministratieOverzicht() {
                       ? `${rij.oudste_factuurnummer}${rij.oudste_periode_eind ? ` — ${format(new Date(rij.oudste_periode_eind), "d MMM yyyy", { locale: nl })}` : ""}`
                       : "—"}
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
+                  <TableCell className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="ghost" onClick={() => setHistorieDoel(rij)} aria-label={`Geschiedenis ${rij.naam}`}>
                       <History className="h-4 w-4" />
                     </Button>
@@ -136,6 +142,7 @@ export default function AdministratieOverzicht() {
         partnerId={blokkeerDoel?.partner_id ?? null}
         partnerNaam={blokkeerDoel?.naam ?? ""}
         actie={blokkeerDoel?.status === "geblokkeerd" ? "deblokkeren" : "blokkeren"}
+        openstaandBedrag={blokkeerDoel?.openstaand_bedrag ?? 0}
       />
       <BlokkadeHistorie
         open={!!historieDoel}

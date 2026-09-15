@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const statusKleuren: Record<string, string> = {
 };
 
 export default function AbonnementOverzicht() {
+  const navigate = useNavigate();
   const [abonnementen, setAbonnementen] = useState<Abonnement[]>([]);
   const [plans, setPlans] = useState<{ id: string; naam: string; slug: string; maand_prijs: number; jaar_prijs: number }[]>([]);
   const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
@@ -225,8 +227,12 @@ export default function AbonnementOverzicht() {
           </TableHeader>
           <TableBody>
             {filtered.map(abo => (
-              <TableRow key={abo.id}>
-                <TableCell className="font-medium">{(abo.partners as any)?.naam ?? "-"}</TableCell>
+              <TableRow
+                key={abo.id}
+                className="cursor-pointer"
+                onClick={() => navigate(`/admin/abonnementen/klant/${abo.partner_id}`)}
+              >
+                <TableCell className="font-medium text-primary underline">{(abo.partners as any)?.naam ?? "-"}</TableCell>
                 <TableCell>{(abo.abonnement_plannen as any)?.naam ?? abo.plan}</TableCell>
                 <TableCell>
                   <Badge className={statusKleuren[abo.status] ?? "bg-muted text-foreground"}>{abo.status}</Badge>
@@ -236,7 +242,7 @@ export default function AbonnementOverzicht() {
                 <TableCell className="text-sm">
                   {abo.verloop_datum ? format(new Date(abo.verloop_datum), "d MMM yyyy", { locale: nl }) : "-"}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(abo)} title="Bewerken">
                       <Pencil className="h-3.5 w-3.5" />

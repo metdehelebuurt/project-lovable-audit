@@ -6,6 +6,7 @@ const BodySchema = z.object({
   partner_id: z.string().uuid(),
   actie: z.enum(['blokkeren', 'deblokkeren']),
   reden: z.string().trim().min(5).max(500),
+  betaal_url: z.string().trim().url().max(2000).nullable().optional(),
 })
 
 function json(body: unknown, status = 200) {
@@ -53,7 +54,7 @@ Deno.serve(async (req) => {
         velden: parsed.error.flatten().fieldErrors,
       }, 400)
     }
-    const { partner_id, actie, reden } = parsed.data
+    const { partner_id, actie, reden, betaal_url } = parsed.data
     const blokkeren = actie === 'blokkeren'
 
     const { error: updErr } = await admin
@@ -63,12 +64,14 @@ Deno.serve(async (req) => {
         geblokkeerd_op: blokkeren ? new Date().toISOString() : null,
         geblokkeerd_reden: blokkeren ? reden : null,
         geblokkeerd_door_id: blokkeren ? actorId : null,
+        geblokkeerd_betaal_url: blokkeren ? (betaal_url ?? null) : null,
       })
       .eq('id', partner_id)
     if (updErr) throw updErr
 
     const { error: logErr } = await admin.from('partner_blokkades').insert({
       partner_id, actie, reden, uitgevoerd_door_id: actorId,
+      betaal_url: blokkeren ? (betaal_url ?? null) : null,
     })
     if (logErr) throw logErr
 

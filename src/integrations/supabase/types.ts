@@ -7450,6 +7450,7 @@ export type Database = {
       partner_blokkades: {
         Row: {
           actie: string
+          betaal_url: string | null
           created_at: string
           id: string
           partner_id: string
@@ -7458,6 +7459,7 @@ export type Database = {
         }
         Insert: {
           actie: string
+          betaal_url?: string | null
           created_at?: string
           id?: string
           partner_id: string
@@ -7466,6 +7468,7 @@ export type Database = {
         }
         Update: {
           actie?: string
+          betaal_url?: string | null
           created_at?: string
           id?: string
           partner_id?: string
@@ -7672,6 +7675,7 @@ export type Database = {
           email: string | null
           email_provider: string | null
           feature_flags_json: Json | null
+          geblokkeerd_betaal_url: string | null
           geblokkeerd_door_id: string | null
           geblokkeerd_op: string | null
           geblokkeerd_reden: string | null
@@ -7740,6 +7744,7 @@ export type Database = {
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
+          geblokkeerd_betaal_url?: string | null
           geblokkeerd_door_id?: string | null
           geblokkeerd_op?: string | null
           geblokkeerd_reden?: string | null
@@ -7808,6 +7813,7 @@ export type Database = {
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
+          geblokkeerd_betaal_url?: string | null
           geblokkeerd_door_id?: string | null
           geblokkeerd_op?: string | null
           geblokkeerd_reden?: string | null

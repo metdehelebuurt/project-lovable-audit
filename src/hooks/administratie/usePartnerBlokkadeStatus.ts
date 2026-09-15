@@ -7,6 +7,7 @@ export interface BlokkadeStatus {
   reden: string | null;
   geblokkeerdOp: string | null;
   openstaandBedrag: number;
+  betaalUrl: string | null;
 }
 
 /** Blokkadestatus van de eigen organisatie; superadmins worden nooit geblokkeerd. */
@@ -22,7 +23,7 @@ export function usePartnerBlokkadeStatus() {
       const [partnerRes, factuurRes] = await Promise.all([
         supabase
           .from("partners")
-          .select("status, geblokkeerd_op, geblokkeerd_reden")
+          .select("status, geblokkeerd_op, geblokkeerd_reden, geblokkeerd_betaal_url")
           .eq("id", partnerId!)
           .maybeSingle(),
         supabase
@@ -41,6 +42,7 @@ export function usePartnerBlokkadeStatus() {
         reden: partnerRes.data?.geblokkeerd_reden ?? null,
         geblokkeerdOp: partnerRes.data?.geblokkeerd_op ?? null,
         openstaandBedrag,
+        betaalUrl: partnerRes.data?.geblokkeerd_betaal_url ?? null,
       };
     },
   });
