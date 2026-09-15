@@ -1,4 +1,6 @@
 
+import { KennismakingForm } from "./KennismakingForm";
+
 export const S01 = () => (
     <section
       className="mh-secpad"
