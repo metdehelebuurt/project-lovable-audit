@@ -190,6 +190,7 @@ const App = () => (
             <Route element={<ProtectedRoute><OnboardingGate /></ProtectedRoute>}>
               <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/welkom" element={<Welkom />} />
               <Route path="/vandaag" element={<Vandaag />} />
               <Route path="/partners" element={
                 <ProtectedRoute allowedRoles={["superadmin"]}><Partners /></ProtectedRoute>
