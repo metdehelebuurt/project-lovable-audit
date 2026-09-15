@@ -128,8 +128,8 @@ export const S01 = () => (
             </span>
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "28px" }}>
-            <button
-              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px" }}
+            <a href="#f-verkopen"
+              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -149,9 +149,9 @@ export const S01 = () => (
                 <rect width="20" height="14" x="2" y="6" rx="2" />
               </svg>
               {"Verkopen"}
-            </button>
-            <button
-              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px" }}
+            </a>
+            <a href="#f-uitvoeren"
+              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -170,9 +170,9 @@ export const S01 = () => (
                 <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" />
               </svg>
               {"Uitvoeren"}
-            </button>
-            <button
-              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px" }}
+            </a>
+            <a href="#f-nazorg"
+              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -192,9 +192,9 @@ export const S01 = () => (
                 <path d="m19 9-5 5-4-4-3 3" />
               </svg>
               {"Nazorg & inzicht"}
-            </button>
-            <button
-              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px" }}
+            </a>
+            <a href="#f-koppelingen"
+              style={{ padding: "10px 18px", borderRadius: "99px", border: "1px solid var(--border-subtle)", background: "rgb(255, 255, 255)", color: "var(--text-body)", fontWeight: "600", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -216,7 +216,7 @@ export const S01 = () => (
                 <path d="M9 8V2" />
               </svg>
               {"Koppelingen"}
-            </button>
+            </a>
           </div>
         </div>
       </div>
