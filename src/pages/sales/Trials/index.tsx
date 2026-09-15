@@ -8,6 +8,8 @@ import { useSalesDemoZonderTrial } from "@/hooks/sales/useSalesDemoZonderTrial";
 import TrialsTabel from "./TrialsTabel";
 import DemoZonderTrialTabel from "./DemoZonderTrialTabel";
 import NotitiesDialog from "./NotitiesDialog";
+import NieuweTrialDialog from "./NieuweTrialDialog";
+import { Plus } from "lucide-react";
 import type { SalesTrialPartner } from "@/hooks/sales/useSalesTrials";
 import {
   filterOpBron,
