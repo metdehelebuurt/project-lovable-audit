@@ -7447,6 +7447,48 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_blokkades: {
+        Row: {
+          actie: string
+          created_at: string
+          id: string
+          partner_id: string
+          reden: string
+          uitgevoerd_door_id: string | null
+        }
+        Insert: {
+          actie: string
+          created_at?: string
+          id?: string
+          partner_id: string
+          reden: string
+          uitgevoerd_door_id?: string | null
+        }
+        Update: {
+          actie?: string
+          created_at?: string
+          id?: string
+          partner_id?: string
+          reden?: string
+          uitgevoerd_door_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_blokkades_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_blokkades_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_merken: {
         Row: {
           created_at: string
@@ -7630,6 +7672,9 @@ export type Database = {
           email: string | null
           email_provider: string | null
           feature_flags_json: Json | null
+          geblokkeerd_door_id: string | null
+          geblokkeerd_op: string | null
+          geblokkeerd_reden: string | null
           iban: string | null
           iban_tnv: string | null
           id: string
@@ -7695,6 +7740,9 @@ export type Database = {
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
+          geblokkeerd_door_id?: string | null
+          geblokkeerd_op?: string | null
+          geblokkeerd_reden?: string | null
           iban?: string | null
           iban_tnv?: string | null
           id?: string
@@ -7760,6 +7808,9 @@ export type Database = {
           email?: string | null
           email_provider?: string | null
           feature_flags_json?: Json | null
+          geblokkeerd_door_id?: string | null
+          geblokkeerd_op?: string | null
+          geblokkeerd_reden?: string | null
           iban?: string | null
           iban_tnv?: string | null
           id?: string
@@ -10302,6 +10353,7 @@ export type Database = {
       normalize_phone: { Args: { _telefoon: string }; Returns: string }
       normalize_postcode: { Args: { _postcode: string }; Returns: string }
       normalize_website: { Args: { _input: string }; Returns: string }
+      partner_is_geblokkeerd: { Args: { _user_id: string }; Returns: boolean }
       purge_system_error_logs: { Args: { _dagen?: number }; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
