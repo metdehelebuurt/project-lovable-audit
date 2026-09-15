@@ -33,12 +33,17 @@ export function DemoForm() {
   const versturen = async (e: React.FormEvent) => {
     e.preventDefault();
     setFout(null);
+    if (bedrijfsnaam.trim().length < 2) return setFout("Vul je bedrijfsnaam in (minimaal 2 tekens).");
+    if (contactpersoon.trim().length < 2) return setFout("Vul je naam in (minimaal 2 tekens).");
+    if (!slot) return setFout("Kies eerst een moment dat jou uitkomt.");
     try {
       await aanvraag.mutateAsync({
-        bedrijfsnaam, contactpersoon, email,
-        telefoon: telefoon || null,
-        gewenst_moment: slot!.iso,
-        bericht: bericht || null,
+        bedrijfsnaam: bedrijfsnaam.trim(),
+        contactpersoon: contactpersoon.trim(),
+        email: email.trim(),
+        telefoon: telefoon.trim() || null,
+        gewenst_moment: slot.iso,
+        bericht: bericht.trim() || null,
       });
     } catch (err) {
       setFout(err instanceof Error ? err.message : "Er ging iets mis.");
